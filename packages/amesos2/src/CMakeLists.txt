@@ -287,20 +287,20 @@ IF (${PACKAGE_NAME}_ENABLE_SuperLUMT)
     )
 ENDIF()
 
-IF (${PACKAGE_NAME}_ENABLE_SuperLUDist) # This naming syntax is consistent with Trilinos
-  APPEND_SET(HEADERS
-    Amesos2_Superludist.hpp
-    Amesos2_Superludist_FunctionMap.hpp
-    Amesos2_Superludist_TypeMap.hpp
-    Amesos2_Superludist_decl.hpp
-    Amesos2_Superludist_def.hpp
-    )
+#IF (${PACKAGE_NAME}_ENABLE_SuperLUDist) # This naming syntax is consistent with Trilinos
+#  APPEND_SET(HEADERS
+#    Amesos2_Superludist.hpp
+#    Amesos2_Superludist_FunctionMap.hpp
+#    Amesos2_Superludist_TypeMap.hpp
+#    Amesos2_Superludist_decl.hpp
+#    Amesos2_Superludist_def.hpp
+#    )
 
-  APPEND_SET(SOURCES
-    Amesos2_Superludist.cpp
+#  APPEND_SET(SOURCES
+#    Amesos2_Superludist.cpp
 #    Amesos2_Superludist_TypeMap.cpp
-    )
-ENDIF()
+#    )
+#ENDIF()
 
 IF (${PACKAGE_NAME}_ENABLE_PARDISO_MKL)
   APPEND_SET(HEADERS

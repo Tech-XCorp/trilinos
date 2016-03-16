@@ -46,7 +46,12 @@ extern "C" {
 #endif
 
 #ifndef EXODUS_II_HDR
-#include <stdint.h>
+#ifdef WIN32
+  typedef __int64 int64_t;
+  #define PRId64 "%ld"
+#else
+  #include <stdint.h>
+#endif
   /** Specifies that this argument is the id of an entity: element block, nodeset, sideset, ... */
   typedef int64_t ex_entity_id;
   

@@ -465,7 +465,12 @@ int Ifpack_SupportGraph<T>::FindSupport()
               if (Randomize_)
               {
                 // Add small random pertubation. 
+#ifdef _WIN32
+// See http://stackoverflow.com/questions/11065861/drand48-on-windows
+                weights[k] *= (1.0 + 1e-8 * (double)rand()/RAND_MAX);
+#else
                 weights[k] *= (1.0 + 1e-8 * drand48());
+#endif
               }
 
 	      k++;

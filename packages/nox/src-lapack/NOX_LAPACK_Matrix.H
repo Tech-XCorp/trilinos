@@ -104,7 +104,7 @@ namespace NOX {
         stream << operator()(i,j) << " ";
       stream << "]" << std::endl;
     }
-    return stream;
+    return (bool) stream;
       }
 
       //! Returns the number of rows in the matrix

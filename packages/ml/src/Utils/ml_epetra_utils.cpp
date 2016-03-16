@@ -42,6 +42,8 @@
 #endif
 #ifdef _MSC_VER
 # include "winprocess.h"
+#elif defined(__MINGW32__)
+# include "windows.h"
 #endif
 
 #ifdef HAVE_ML_TEUCHOS

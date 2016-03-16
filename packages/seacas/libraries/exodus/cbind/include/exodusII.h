@@ -51,7 +51,12 @@
 
 #include <stddef.h>
 #include <stdlib.h>
-#include <stdint.h>
+#ifdef WIN32
+  typedef __int64 int64_t;
+  #define PRId64 "%ld"
+#else
+  #include <stdint.h>
+#endif
 
 #ifndef NC_INT64
 #error "NetCDF version 4.1.2 or later is required."

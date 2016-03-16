@@ -36,9 +36,14 @@
  * at Sandia National Laboratories under US Department of Energy        *
  * contract DE-AC04-76DP00789 and is copyrighted by Sandia Corporation. */
 
+#ifdef _MSC_VER
+#include   <time.h>
+#else
 #include   <sys/time.h>
+#include   <ctime>
 #if !defined(__CYGWIN__)
 #include   <sys/resource.h>
+#endif
 #endif
 
 double    seconds(void)

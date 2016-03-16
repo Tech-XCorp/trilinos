@@ -39,12 +39,11 @@ IF (${PACKAGE_NAME}_ENABLE_TESTS)
     NAME ne_ctest_wrap
     NUM_MPI_PROCS 1
     )
+  TRIBITS_ADD_EXECUTABLE(
+    ne_ctest_wrap
+    SOURCES ne_ctest_wrap.c
+    )
 ENDIF()
-
-TRIBITS_ADD_EXECUTABLE(
-  ne_ctest_wrap
-  SOURCES ne_ctest_wrap.c
-  )
 
 TRIBITS_SUBPACKAGE_POSTPROCESS()
 

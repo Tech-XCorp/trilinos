@@ -11,8 +11,12 @@ TRIBITS_PACKAGE(Amesos)
 #
 
 # if using SuperLUDist, must also link in ParMETIS for some reason
+# JRC: Because it is now a dependency that would go away if Sherry Li
+# would accept Tech-X changes
+if (NOT TPL_ENABLE_SuperLUDist_Without_ParMETIS)
 IF(${PACKAGE_NAME}_ENABLE_SuperLUDist AND NOT ${PACKAGE_NAME}_ENABLE_ParMETIS)
   MESSAGE(FATAL_ERROR "The Amesos support for the SuperLUIDist TPL requires the ParMETIS TPL.  Either disable Amesos SuperLUDist support or enable the ParMETIS TPL.")
+ENDIF()
 ENDIF()
 
 # if using parallel MUMPS, must also link in scalapack and BLACS

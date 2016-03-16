@@ -1957,13 +1957,15 @@ void ML_BreakForDebugger(ML_Comm *comm)
       if (i == mypid) {
 #if defined(TFLOP) || defined(JANUS_STLPORT) || defined(COUGAR)
         sprintf(buf, "Host: %s   PID: %d", "janus", getpid());
+#elif defined(__MINGW32__)
+        sprintf(buf, "Host: %s   PID: %d", "mingw", getpid());
 #else
         gethostname(hostname, sizeof(hostname));
         sprintf(buf, "Host: %s   PID: %d (mpi task %d)", hostname, getpid(),mypid);
 #endif
         printf("%s\n",buf);
         fflush(stdout);
-#ifdef ICL
+#if defined(ICL) || defined(__MINGW32__)
         Sleep(1);
 #else
         sleep(1);
