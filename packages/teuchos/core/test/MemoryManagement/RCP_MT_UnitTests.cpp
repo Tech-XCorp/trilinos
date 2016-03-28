@@ -75,9 +75,22 @@ using Teuchos::rcpWithEmbeddedObj;
 // Test multi-threaded reference counting
 //
 
+static void make_large_number_of_copies(RCP<int> ptr) {
+  std::vector<RCP<int> > ptrs(10000, ptr);
+}
+
 TEUCHOS_UNIT_TEST( RCP, mtRefCount )
 {
-  
+  RCP<int> ptr(new int);
+  TEST_ASSERT(ptr.total_count() == 1);
+  std::vector<std::thread> threads;
+  for (int i = 0; i < 4; ++i) {
+    threads.push_back(std::thread(make_large_number_of_copies, ptr));
+  }
+  for (int i = 0; i < 4; ++i) {
+    threads[i].join();
+  }
+  TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
 
 
