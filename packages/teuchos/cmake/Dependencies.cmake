@@ -8,3 +8,7 @@ TRIBITS_PACKAGE_DEFINE_DEPENDENCIES(
     KokkosCompat  kokkoscompat  PS  OPTIONAL
     KokkosComm    kokkoscomm    PS  OPTIONAL
   )
+
+SET(LIB_OPTIONAL_DEP_TPLS Pthread)
+
+TRIBITS_TPL_TENTATIVELY_ENABLE(Pthread)
