@@ -43,6 +43,9 @@
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
 
+#ifndef HAVE_TEUCHOSCORE_CXX11
+  #include <mutex>
+#endif // HAVE_TEUCHOSCORE_CXX11
 
 // Defined this to see tracing of RCPNodes created and destroyed
 //#define RCP_NODE_DEBUG_TRACE_PRINT
