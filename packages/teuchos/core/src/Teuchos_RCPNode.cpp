@@ -122,6 +122,18 @@ rcp_node_list_t*& rcp_node_list()
   return s_rcp_node_list;
 }
 
+#if defined(TEUCHOS_DEBUG) && defined(HAVE_TEUCHOSCORE_CXX11)
+#define USE_MUTEX_TO_PROTECT_NODE_TRACING
+#endif
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+std::mutex *& rcp_node_list_mutex()
+{
+  static std::mutex * s_rcp_node_list_mutex = 0;
+  // This construct exists for the same reason as above (rcp_node_list) - we must keep this mutex in place until all static RCP objects have deleted for example
+  return s_rcp_node_list_mutex;
+}
+#endif
 
 bool& loc_isTracingActiveRCPNodes()
 {
@@ -313,8 +325,7 @@ int RCPNodeTracer::numActiveRCPNodes()
 {
   // This list always exists, no matter debug or not so just access it.
   TEUCHOS_TEST_FOR_EXCEPT(0==rcp_node_list());
-  return rcp_node_list()->size();
-  return 0;
+  return rcp_node_list()->size(); // note this is a multimap and this size call should be fine for thread safety
 }
 
 
@@ -411,6 +422,9 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   // Used to allow unique identification of rcp_node to allow setting breakpoints
   static int insertionNumber = 0;
@@ -504,7 +518,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
 {
 
-  // Here, we will try to remove an RCPNode reguardless if whether
+  // Here, we will try to remove an RCPNode regardless if whether
   // loc_isTracingActiveRCPNodes==true or not.  This will not be a performance
   // problem and it will ensure that any RCPNode objects that are added to
   // this list will be removed and will not look like a memory leak.  In
@@ -513,7 +527,12 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   // therefore this find(...) operation should be pretty cheap (even for a bad
   // implementation of std::map).
 
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
+
   TEUCHOS_ASSERT(rcp_node_list());
+
   typedef rcp_node_list_t::iterator itr_t;
   typedef std::pair<itr_t, itr_t> itr_itr_t;
 
@@ -562,6 +581,11 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
   typedef std::pair<itr_t, itr_t> itr_itr_t;
   if (!p)
     return 0;
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
+
   const itr_itr_t itr_itr = rcp_node_list()->equal_range(p);
   for (itr_t itr = itr_itr.first; itr != itr_itr.second; ++itr) {
     RCPNode* rcpNode = itr->second.nodePtr;
@@ -639,6 +663,12 @@ ActiveRCPNodesSetup::ActiveRCPNodesSetup()
 #endif // TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
   if (!rcp_node_list())
     rcp_node_list() = new rcp_node_list_t;
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  if (!rcp_node_list_mutex()) {
+    rcp_node_list_mutex() = new std::mutex;
+  }
+#endif
   ++count_;
 }
 
@@ -666,6 +696,11 @@ ActiveRCPNodesSetup::~ActiveRCPNodesSetup()
     }
     delete rcp_node_list();
     rcp_node_list() = 0;
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  delete rcp_node_list_mutex();
+  rcp_node_list_mutex() = 0;
+#endif
   }
 }
 
@@ -684,46 +719,19 @@ int Teuchos::ActiveRCPNodesSetup::count_ = 0;
 // RCPNodeHandle
 //
 
-
-void RCPNodeHandle::unbindOne()
+void RCPNodeHandle::unbindOneStrong()
 {
-  if (node_) {
-    // NOTE: We only deincrement the reference count after
-    // we have called delete on the underlying object since
-    // that call to delete may actually thrown an exception!
-    if (node_->strong_count()==1 && strength()==RCP_STRONG) {
-      // Delete the object (which might throw)
-      node_->delete_obj();
- #ifdef TEUCHOS_DEBUG
-      // We actaully also need to remove the RCPNode from the active list for
-      // some specialized use cases that need to be able to create a new RCP
-      // node pointing to the same memory.  What this means is that when the
-      // strong count goes to zero and the referenced object is destroyed,
-      // then it will not longer be picked up by any other code and instead it
-      // will only be known by its remaining weak RCPNodeHandle objects in
-      // order to perform debug-mode runtime checking in case a client tries
-      // to access the obejct.
-      local_activeRCPNodesSetup.foo(); // Make sure created!
-      RCPNodeTracer::removeRCPNode(node_);
+#ifdef TEUCHOS_DEBUG
+  RCPNodeTracer::removeRCPNode(node_);
 #endif
-   }
-    // If we get here, no exception was thrown!
-    if ( (node_->strong_count() + node_->weak_count()) == 1 ) {
-      // The last RCP object is going away so time to delete
-      // the entire node!
-      delete node_;
-      node_ = 0;
-      // NOTE: No need to deincrement the reference count since this is
-      // the last RCP object being deleted!
-    }
-    else {
-      // The last RCP has not gone away so just deincrement the reference
-      // count.
-      node_->deincr_count(strength());
-    }
-  }
+  node_->delete_obj();	// do this after removeRCPNode - otherwise another thread can jump in and grab the memory spot - then node tracing incorrectly thinks it's a double allocation
 }
 
+void RCPNodeHandle::unbindOneTotal()
+{
+  delete node_;
+  node_ = 0;
+}
 
 } // namespace Teuchos
 
