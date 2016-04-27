@@ -424,7 +424,7 @@ public:
    * Always gets called in a debug build (<tt>TEUCHOS_DEBUG</tt> defined) when
    * node tracing is enabled.
    */
-  static void removeRCPNode( RCPNode* rcp_node );
+  static void removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode = false );
 
   /** \brief Get a <tt>const void*</tt> address to be used as the lookup key
    * for an RCPNode given its embedded object's typed pointer.

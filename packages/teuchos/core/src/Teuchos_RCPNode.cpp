@@ -408,9 +408,15 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 
 // Internal implementation functions
 
+std::mutex & add_remove_rcpNode_mutex()
+{
+  static std::mutex s_add_remove_rcpNode_mutex;
+  return s_add_remove_rcpNode_mutex;
+}
 
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
+  add_remove_rcpNode_mutex().lock();
 
   // Used to allow unique identification of rcp_node to allow setting breakpoints
   static int insertionNumber = 0;
@@ -489,6 +495,8 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     loc_rcpNodeStatistics().maxNumRCPNodes =
       TEUCHOS_MAX(loc_rcpNodeStatistics().maxNumRCPNodes, numActiveRCPNodes());
   }
+
+  add_remove_rcpNode_mutex().unlock();
 }
 
 
@@ -501,8 +509,13 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     "  This should not be possible and can only be an internal programming error!")
 
 
-void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
+void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
 {
+  add_remove_rcpNode_mutex().lock();
+
+  if( bHandleDeletingNode ) {
+	  rcp_node->delete_obj();	// Delete the object (which might throw) - note that if not in debug mode, we just call this and never call removeRCPNode
+  }
 
   // Here, we will try to remove an RCPNode reguardless if whether
   // loc_isTracingActiveRCPNodes==true or not.  This will not be a performance
@@ -553,6 +566,7 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
 
+  add_remove_rcpNode_mutex().unlock();
 }
 
 
@@ -692,9 +706,7 @@ void RCPNodeHandle::unbindOne()
     // we have called delete on the underlying object since
     // that call to delete may actually thrown an exception!
     if (node_->strong_count()==1 && strength()==RCP_STRONG) {
-      // Delete the object (which might throw)
-      node_->delete_obj();
- #ifdef TEUCHOS_DEBUG
+#ifdef TEUCHOS_DEBUG
       // We actaully also need to remove the RCPNode from the active list for
       // some specialized use cases that need to be able to create a new RCP
       // node pointing to the same memory.  What this means is that when the
@@ -703,8 +715,13 @@ void RCPNodeHandle::unbindOne()
       // will only be known by its remaining weak RCPNodeHandle objects in
       // order to perform debug-mode runtime checking in case a client tries
       // to access the obejct.
+      // for multithreading case we will handle the node_->delete_obj() in the removeRCPNode
+      // after we lock the mutex - prevents a second thread from assigning an object to the deleted memory
+      // and then concluding in error it was already added to the debug trace info
       local_activeRCPNodesSetup.foo(); // Make sure created!
-      RCPNodeTracer::removeRCPNode(node_);
+      RCPNodeTracer::removeRCPNode(node_, true);
+#else
+      node_->delete_obj();	// Delete the object (which might throw)
 #endif
    }
     // If we get here, no exception was thrown!
