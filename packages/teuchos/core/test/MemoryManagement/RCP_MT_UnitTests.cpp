@@ -93,5 +93,38 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
   TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
 
+//
+// Test Debug node tracing
+// This test would fail with various memory problems due to the RCP node tracing not being thread safe
+// This test would originally only fail with multiple threads and debug mode
+// First fix is to use a single mutex to lock both RCPNodeTracer::removeRCPNode() and RCPNodeTracer::addNewRCPNode()
+// Second issue can be harder to reproduce - originally we had node_->delete_obj(), followed by RCPNodeTracer::removeRCPNode()
+// However if another thread calls RCPNodeTracer::addNewRCPNode() after the delete_obj() call and before the removeRCPNode() call it can claim the address space
+
+static void create_independent_rcp_objects() {
+  for(int n = 0; n < 10000; ++n ) { // note that getting the second issue to reproduce (the race condition between delete_obj() and removeRCPNode()) may not always hit in this configuration.
+    RCP<int> ptr( new int ); // this allocates a new rcp ptr independent of all other rcp ptrs, and then dumps it, over and over
+  }
+}
+
+TEUCHOS_UNIT_TEST( RCP, mtCreatedIndependentRCP )
+{
+  // first let's establish if we are in Debug mode - this particular test relies on it
+  std::cout << std::endl;
+  #ifdef TEUCHOS_DEBUG
+	std::cout << "Running in Debug Mode. Multi-Threading originally caused the node tracing to fail in Debug. Let's check now." << std::endl;
+  #else
+	std::cout << "Running in Release Mode. This test was always fine in Multi-Threading." << std::endl;
+  #endif
+
+  std::vector<std::thread> threads;
+  int numThreads = 4;
+  for (int i = 0; i < numThreads; ++i) {
+    threads.push_back(std::thread(create_independent_rcp_objects));
+  }
+  for (int i = 0; i < threads.size(); ++i) {
+    threads[i].join();
+  }
+}
 
 } // namespace
