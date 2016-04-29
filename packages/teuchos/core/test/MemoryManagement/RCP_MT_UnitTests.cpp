@@ -42,13 +42,23 @@
 */
 
 #include "TeuchosCore_ConfigDefs.hpp"
+
+#ifdef HAVE_TEUCHOSCORE_CXX11
+
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_getConst.hpp"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
-#ifdef HAVE_TEUCHOSCORE_CXX11
-#  include "Teuchos_RCPStdSharedPtrConversions.hpp"
+#include "Teuchos_RCPStdSharedPtrConversions.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+
+// added this for some sleep functionality to help test threads in some cases - I expect to pull this out eventually
+#ifndef ICL
+#include <unistd.h>
 #else
-#  include <mutex>
+void sleep(int sec)
+{
+  Sleep(sec);
+}
 #endif
 
 #include <vector>
@@ -61,7 +71,6 @@
 
 namespace {
 
-
 using Teuchos::as;
 using Teuchos::null;
 using Teuchos::Ptr;
@@ -72,13 +81,12 @@ using Teuchos::rcpFromUndefRef;
 using Teuchos::outArg;
 using Teuchos::rcpWithEmbeddedObj;
 
-
 //
 // Test multi-threaded reference counting
 //
 
-static void make_large_number_of_copies(RCP<int> ptr) {
-  std::vector<RCP<int> > ptrs(10000, ptr);
+static void make_large_number_of_copies(RCP<int> ptr, int numCopies) {
+  std::vector<RCP<int> > ptrs(numCopies, ptr);
 }
 
 TEUCHOS_UNIT_TEST( RCP, mtRefCount )
@@ -87,9 +95,9 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
   TEST_ASSERT(ptr.total_count() == 1);
   std::vector<std::thread> threads;
   for (int i = 0; i < 4; ++i) {
-    threads.push_back(std::thread(make_large_number_of_copies, ptr));
+    threads.push_back(std::thread(make_large_number_of_copies, ptr, 10000));
   }
-  for (int i = 0; i < 4; ++i) {
+  for (int i = 0; i < threads.size(); ++i) {
     threads[i].join();
   }
   TEST_EQUALITY_CONST(ptr.total_count(), 1);
@@ -116,7 +124,8 @@ TEUCHOS_UNIT_TEST( RCP, mtCreatedIndependentRCP )
   #ifdef TEUCHOS_DEBUG
 	std::cout << "Running in Debug Mode. Multi-Threading originally caused the node tracing to fail in Debug." << std::endl;
   #else
-	std::cout << "Running in Release Mode. Multi-Threading did not cause any problems in Release." << std::endl;
+	// I think we want a quiet test
+	// std::cout << "Running in Release Mode. Multi-Threading did not cause any problems in Release." << std::endl;
   #endif
 
   std::vector<std::thread> threads;
@@ -127,155 +136,92 @@ TEUCHOS_UNIT_TEST( RCP, mtCreatedIndependentRCP )
   for (int i = 0; i < threads.size(); ++i) {
     threads[i].join();
   }
+
+  // this will crash if the bug happens - need to determine if there is more I can do to collect.
 }
 
-// this mirrors the 'real' RCPPtrFactory case below but used std::shared_ptr instead
-// The idea is to validate the logic - it follows the RCP case as closely as possible - but not that RCP stores weak and strong internally while std has weak_ptr and shared_ptr as separate entities
-// Since we may not want to keep this shared_ptr case around I did not try to template this code and kept it separate
-class SharedPtrFactory {
-public:
-	std::shared_ptr<int> getSharedPtr()
-	{
-		mutexForPtrAccess.lock();										// don't allow another thread to simultaneously access
-		++countTotalAccessCalls;										// this is going to be the number of threads times the number of thread loops - I count it so we can verify we really did both activities (share data or make new data)
-		std::shared_ptr<int> strongPtrToReturn(commonWeakPtr.lock());	// once we make the copy we secure the strong count, if it exists - but this is exactly where trouble will happen I expect - if a thread removes the last strong count right now what happens
-
-		if(!strongPtrToReturn) { 										// if we don't have a strong count we will allocate - the data has been deleted
-			strongPtrToReturn = std::shared_ptr<int>(new int); 			// actual allocation of new data
-			++countNewAllocations;										// track each instance of new - let's us determine if the test really went back and forth and did proper stress testing
-		}
-		commonWeakPtr = strongPtrToReturn;								// reassign ourselves as a weak ptr so that we can deallocate if all threads give up strong access
-		mutexForPtrAccess.unlock();										// now we can unlock
-		return strongPtrToReturn; 										// return the ptr to the thread
-	}
-
-	// members are public to make the test flow convenient and keep the unit test simple - but the threads should not use the data directly - they are only allowed to have copies of the shared RCP through getRCPPtr
-	std::weak_ptr<int> commonWeakPtr;									// public so we can error check at the end straight on the ptr from main - we don't want to complicate things by copying the ptr out and then accounting for that ptr's new counters
-	static SharedPtrFactory sharedPtrFactory;							// the singleton factory class
-	std::mutex mutexForPtrAccess;										// used to protect getRCPPtr()
-	int countNewAllocations = 0;										// this counts each time we call new to make a new RCP ptr data allocation
-	int countTotalAccessCalls = 0;										// this tracks all calls to getRCPPtr()
-};
-SharedPtrFactory SharedPtrFactory::sharedPtrFactory;
-
-// the thread function constantly requests a std::shared_ptr<int> from the singleton class and then deletes it.
-static void get_shared_ptr_from_singleton_many_times(int totalAllocations) {
-	for(int n = 0; n < totalAllocations; ++n ) {
-		std::shared_ptr<int> sharedPtr = SharedPtrFactory::sharedPtrFactory.getSharedPtr(); // this will constantly allocate and potentially release - move the declaration of rcpPtr out of the loop and it's a much different story.
-	}
-}
-
-// In this test we have a singleton factory which shares an RCP pointer to may threads
-// The key is that the singleton will dump memory when all access goes away
-// So the counter will constantly go to 0 (dump memory) or from 0 to 1 (allocate with a fresh new)
-// The initial failures identified by this test were intermittent so required a fairly high repeat count
-TEUCHOS_UNIT_TEST( RCP, mtSharedPtrFromSingleton )
+// this test is similar to the first, except now we will set ptr to null in the main thread before threads finish
+// this means all threads will finish up, release rcp, and at some point it should be gone
+// we want to create a race condition on this delete
+// the CatchMemoryLeak used to a simple atomic counter to track allocations and deletes
+// I may want to change this to non atomic and just check for deletion of the single object to make sure the existance of that atomic is not changing an error that would otherwise happen
+class CatchMemoryLeak
 {
-	std::cout << std::endl; // cosmetic
-
-	const int sharedPtrAllocationsPerThread = 100000;
-	// run multiple threads, each of which will interact with the singleton and make many copies of the RCP, which then get removed
-	std::vector<std::thread> threads;
-	for (int i = 0; i < 4; ++i) {
-	  threads.push_back(std::thread(get_shared_ptr_from_singleton_many_times, sharedPtrAllocationsPerThread));
-	}
-
-	// join and complete all threads
-	for (int i = 0; i < threads.size(); ++i) {
-	  threads[i].join();
-	}
-
-	std::cout << "Total Access Calls: " << SharedPtrFactory::sharedPtrFactory.countTotalAccessCalls
-			<< "	Total New Allocations: " << SharedPtrFactory::sharedPtrFactory.countNewAllocations
-			<< "	Total Times We Got Shared Data: " << SharedPtrFactory::sharedPtrFactory.countTotalAccessCalls - SharedPtrFactory::sharedPtrFactory.countNewAllocations << std::endl;
-
-	// this is a sanity check - if these numbers don't match up we are not doing what we thought
-	int expectedTotalCalls = sharedPtrAllocationsPerThread * threads.size();
-	TEST_EQUALITY_CONST(SharedPtrFactory::sharedPtrFactory.countTotalAccessCalls, expectedTotalCalls); // this should be 0 showing all data was deallocated
-
-	int strongCount = SharedPtrFactory::sharedPtrFactory.commonWeakPtr.use_count();
-	TEST_EQUALITY_CONST(strongCount, 0); // this should be 0 showing all data was deallocated
-
-	const int minimumDeviationFromTrivialResult = 20; // for Multi-threading we want to establish the test is doing some minimum amount of variance but this will depend on the machine and many conditions
-	if( SharedPtrFactory::sharedPtrFactory.countNewAllocations < minimumDeviationFromTrivialResult || SharedPtrFactory::sharedPtrFactory.countNewAllocations > SharedPtrFactory::sharedPtrFactory.countTotalAccessCalls - minimumDeviationFromTrivialResult ) {
-		std::cout << "Multi-threading was not really testing this job: We would like to see more oscillation between sharing and new allocations and this did not hit an arbitrary threshold." << std::endl;
-	}
-	TEST_COMPARE( SharedPtrFactory::sharedPtrFactory.countNewAllocations, >, minimumDeviationFromTrivialResult );	// if are not actually doing new allocations it's not a good test
-	TEST_COMPARE( SharedPtrFactory::sharedPtrFactory.countNewAllocations, <, SharedPtrFactory::sharedPtrFactory.countTotalAccessCalls - minimumDeviationFromTrivialResult );	// if are always doing new allocations it's also not a good test!
-}
-
-// this singleton class is used to share an RCP ptr between several threads in the unit test mtSingletonSharesRCP
-class RCPFactory {
 public:
-	RCP<int> getRCPPtr()
-	{
-		mutexForPtrAccess.lock();										// don't allow another thread to simultaneously access
-		++countTotalAccessCalls;										// this is going to be the number of threads times the number of thread loops - I count it so we can verify we really did both activities (share data or make new data)
-		RCP<int> strongPtrToReturn = commonRCPPtr;						// once we make the copy we secure the strong count, if it exists - but this is exactly where trouble will happen I expect - if a thread removes the last strong count right now what happens
-		if(strongPtrToReturn.strong_count() == 0) { 					// if we don't have a strong count we will allocate - the data has been deleted
-			strongPtrToReturn = rcp(new int); 							// actual allocation of new data
-			++countNewAllocations;										// track each instance of new - let's us determine if the test really went back and forth and did proper stress testing
-		}
-		commonRCPPtr = strongPtrToReturn.create_weak();					// reassign ourselves as a weak ptr so that we can deallocate if all threads give up strong access
-		mutexForPtrAccess.unlock();										// now we can unlock
-		return strongPtrToReturn; 										// return the ptr to the thread
-	}
-
-	// members are public to make the test flow convenient and keep the unit test simple - but the threads should not use the data directly - they are only allowed to have copies of the shared RCP through getRCPPtr
-	RCP<int> commonRCPPtr;												// public so we can error check at the end straight on the ptr from main - we don't want to complicate things by copying the ptr out and then accounting for that ptr's new counters
-	static RCPFactory rcpFactory;										// the singleton factory class
-	std::mutex mutexForPtrAccess;										// used to protect getRCPPtr()
-	int countNewAllocations = 0;										// this counts each time we call new to make a new RCP ptr data allocation
-	int countTotalAccessCalls = 0;										// this tracks all calls to getRCPPtr()
+	CatchMemoryLeak() { ++s_countAllocated; }
+	~CatchMemoryLeak() { --s_countAllocated; }
+	static std::atomic<int> s_countAllocated;
 };
-RCPFactory RCPFactory::rcpFactory;
+std::atomic<int> CatchMemoryLeak::s_countAllocated(0);
 
-// the thread function constantly requests an RCP<int> from the singleton class and then deletes it.
-static void get_rcp_from_singleton_many_times(int totalAllocations) {
-	for(int n = 0; n < totalAllocations; ++n ) {
-		RCP<int> rcpPtr = RCPFactory::rcpFactory.getRCPPtr(); // this will constantly allocate and potentially release - move the declaration of rcpPtr out of the loop and it's a much different story.
-	}
+// To debug this test I store the final RCP count for each thread when the thread completes - this also can go away when this test is finalized
+const int kUseThreadCount = 16;
+int saveThreadStrongCountAtEnd[kUseThreadCount];
+
+static void make_large_number_of_copies_of_CatchMemoryLeak(RCP<CatchMemoryLeak> ptr, int numCopies, int threadIndex) {
+  saveThreadStrongCountAtEnd[threadIndex] = 0;
+  if(true) { // we want the scope of the vector to end before we save the count - one of the threads (usually last one) should finish with a count of 2 (if null was written) - the extra one is held by the thread management, something I don't know how it works
+	  std::vector<RCP<CatchMemoryLeak> > ptrs(numCopies, ptr);
+  }
+  saveThreadStrongCountAtEnd[threadIndex] = ptr.strong_count();
 }
 
-// In this test we have a singleton factory which shares an RCP pointer to may threads
-// The key is that the singleton will dump memory when all access goes away
-// So the counter will constantly go to 0 (dump memory) or from 0 to 1 (allocate with a fresh new)
-// The initial failures identified by this test were intermittent so required a fairly high repeat count
-TEUCHOS_UNIT_TEST( RCP, mtRCPFromSingleton )
+// The test is currently not very efficiency and may require more than 20000 test cycles to actually trigger
+// Clearly this will not be the final form
+// The status right now is that we have race conditions in the vicinity of unbindOne()
+// The test does not break counters - but memory deallocation fails is the most common case - meaning the race conditions cause the actual delete to be skipped
+// This generally appears to be caused by two threads simultaneously arrive to delete (count is 2), both decrement (count is 0), both reincrement (count is 2), then both skip the delete (which looks for count 1)
+TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThread )
 {
-	std::cout << std::endl; // cosmetic
+  try {
+    /* // this code can be modified to confirm that we catch a double delete or a memory leak - the static CatchMemoryLeak::s_countAllocated must be 0 when this test finishes
+	CatchMemoryLeak * testPtr = new CatchMemoryLeak();	// creates some memory
+    RCP<CatchMemoryLeak> testRCP(testPtr);				// puts it under control of RCP
+    testRCP.release();  								// releases control - Remove this to double delete
+    delete testPtr;		  								// manually deletes - Remove this to leak
+	*/
 
-	const int rcpAllocationsPerThread = 100000;
-	// run multiple threads, each of which will interact with the singleton and make many copies of the RCP, which then get removed
-	std::vector<std::thread> threads;
-	for (int i = 0; i < 4; ++i) {
-	  threads.push_back(std::thread(get_rcp_from_singleton_many_times, rcpAllocationsPerThread));
-	}
+	int counterOutput = 0;
+    for(int cycleIndex = 0; cycleIndex < 100000; ++cycleIndex) {
+    	RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak);
 
-	// join and complete all threads
-	for (int i = 0; i < threads.size(); ++i) {
-	  threads[i].join();
-	}
+        std::vector<std::thread> threads;
+    	for (int threadIndex = 0; threadIndex < kUseThreadCount; ++threadIndex) {
+    	  threads.push_back(std::thread(make_large_number_of_copies_of_CatchMemoryLeak, ptr, 5000, threadIndex));
+    	}
+    	// sleep(1); // this will cause the threads to be done and the memory to be released when you start ptr = null - which means you could then see the count actually drop by 1
+    	int countBeforeNull = CatchMemoryLeak::s_countAllocated;
+    	ptr = null;
+    	int countAfterNull = CatchMemoryLeak::s_countAllocated;
 
-	std::cout << "Total Access Calls: " << RCPFactory::rcpFactory.countTotalAccessCalls
-			<< "	Total New Allocations: " << RCPFactory::rcpFactory.countNewAllocations
-			<< "	Total Times We Got Shared Data: " << RCPFactory::rcpFactory.countTotalAccessCalls - RCPFactory::rcpFactory.countNewAllocations << std::endl;
+    	++counterOutput;
+    	if( counterOutput == 100 ) {
+    	  std::cout << "Cycle: " << cycleIndex << "  Before null: " << countBeforeNull << "   After null: " << countAfterNull << std::endl;
+    	  counterOutput = 0;
+    	}
 
-	// this is a sanity check - if these numbers don't match up we are not doing what we thought
-	int expectedTotalCalls = rcpAllocationsPerThread * threads.size();
-	TEST_EQUALITY_CONST(RCPFactory::rcpFactory.countTotalAccessCalls, expectedTotalCalls); // this should be 0 showing all data was deallocated
+    	for (int i = 0; i < threads.size(); ++i) {
+    	  threads[i].join();
+    	}
 
-	// validate the singleton rcp has properly dumped data - we should have a weak count of 1 and a strong count of 0
-	// keep in mind that if you call getRCPPtr() directly to check you change the counters by doing so!
-	TEST_EQUALITY_CONST(RCPFactory::rcpFactory.commonRCPPtr.weak_count(), 1); 	// this should be one because the static still exists
-	TEST_EQUALITY_CONST(RCPFactory::rcpFactory.commonRCPPtr.strong_count(), 0); // this should be 0 showing all data was deallocated
+    	if( counterOutput == 0 ) {
+  	      for(int threadIndex = 0; threadIndex < kUseThreadCount; ++threadIndex) {
+  		    std::cout << saveThreadStrongCountAtEnd[threadIndex] << "   ";
+  	      }
+  		  std::cout << std::endl;
+  	    }
 
-	const int minimumDeviationFromTrivialResult = 20; // for Multi-threading we want to establish the test is doing some minimum amount of variance but this will depend on the machine and many conditions
-	if( RCPFactory::rcpFactory.countNewAllocations < minimumDeviationFromTrivialResult || RCPFactory::rcpFactory.countNewAllocations > RCPFactory::rcpFactory.countTotalAccessCalls - minimumDeviationFromTrivialResult ) {
-		std::cout << "Multi-threading was not really testing this job: We would like to see more oscillation between sharing and new allocations and this did not hit an arbitrary threshold." << std::endl;
-	}
-	TEST_COMPARE( RCPFactory::rcpFactory.countNewAllocations, >, minimumDeviationFromTrivialResult );	// if are not actually doing new allocations it's not a good test
-	TEST_COMPARE( RCPFactory::rcpFactory.countNewAllocations, <, RCPFactory::rcpFactory.countTotalAccessCalls - minimumDeviationFromTrivialResult );	// if are always doing new allocations it's also not a good test!
+    	if(CatchMemoryLeak::s_countAllocated != 0) {
+    		std::cout << "Stopping on cycle: " << cycleIndex << " Remaining Allocations: " << CatchMemoryLeak::s_countAllocated << std::endl;
+    		break; // will catch in error below
+    	}
+    }
+  }
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+
+  TEST_EQUALITY_CONST(CatchMemoryLeak::s_countAllocated, 0);		// these should match
 }
 
 } // namespace
+
+#endif // HAVE_TEUCHOSCORE_CXX11

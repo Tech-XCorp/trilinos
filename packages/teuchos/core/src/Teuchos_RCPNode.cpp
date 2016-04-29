@@ -43,10 +43,6 @@
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
 
-#ifndef HAVE_TEUCHOSCORE_CXX11
-#  include <mutex>
-#endif // HAVE_TEUCHOSCORE_CXX11
-
 // Defined this to see tracing of RCPNodes created and destroyed
 //#define RCP_NODE_DEBUG_TRACE_PRINT
 
@@ -410,16 +406,19 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 
 
 // Internal implementation functions
-
+#ifdef HAVE_TEUCHOSCORE_CXX11
 std::mutex & add_remove_rcpNode_mutex()
 {
   static std::mutex s_add_remove_rcpNode_mutex;
   return s_add_remove_rcpNode_mutex;
 }
+#endif // HAVE_TEUCHOSCORE_CXX11
 
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
+#ifdef HAVE_TEUCHOSCORE_CXX11
   add_remove_rcpNode_mutex().lock();
+#endif // HAVE_TEUCHOSCORE_CXX11
 
   // Used to allow unique identification of rcp_node to allow setting breakpoints
   static int insertionNumber = 0;
@@ -499,7 +498,9 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
       TEUCHOS_MAX(loc_rcpNodeStatistics().maxNumRCPNodes, numActiveRCPNodes());
   }
 
+#ifdef HAVE_TEUCHOSCORE_CXX11
   add_remove_rcpNode_mutex().unlock();
+#endif // HAVE_TEUCHOSCORE_CXX11
 }
 
 
@@ -514,7 +515,9 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 
 void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
 {
+#ifdef HAVE_TEUCHOSCORE_CXX11
   add_remove_rcpNode_mutex().lock();
+#endif // HAVE_TEUCHOSCORE_CXX11
 
   if( bHandleDeletingNode ) {
 	  rcp_node->delete_obj();	// Delete the object (which might throw) - note that if not in debug mode, we just call this and never call removeRCPNode
@@ -569,7 +572,9 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
 
+#ifdef HAVE_TEUCHOSCORE_CXX11
   add_remove_rcpNode_mutex().unlock();
+#endif // HAVE_TEUCHOSCORE_CXX11
 }
 
 
