@@ -46,6 +46,8 @@
 // Defined this to see tracing of RCPNodes created and destroyed
 //#define RCP_NODE_DEBUG_TRACE_PRINT
 
+// Define this to break the mutex protection of debug node tracing - allowing the unit test to fail
+// #define BREAK_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING
 
 //
 // Internal implementatation stuff
@@ -407,6 +409,12 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 
 // Internal implementation functions
 #ifdef HAVE_TEUCHOSCORE_CXX11
+  #ifndef BREAK_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING
+    #define RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
+  #endif
+#endif
+
+#ifdef RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
 std::mutex & add_remove_rcpNode_mutex()
 {
   static std::mutex s_add_remove_rcpNode_mutex;
@@ -416,7 +424,7 @@ std::mutex & add_remove_rcpNode_mutex()
 
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifdef RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
   add_remove_rcpNode_mutex().lock();
 #endif // HAVE_TEUCHOSCORE_CXX11
 
@@ -498,7 +506,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
       TEUCHOS_MAX(loc_rcpNodeStatistics().maxNumRCPNodes, numActiveRCPNodes());
   }
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifdef RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
   add_remove_rcpNode_mutex().unlock();
 #endif // HAVE_TEUCHOSCORE_CXX11
 }
@@ -515,7 +523,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 
 void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
 {
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifdef RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
   add_remove_rcpNode_mutex().lock();
 #endif // HAVE_TEUCHOSCORE_CXX11
 
@@ -572,7 +580,7 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifdef RCP_USE_MUTEX_TO_PROTECT_DEBUG_NODE_TRACING
   add_remove_rcpNode_mutex().unlock();
 #endif // HAVE_TEUCHOSCORE_CXX11
 }
@@ -709,29 +717,29 @@ int Teuchos::ActiveRCPNodesSetup::count_ = 0;
 
 void RCPNodeHandle::unbindOne()
 {
-  if (node_) {
     // NOTE: We only deincrement the reference count after
     // we have called delete on the underlying object since
     // that call to delete may actually thrown an exception!
     if (node_->strong_count()==1 && strength()==RCP_STRONG) {
-#ifdef TEUCHOS_DEBUG
-      // We actaully also need to remove the RCPNode from the active list for
-      // some specialized use cases that need to be able to create a new RCP
-      // node pointing to the same memory.  What this means is that when the
-      // strong count goes to zero and the referenced object is destroyed,
-      // then it will not longer be picked up by any other code and instead it
-      // will only be known by its remaining weak RCPNodeHandle objects in
-      // order to perform debug-mode runtime checking in case a client tries
-      // to access the obejct.
-      // for multithreading case we will handle the node_->delete_obj() in the removeRCPNode
-      // after we lock the mutex - prevents a second thread from assigning an object to the deleted memory
-      // and then concluding in error it was already added to the debug trace info
-      local_activeRCPNodesSetup.foo(); // Make sure created!
-      RCPNodeTracer::removeRCPNode(node_, true);
-#else
-      node_->delete_obj();	// Delete the object (which might throw)
-#endif
-   }
+      #ifdef TEUCHOS_DEBUG
+        // We actaully also need to remove the RCPNode from the active list for
+        // some specialized use cases that need to be able to create a new RCP
+        // node pointing to the same memory.  What this means is that when the
+        // strong count goes to zero and the referenced object is destroyed,
+        // then it will not longer be picked up by any other code and instead it
+        // will only be known by its remaining weak RCPNodeHandle objects in
+        // order to perform debug-mode runtime checking in case a client tries
+        // to access the obejct.
+        // for multithreading case we will handle the node_->delete_obj() in the removeRCPNode
+        // after we lock the mutex - prevents a second thread from assigning an object to the deleted memory
+        // and then concluding in error it was already added to the debug trace info
+        local_activeRCPNodesSetup.foo(); // Make sure created!
+        RCPNodeTracer::removeRCPNode(node_, true);
+      #else
+        node_->delete_obj();	// Delete the object (which might throw)
+      #endif
+    }
+
     // If we get here, no exception was thrown!
     if ( (node_->strong_count() + node_->weak_count()) == 1 ) {
       // The last RCP object is going away so time to delete
@@ -746,9 +754,7 @@ void RCPNodeHandle::unbindOne()
       // count.
       node_->deincr_count(strength());
     }
-  }
 }
-
 
 } // namespace Teuchos
 
