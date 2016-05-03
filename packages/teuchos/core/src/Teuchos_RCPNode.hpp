@@ -48,7 +48,6 @@
  * \brief Reference-counted pointer node classes.
  */
 
-#include <atomic>
 #include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_any.hpp"
 #include "Teuchos_map.hpp"
@@ -59,6 +58,11 @@
 #include "Teuchos_toString.hpp"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
 
+#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifndef BREAK_ATOMIC_USE_FOR_UNSAFE_THREAD_REF_COUNTING		// define this to go back to non-atomics - used to validate RCP_MT_UnitTests.cpp #1 will fail
+#define RCP_USE_ATOMICS										// this will use atomics for the counters and has_ownership flag
+#endif
+#endif
 
 namespace Teuchos {
 
@@ -150,9 +154,22 @@ public:
 #ifdef TEUCHOS_DEBUG
     insertion_number_.store(-1);
 #endif // TEUCHOS_DEBUG
+
+#ifdef RCP_USE_ATOMICS
     has_ownership_.store(has_ownership_in);
+  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+    strong_count_.store(0);
+    total_count_.store(0);
+  #else
     count_[RCP_STRONG].store(0);
     count_[RCP_WEAK].store(0);
+  #endif
+
+#else
+    has_ownership_ = has_ownership_in;
+    count_[RCP_STRONG] = 0;
+    count_[RCP_WEAK] = 0;
+#endif
   }
   /** \brief . */
   virtual ~RCPNode()
@@ -163,36 +180,111 @@ public:
   /** \brief . */
   int strong_count() const
     {
+#ifdef RCP_USE_ATOMICS
+  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+	  return count_strong_.load();
+  #else
       return count_[RCP_STRONG].load();
+  #endif
+#else
+      return count_[RCP_STRONG];
+#endif
     }
   /** \brief . */
+
+#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+  int total_count() const
+    {
+#ifdef RCP_USE_ATOMICS
+      return count_total_.load();
+#else
+      // not compiling this case for the moment
+#endif
+    }
+
+#else
   int weak_count() const
     {
+#ifdef RCP_USE_ATOMICS
       return count_[RCP_WEAK].load();
+#else
+      return count_[RCP_WEAK];
+#endif
     }
+
+#endif
+
+#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+  /** \brief . */
+  int incr_strong_count()
+    {
+      return ++strong_count_;
+    }
+  /** \brief . */
+  int incr_total_count()
+    {
+      return ++weak_count_;
+    }
+  /** \brief . */
+  int deincr_strong_count()
+    {
+#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
+      --strong_count_;
+      return strong_count_; // not atomic  - this version can generate thread failure for the unbindone sequence
+#else
+      return --strong_count_;	// this is an atomic operation - do not break this up without properly saving the result
+#endif
+    }
+
+  /** \brief . */
+  int deincr_total_count()
+    {
+#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
+      --total_count_[strength];
+      return total_count_; // not atomic  - this version can generate thread failure for the unbindone sequence
+#else
+      return --total_count_;	// this is an atomic operation - do not break this up without properly saving the result
+#endif
+    }
+
+#else
   /** \brief . */
   int incr_count( const ERCPStrength strength )
     {
       debugAssertStrength(strength);
-      ++count_[strength];
-      return count_[strength].load();
+      return ++count_[strength];
     }
   /** \brief . */
   int deincr_count( const ERCPStrength strength )
     {
       debugAssertStrength(strength);
+#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
       --count_[strength];
-      return count_[strength].load();
+      return count_[strength]; // not atomic  - this version can generate thread failure for the unbindone sequence
+#else
+      return --count_[strength];	// this is an atomic operation - do not break this up without properly saving the result
+#endif
     }
+
+#endif
+
   /** \brief . */
   void has_ownership(bool has_ownership_in)
     {
+#ifdef RCP_USE_ATOMICS
       has_ownership_.store(has_ownership_in);
+#else
+      has_ownership_ = has_ownership_in;
+#endif
     }
   /** \brief . */
   bool has_ownership() const
     {
-      return has_ownership_.load();
+#ifdef RCP_USE_ATOMICS
+	  return has_ownership_.load();
+#else
+	  has_ownership_;
+#endif
     }
   /** \brief . */
   void set_extra_data(
@@ -252,10 +344,19 @@ private:
     EPrePostDestruction destroy_when;
   };
   typedef Teuchos::map<std::string,extra_data_entry_t> extra_data_map_t;
-  // int count_[2];
-  std::atomic<int> count_[2];
-  // bool has_ownership_;
+#ifdef RCP_USE_ATOMICS
+  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+    std::atomic<int> strong_count_;
+    std::atomic<int> total_count_;
+  #else
+    std::atomic<int> count_[2];
+  #endif
   std::atomic<bool> has_ownership_;
+#else
+   int count_[2];
+   bool has_ownership_;
+#endif
+
   extra_data_map_t *extra_data_map_;
   // Above is made a pointer to reduce overhead for the general case when this
   // is not used.  However, this adds just a little bit to the overhead when
@@ -840,6 +941,22 @@ public:
     return 0;
   }
   //! The weak count for this RCPNode, or 0 if the node is NULL.
+
+#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+  int weak_count() const {
+    if (node_) {
+      return node_->total_count() - node_->weak_count();
+    }
+    return 0;
+  }
+  //! The sum of the weak and string counts.
+  int total_count() const {
+    if (node_) {
+      return node_->total_count();
+    }
+    return 0;
+  }
+#else
   int weak_count() const {
     if (node_) {
       return node_->weak_count();
@@ -853,6 +970,8 @@ public:
     }
     return 0;
   }
+#endif
+
   //! The strong count; retained for backwards compatibility.
   int count() const {
     if (node_) {
@@ -959,6 +1078,21 @@ private:
       if (node_)
         node_->incr_count(strength_);
     }
+#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+  inline void unbind()
+    {
+	  // IN PROGRESS - note used yet
+	  if(node_) {
+	    bool bWillDeleteNode = (node_->deincr_total_count() == 0);
+
+	    bool bWillDeleteData = false;
+	    if(strength_ == RCP_STRONG) {
+	    	bWillDeleteData = (node_->deincr_strong_count() == 0);
+	    }
+	  }
+    }
+  void unbindOne(); // Provides the "strong" guarantee!
+#else
   inline void unbind()
     {
       // Optimize this implementation for count > 1
@@ -967,13 +1101,14 @@ private:
         // interesting is going to happen.  In this case, we need to
         // reincrement the count back to 1 and call the more complex function
         // that will either delete the object or delete the node.
-        node_->incr_count(strength_);
+    	node_->incr_count(strength_);
         unbindOne();
       }
       // If we get here, either node_==0 or the count is still greater than 0.
       // In this case, nothing interesting is going to happen so we are done!
     }
   void unbindOne(); // Provides the "strong" guarantee!
+#endif
 
 };
 
