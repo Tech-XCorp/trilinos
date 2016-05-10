@@ -164,7 +164,7 @@ RCP<T>::RCP( T* p, ERCPWeakNoDealloc )
     RCPNode* existing_RCPNode = RCPNodeTracer::getExistingRCPNode(p);
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false);  // the source is strong because guaranteed to exist
     }
     else {
       // Will call add_new_RCPNode(...)
@@ -203,7 +203,7 @@ RCP<T>::RCP( T* p, bool has_ownership_in )
     }
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false);  // the source is strong because guaranteed to exist
     }
     else {
       // Will call add_new_RCPNode(...)
@@ -478,7 +478,7 @@ template<class T>
 inline
 RCP<T> RCP<T>::create_weak() const
 {
-  debug_assert_valid_ptr();
+//  debug_assert_valid_ptr();   - Temp - removed this because the underlying ptr can be null if all strong has gone to 0 - but we want the test to be based on the atomic counters only
   return RCP<T>(ptr_, node_.create_weak());
 }
 
@@ -487,7 +487,7 @@ template<class T>
 inline
 RCP<T> RCP<T>::create_strong() const
 {
-  debug_assert_valid_ptr();
+//  debug_assert_valid_ptr();   - Temp - removed this because the underlying ptr can be null if all strong has gone to 0 - but we want the test to be based on the atomic counters only
   return RCP<T>(ptr_, node_.create_strong());
 }
 

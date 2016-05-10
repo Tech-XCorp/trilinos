@@ -1,3 +1,4 @@
+/*
 // @HEADER
 // ***********************************************************************
 //
@@ -38,55 +39,51 @@
 //
 // ***********************************************************************
 // @HEADER
+*/
 
-#ifndef TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
-#define TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
+#ifndef TEUCHOS_GENERAL_MT_UNITTESTS_HPP
+#define TEUCHOS_GENERAL_MT_UNITTESTS_HPP
 
-#include "Teuchos_RCPStdSharedPtrConversionsDecl.hpp"
-#include "Teuchos_RCP.hpp"
+#include "TeuchosCore_ConfigDefs.hpp"
 
+#ifdef HAVE_TEUCHOSCORE_CXX11 // all MT unit testing requires HAVE_TEUCHOSCORE_CXX11 which is defined through TeuchosCore_ConfigDefs.hpp
 
-template<class T>
-Teuchos::RCP<T>
-Teuchos::rcp( const std::shared_ptr<T> &sptr )
-{
-  if (sptr.get()) {
-    // First, see if the RCP is in the shared_ptr deleter object
-    const StdSharedPtrRCPDeleter<T>
-      *rcpd = std::get_deleter<StdSharedPtrRCPDeleter<T> >(sptr);
-    if (rcpd) {
-      return rcpd->ptr();
-    }
-#ifdef TEUCHOS_DEBUG
-    // Second, see if the an RCP node pointing to this type already exists
-    // from being wrapped already from a prior call to this function where the
-    // add_new_RCPNode(...) function could have been called already!.
-    RCPNode* existingRCPNode = RCPNodeTracer::getExistingRCPNode(sptr.get());
-    if (existingRCPNode) {
-      return RCP<T>(sptr.get(), RCPNodeHandle(existingRCPNode, RCP_STRONG, RCP_STRONG, false)); // source is considered strong - definitely exists in this case
-    }
-#endif
-    // Lastly, we just create a new RCP and RCPNode ...
-    return rcpWithDealloc(sptr.get(), DeallocStdSharedPtr<T>(sptr), true);
+#include <iostream>
+
+namespace {
+
+// this is a convenience function for outputting percent complete information for long tests designed to find race conditions
+static void convenience_log_progress(int cycle, int totalCycles) {
+  if (cycle==0) {
+    std::cout << "Percent complete: ";												// begin the log line
   }
-  return null;
+  int mod = (totalCycles/10);														// log every 10% percent complete - using mod % to output at regular intervals
+  if((cycle % (mod == 0 ? 1 : mod) == 0) || (cycle == totalCycles-1)) {				// sometimes quick testing so make sure mod is not 0
+    std::cout << (int)( 100.0f * (float) cycle / (float) (totalCycles-1) ) << "% ";
+  }
 }
 
-
-template<class T>
-std::shared_ptr<T>
-Teuchos::get_shared_ptr( const RCP<T> &rcp )
+class CatchMemoryLeak // This class is a utility class which tracks constructor/destructor calls (for this test) or counts times a dealloc or deallocHandle was implemented (for later tests)
 {
-  if (nonnull(rcp)) {
-    Ptr<const DeallocStdSharedPtr<T> >
-      dbsp = get_optional_dealloc<DeallocStdSharedPtr<T> >(rcp);
-    if (nonnull(dbsp)) {
-      return dbsp->ptr();
-    }
-    return std::shared_ptr<T>(rcp.get(), StdSharedPtrRCPDeleter<T>(rcp));
-  }
-  return std::shared_ptr<T>();
-}
+public:
+	CatchMemoryLeak() { ++s_countAllocated; }
+	~CatchMemoryLeak() { --s_countAllocated; }
+	static std::atomic<int> s_countAllocated;
+	static std::atomic<int> s_countDeallocs;
+};
+std::atomic<int> CatchMemoryLeak::s_countAllocated(0);	// counts constructor calls (+1) and destructor calls (-1) which may include double delete events
+std::atomic<int> CatchMemoryLeak::s_countDeallocs(0);	// counts dealloc or dellocHandle calls - used for test 4 and test 5
 
+// helper class for spin locking multiple threads for synchronized release
+class MT_Thread_SpinLock
+{
+public:
+	static std::atomic<bool> s_bAllowThreadsToRun;
+};
+std::atomic<bool> MT_Thread_SpinLock::s_bAllowThreadsToRun(false);
 
-#endif	// TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
+} // end namespace
+
+#endif // end #ifdef HAVE_TEUCHOSCORE_CXX11
+
+#endif // end #ifdef TEUCHOS_GENERAL_MT_UNITTESTS_HPP

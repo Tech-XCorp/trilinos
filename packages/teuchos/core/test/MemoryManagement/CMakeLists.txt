@@ -143,6 +143,11 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
 TRIBITS_ADD_EXECUTABLE_AND_TEST(
   MemoryManagement_MT_UnitTests
   SOURCES
+    Ptr_MT_UnitTests.cpp
+    ArrayView_MT_UnitTests.cpp
+    Array_MT_UnitTests.cpp
+    Tuple_MT_UnitTests.cpp
+    ArrayRCP_MT_UnitTests.cpp
     RCP_MT_UnitTests.cpp
     TestClasses.cpp
     ${TEUCHOS_STD_UNIT_TEST_MAIN}
