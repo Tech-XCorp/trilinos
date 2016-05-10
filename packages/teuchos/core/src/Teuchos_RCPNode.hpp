@@ -155,7 +155,7 @@ public:
 #ifdef HAVE_TEUCHOSCORE_CXX11
       has_ownership_.store(has_ownership_in);
       strong_count_.store(0);
-      total_count_.store(0);
+      weak_count_plus_.store(0);
 #else
       has_ownership_ = has_ownership_in;
       strong_count_ = 0;
@@ -174,9 +174,14 @@ public:
       return strong_count_;
     }
   /** \brief . */
-  int total_count() const
+  int weak_count() const // not atomically safe
     {
-      return total_count_;
+      return weak_count_plus_ - ((strong_count_ != 0) ? 1 : 0 );
+    }
+  /** \brief . */
+  int total_count() const // not atomically safe
+    {
+      return weak_count() + strong_count_;
     }
 #ifdef HAVE_TEUCHOSCORE_CXX11
   /** \brief . */
@@ -192,13 +197,14 @@ public:
   /** \brief . */
   void incr_strong_count()
     {
-      ++strong_count_;
-      // we might consider doing ++total_count_ here - currently it is in the bind() function - depends on how we want to organize this thought process
+	  if (++strong_count_ == 1) {
+		  ++weak_count_plus_; // this is the special condition - the first strong creates a weak
+	  }
     }
   /** \brief . */
-  void incr_total_count()
+  void incr_weak_count_plus()
     {
-      ++total_count_;
+      ++weak_count_plus_;
     }
   /** \brief . */
   int deincr_strong_count()
@@ -206,9 +212,9 @@ public:
       return --strong_count_;
     }
   /** \brief . */
-  int deincr_total_count()
+  int deincr_weak_count_plus()
     {
-      return --total_count_;
+      return --weak_count_plus_;
     }
   /** \brief . */
   void has_ownership(bool has_ownership_in)
@@ -285,11 +291,11 @@ private:
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
   std::atomic<int> strong_count_;
-  std::atomic<int> total_count_;
+  std::atomic<int> weak_count_plus_;
   std::atomic<bool> has_ownership_;
 #else
   int strong_count_;
-  int total_count_;
+  int weak_count_plus_;
   bool has_ownership_;
 #endif // HAVE_TEUCHOSCORE_CXX11
 
@@ -466,7 +472,7 @@ public:
    * Always gets called in a debug build (<tt>TEUCHOS_DEBUG</tt> defined) when
    * node tracing is enabled.
    */
-  static void removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode = false );
+  static void removeRCPNode( RCPNode* rcp_node );
 
   /** \brief Get a <tt>const void*</tt> address to be used as the lookup key
    * for an RCPNode given its embedded object's typed pointer.
@@ -890,14 +896,14 @@ public:
   //! The weak count for this RCPNode, or 0 if the node is NULL.
   int weak_count() const {
     if (node_) {
-      return node_->total_count() - node_->strong_count(); // Not atomically safe
+      return node_->weak_count(); // Not atomically safe
     }
     return 0;
   }
   //! The sum of the weak and string counts.
   int total_count() const {
     if (node_) {
-      return node_->total_count();
+      return node_->total_count(); // Not atomically safe
     }
     return 0;
   }
@@ -1039,7 +1045,7 @@ private:
 	  // so there are 4 combinations (strong->strong, strong->weak, weak->strong, weak->weak)
 	  // The only case which is nontrivial is weak->strong
 	  if (node_) {
-        if (strength_ == RCP_STRONG) {  // strong means we will attempt to increase strong count, then do total (for weak count we simply increment total)
+        if (strength_ == RCP_STRONG) {  // strong means we will attempt to increase strong count but also increment weak if it happens to be the 0 to 1 case
           if (strength_source == RCP_WEAK) {
             if (!attemptBindStrongFromWeak()) { // this will atomically increment strong count only if it successfully swaps a non-zero value for that value + 1
               node_ = 0;           // we have failed to convert a weak node to a strong node - the node should be set as if it was null constructed
@@ -1050,7 +1056,9 @@ private:
             node_->incr_strong_count();
           }
         }
-        node_->incr_total_count(); // regardless of strong or weak, we always increment total - if a weak to strong conversion failed above, we never touch this
+        else {
+          node_->incr_weak_count_plus(); // weak increment
+        }
 	  }
 
 	  return true; // if null is this ok? need to investigate the paths where node_ is 0 and that is expected
@@ -1059,10 +1067,15 @@ private:
   inline void unbind()
     {
 	  if (node_) {
-	    if(strength_ == RCP_STRONG && node_->deincr_strong_count() == 0) { // only strong checks for --strong == 0
-          unbindOneStrong();
+	    if(strength_ == RCP_STRONG) {
+	    	if (node_->deincr_strong_count() == 0) { // only strong checks for --strong == 0
+	    	  unbindOneStrong();
+              if( node_->deincr_weak_count_plus() == 0) {	// but if hits 0 it also decrements weak_count_plus which is weak + (strong != 0)
+        	    unbindOneTotal();
+              }
+            }
 	    }
-	    if(node_->deincr_total_count() == 0) {  // both weak and strong check for --total == 0
+	    else if(node_->deincr_weak_count_plus() == 0) {  // weak checks here
           unbindOneTotal();
 	    }
 	  }

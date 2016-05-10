@@ -53,7 +53,7 @@
 #include <vector>
 #include <thread>
 
-#define KNOCK_OUT_ALL_CODE
+//#define KNOCK_OUT_ALL_CODE
 
 namespace {
 #ifndef KNOCK_OUT_ALL_CODE
@@ -64,6 +64,32 @@ using Teuchos::rcp;
 
 static std::atomic<bool> s_bAllowThreadsToRun;				// this static is used to spin lock all the threads - after we allocate we set this true and all threads can complete
 
+//
+// Unit Test 2: mtCreateIndependentRCP
+// Test debug node tracing thread safety
+// Restore failure by defining BREAK_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING at the top (and run debug mode) which removes protective mutex on RCPNodeTracer::removeRCPNode() and RCPNodeTracer::addNewRCPNode()
+//
+static void create_independent_rcp_objects(int numAllocations) {
+  for(int n = 0; n < numAllocations; ++n ) {
+    RCP<int> ptr( new int ); // this allocates a new rcp ptr independent of all other rcp ptrs, and then dumps it, over and over
+  }
+}
+
+TEUCHOS_UNIT_TEST( RCP, mtCreateIndependentRCP )
+{
+  const int numThreads = 16;
+  const int numRCPAllocations = 10000;
+  try {
+    std::vector<std::thread> threads;
+    for (int i = 0; i < numThreads; ++i) {
+      threads.push_back(std::thread(create_independent_rcp_objects, numRCPAllocations));
+    }
+    for (int i = 0; i < threads.size(); ++i) {
+      threads[i].join();
+    }
+  }
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+}
 
 TEUCHOS_UNIT_TEST( RCP, mtRCPWeakToStrongSimple )
 {
@@ -169,11 +195,11 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakOrStrongToStrong )
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
   int expectedTotal = numConversionAttemptsPerThread * numThreads;
- // std::cout << "Successful Conversions: " << s_count_successful_conversions << std::endl;
- // std::cout << "Failed Conversions: " << s_count_failed_conversions << std::endl;
+  std::cout << "Successful Conversions: " << s_count_successful_conversions << std::endl;
+  std::cout << "Failed Conversions: " << s_count_failed_conversions << std::endl;
 
- // TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
- // TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
+  TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
+  TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
 }
 
 
@@ -201,32 +227,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
   TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
 
-//
-// Unit Test 2: mtCreatedIndependentRCP
-// Test debug node tracing thread safety
-// Restore failure by defining BREAK_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING at the top (and run debug mode) which removes protective mutex on RCPNodeTracer::removeRCPNode() and RCPNodeTracer::addNewRCPNode()
-//
-static void create_independent_rcp_objects(int numAllocations) {
-  for(int n = 0; n < numAllocations; ++n ) {
-    RCP<int> ptr( new int ); // this allocates a new rcp ptr independent of all other rcp ptrs, and then dumps it, over and over
-  }
-}
 
-TEUCHOS_UNIT_TEST( RCP, mtCreatedIndependentRCP )
-{
-  const int numThreads = 16;
-  const int numRCPAllocations = 10000;
-  try {
-    std::vector<std::thread> threads;
-    for (int i = 0; i < numThreads; ++i) {
-      threads.push_back(std::thread(create_independent_rcp_objects, numRCPAllocations));
-    }
-    for (int i = 0; i < threads.size(); ++i) {
-      threads[i].join();
-    }
-  }
-  TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-}
 
 //
 // Unit Test 2b: mtNodeTracingWeakNoDealloc

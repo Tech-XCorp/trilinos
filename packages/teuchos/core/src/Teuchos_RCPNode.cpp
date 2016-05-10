@@ -322,20 +322,6 @@ RCPNodeTracer::getRCPNodeStatistics()
   return loc_rcpNodeStatistics();
 }
 
-#ifdef TEUCHOS_DEBUG
-#ifdef HAVE_TEUCHOSCORE_CXX11
-// #define USE_MUTEX_TO_PROTECT_NODE_TRACING
-#endif // HAVE_TEUCHOSCORE_CXX11
-#endif // TEUCHOS_DEBUG
-
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-std::mutex & add_remove_rcpNode_mutex()
-{
-  static std::mutex s_add_remove_rcpNode_mutex;
-  return s_add_remove_rcpNode_mutex;
-}
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
-
 void RCPNodeTracer::printRCPNodeStatistics(
     const RCPNodeStatistics& rcpNodeStatistics, std::ostream &out)
 {
@@ -413,17 +399,29 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
       out << "\n\n"
           << getCommonDebugNotesString();
     }
-
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().unlock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
   }
 }
+
+#ifdef TEUCHOS_DEBUG
+#ifdef HAVE_TEUCHOSCORE_CXX11
+#define USE_MUTEX_TO_PROTECT_NODE_TRACING
+#endif // HAVE_TEUCHOSCORE_CXX11
+#endif // TEUCHOS_DEBUG
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+std::mutex & add_remove_rcpNode_mutex()
+{
+  static std::mutex s_add_remove_rcpNode_mutex;
+  return s_add_remove_rcpNode_mutex;
+}
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
+
 
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   add_remove_rcpNode_mutex().lock();
+  try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   // Used to allow unique identification of rcp_node to allow setting breakpoints
@@ -436,7 +434,6 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 #endif
 
   if (loc_isTracingActiveRCPNodes()) {
-
     // Print the node we are adding if configured to do so.  We have to send
     // to std::cerr to make sure that this gets printed.
 #ifdef RCP_NODE_DEBUG_TRACE_PRINT
@@ -463,6 +460,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
         break;
       }
     }
+
     TEUCHOS_TEST_FOR_EXCEPTION(
       rcp_node_already_exists && rcp_node->has_ownership() && previous_rcp_node_has_ownership,
       DuplicateOwningRCPError,
@@ -496,7 +494,6 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     // value, this iterator itr_itr.second will point to one after the found
     // range.  I suspect that this might also ensure that the elements are
     // sorted in natural order.
-
     // Update the insertion number an node tracing statistics
     ++insertionNumber;
     ++loc_rcpNodeStatistics().totalNumRCPNodeAllocations;
@@ -505,6 +502,11 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
   }
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  }
+  catch(...) {
+	  add_remove_rcpNode_mutex().unlock();
+	  throw;
+  }
   add_remove_rcpNode_mutex().unlock();
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
@@ -519,17 +521,9 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     "  This should not be possible and can only be an internal programming error!")
 
 
-void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
+void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
 {
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().lock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
-
-  if( bHandleDeletingNode ) {
-	  rcp_node->delete_obj();	// Delete the object (which might throw) - note that if not in debug mode, we just call this and never call removeRCPNode
-  }
-
-  // Here, we will try to remove an RCPNode reguardless if whether
+  // Here, we will try to remove an RCPNode regardless if whether
   // loc_isTracingActiveRCPNodes==true or not.  This will not be a performance
   // problem and it will ensure that any RCPNode objects that are added to
   // this list will be removed and will not look like a memory leak.  In
@@ -537,8 +531,12 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
   // loc_isTracingActiveRCPNodes==false, the list *rcp_node_list will be empty and
   // therefore this find(...) operation should be pretty cheap (even for a bad
   // implementation of std::map).
-
   TEUCHOS_ASSERT(rcp_node_list());
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  add_remove_rcpNode_mutex().lock();
+  try {
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
   typedef rcp_node_list_t::iterator itr_t;
   typedef std::pair<itr_t, itr_t> itr_itr_t;
 
@@ -577,8 +575,13 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node, bool bHandleDeletingNode )
     // Whoops! Did not find the node!
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
-
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  }
+  catch(...)
+  {
+    add_remove_rcpNode_mutex().unlock();
+    throw;
+  }
   add_remove_rcpNode_mutex().unlock();
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
@@ -592,27 +595,32 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
     return 0;
   }
 
+  RCPNode* rcpNodeReturn = 0;
+
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().lock(); // implements thread safety
+   add_remove_rcpNode_mutex().lock(); // implements thread safety
+   try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   const itr_itr_t itr_itr = rcp_node_list()->equal_range(p);
   for (itr_t itr = itr_itr.first; itr != itr_itr.second; ++itr) {
     RCPNode* rcpNode = itr->second.nodePtr;
     if (rcpNode->has_ownership()) {
-
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().unlock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
-      return rcpNode;
+      rcpNodeReturn = rcpNode;
+      break;
     }
   }
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  }
+  catch(...) {
+	  add_remove_rcpNode_mutex().unlock();
+	  throw;
+  }
   add_remove_rcpNode_mutex().unlock();
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
-  return 0;
+  return rcpNodeReturn;
   // NOTE: Above, we return the first RCPNode added that has the given key
   // value.
 }
@@ -729,11 +737,10 @@ int Teuchos::ActiveRCPNodesSetup::count_ = 0;
 
 void RCPNodeHandle::unbindOneStrong()
 {
-  #ifdef TEUCHOS_DEBUG
-    RCPNodeTracer::removeRCPNode(node_, true); // This calls delete_obj() inside a mutex lock
-  #else
-    node_->delete_obj();	// Calls delete_obj() directly
-  #endif
+#ifdef TEUCHOS_DEBUG
+    RCPNodeTracer::removeRCPNode(node_);
+#endif
+    node_->delete_obj();	// do this after removeRCPNode - otherwise another thread can jump in and grab the memory spot - then node tracing incorrectly thinks it's a double allocation
 }
 
 void RCPNodeHandle::unbindOneTotal()
