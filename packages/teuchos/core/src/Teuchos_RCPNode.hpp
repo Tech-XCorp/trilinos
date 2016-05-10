@@ -58,14 +58,7 @@
 #include "Teuchos_toString.hpp"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
-#ifndef BREAK_ATOMIC_USE_FOR_UNSAFE_THREAD_REF_COUNTING		// define this to go back to non-atomics - used to validate RCP_MT_UnitTests.cpp #1 will fail
-#define RCP_USE_ATOMICS										// this will use atomics for the counters and has_ownership flag
-#endif
-#endif
-
 namespace Teuchos {
-
 
 /** \brief Used to specify a pre or post destruction of extra data
  *
@@ -150,27 +143,25 @@ public:
   /** \brief . */
   RCPNode(bool has_ownership_in)
     : extra_data_map_(NULL)
-  {
+    {
 #ifdef TEUCHOS_DEBUG
-    insertion_number_.store(-1);
+#ifdef HAVE_TEUCHOSCORE_CXX11
+      insertion_number_.store(-1);
+#else
+      insertion_number_ = -1;
+#endif
 #endif // TEUCHOS_DEBUG
 
-#ifdef RCP_USE_ATOMICS
-    has_ownership_.store(has_ownership_in);
-  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
-    strong_count_.store(0);
-    total_count_.store(0);
-  #else
-    count_[RCP_STRONG].store(0);
-    count_[RCP_WEAK].store(0);
-  #endif
-
+#ifdef HAVE_TEUCHOSCORE_CXX11
+      has_ownership_.store(has_ownership_in);
+      strong_count_.store(0);
+      total_count_.store(0);
 #else
-    has_ownership_ = has_ownership_in;
-    count_[RCP_STRONG] = 0;
-    count_[RCP_WEAK] = 0;
-#endif
-  }
+      has_ownership_ = has_ownership_in;
+      strong_count_ = 0;
+      total_count_ = 0;
+#endif // HAVE_TEUCHOSCORE_CXX11
+    }
   /** \brief . */
   virtual ~RCPNode()
     {
@@ -180,111 +171,58 @@ public:
   /** \brief . */
   int strong_count() const
     {
-#ifdef RCP_USE_ATOMICS
-  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
-	  return count_strong_.load();
-  #else
-      return count_[RCP_STRONG].load();
-  #endif
-#else
-      return count_[RCP_STRONG];
-#endif
+      return strong_count_;
     }
   /** \brief . */
-
-#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
   int total_count() const
     {
-#ifdef RCP_USE_ATOMICS
-      return count_total_.load();
-#else
-      // not compiling this case for the moment
-#endif
+      return total_count_;
     }
-
-#else
-  int weak_count() const
-    {
-#ifdef RCP_USE_ATOMICS
-      return count_[RCP_WEAK].load();
-#else
-      return count_[RCP_WEAK];
-#endif
-    }
-
-#endif
-
-#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+#ifdef HAVE_TEUCHOSCORE_CXX11
   /** \brief . */
-  int incr_strong_count()
+  bool attempt_increment_strong_from_this_value(int expected)
     {
-      return ++strong_count_;
+	  if(expected == 0) {
+	    throw std::logic_error( "attempt_increment_strong_from_non_zero_value cannot be passed a 0 value." ); // need to determine the best way to implement this
+	  }
+	  int replaceValue = expected + 1;
+	  return strong_count_.compare_exchange_strong(expected, replaceValue);
+    }
+#endif // HAVE_TEUCHOSCORE_CXX11
+  /** \brief . */
+  void incr_strong_count()
+    {
+      ++strong_count_;
+      // we might consider doing ++total_count_ here - currently it is in the bind() function - depends on how we want to organize this thought process
     }
   /** \brief . */
-  int incr_total_count()
+  void incr_total_count()
     {
-      return ++weak_count_;
+      ++total_count_;
     }
   /** \brief . */
   int deincr_strong_count()
     {
-#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
-      --strong_count_;
-      return strong_count_; // not atomic  - this version can generate thread failure for the unbindone sequence
-#else
-      return --strong_count_;	// this is an atomic operation - do not break this up without properly saving the result
-#endif
+      return --strong_count_;
     }
-
   /** \brief . */
   int deincr_total_count()
     {
-#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
-      --total_count_[strength];
-      return total_count_; // not atomic  - this version can generate thread failure for the unbindone sequence
-#else
-      return --total_count_;	// this is an atomic operation - do not break this up without properly saving the result
-#endif
+      return --total_count_;
     }
-
-#else
-  /** \brief . */
-  int incr_count( const ERCPStrength strength )
-    {
-      debugAssertStrength(strength);
-      return ++count_[strength];
-    }
-  /** \brief . */
-  int deincr_count( const ERCPStrength strength )
-    {
-      debugAssertStrength(strength);
-#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
-      --count_[strength];
-      return count_[strength]; // not atomic  - this version can generate thread failure for the unbindone sequence
-#else
-      return --count_[strength];	// this is an atomic operation - do not break this up without properly saving the result
-#endif
-    }
-
-#endif
-
   /** \brief . */
   void has_ownership(bool has_ownership_in)
     {
-#ifdef RCP_USE_ATOMICS
+#ifdef HAVE_TEUCHOSCORE_CXX11
       has_ownership_.store(has_ownership_in);
 #else
       has_ownership_ = has_ownership_in;
-#endif
+#endif // HAVE_TEUCHOSCORE_CXX11
     }
   /** \brief . */
   bool has_ownership() const
     {
-#ifdef RCP_USE_ATOMICS
-	  return has_ownership_.load();
-#else
-	  has_ownership_;
-#endif
+	  return has_ownership_;
     }
   /** \brief . */
   void set_extra_data(
@@ -344,18 +282,16 @@ private:
     EPrePostDestruction destroy_when;
   };
   typedef Teuchos::map<std::string,extra_data_entry_t> extra_data_map_t;
-#ifdef RCP_USE_ATOMICS
-  #ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
-    std::atomic<int> strong_count_;
-    std::atomic<int> total_count_;
-  #else
-    std::atomic<int> count_[2];
-  #endif
+
+#ifdef HAVE_TEUCHOSCORE_CXX11
+  std::atomic<int> strong_count_;
+  std::atomic<int> total_count_;
   std::atomic<bool> has_ownership_;
 #else
-   int count_[2];
-   bool has_ownership_;
-#endif
+  int strong_count_;
+  int total_count_;
+  bool has_ownership_;
+#endif // HAVE_TEUCHOSCORE_CXX11
 
   extra_data_map_t *extra_data_map_;
   // Above is made a pointer to reduce overhead for the general case when this
@@ -369,7 +305,12 @@ private:
   RCPNode& operator=(const RCPNode&);
 #ifdef TEUCHOS_DEBUG
   // int insertion_number_;
+#ifdef HAVE_TEUCHOSCORE_CXX11
   std::atomic<int> insertion_number_;
+#else
+  int insertion_number_;
+#endif // HAVE_TEUCHOSCORE_CXX11
+
 public:
   void set_insertion_number(int insertion_number_in)
     {
@@ -813,21 +754,24 @@ public:
 
   //! Constructor that takes a pointer to an RCPNode.
   RCPNodeHandle (RCPNode* node,
-                 ERCPStrength strength_in = RCP_STRONG,
+                 ERCPStrength strength_create = RCP_STRONG,
+				 ERCPStrength strength_source = RCP_STRONG,
                  bool newNode = true)
-    : node_ (node), strength_ (strength_in)
+    : node_ (node), strength_ (strength_create)
   {
 #ifdef TEUCHOS_DEBUG
     TEUCHOS_ASSERT(node);
 #endif // TEUCHOS_DEBUG
 
-    bind();
+    bind(strength_source);
 
 #ifdef TEUCHOS_DEBUG
     // Add the node if this is the first RCPNodeHandle to get it.  We have
     // to add it because unbind() will call the remove_RCPNode(...) function
     // and it needs to match when node tracing is on from the beginning.
-    if (RCPNodeTracer::isTracingActiveRCPNodes() && newNode) {
+
+    // we check node_ because bind() can fail for weak->strong conversion in which case we don't call this
+    if (node_ && RCPNodeTracer::isTracingActiveRCPNodes() && newNode) {
       std::ostringstream os;
       os << "{T=Unknown, ConcreteT=Unknown, p=Unknown,"
          << " has_ownership="<<node_->has_ownership()<<"}";
@@ -844,13 +788,16 @@ public:
   RCPNodeHandle (RCPNode* node, T *p, const std::string &T_name,
                  const std::string &ConcreteT_name,
                  const bool has_ownership_in,
-                 ERCPStrength strength_in = RCP_STRONG)
-    : node_ (node), strength_ (strength_in)
+                 ERCPStrength strength_create = RCP_STRONG,
+				 ERCPStrength strength_source = RCP_STRONG )
+    : node_ (node), strength_ (strength_create)
   {
-    TEUCHOS_ASSERT(strength_in == RCP_STRONG); // Can't handle weak yet!
     TEUCHOS_ASSERT(node_);
-    bind();
-    if (RCPNodeTracer::isTracingActiveRCPNodes()) {
+
+    bind(strength_source);
+
+    // we check node_ because bind() can fail for weak->strong conversion in which case we don't call this
+    if (node_ && RCPNodeTracer::isTracingActiveRCPNodes()) {
       std::ostringstream os;
       os << "{T="<<T_name<<", ConcreteT="<< ConcreteT_name
          <<", p="<<static_cast<const void*>(p)
@@ -864,7 +811,7 @@ public:
   RCPNodeHandle (const RCPNodeHandle& node_ref)
     : node_ (node_ref.node_), strength_ (node_ref.strength_)
   {
-    bind();
+    bind(node_ref.strength_);
   }
 
   //! Swap the contents of \c node_ref with \c *this.
@@ -887,7 +834,7 @@ public:
     // Assign the new node
     node_ = node_ref.node_;
     strength_ = node_ref.strength_;
-    bind();
+    bind(node_ref.strength_);
     // Return
     return *this;
   }
@@ -900,14 +847,14 @@ public:
   //! Return a weak handle.
   RCPNodeHandle create_weak() const {
     if (node_) {
-      return RCPNodeHandle(node_, RCP_WEAK, false);
+      return RCPNodeHandle(node_, RCP_WEAK, strength_, false);  // pass in out current strength so we can efficiently make strong from weak if the source is strong
     }
     return RCPNodeHandle();
   }
   //! Return a strong handle.
   RCPNodeHandle create_strong() const {
     if (node_) {
-      return RCPNodeHandle(node_, RCP_STRONG, false);
+      return RCPNodeHandle(node_, RCP_STRONG, strength_, false); // pass in out current strength so we can efficiently make strong from weak if the source is strong
     }
     return RCPNodeHandle();
   }
@@ -941,11 +888,9 @@ public:
     return 0;
   }
   //! The weak count for this RCPNode, or 0 if the node is NULL.
-
-#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
   int weak_count() const {
     if (node_) {
-      return node_->total_count() - node_->weak_count();
+      return node_->total_count() - node_->strong_count(); // Not atomically safe
     }
     return 0;
   }
@@ -956,21 +901,6 @@ public:
     }
     return 0;
   }
-#else
-  int weak_count() const {
-    if (node_) {
-      return node_->weak_count();
-    }
-    return 0;
-  }
-  //! The sum of the weak and string counts.
-  int total_count() const {
-    if (node_) {
-      return node_->strong_count() + node_->weak_count();
-    }
-    return 0;
-  }
-#endif
 
   //! The strong count; retained for backwards compatibility.
   int count() const {
@@ -1073,43 +1003,73 @@ public:
 private:
   RCPNode *node_;
   ERCPStrength strength_;
-  inline void bind()
-    {
-      if (node_)
-        node_->incr_count(strength_);
+
+  bool attemptBindStrongFromWeak() {
+	int safetyCounter = 0;
+    while(true) {
+      int strongCount = node_->strong_count();
+      if(strongCount == 0) {
+        return false; // we have a definite failure event
+      }
+      // in a multithreaded environment strongCount may change from the above point when we read it to this function where we try an atomic increment
+      // in that case this loop will try again - the expectation is that this loop will succeed in the first try (or two) and the probability it can run more cycles is vanishingly small
+      // the issue here is that atomic compare and exchange works only when you are equal to the compare value - there is no equivalent for not equal
+      // what we want to do is atomically increment strong if and only if strong is not 0 - I do not know a more elegant way to implement this yet
+      // I expect this will not be a performance critical area and in unit testing this loop could be forced up to about 4x maximum
+      // even if it somehow had to run a few hundred times that may not be a concern - I expect this will always work but still seems unsavory
+      if(node_->attempt_increment_strong_from_this_value(strongCount)) {
+    	  return true;
+      }
+
+      // if something goes wrong we can use this safety counter to detect it - I tried 1000 cycles
+      // even in a unit test designed to stress this function, I only got up to 4 loops maximum
+      ++safetyCounter;
+      if (safetyCounter == 1000) {
+    	  throw std::logic_error( "attemptBindStrongFromWeak() cannot converge on failure or success after running for 1000 cycles." );
+      }
     }
-#ifdef TRACK_TOTAL_COUNT_NOT_WEAK_COUNT
+    return false;
+  }
+
+  inline bool bind(ERCPStrength strength_source) // for multithreading, bind() will now return true/false since binding a strong from a weak can potentially fails
+    {
+	  // strength_source is a bit awkward and may need to restructure this - the idea is that when we copy from an RCP which is strong we are certain we can safely increment strong
+	  // however if we copy from a weak, we have to do a much slower check which can potentially fail
+	  // strengthOfSource is what we copy from while strength_ is what we intend to make
+	  // so there are 4 combinations (strong->strong, strong->weak, weak->strong, weak->weak)
+	  // The only case which is nontrivial is weak->strong
+	  if (node_) {
+        if (strength_ == RCP_STRONG) {  // strong means we will attempt to increase strong count, then do total (for weak count we simply increment total)
+          if (strength_source == RCP_WEAK) {
+            if (!attemptBindStrongFromWeak()) { // this will atomically increment strong count only if it successfully swaps a non-zero value for that value + 1
+              node_ = 0;           // we have failed to convert a weak node to a strong node - the node should be set as if it was null constructed
+              return false;
+            }
+          }
+          else { // if we are copying from a strong we can safely increment - it is not possible for strong to become 0 since we are copying from a strong which will hold strong > 0 during this operation
+            node_->incr_strong_count();
+          }
+        }
+        node_->incr_total_count(); // regardless of strong or weak, we always increment total - if a weak to strong conversion failed above, we never touch this
+	  }
+
+	  return true; // if null is this ok? need to investigate the paths where node_ is 0 and that is expected
+    }
+
   inline void unbind()
     {
-	  // IN PROGRESS - note used yet
-	  if(node_) {
-	    bool bWillDeleteNode = (node_->deincr_total_count() == 0);
-
-	    bool bWillDeleteData = false;
-	    if(strength_ == RCP_STRONG) {
-	    	bWillDeleteData = (node_->deincr_strong_count() == 0);
+	  if (node_) {
+	    if(strength_ == RCP_STRONG && node_->deincr_strong_count() == 0) { // only strong checks for --strong == 0
+          unbindOneStrong();
+	    }
+	    if(node_->deincr_total_count() == 0) {  // both weak and strong check for --total == 0
+          unbindOneTotal();
 	    }
 	  }
     }
-  void unbindOne(); // Provides the "strong" guarantee!
-#else
-  inline void unbind()
-    {
-      // Optimize this implementation for count > 1
-      if (node_ && node_->deincr_count(strength_)==0) {
-        // If we get here, the reference count has gone to 0 and something
-        // interesting is going to happen.  In this case, we need to
-        // reincrement the count back to 1 and call the more complex function
-        // that will either delete the object or delete the node.
-    	node_->incr_count(strength_);
-        unbindOne();
-      }
-      // If we get here, either node_==0 or the count is still greater than 0.
-      // In this case, nothing interesting is going to happen so we are done!
-    }
-  void unbindOne(); // Provides the "strong" guarantee!
-#endif
 
+  void unbindOneStrong();
+  void unbindOneTotal();
 };
 
 

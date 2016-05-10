@@ -1,3 +1,4 @@
+/*
 // @HEADER
 // ***********************************************************************
 //
@@ -38,55 +39,52 @@
 //
 // ***********************************************************************
 // @HEADER
+*/
 
-#ifndef TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
-#define TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
+#include "General_MT_UnitTests.hpp"
 
-#include "Teuchos_RCPStdSharedPtrConversionsDecl.hpp"
-#include "Teuchos_RCP.hpp"
+#ifdef HAVE_TEUCHOSCORE_CXX11
 
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_UnitTestHarness.hpp"
+#include <vector>
+#include <thread>
 
-template<class T>
-Teuchos::RCP<T>
-Teuchos::rcp( const std::shared_ptr<T> &sptr )
-{
-  if (sptr.get()) {
-    // First, see if the RCP is in the shared_ptr deleter object
-    const StdSharedPtrRCPDeleter<T>
-      *rcpd = std::get_deleter<StdSharedPtrRCPDeleter<T> >(sptr);
-    if (rcpd) {
-      return rcpd->ptr();
-    }
-#ifdef TEUCHOS_DEBUG
-    // Second, see if the an RCP node pointing to this type already exists
-    // from being wrapped already from a prior call to this function where the
-    // add_new_RCPNode(...) function could have been called already!.
-    RCPNode* existingRCPNode = RCPNodeTracer::getExistingRCPNode(sptr.get());
-    if (existingRCPNode) {
-      return RCP<T>(sptr.get(), RCPNodeHandle(existingRCPNode, RCP_STRONG, RCP_STRONG, false)); // source is considered strong - definitely exists in this case
-    }
-#endif
-    // Lastly, we just create a new RCP and RCPNode ...
-    return rcpWithDealloc(sptr.get(), DeallocStdSharedPtr<T>(sptr), true);
-  }
-  return null;
+namespace {
+
+using Teuchos::null;
+using Teuchos::Tuple;
+using Teuchos::arcp;
+
+//
+// Unit Test 1:
+// Test reference counting thread safety
+// This is also based on RCPNodeHandle so it's not surprising that it's ok
+//
+/*
+static void make_large_number_of_tuple_copies(ArrayRCP<int> ptr, int numCopies) {
+  std::vector<Tuple<int> > ptrs(numCopies, ptr);
 }
 
-
-template<class T>
-std::shared_ptr<T>
-Teuchos::get_shared_ptr( const RCP<T> &rcp )
+TEUCHOS_UNIT_TEST( ArrayRCP, mtRefCount )
 {
-  if (nonnull(rcp)) {
-    Ptr<const DeallocStdSharedPtr<T> >
-      dbsp = get_optional_dealloc<DeallocStdSharedPtr<T> >(rcp);
-    if (nonnull(dbsp)) {
-      return dbsp->ptr();
-    }
-    return std::shared_ptr<T>(rcp.get(), StdSharedPtrRCPDeleter<T>(rcp));
+  const int numThreads = 4;
+  const int numCopiesPerThread = 10000;
+  const int arraySize = 10;
+
+  Tuple<int> ptr = arcp<int>(arraySize);
+  std::vector<std::thread> threads;
+  for (int i = 0; i < numThreads; ++i) {
+    threads.push_back(std::thread(make_large_number_of_arrayrcp_copies, ptr, numCopiesPerThread));
   }
-  return std::shared_ptr<T>();
+  for (int i = 0; i < threads.size(); ++i) {
+    threads[i].join();
+  }
+  TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
+*/
 
+} // end namespace
 
-#endif	// TEUCHOS_RCP_STD_SHAREDPTR_CONVERSIONS_HPP
+#endif // end HAVE_TEUCHOSCORE_CXX11
