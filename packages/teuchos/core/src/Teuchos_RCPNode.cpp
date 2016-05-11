@@ -121,6 +121,21 @@ rcp_node_list_t*& rcp_node_list()
 }
 
 
+#ifdef TEUCHOS_DEBUG
+#ifdef HAVE_TEUCHOSCORE_CXX11
+#define USE_MUTEX_TO_PROTECT_NODE_TRACING
+#endif // HAVE_TEUCHOSCORE_CXX11
+#endif // TEUCHOS_DEBUG
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+std::mutex *& rcp_node_list_mutex()
+{
+  static std::mutex * s_rcp_node_list_mutex = 0;
+  // This construct exists for the same reason as above (rcp_node_list) - we must keep this mutex in place until all static RCP objects have deleted for example
+  return s_rcp_node_list_mutex;
+}
+#endif
+
 bool& loc_isTracingActiveRCPNodes()
 {
   static bool s_loc_isTracingActiveRCPNodes =
@@ -402,25 +417,11 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
   }
 }
 
-#ifdef TEUCHOS_DEBUG
-#ifdef HAVE_TEUCHOSCORE_CXX11
-#define USE_MUTEX_TO_PROTECT_NODE_TRACING
-#endif // HAVE_TEUCHOSCORE_CXX11
-#endif // TEUCHOS_DEBUG
-
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-std::mutex & add_remove_rcpNode_mutex()
-{
-  static std::mutex s_add_remove_rcpNode_mutex;
-  return s_add_remove_rcpNode_mutex;
-}
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
-
-
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().lock();
+//  std::cout << "Lock addNewRCPNode" << std::endl;
+	rcp_node_list_mutex()->lock();
   try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
@@ -504,10 +505,12 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   }
   catch(...) {
-	  add_remove_rcpNode_mutex().unlock();
+//	  std::cout << "Catch Unlock addNewRCPNode" << std::endl;
+	  rcp_node_list_mutex()->unlock();
 	  throw;
   }
-  add_remove_rcpNode_mutex().unlock();
+//  std::cout << "Unlock addNewRCPNode" << std::endl;
+  rcp_node_list_mutex()->unlock();
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
 
@@ -531,11 +534,14 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   // loc_isTracingActiveRCPNodes==false, the list *rcp_node_list will be empty and
   // therefore this find(...) operation should be pretty cheap (even for a bad
   // implementation of std::map).
-  TEUCHOS_ASSERT(rcp_node_list());
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  add_remove_rcpNode_mutex().lock();
+//  std::cout << "Lock removeRCPNode" << std::endl;
+  rcp_node_list_mutex()->lock();
   try {
+
+  TEUCHOS_ASSERT(rcp_node_list());
+
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
   typedef rcp_node_list_t::iterator itr_t;
   typedef std::pair<itr_t, itr_t> itr_itr_t;
@@ -579,10 +585,12 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   }
   catch(...)
   {
-    add_remove_rcpNode_mutex().unlock();
+	  rcp_node_list_mutex()->unlock();
+//    std::cout << "Catch Unlock removeRCPNode" << std::endl;
     throw;
   }
-  add_remove_rcpNode_mutex().unlock();
+  rcp_node_list_mutex()->unlock();
+//  std::cout << "Unlock removeRCPNode" << std::endl;
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
 
@@ -598,7 +606,8 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
   RCPNode* rcpNodeReturn = 0;
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-   add_remove_rcpNode_mutex().lock(); // implements thread safety
+//   std::cout << "Lock getExistingRCPNodeGivenLookupKey" << std::endl;
+  rcp_node_list_mutex()->lock(); // implements thread safety
    try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
@@ -614,10 +623,12 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   }
   catch(...) {
-	  add_remove_rcpNode_mutex().unlock();
+	  rcp_node_list_mutex()->unlock();
+//	  std::cout << "Catch Unlock getExistingRCPNodeGivenLookupKey" << std::endl;
 	  throw;
   }
-  add_remove_rcpNode_mutex().unlock();
+  rcp_node_list_mutex()->unlock();
+//  std::cout << "Unlock getExistingRCPNodeGivenLookupKey" << std::endl;
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   return rcpNodeReturn;
@@ -688,8 +699,14 @@ ActiveRCPNodesSetup::ActiveRCPNodesSetup()
 #ifdef TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
   std::cerr << "\nCalled ActiveRCPNodesSetup::ActiveRCPNodesSetup() : count = " << count_ << "\n";
 #endif // TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
-  if (!rcp_node_list())
+  if (!rcp_node_list()) {
     rcp_node_list() = new rcp_node_list_t;
+  }
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  if (!rcp_node_list_mutex()) {
+	  rcp_node_list_mutex() = new std::mutex;
+  }
+#endif
   ++count_;
 }
 
@@ -717,6 +734,11 @@ ActiveRCPNodesSetup::~ActiveRCPNodesSetup()
     }
     delete rcp_node_list();
     rcp_node_list() = 0;
+
+#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
+  delete rcp_node_list_mutex();
+  rcp_node_list_mutex() = 0;
+#endif
   }
 }
 
