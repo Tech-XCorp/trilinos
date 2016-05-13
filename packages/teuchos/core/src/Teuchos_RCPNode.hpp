@@ -42,7 +42,6 @@
 #ifndef TEUCHOS_RCP_NODE_HPP
 #define TEUCHOS_RCP_NODE_HPP
 
-
 /** \file Teuchos_RCPNode.hpp
  *
  * \brief Reference-counted pointer node classes.
@@ -59,6 +58,10 @@
 #include "Teuchos_getBaseObjVoidPtr.hpp"
 
 namespace Teuchos {
+
+#if defined(HAVE_TEUCHOSCORE_CXX11) && !defined(DISABLE_ATOMIC_COUNTERS)
+#define USING_ATOMICS
+#endif
 
 /** \brief Used to specify a pre or post destruction of extra data
  *
@@ -145,22 +148,12 @@ public:
     : extra_data_map_(NULL)
     {
 #ifdef TEUCHOS_DEBUG
-#ifdef HAVE_TEUCHOSCORE_CXX11
-      insertion_number_.store(-1);
-#else
       insertion_number_ = -1;
-#endif
 #endif // TEUCHOS_DEBUG
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
-      has_ownership_.store(has_ownership_in);
-      strong_count_.store(0);
-      weak_count_plus_.store(0);
-#else
       has_ownership_ = has_ownership_in;
       strong_count_ = 0;
-      total_count_ = 0;
-#endif // HAVE_TEUCHOSCORE_CXX11
+      weak_count_plus_ = 0;
     }
   /** \brief . */
   virtual ~RCPNode()
@@ -183,17 +176,34 @@ public:
     {
       return weak_count() + strong_count_;
     }
-#ifdef HAVE_TEUCHOSCORE_CXX11
   /** \brief . */
-  bool attempt_increment_strong_from_this_value(int expected)
-    {
-	  if(expected == 0) {
-	    throw std::logic_error( "attempt_increment_strong_from_non_zero_value cannot be passed a 0 value." ); // need to determine the best way to implement this
+  bool attemptBindStrongFromWeak() {
+#if defined(USING_ATOMICS) && !defined(BREAK_ATOMIC_WEAK_TO_STRONG_CONVERSION)
+	  // this code follows the boost method
+	  int strong_count_non_atomic = strong_count_;
+	  for( ;; ) {
+	    if (strong_count_non_atomic == 0) {
+	      return false;
+	    }
+	    if (std::atomic_compare_exchange_weak(
+	    		&strong_count_,
+				&strong_count_non_atomic,
+				strong_count_non_atomic + 1)) {
+	      return true;
+	    }
 	  }
-	  int replaceValue = expected + 1;
-	  return strong_count_.compare_exchange_strong(expected, replaceValue);
+#else
+	  // the non-thread safe version
+	  // this fails with threads because strong_count_ can become 0 after the check if it is 0
+      if (strong_count_ == 0) {
+    	  return false;
+      }
+      else {
+    	  ++strong_count_;
+    	  return true;
+      }
+#endif
     }
-#endif // HAVE_TEUCHOSCORE_CXX11
   /** \brief . */
   void incr_strong_count()
     {
@@ -209,7 +219,12 @@ public:
   /** \brief . */
   int deincr_strong_count()
     {
+#ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
+	  --strong_count_;
+	  return strong_count_;  // not atomically valid
+#else
       return --strong_count_;
+#endif
     }
   /** \brief . */
   int deincr_weak_count_plus()
@@ -219,11 +234,7 @@ public:
   /** \brief . */
   void has_ownership(bool has_ownership_in)
     {
-#ifdef HAVE_TEUCHOSCORE_CXX11
-      has_ownership_.store(has_ownership_in);
-#else
       has_ownership_ = has_ownership_in;
-#endif // HAVE_TEUCHOSCORE_CXX11
     }
   /** \brief . */
   bool has_ownership() const
@@ -289,7 +300,7 @@ private:
   };
   typedef Teuchos::map<std::string,extra_data_entry_t> extra_data_map_t;
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#ifdef USING_ATOMICS
   std::atomic<int> strong_count_;
   std::atomic<int> weak_count_plus_;
   std::atomic<bool> has_ownership_;
@@ -297,7 +308,7 @@ private:
   int strong_count_;
   int weak_count_plus_;
   bool has_ownership_;
-#endif // HAVE_TEUCHOSCORE_CXX11
+#endif // USING_ATOMICS
 
   extra_data_map_t *extra_data_map_;
   // Above is made a pointer to reduce overhead for the general case when this
@@ -310,21 +321,15 @@ private:
   RCPNode(const RCPNode&);
   RCPNode& operator=(const RCPNode&);
 #ifdef TEUCHOS_DEBUG
-  // int insertion_number_;
-#ifdef HAVE_TEUCHOSCORE_CXX11
-  std::atomic<int> insertion_number_;
-#else
-  int insertion_number_;
-#endif // HAVE_TEUCHOSCORE_CXX11
-
+  int insertion_number_; // removed atomic because this is handled in a mutex
 public:
   void set_insertion_number(int insertion_number_in)
     {
-      insertion_number_.store(insertion_number_in);
+      insertion_number_ = insertion_number_in;
     }
   int insertion_number() const
     {
-      return insertion_number_.load();
+      return insertion_number_;
     }
 #endif // TEUCHOS_DEBUG
 };
@@ -1010,33 +1015,6 @@ private:
   RCPNode *node_;
   ERCPStrength strength_;
 
-  bool attemptBindStrongFromWeak() {
-	int safetyCounter = 0;
-    while(true) {
-      int strongCount = node_->strong_count();
-      if(strongCount == 0) {
-        return false; // we have a definite failure event
-      }
-      // in a multithreaded environment strongCount may change from the above point when we read it to this function where we try an atomic increment
-      // in that case this loop will try again - the expectation is that this loop will succeed in the first try (or two) and the probability it can run more cycles is vanishingly small
-      // the issue here is that atomic compare and exchange works only when you are equal to the compare value - there is no equivalent for not equal
-      // what we want to do is atomically increment strong if and only if strong is not 0 - I do not know a more elegant way to implement this yet
-      // I expect this will not be a performance critical area and in unit testing this loop could be forced up to about 4x maximum
-      // even if it somehow had to run a few hundred times that may not be a concern - I expect this will always work but still seems unsavory
-      if(node_->attempt_increment_strong_from_this_value(strongCount)) {
-    	  return true;
-      }
-
-      // if something goes wrong we can use this safety counter to detect it - I tried 1000 cycles
-      // even in a unit test designed to stress this function, I only got up to 4 loops maximum
-      ++safetyCounter;
-      if (safetyCounter == 1000) {
-    	  throw std::logic_error( "attemptBindStrongFromWeak() cannot converge on failure or success after running for 1000 cycles." );
-      }
-    }
-    return false;
-  }
-
   inline bool bind(ERCPStrength strength_source) // for multithreading, bind() will now return true/false since binding a strong from a weak can potentially fails
     {
 	  // strength_source is a bit awkward and may need to restructure this - the idea is that when we copy from an RCP which is strong we are certain we can safely increment strong
@@ -1047,7 +1025,7 @@ private:
 	  if (node_) {
         if (strength_ == RCP_STRONG) {  // strong means we will attempt to increase strong count but also increment weak if it happens to be the 0 to 1 case
           if (strength_source == RCP_WEAK) {
-            if (!attemptBindStrongFromWeak()) { // this will atomically increment strong count only if it successfully swaps a non-zero value for that value + 1
+            if (!node_->attemptBindStrongFromWeak()) { // this will atomically increment strong count only if it successfully swaps a non-zero value for that value + 1
               node_ = 0;           // we have failed to convert a weak node to a strong node - the node should be set as if it was null constructed
               return false;
             }
@@ -1069,7 +1047,14 @@ private:
 	  if (node_) {
 	    if(strength_ == RCP_STRONG) {
 	    	if (node_->deincr_strong_count() == 0) { // only strong checks for --strong == 0
+
+#ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
+	    	  node_->deincr_weak_count_plus(); // -1 to weak (undoes the boost trick where weak is +1 when strong != 0 - allows a weak node to race and delete simultaneously
+#endif
 	    	  unbindOneStrong();
+#ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
+	    	  node_->incr_weak_count_plus(); // restore the -1 we added to the weak
+#endif
               if( node_->deincr_weak_count_plus() == 0) {	// but if hits 0 it also decrements weak_count_plus which is weak + (strong != 0)
         	    unbindOneTotal();
               }

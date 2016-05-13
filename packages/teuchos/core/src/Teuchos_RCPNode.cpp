@@ -120,12 +120,9 @@ rcp_node_list_t*& rcp_node_list()
   return s_rcp_node_list;
 }
 
-
-#ifdef TEUCHOS_DEBUG
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#if defined(TEUCHOS_DEBUG) && defined(HAVE_TEUCHOSCORE_CXX11)
 #define USE_MUTEX_TO_PROTECT_NODE_TRACING
-#endif // HAVE_TEUCHOSCORE_CXX11
-#endif // TEUCHOS_DEBUG
+#endif
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
 std::mutex *& rcp_node_list_mutex()
@@ -326,7 +323,7 @@ int RCPNodeTracer::numActiveRCPNodes()
 {
   // This list always exists, no matter debug or not so just access it.
   TEUCHOS_TEST_FOR_EXCEPT(0==rcp_node_list());
-  return rcp_node_list()->size(); // note this is a multimap and should be fine for thread safety
+  return rcp_node_list()->size(); // note this is a multimap and this size call should be fine for thread safety
   return 0;
 }
 
@@ -420,7 +417,6 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-//  std::cout << "Lock addNewRCPNode" << std::endl;
 	rcp_node_list_mutex()->lock();
   try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
@@ -501,15 +497,12 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     loc_rcpNodeStatistics().maxNumRCPNodes =
       TEUCHOS_MAX(loc_rcpNodeStatistics().maxNumRCPNodes, numActiveRCPNodes());
   }
-
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   }
   catch(...) {
-//	  std::cout << "Catch Unlock addNewRCPNode" << std::endl;
 	  rcp_node_list_mutex()->unlock();
 	  throw;
   }
-//  std::cout << "Unlock addNewRCPNode" << std::endl;
   rcp_node_list_mutex()->unlock();
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
@@ -536,7 +529,6 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   // implementation of std::map).
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-//  std::cout << "Lock removeRCPNode" << std::endl;
   rcp_node_list_mutex()->lock();
   try {
 
@@ -585,15 +577,12 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   }
   catch(...)
   {
-	  rcp_node_list_mutex()->unlock();
-//    std::cout << "Catch Unlock removeRCPNode" << std::endl;
+    rcp_node_list_mutex()->unlock();
     throw;
   }
   rcp_node_list_mutex()->unlock();
-//  std::cout << "Unlock removeRCPNode" << std::endl;
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
-
 
 RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
 {
@@ -606,9 +595,8 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
   RCPNode* rcpNodeReturn = 0;
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-//   std::cout << "Lock getExistingRCPNodeGivenLookupKey" << std::endl;
   rcp_node_list_mutex()->lock(); // implements thread safety
-   try {
+  try {
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   const itr_itr_t itr_itr = rcp_node_list()->equal_range(p);
@@ -619,21 +607,16 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
       break;
     }
   }
-
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   }
   catch(...) {
 	  rcp_node_list_mutex()->unlock();
-//	  std::cout << "Catch Unlock getExistingRCPNodeGivenLookupKey" << std::endl;
 	  throw;
   }
   rcp_node_list_mutex()->unlock();
-//  std::cout << "Unlock getExistingRCPNodeGivenLookupKey" << std::endl;
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   return rcpNodeReturn;
-  // NOTE: Above, we return the first RCPNode added that has the given key
-  // value.
 }
 
 
