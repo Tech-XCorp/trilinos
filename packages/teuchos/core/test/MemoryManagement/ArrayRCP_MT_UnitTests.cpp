@@ -41,8 +41,12 @@
 // @HEADER
 */
 
+//#define RUN_ARRAY_RCP_UNIT_TESTS - temporary - disable these tests
+
+#include "TeuchosCore_ConfigDefs.hpp"
 #include "General_MT_UnitTests.hpp"
 
+#ifdef RUN_ARRAY_RCP_UNIT_TESTS
 #ifdef HAVE_TEUCHOSCORE_CXX11
 
 #include "Teuchos_ArrayRCP.hpp"
@@ -50,9 +54,6 @@
 #include "Teuchos_UnitTestHarness.hpp"
 #include <vector>
 #include <thread>
-
-#define KNOCK_OUT_ALL_CODE
-#ifndef KNOCK_OUT_ALL_CODE
 
 namespace {
 
@@ -113,13 +114,15 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtCreatedIndependentArrayRCP )
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
 }
 
+static std::atomic<bool> s_bAllowThreadsToRun;				// this static is used to spin lock all the threads - after we allocate we set this true and all threads can complete
+
 //
 // Unit Test 3: mtResize
 // the resize operation will implement a copy if the size changes
 // during the thread operation we also set this to null
 // this test verifies that resize operations won't mess up threads - but it's not expected they would because it can only copy the root but not change it
 static void iterate_on_arrayrcp(ArrayRCP<CatchMemoryLeak> ptr) {
-    while(!MT_Thread_SpinLock::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+    while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
 	ptr.resize(ptr.size());
 	ptr.resize(ptr.size()+1);
 	ptr.resize(ptr.size());
@@ -136,12 +139,12 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtResize )
       CatchMemoryLeak::s_countAllocated = 0;
       ArrayRCP<CatchMemoryLeak> ptr = arcp<CatchMemoryLeak>(100);
       std::vector<std::thread> threads;
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = false;
+      s_bAllowThreadsToRun = false;
       for (int i = 0; i < numThreads; ++i) {
         threads.push_back(std::thread(iterate_on_arrayrcp, ptr));
       }
       ptr = null; // add additional stress to the test
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = true; // release the threads
+      s_bAllowThreadsToRun = true; // release the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();
       }
@@ -162,7 +165,7 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtResize )
 // at the end of each loop we manually delete the memory leak so the test completes with count back to 0
 //
 static void call_release_on_arrayRCP(ArrayRCP<CatchMemoryLeak> ptr) {
-    while(!MT_Thread_SpinLock::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+    while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
 	ptr.release();
 }
 
@@ -177,12 +180,12 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtRelease )
       CatchMemoryLeak * pArrayWithMemoryLeak = new CatchMemoryLeak[arrayRCPSizeValue];
       ArrayRCP<CatchMemoryLeak> ptr = arcp<CatchMemoryLeak>(pArrayWithMemoryLeak, 0, arrayRCPSizeValue);
       std::vector<std::thread> threads;
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = false;
+      s_bAllowThreadsToRun = false;
       for (int i = 0; i < numThreads; ++i) {
         threads.push_back(std::thread(call_release_on_arrayRCP, ptr));
       }
       ptr = null; // add additional stress to the test
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = true;
+      s_bAllowThreadsToRun = true;
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();
       }
@@ -228,7 +231,7 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtUseIterator )
 // Test the assing function from multiple threads
 //
 static void assign_on_arrayrcp(ArrayRCP<CatchMemoryLeak> ptr) {
-    while(!MT_Thread_SpinLock::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+    while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
 	ptr.assign( ptr.size(), CatchMemoryLeak());
 	ptr.assign( ptr.size() + 10, CatchMemoryLeak());
 	ptr.assign( ptr.size() - 5, CatchMemoryLeak());
@@ -245,12 +248,12 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtAssign )
       CatchMemoryLeak::s_countAllocated = 0;
       ArrayRCP<CatchMemoryLeak> ptr = arcp<CatchMemoryLeak>(100);
       std::vector<std::thread> threads;
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = false;
+      s_bAllowThreadsToRun = false;
       for (int i = 0; i < numThreads; ++i) {
         threads.push_back(std::thread(assign_on_arrayrcp, ptr));
       }
       ptr = null; // add additional stress to the test
-      MT_Thread_SpinLock::s_bAllowThreadsToRun = true; // release the threads
+      s_bAllowThreadsToRun = true; // release the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();
       }
@@ -267,7 +270,6 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtAssign )
 
 } // end namespace
 
-#endif // end #ifndef KNOCK_OUT_ALL_CODE
-
 #endif // end HAVE_TEUCHOSCORE_CXX11
+#endif
 

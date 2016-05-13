@@ -41,6 +41,7 @@
 // @HEADER
 */
 
+#include "TeuchosCore_ConfigDefs.hpp"
 #include "General_MT_UnitTests.hpp"
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
@@ -57,33 +58,6 @@ using Teuchos::null;
 using Teuchos::ArrayView;
 using Teuchos::arcp;
 
-//
-// Unit Test 1:
-// Test reference counting thread safety
-// This is also based on RCPNodeHandle so it's not surprising that it's ok
-//
-/*
-static void make_large_number_of_tuple_copies(ArrayRCP<int> ptr, int numCopies) {
-  std::vector<Tuple<int> > ptrs(numCopies, ptr);
-}
-
-TEUCHOS_UNIT_TEST( ArrayRCP, mtRefCount )
-{
-  const int numThreads = 4;
-  const int numCopiesPerThread = 10000;
-  const int arraySize = 10;
-
-  Tuple<int> ptr = arcp<int>(arraySize);
-  std::vector<std::thread> threads;
-  for (int i = 0; i < numThreads; ++i) {
-    threads.push_back(std::thread(make_large_number_of_arrayrcp_copies, ptr, numCopiesPerThread));
-  }
-  for (int i = 0; i < threads.size(); ++i) {
-    threads[i].join();
-  }
-  TEST_EQUALITY_CONST(ptr.total_count(), 1);
-}
-*/
 
 } // end namespace
 
