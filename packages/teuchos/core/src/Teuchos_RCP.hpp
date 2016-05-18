@@ -478,7 +478,9 @@ template<class T>
 inline
 RCP<T> RCP<T>::create_weak() const
 {
-//  debug_assert_valid_ptr();   - Temp - removed this because the underlying ptr can be null if all strong has gone to 0 - but we want the test to be based on the atomic counters only
+  if( strength() == RCP_STRONG) { // temporary - I'm going to make a new WeakRCP class which should not check ptr or assert on it at any time - this allows me to prototype the weak to strong
+    debug_assert_valid_ptr();
+  }
   return RCP<T>(ptr_, node_.create_weak());
 }
 
@@ -487,7 +489,9 @@ template<class T>
 inline
 RCP<T> RCP<T>::create_strong() const
 {
-//  debug_assert_valid_ptr();   - Temp - removed this because the underlying ptr can be null if all strong has gone to 0 - but we want the test to be based on the atomic counters only
+  if( strength() == RCP_STRONG) { // temporary - I'm going to make a new WeakRCP class which should not check ptr or assert on it at any time - this allows me to prototype the weak to strong
+    debug_assert_valid_ptr();
+  }
   return RCP<T>(ptr_, node_.create_strong());
 }
 
