@@ -417,8 +417,7 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-	rcp_node_list_mutex()->lock();
-  try {
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   // Used to allow unique identification of rcp_node to allow setting breakpoints
@@ -497,14 +496,6 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     loc_rcpNodeStatistics().maxNumRCPNodes =
       TEUCHOS_MAX(loc_rcpNodeStatistics().maxNumRCPNodes, numActiveRCPNodes());
   }
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  }
-  catch(...) {
-	  rcp_node_list_mutex()->unlock();
-	  throw;
-  }
-  rcp_node_list_mutex()->unlock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
 
 
@@ -529,12 +520,11 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
   // implementation of std::map).
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  rcp_node_list_mutex()->lock();
-  try {
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
+#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   TEUCHOS_ASSERT(rcp_node_list());
 
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
   typedef rcp_node_list_t::iterator itr_t;
   typedef std::pair<itr_t, itr_t> itr_itr_t;
 
@@ -573,15 +563,6 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
     // Whoops! Did not find the node!
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  }
-  catch(...)
-  {
-    rcp_node_list_mutex()->unlock();
-    throw;
-  }
-  rcp_node_list_mutex()->unlock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 }
 
 RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
@@ -595,8 +576,7 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
   RCPNode* rcpNodeReturn = 0;
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  rcp_node_list_mutex()->lock(); // implements thread safety
-  try {
+  std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
 #endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   const itr_itr_t itr_itr = rcp_node_list()->equal_range(p);
@@ -607,14 +587,6 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
       break;
     }
   }
-#ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
-  }
-  catch(...) {
-	  rcp_node_list_mutex()->unlock();
-	  throw;
-  }
-  rcp_node_list_mutex()->unlock();
-#endif // USE_MUTEX_TO_PROTECT_NODE_TRACING
 
   return rcpNodeReturn;
 }

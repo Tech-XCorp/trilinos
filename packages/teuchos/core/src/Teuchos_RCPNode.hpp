@@ -321,7 +321,7 @@ private:
   RCPNode(const RCPNode&);
   RCPNode& operator=(const RCPNode&);
 #ifdef TEUCHOS_DEBUG
-  int insertion_number_; // removed atomic because this is handled in a mutex
+  int insertion_number_; // removed atomic because this is handled in a mutex lock now - so the atomic would be redundant
 public:
   void set_insertion_number(int insertion_number_in)
     {
