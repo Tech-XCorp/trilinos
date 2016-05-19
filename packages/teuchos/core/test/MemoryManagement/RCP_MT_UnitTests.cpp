@@ -62,7 +62,7 @@
 namespace {
 using Teuchos::null;
 using Teuchos::RCP;
-using Teuchos::WeakRCP;
+//using Teuchos::WeakRCP;
 using Teuchos::rcp;
 
 //
@@ -89,6 +89,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
   TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
 
+#ifdef XXX
 //
 // Unit Test 2: mtCreateIndependentRCP
 // Test debug node tracing thread safety
@@ -513,6 +514,8 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
   TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
   TEST_EQUALITY(CatchMemoryLeak::s_countAllocated, 0); 			// should be 0
 }
+
+#endif
 
 } // namespace
 

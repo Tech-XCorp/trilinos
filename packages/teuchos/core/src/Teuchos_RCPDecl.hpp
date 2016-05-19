@@ -745,7 +745,7 @@ public:
    * <li> <tt>returnVal.has_ownership() == this->has_ownership()</tt>
    * </ul>
    */
-  inline WeakRCP<T> create_weak() const;
+  inline RCP<T> create_weak() const;
 
   /** \brief Create a new strong RCP object from another (weak) RCP object.
    *
@@ -774,8 +774,8 @@ public:
    */
   template<class T2>
   inline bool shares_resource(const RCP<T2>& r_ptr) const;
-  template<class T2>
-  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
+//  template<class T2>
+//  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
 
   //@}
 

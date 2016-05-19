@@ -46,7 +46,7 @@
 
 #include "Teuchos_PtrDecl.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_WeakRCP.hpp"
+//#include "Teuchos_WeakRCP.hpp"
 
 
 namespace Teuchos {
@@ -177,7 +177,7 @@ void Ptr<T>::debug_assert_valid_ptr() const
 
 template<class T> inline
 Ptr<T>::Ptr( const RCP<T> &p )
-  : ptr_(p.getRawPtr()), weak_rcp_(p.create_weak()) // now that we have WeakRCP this constructor forces a strong RCP input and weak RCP storage
+  : ptr_(p.getRawPtr())// ,  weak_rcp_(p.create_weak()) // now that we have WeakRCP this constructor forces a strong RCP input and weak RCP storage
 {}
 
 
