@@ -56,6 +56,7 @@
 */
 
 #include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_WeakRCPDecl.hpp"
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
@@ -164,7 +165,7 @@ RCP<T>::RCP( T* p, ERCPWeakNoDealloc )
     RCPNode* existing_RCPNode = RCPNodeTracer::getExistingRCPNode(p);
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false);  // the source is strong because guaranteed to exist
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
     }
     else {
       // Will call add_new_RCPNode(...)
@@ -203,7 +204,7 @@ RCP<T>::RCP( T* p, bool has_ownership_in )
     }
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false);  // the source is strong because guaranteed to exist
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
     }
     else {
       // Will call add_new_RCPNode(...)
@@ -380,7 +381,7 @@ inline
 Ptr<T> RCP<T>::ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-  return Ptr<T>(this->create_weak());
+  return Ptr<T>(this->create_strong()); // Ptr will enforce the conversion to weak for storage
 #else
   return Ptr<T>(getRawPtr());
 #endif
@@ -476,12 +477,10 @@ Ptr<T> RCP<T>::release()
 
 template<class T>
 inline
-RCP<T> RCP<T>::create_weak() const
+WeakRCP<T> RCP<T>::create_weak() const
 {
-  if( strength() == RCP_STRONG) { // temporary - I'm going to make a new WeakRCP class which should not check ptr or assert on it at any time - this allows me to prototype the weak to strong
-    debug_assert_valid_ptr();
-  }
-  return RCP<T>(ptr_, node_.create_weak());
+  debug_assert_valid_ptr();
+  return WeakRCP<T>(ptr_, node_.create_weak());
 }
 
 
@@ -489,9 +488,7 @@ template<class T>
 inline
 RCP<T> RCP<T>::create_strong() const
 {
-  if( strength() == RCP_STRONG) { // temporary - I'm going to make a new WeakRCP class which should not check ptr or assert on it at any time - this allows me to prototype the weak to strong
-    debug_assert_valid_ptr();
-  }
+  debug_assert_valid_ptr();
   return RCP<T>(ptr_, node_.create_strong());
 }
 

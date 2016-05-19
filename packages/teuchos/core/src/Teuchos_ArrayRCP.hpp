@@ -164,7 +164,7 @@ ArrayRCP<T>::ArrayRCP(
     }
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false); // source is strong because we are constructing from a ptr
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
     }
     else {
       // Will call add_new_RCPNode(...)
@@ -201,7 +201,7 @@ ArrayRCP (const T* p, size_type lowerOffset_in, size_type size_in,
     }
     if (existing_RCPNode) {
       // Will not call add_new_RCPNode(...)
-      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, RCP_STRONG, false); // source is strong because we are constructing from a ptr
+      node_ = RCPNodeHandle(existing_RCPNode, RCP_WEAK, false);
     }
     else {
       // Will call add_new_RCPNode(...)

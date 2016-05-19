@@ -47,34 +47,19 @@
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
 
-
+#include "Teuchos_RCPSharedDecl.hpp"
 #include "Teuchos_RCPNode.hpp"
 #include "Teuchos_ENull.hpp"
 #include "Teuchos_NullIteratorTraits.hpp"
-
-
-#ifdef REFCOUNTPTR_INLINE_FUNCS
-#  define REFCOUNTPTR_INLINE inline
-#else
-#  define REFCOUNTPTR_INLINE
-#endif
-
-
-#ifdef TEUCHOS_DEBUG
-#  define TEUCHOS_REFCOUNTPTR_ASSERT_NONNULL
-#endif
-
+#include "Teuchos_WeakRCPDecl.hpp"
 
 namespace Teuchos {
 
-
 /** \brief . */
 template<class T> class Ptr;
+template<class T> class WeakPtr;
 
 
-enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
 
 
 /** \brief Smart reference counting pointer class for automatic garbage
@@ -760,7 +745,7 @@ public:
    * <li> <tt>returnVal.has_ownership() == this->has_ownership()</tt>
    * </ul>
    */
-  inline RCP<T> create_weak() const;
+  inline WeakRCP<T> create_weak() const;
 
   /** \brief Create a new strong RCP object from another (weak) RCP object.
    *
@@ -908,8 +893,8 @@ public: // Bad bad bad
   // WARNING: A general user should *never* call these functions!
   inline RCP(T* p, const RCPNodeHandle &node);
   inline T* access_private_ptr() const; // Does not throw
-  inline RCPNodeHandle& nonconst_access_private_node(); // Does not thorw
-  inline const RCPNodeHandle& access_private_node() const; // Does not thorw
+  inline RCPNodeHandle& nonconst_access_private_node(); // Does not throw
+  inline const RCPNodeHandle& access_private_node() const; // Does not throw
 
 #endif
 
