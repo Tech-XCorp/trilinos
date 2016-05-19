@@ -774,6 +774,8 @@ public:
    */
   template<class T2>
   inline bool shares_resource(const RCP<T2>& r_ptr) const;
+  template<class T2>
+  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
 
   //@}
 
