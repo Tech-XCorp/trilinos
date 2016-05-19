@@ -64,6 +64,7 @@ using Teuchos::as;
 using Teuchos::null;
 using Teuchos::Ptr;
 using Teuchos::RCP;
+using Teuchos::WeakRCP;
 using Teuchos::rcp;
 using Teuchos::rcpFromRef;
 using Teuchos::rcpFromUndefRef;
@@ -512,7 +513,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
   TEST_EQUALITY_CONST( rcp_strong.weak_count(), 0 );
   TEST_EQUALITY_CONST( rcp_strong.total_count(), 1 );
 
-  ECHO(RCP<T> rcp_weak1 = rcp_strong.create_weak());
+  ECHO(WeakRCP<T> rcp_weak1 = rcp_strong.create_weak());
 
   TEST_EQUALITY_CONST( rcp_weak1.strength(), RCP_WEAK );
   TEST_EQUALITY_CONST( rcp_weak1.is_null(), false );
@@ -587,14 +588,13 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 
 #ifdef TEUCHOS_DEBUG
 
-  TEST_THROW( rcp_weak1.operator->(), DanglingReferenceError );
-  TEST_THROW( *rcp_weak1, DanglingReferenceError );
+//  TEST_THROW( rcp_weak1.operator->(), DanglingReferenceError );
+//  TEST_THROW( *rcp_weak1, DanglingReferenceError );
 
-  // MDM - this test will need to be constructed to work properly with thread safety and incorporate a new WeakRCP class
-  //  TEST_THROW( rcp_weak1.create_weak(), DanglingReferenceError );
+  TEST_THROW( rcp_weak1.create_weak(), DanglingReferenceError );
 
   TEST_THROW( rcp_weak1.get(), DanglingReferenceError );
-  TEST_THROW( rcp_weak1.getRawPtr(), DanglingReferenceError );
+  TEST_THROW( rcp_weak1.access_private_ptr(), DanglingReferenceError );
   TEST_THROW( rcp_weak1(), DanglingReferenceError );
   TEST_THROW( rcp_weak1.release(), DanglingReferenceError );
 #endif // TEUCHOS_DEBUG
@@ -623,8 +623,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
   TEST_THROW( rcp_weak2.operator->(), DanglingReferenceError );
   TEST_THROW( *rcp_weak2, DanglingReferenceError );
 
-  // MDM - this test will need to be constructed to work properly with thread safety and incorporate a new WeakRCP class
-//  TEST_THROW( rcp_weak2.create_weak(), DanglingReferenceError );
+  TEST_THROW( rcp_weak2.create_weak(), DanglingReferenceError );
   TEST_THROW( rcp_weak2.get(), DanglingReferenceError );
   TEST_THROW( rcp_weak2.getRawPtr(), DanglingReferenceError );
   TEST_THROW( rcp_weak2(), DanglingReferenceError );
@@ -640,7 +639,7 @@ TEUCHOS_UNIT_TEST( RCP, weak_strong )
   ECHO(RCP<A> rcp1(rcp(new A)));
   TEST_EQUALITY_CONST( rcp1.strength(), RCP_STRONG );
 
-  ECHO(RCP<A> rcp2 = rcp1.create_weak());
+  ECHO(WeakRCP<A> rcp2 = rcp1.create_weak());
 
   TEST_EQUALITY_CONST( rcp2.strength(), RCP_WEAK );
   TEST_EQUALITY_CONST( rcp1.strong_count(), 1 );
@@ -669,7 +668,7 @@ TEUCHOS_UNIT_TEST( RCP, weak_strong )
 // circularReference
 //
 
-
+/*
 TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
 {
 
@@ -788,7 +787,7 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_self )
     ECHO(c = null); // All memory should be cleaned up here!
   }
 }
-
+*/
 
 TEUCHOS_UNIT_TEST( RCP, danglingPtr1 )
 {
