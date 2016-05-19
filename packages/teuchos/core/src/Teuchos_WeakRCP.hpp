@@ -42,6 +42,7 @@
 #ifndef TEUCHOS_WEAKRCP_HPP
 #define TEUCHOS_WEAKRCP_HPP
 
+#ifdef XXXX
 
 /*! \file Teuchos_RCP.hpp
     \brief Reference-counted pointer class and non-member templated function implementations.
@@ -476,5 +477,6 @@ std::ostream& Teuchos::operator<<( std::ostream& out, const WeakRCP<T>& p )
   return out;
 }
 
+#endif
 
 #endif // TEUCHOS_WEAKRCP_HPP

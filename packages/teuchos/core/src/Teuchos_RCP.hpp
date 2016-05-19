@@ -477,10 +477,10 @@ Ptr<T> RCP<T>::release()
 
 template<class T>
 inline
-WeakRCP<T> RCP<T>::create_weak() const
+RCP<T> RCP<T>::create_weak() const
 {
   debug_assert_valid_ptr();
-  return WeakRCP<T>(ptr_, node_.create_weak());
+  return RCP<T>(ptr_, node_.create_weak());
 }
 
 
@@ -504,6 +504,7 @@ bool RCP<T>::shares_resource(const RCP<T2>& r_ptr) const
   // C++ protected/private protection mechanism!
 }
 
+/*
 template<class T>
 template <class T2>
 inline
@@ -514,6 +515,7 @@ bool RCP<T>::shares_resource(const WeakRCP<T2>& r_ptr) const
   // access its node_ member directly!  This is an interesting detail to the
   // C++ protected/private protection mechanism!
 }
+*/
 
 
 // Assertions
