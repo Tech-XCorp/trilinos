@@ -47,17 +47,32 @@
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
 
-#include "Teuchos_RCPSharedDecl.hpp"
 #include "Teuchos_RCPNode.hpp"
 #include "Teuchos_ENull.hpp"
 #include "Teuchos_NullIteratorTraits.hpp"
 #include "Teuchos_WeakRCPDecl.hpp"
 
+#ifdef REFCOUNTPTR_INLINE_FUNCS
+#  define REFCOUNTPTR_INLINE inline
+#else
+#  define REFCOUNTPTR_INLINE
+#endif
+
+
+#ifdef TEUCHOS_DEBUG
+#  define TEUCHOS_REFCOUNTPTR_ASSERT_NONNULL
+#endif
+
 namespace Teuchos {
+
+enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
+
 
 /** \brief . */
 template<class T> class Ptr;
-template<class T> class WeakPtr;
+// template<class T> class WeakPtr;
 
 
 
