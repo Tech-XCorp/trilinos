@@ -166,8 +166,8 @@ void Ptr<T>::debug_assert_valid_ptr() const
 {
 #ifdef TEUCHOS_DEBUG
 	// Need to check on this
-	RCP<T> strongPtr = weak_rcp_.create_strong();
-	strongPtr.access_private_node().assert_valid_ptr(*this);
+	// RCP<T> strongPtr = weak_rcp_.create_strong();
+	weak_rcp_.access_private_node().assert_valid_ptr(*this);
 #endif
 }
 
