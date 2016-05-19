@@ -59,7 +59,6 @@
 
 namespace {
 
-
 using Teuchos::as;
 using Teuchos::null;
 using Teuchos::Ptr;
@@ -82,7 +81,6 @@ using Teuchos::DuplicateOwningRCPError;
 using Teuchos::RCP_STRONG;
 using Teuchos::RCP_WEAK;
 using Teuchos::RCPNodeTracer;
-
 
 TEUCHOS_UNIT_TEST( DeallocNull, free )
 {
@@ -528,11 +526,12 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 
   TEST_EQUALITY_CONST( rcp_weak1.shares_resource(rcp_strong), true );
 
-  TEST_EQUALITY( rcp_weak1.get(), rcp_weak1.getRawPtr() );
-  TEST_EQUALITY( rcp_weak1.get(), rcp_strong.get() );
-  TEST_EQUALITY( rcp_weak1.getRawPtr(), rcp_strong.getRawPtr() );
+  // MDM - removed in new WeakRCP class
+  // TEST_EQUALITY( rcp_weak1.get(), rcp_weak1.getRawPtr() );
+  // TEST_EQUALITY( rcp_weak1.get(), rcp_strong.get() );
+  // TEST_EQUALITY( rcp_weak1.getRawPtr(), rcp_strong.getRawPtr() );
 
-  ECHO(RCP<T> rcp_weak2 = rcp_weak1);
+  ECHO(WeakRCP<T> rcp_weak2 = rcp_weak1);
 
   TEST_EQUALITY_CONST( rcp_weak2.strength(), RCP_WEAK );
   TEST_EQUALITY_CONST( rcp_weak2.is_null(), false );
@@ -549,8 +548,10 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
   TEST_EQUALITY_CONST( rcp_weak1.shares_resource(rcp_weak2), true );
   TEST_EQUALITY_CONST( rcp_weak2.shares_resource(rcp_strong), true );
 
-  TEST_EQUALITY( rcp_weak2.get(), rcp_strong.get() );
-  TEST_EQUALITY( rcp_weak2.getRawPtr(), rcp_strong.getRawPtr() );
+//  TEST_EQUALITY( rcp_weak2.get(), rcp_strong.get() );
+
+  // MDM - removed in new WeakRCP class
+  // TEST_EQUALITY( rcp_weak2.getRawPtr(), rcp_strong.getRawPtr() );
 
   ECHO(rcp_strong = null); // This deletes the underlying object of type T!
 
@@ -588,15 +589,17 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 
 #ifdef TEUCHOS_DEBUG
 
+// MDM - removed in new WeakRCP class
 //  TEST_THROW( rcp_weak1.operator->(), DanglingReferenceError );
 //  TEST_THROW( *rcp_weak1, DanglingReferenceError );
 
   TEST_THROW( rcp_weak1.create_weak(), DanglingReferenceError );
 
-  TEST_THROW( rcp_weak1.get(), DanglingReferenceError );
+// MDM - removed in new WeakRCP class
+//  TEST_THROW( rcp_weak1.get(), DanglingReferenceError );
   TEST_THROW( rcp_weak1.access_private_ptr(), DanglingReferenceError );
-  TEST_THROW( rcp_weak1(), DanglingReferenceError );
-  TEST_THROW( rcp_weak1.release(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak1(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak1.release(), DanglingReferenceError );
 #endif // TEUCHOS_DEBUG
 
   ECHO(rcp_weak1 = null); // Just deicrements weak count!
@@ -620,14 +623,14 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 
   TEST_THROW( rcp_weak2.assert_valid_ptr(), DanglingReferenceError );
 #ifdef TEUCHOS_DEBUG
-  TEST_THROW( rcp_weak2.operator->(), DanglingReferenceError );
-  TEST_THROW( *rcp_weak2, DanglingReferenceError );
+//  TEST_THROW( rcp_weak2.operator->(), DanglingReferenceError );
+//  TEST_THROW( *rcp_weak2, DanglingReferenceError );
 
   TEST_THROW( rcp_weak2.create_weak(), DanglingReferenceError );
-  TEST_THROW( rcp_weak2.get(), DanglingReferenceError );
-  TEST_THROW( rcp_weak2.getRawPtr(), DanglingReferenceError );
-  TEST_THROW( rcp_weak2(), DanglingReferenceError );
-  TEST_THROW( rcp_weak2.release(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak2.get(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak2.getRawPtr(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak2(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak2.release(), DanglingReferenceError );
 #endif // TEUCHOS_DEBUG
 
 }
@@ -1138,5 +1141,6 @@ UNIT_TEST_GROUP(C)
 UNIT_TEST_GROUP(D)
 UNIT_TEST_GROUP(E)
 
-
 } // namespace
+
+

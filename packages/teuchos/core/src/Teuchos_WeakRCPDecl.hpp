@@ -289,39 +289,6 @@ public:
    */
   inline bool has_ownership() const;
 
-  /** \brief Release the ownership of the underlying dynamically allocated
-   * object.
-   *
-   * <b>WARNING!</b> Never call <tt>delete rcp.release().get()</tt> as this
-   * can cause all kinds of segfaults.  Instead, release your use of the
-   * shared object by simply assigning the <tt>RCP</tt> object to
-   * <tt>Teuchos::null</tt>.
-   *
-   * This function should only be used as last result when all hell has broken
-   * loose and memory management control has broken down.  This function is
-   * not to be used lightly!
-   *
-   * After this function is called then the client is responsible for
-   * deallocating the shared object no matter how many
-   * <tt>ref_count_prt<T></tt> objects have a reference to it.  If
-   * <tt>this-></tt>get()<tt>== NULL</tt>, then this call is meaningless.
-   *
-   * Note that this function does not have the exact same semantics as does
-   * <tt>auto_ptr<T>::release()</tt>.  In <tt>auto_ptr<T>::release()</tt>,
-   * <tt>this</tt> is set to <tt>NULL</tt> while here in RCP<T>::
-   * release() only an ownership flag is set and <tt>*this</tt> still points
-   * to the same object.  It would be difficult to duplicate the behavior of
-   * <tt>auto_ptr<T>::release()</tt> for this class.
-   *
-   * <b>Postconditions:</b>
-   * <ul>
-   * <li> <tt>this->has_ownership() == false</tt>
-   * </ul>
-   *
-   * @return Returns the value of <tt>this->get()</tt>
-   */
-  inline Ptr<T> release();
-
   /** \brief Create a new weak RCP object from another (strong) RCP object.
    *
    * ToDo: Explain this!
@@ -367,6 +334,8 @@ public:
    */
   template<class T2>
   inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
+  template<class T2>
+  inline bool shares_resource(const RCP<T2>& r_ptr) const;
 
   //@}
 

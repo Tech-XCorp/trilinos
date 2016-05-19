@@ -345,6 +345,17 @@ bool WeakRCP<T>::shares_resource(const WeakRCP<T2>& r_ptr) const
   // C++ protected/private protection mechanism!
 }
 
+template<class T>
+template <class T2>
+inline
+bool WeakRCP<T>::shares_resource(const RCP<T2>& r_ptr) const
+{
+  return node_.same_node(r_ptr.access_private_node());
+  // Note: above, r_ptr is *not* the same class type as *this so we can not
+  // access its node_ member directly!  This is an interesting detail to the
+  // C++ protected/private protection mechanism!
+}
+
 
 // Assertions
 
