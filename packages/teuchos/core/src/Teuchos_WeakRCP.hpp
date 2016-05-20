@@ -42,8 +42,6 @@
 #ifndef TEUCHOS_WEAKRCP_HPP
 #define TEUCHOS_WEAKRCP_HPP
 
-#ifdef XXXX
-
 /*! \file Teuchos_RCP.hpp
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
@@ -312,7 +310,7 @@ template<class T>
 inline
 WeakRCP<T> WeakRCP<T>::create_weak() const
 {
-  debug_assert_valid_ptr();
+//  debug_assert_valid_ptr();
   return WeakRCP<T>(ptr_, node_.create_weak());
 }
 
@@ -321,19 +319,10 @@ template<class T>
 inline
 RCP<T> WeakRCP<T>::create_strong() const
 {
-//  debug_assert_valid_ptr();
-  if (is_null()) {
-    return RCP<T>(null); // return a null RCP - we are no good
-  }
-
-  // try the weak to strong conversion - thread safe and not guaranteed to succeed
-  RCPNodeHandle strongHandle = node_.attempt_create_strong_from_possible_weak_only();
-  if (strongHandle.strong_count() == 0) {
-    return RCP<T>(null); // return a null RCP - we failed
-  }
-  return RCP<T>(ptr_, strongHandle);
+//  debug_assert_valid_ptr(); // the ptr may no longer be valid - but will still be set...
+  RCPNodeHandle attemptStrong = node_.create_strong_lock();
+  return RCP<T>( attemptStrong.is_node_null() ? 0 : ptr_, attemptStrong);
 }
-
 
 template<class T>
 template <class T2>
@@ -476,7 +465,5 @@ std::ostream& Teuchos::operator<<( std::ostream& out, const WeakRCP<T>& p )
     <<"}";
   return out;
 }
-
-#endif
 
 #endif // TEUCHOS_WEAKRCP_HPP

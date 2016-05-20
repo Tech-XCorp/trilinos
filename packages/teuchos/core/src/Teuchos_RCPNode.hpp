@@ -183,7 +183,7 @@ public:
       return weak_count() + strong_count_;
     }
   /** \brief . */
-  bool attemptConvertWeakToStrong() {
+  bool attemptIncrementStrongCountFromNonZeroValue() {
 #if defined(USING_ATOMICS) && !defined(BREAK_ATOMIC_WEAK_TO_STRONG_CONVERSION)
 	  // this code follows the boost method
 	  int strong_count_non_atomic = strong_count_;
@@ -799,6 +799,8 @@ public:
   {
     TEUCHOS_ASSERT(node_);
 
+    bind();
+
     // we check node_ because bind() can fail for weak->strong conversion in which case we don't call this
     if (node_ && RCPNodeTracer::isTracingActiveRCPNodes()) {
       std::ostringstream os;
@@ -847,16 +849,22 @@ public:
     unbind();
   }
 
-  RCPNodeHandle attempt_create_strong_from_possible_weak_only() const
+  bool attemptConvertWeakToStrong() {
+	 if (node_->attemptIncrementStrongCountFromNonZeroValue()) {
+	   node_->deincr_weak_count_plus(); // because we converted strong + 1 we account for this by doing weak - 1
+	   strength_ = RCP_STRONG; // we have successfully incremented the strong count by one - to a strong ptr
+	   return true;
+	 }
+	 return false;
+  }
+
+  RCPNodeHandle create_strong_lock() const
     {
-	  // this is the expensive atomic safe conversion which allows a weak ptr to create a strong ptr - the conversion can fail
-	  // I'd like to mirror the create_strong() and create_weak() format - however I don't want to muck that common pipeline up
-	  RCPNodeHandle copySelf = node_; // first copy the node - we could have made a new constructor but feels contrived... this also does not flow like the others though
-	  if( copySelf.node_ptr()->attemptConvertWeakToStrong() ) { // this is an expensive atomic thread safe check to see if we can bump strong up 1 but fail if it was 0
-		copySelf.strength_ = RCP_STRONG; // we are now a strong ptr - we did it! change the state of our handle
-	    return copySelf; // return the handle to mirror the format of create_strong() and create_weak()
+	  RCPNodeHandle possibleStrongNode(node_, RCP_WEAK, false); // make a weak handle
+	  if (possibleStrongNode.attemptConvertWeakToStrong()) {
+	    return possibleStrongNode; // success - we have a good strong handle
 	  }
-	  return RCPNodeHandle(); // we failed to get a strong - return a 0 count handle
+	  return RCPNodeHandle(); // failure - return an empty handle
     }
 
   //! Return a weak handle.

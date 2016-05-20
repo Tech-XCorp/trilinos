@@ -58,7 +58,6 @@
 
 
 namespace {
-#ifdef XXX
 
 using Teuchos::as;
 using Teuchos::null;
@@ -1142,7 +1141,6 @@ UNIT_TEST_GROUP(C)
 UNIT_TEST_GROUP(D)
 UNIT_TEST_GROUP(E)
 
-#endif
 } // namespace
 
 

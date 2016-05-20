@@ -381,7 +381,7 @@ inline
 Ptr<T> RCP<T>::ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-  return Ptr<T>(this->create_weak()); // Ptr will enforce the conversion to weak for storage
+  return Ptr<T>(this->create_weak());
 #else
   return Ptr<T>(getRawPtr());
 #endif
@@ -477,10 +477,10 @@ Ptr<T> RCP<T>::release()
 
 template<class T>
 inline
-RCP<T> RCP<T>::create_weak() const
+WeakRCP<T> RCP<T>::create_weak() const
 {
   debug_assert_valid_ptr();
-  return RCP<T>(ptr_, node_.create_weak());
+  return WeakRCP<T>(ptr_, node_.create_weak());
 }
 
 
@@ -504,7 +504,6 @@ bool RCP<T>::shares_resource(const RCP<T2>& r_ptr) const
   // C++ protected/private protection mechanism!
 }
 
-/*
 template<class T>
 template <class T2>
 inline
@@ -515,11 +514,8 @@ bool RCP<T>::shares_resource(const WeakRCP<T2>& r_ptr) const
   // access its node_ member directly!  This is an interesting detail to the
   // C++ protected/private protection mechanism!
 }
-*/
-
 
 // Assertions
-
 
 template<class T>
 inline
