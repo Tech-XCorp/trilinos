@@ -65,14 +65,15 @@
 
 namespace Teuchos {
 
-enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
 
 
 /** \brief . */
 template<class T> class Ptr;
 // template<class T> class WeakPtr;
+
+enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
 
 
 
