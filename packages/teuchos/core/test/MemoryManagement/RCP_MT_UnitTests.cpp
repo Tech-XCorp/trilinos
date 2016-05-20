@@ -62,7 +62,7 @@
 namespace {
 using Teuchos::null;
 using Teuchos::RCP;
-//using Teuchos::WeakRCP;
+using Teuchos::WeakRCP;
 using Teuchos::rcp;
 
 //
@@ -89,7 +89,6 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
   TEST_EQUALITY_CONST(ptr.total_count(), 1);
 }
 
-#ifdef XXX
 //
 // Unit Test 2: mtCreateIndependentRCP
 // Test debug node tracing thread safety
@@ -460,23 +459,20 @@ static std::atomic<int> s_count_successful_conversions(0);
 static std::atomic<int> s_count_failed_conversions(0);
 
 template<class SOURCE_RCP_TYPE>
-static void attempt_make_a_strong_ptr(SOURCE_RCP_TYPE ptr, int conversionAttempts) {
+static void attempt_make_a_strong_ptr(SOURCE_RCP_TYPE ptr) {
   while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
-  for (int n = 0; n < conversionAttempts; ++n) {
-    RCP<CatchMemoryLeak> strongPtr = ptr.create_strong(); // ptr can be weak or strong - the weak ptrs may fail
-    if (strongPtr.access_private_node().is_node_null()) {
-      ++s_count_failed_conversions;
-    }
-    else {
-      ++s_count_successful_conversions;
-    }
+  RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong(); // ptr can be weak or strong - the weak ptrs may fail
+  if (possibleStrongPtr.is_null()) {
+    ++s_count_failed_conversions;
+  }
+  else {
+    ++s_count_successful_conversions;
   }
 }
 
 TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
 {
   const int numThreads = 4;
-  const int numConversionAttemptsPerThread = 10;
   int numCycles = 10000;
   s_count_successful_conversions = 0;
   s_count_failed_conversions = 0;
@@ -489,10 +485,10 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
       bool bCycleStrong = true;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
     	if (bCycleStrong) {
-            threads.push_back(std::thread(attempt_make_a_strong_ptr<RCP<CatchMemoryLeak>>, ptr.create_strong(), numConversionAttemptsPerThread));
+            threads.push_back(std::thread(attempt_make_a_strong_ptr<RCP<CatchMemoryLeak>>, ptr.create_strong()));
     	}
     	else {
-            threads.push_back(std::thread(attempt_make_a_strong_ptr<WeakRCP<CatchMemoryLeak>>, ptr.create_weak(), numConversionAttemptsPerThread));
+            threads.push_back(std::thread(attempt_make_a_strong_ptr<WeakRCP<CatchMemoryLeak>>, ptr.create_weak()));
     	}
         bCycleStrong = !bCycleStrong;
       }
@@ -502,20 +498,17 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
         threads[i].join();													// when join completes rcp should be completely deleted
       }
       if (CatchMemoryLeak::s_countAllocated != 0) {
-    	  break;
+        break;
       }
     }
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-  int expectedTotal = numConversionAttemptsPerThread * numThreads * numCycles;
-  std::cout << "Conversions: " << s_count_successful_conversions << "/" << expectedTotal;
+  std::cout << "Conversions: " << s_count_successful_conversions;
 
   TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
   TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
   TEST_EQUALITY(CatchMemoryLeak::s_countAllocated, 0); 			// should be 0
 }
-
-#endif
 
 } // namespace
 

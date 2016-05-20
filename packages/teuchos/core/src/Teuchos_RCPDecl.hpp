@@ -42,7 +42,6 @@
 #ifndef TEUCHOS_RCP_DECL_HPP
 #define TEUCHOS_RCP_DECL_HPP
 
-
 /*! \file Teuchos_RCPDecl.hpp
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
@@ -51,32 +50,12 @@
 #include "Teuchos_ENull.hpp"
 #include "Teuchos_NullIteratorTraits.hpp"
 #include "Teuchos_WeakRCPDecl.hpp"
-
-#ifdef REFCOUNTPTR_INLINE_FUNCS
-#  define REFCOUNTPTR_INLINE inline
-#else
-#  define REFCOUNTPTR_INLINE
-#endif
-
-
-#ifdef TEUCHOS_DEBUG
-#  define TEUCHOS_REFCOUNTPTR_ASSERT_NONNULL
-#endif
+#include "Teuchos_RCPSharedDecl.hpp"
 
 namespace Teuchos {
 
-
-
 /** \brief . */
 template<class T> class Ptr;
-// template<class T> class WeakPtr;
-
-enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
-enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
-
-
-
 
 /** \brief Smart reference counting pointer class for automatic garbage
   collection.
@@ -761,7 +740,7 @@ public:
    * <li> <tt>returnVal.has_ownership() == this->has_ownership()</tt>
    * </ul>
    */
-  inline RCP<T> create_weak() const;
+  inline WeakRCP<T> create_weak() const;
 
   /** \brief Create a new strong RCP object from another (weak) RCP object.
    *
@@ -790,8 +769,8 @@ public:
    */
   template<class T2>
   inline bool shares_resource(const RCP<T2>& r_ptr) const;
-//  template<class T2>
-//  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
+  template<class T2>
+  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
 
   //@}
 
