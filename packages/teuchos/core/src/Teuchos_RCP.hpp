@@ -381,7 +381,7 @@ inline
 Ptr<T> RCP<T>::ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-  return Ptr<T>(this->create_strong()); // Ptr will enforce the conversion to weak for storage
+  return Ptr<T>(this->create_weak()); // Ptr will enforce the conversion to weak for storage
 #else
   return Ptr<T>(getRawPtr());
 #endif
