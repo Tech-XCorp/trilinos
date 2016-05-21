@@ -671,7 +671,6 @@ TEUCHOS_UNIT_TEST( RCP, weak_strong )
 // circularReference
 //
 
-/*
 TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
 {
 
@@ -688,10 +687,10 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
     // owns 'a' weakly.
 
     ECHO(a->set_C(c));
-    ECHO(c->set_A(a.create_weak()));
+    ECHO(c->set_A_Weak(a.create_weak()));
 
 #ifdef TEUCHOS_DEBUG
-    ECHO(c->call_A_on_delete(true));
+ //   ECHO(c->call_A_on_delete(true)); // MDM - this would now be prevented with the new WeakRCP class
     // Here, we set 'c' to call 'a' when it is deleted which will result in an
     // exception being thrown in a call to delete.  NOTE: It is *very* bad
     // practice to allow exceptions to be thrown from destructors but I am
@@ -699,7 +698,7 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
 #endif
 
     TEST_EQUALITY( a->call_C_f(), C_f_return );
-    TEST_EQUALITY( c->call_A_g(), A_g_return );
+//    TEST_EQUALITY( c->call_A_g(), A_g_return ); // this would now be prevented with the new WeakRCP class
 
     // Remove 'a' first and then remove 'c'.  Since 'a' is only weakly held by
     // 'c', this will result in 'a' being deleted right away.  In this case,
@@ -714,13 +713,14 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
 
 #ifdef TEUCHOS_DEBUG
 
-    TEST_THROW(c = null, DanglingReferenceError);
+    // new WeakRCP will not throw - need to resolve this
+ //   TEST_THROW(c = null, DanglingReferenceError);
     // NOTE: Above, operator==(...) exhibits the 'strong' guarantee!
 
     // Since an exception was thrown, the 'c' object never got deleted.
     // Therefore, we need to disable 'c' calling 'a' on delete and the object
     // will get cleaned up correctly when this function exists (I hope).
-    ECHO(c->call_A_on_delete(false));
+//    ECHO(c->call_A_on_delete(false)); // MDM - A is a weak ptr in this case so will not be accessible with WeakRCP
 
     ECHO(c = null); // All memory should be cleaned up here!
 
@@ -745,9 +745,9 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_c_then_a )
     // owns 'a' weakly.
 
     ECHO(a->set_C(c));
-    ECHO(c->set_A(a.create_weak()));
+    ECHO(c->set_A_Weak(a.create_weak()));
 
-    ECHO(c->call_A_on_delete(false));
+ //   ECHO(c->call_A_on_delete(false)); // Prevented with the new WeakRCP class
     // Here, we set 'c' to not call 'a' when it is deleted.  It turns out that
     // the set of calls to delete and destructors that takes place is very
     // complex and in order to avoid trouble, an object that holds an RCP to
@@ -755,7 +755,7 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_c_then_a )
     // wrapped object as it gets deleted!
 
     TEST_EQUALITY( a->call_C_f(), C_f_return );
-    TEST_EQUALITY( c->call_A_g(), A_g_return );
+//    TEST_EQUALITY( c->call_A_g(), A_g_return );  // Prevented with the new WeakRCP class
 
     // Remove 'c' first and then remove 'a' implicitly at the end of the
     // block.  Since 'c' is held strongly by 'a' and since we are keeping the
@@ -785,12 +785,11 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_self )
     // Create one 'c' object
     ECHO(RCP<C> c = rcp(new C));
     // Create a weak circular reference where 'c' points back to itself
-    ECHO(c->set_A(c.create_weak()));
+    ECHO(c->set_A_Weak(c.create_weak()));
     // Now, try to set 'c' to null.
     ECHO(c = null); // All memory should be cleaned up here!
   }
 }
-*/
 
 TEUCHOS_UNIT_TEST( RCP, danglingPtr1 )
 {

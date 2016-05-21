@@ -46,11 +46,11 @@
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
 
-#include "Teuchos_RCPSharedDecl.hpp"
 #include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RCPNode.hpp"
 #include "Teuchos_ENull.hpp"
 #include "Teuchos_NullIteratorTraits.hpp"
+#include "Teuchos_RCPSharedDecl.hpp"
 
 namespace Teuchos {
 

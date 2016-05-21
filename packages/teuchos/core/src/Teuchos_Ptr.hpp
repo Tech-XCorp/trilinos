@@ -163,7 +163,7 @@ template<class T> inline
 void Ptr<T>::debug_assert_valid_ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-	weak_rcp_.access_private_node().assert_valid_ptr(*this);
+  weak_rcp_.access_private_node().assert_valid_ptr(*this);
 #endif
 }
 
