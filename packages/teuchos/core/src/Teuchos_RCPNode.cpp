@@ -414,6 +414,10 @@ void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
   }
 }
 
+
+// Internal implementation functions
+
+
 void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 {
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
@@ -581,7 +585,6 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
     RCPNode* rcpNode = itr->second.nodePtr;
     if (rcpNode->has_ownership()) {
       return rcpNode;
-      break;
     }
   }
 

@@ -172,8 +172,8 @@ void Ptr<T>::debug_assert_valid_ptr() const
 
 
 template<class T> inline
-Ptr<T>::Ptr( const WeakRCP<T> &p )
-  : ptr_(p.access_private_ptr()), weak_rcp_(p)
+Ptr<T>::Ptr( const RCP<T> &p )
+  : ptr_(p.access_private_ptr()), weak_rcp_(p.create_weak())
 {}
 
 
