@@ -42,9 +42,11 @@
 #ifndef TEUCHOS_RCP_DECL_HPP
 #define TEUCHOS_RCP_DECL_HPP
 
+
 /*! \file Teuchos_RCPDecl.hpp
     \brief Reference-counted pointer class and non-member templated function implementations.
 */
+
 
 #include "Teuchos_WeakRCPDecl.hpp"
 #include "Teuchos_RCPNode.hpp"
@@ -53,6 +55,7 @@
 #include "Teuchos_RCPSharedDecl.hpp"
 
 namespace Teuchos {
+
 
 /** \brief . */
 template<class T> class Ptr;

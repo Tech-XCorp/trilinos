@@ -59,6 +59,7 @@
 
 namespace {
 
+
 using Teuchos::as;
 using Teuchos::null;
 using Teuchos::Ptr;
@@ -81,6 +82,7 @@ using Teuchos::DuplicateOwningRCPError;
 using Teuchos::RCP_STRONG;
 using Teuchos::RCP_WEAK;
 using Teuchos::RCPNodeTracer;
+
 
 TEUCHOS_UNIT_TEST( DeallocNull, free )
 {
@@ -503,6 +505,7 @@ TEUCHOS_UNIT_TEST( RCP, nonnull )
 
 TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 {
+
   ECHO(RCP<T> rcp_strong = rcp(new T));
 
   TEST_EQUALITY_CONST( rcp_strong.strength(), RCP_STRONG );
@@ -671,6 +674,7 @@ TEUCHOS_UNIT_TEST( RCP, weak_strong )
 // circularReference
 //
 
+
 TEUCHOS_UNIT_TEST( RCP, circularReference_a_then_c )
 {
 
@@ -790,6 +794,7 @@ TEUCHOS_UNIT_TEST( RCP, circularReference_self )
     ECHO(c = null); // All memory should be cleaned up here!
   }
 }
+
 
 TEUCHOS_UNIT_TEST( RCP, danglingPtr1 )
 {
@@ -1140,6 +1145,5 @@ UNIT_TEST_GROUP(C)
 UNIT_TEST_GROUP(D)
 UNIT_TEST_GROUP(E)
 
+
 } // namespace
-
-

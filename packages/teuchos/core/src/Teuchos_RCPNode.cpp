@@ -43,8 +43,10 @@
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
 
+
 // Defined this to see tracing of RCPNodes created and destroyed
 //#define RCP_NODE_DEBUG_TRACE_PRINT
+
 
 //
 // Internal implementatation stuff
@@ -372,6 +374,7 @@ bool RCPNodeTracer::getPrintActiveRcpNodesOnExit()
   return loc_printActiveRcpNodesOnExit();
 }
 
+
 void RCPNodeTracer::printActiveRCPNodes(std::ostream &out)
 {
 #ifdef TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
@@ -434,6 +437,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 #endif
 
   if (loc_isTracingActiveRCPNodes()) {
+
     // Print the node we are adding if configured to do so.  We have to send
     // to std::cerr to make sure that this gets printed.
 #ifdef RCP_NODE_DEBUG_TRACE_PRINT
@@ -460,7 +464,6 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
         break;
       }
     }
-
     TEUCHOS_TEST_FOR_EXCEPTION(
       rcp_node_already_exists && rcp_node->has_ownership() && previous_rcp_node_has_ownership,
       DuplicateOwningRCPError,
@@ -494,6 +497,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
     // value, this iterator itr_itr.second will point to one after the found
     // range.  I suspect that this might also ensure that the elements are
     // sorted in natural order.
+
     // Update the insertion number an node tracing statistics
     ++insertionNumber;
     ++loc_rcpNodeStatistics().totalNumRCPNodeAllocations;
@@ -514,6 +518,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 
 void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
 {
+
   // Here, we will try to remove an RCPNode regardless if whether
   // loc_isTracingActiveRCPNodes==true or not.  This will not be a performance
   // problem and it will ensure that any RCPNode objects that are added to
@@ -567,7 +572,9 @@ void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
     // Whoops! Did not find the node!
     TEUCHOS_RCPNODE_REMOVE_RCPNODE(!foundRCPNode, rcp_node);
   }
+
 }
+
 
 RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
 {
@@ -587,7 +594,6 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
       return rcpNode;
     }
   }
-
   return 0;
   // NOTE: Above, we return the first RCPNode added that has the given key
   // value.
@@ -729,6 +735,7 @@ void RCPNodeHandle::unbindOneTotal()
 }
 
 } // namespace Teuchos
+
 
 //
 // Non-member helpers
