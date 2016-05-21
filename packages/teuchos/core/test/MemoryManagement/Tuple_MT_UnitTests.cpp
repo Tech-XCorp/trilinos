@@ -41,23 +41,19 @@
 // @HEADER
 */
 
-#include "General_MT_UnitTests.hpp"
 #include "TeuchosCore_ConfigDefs.hpp"
+#include "General_MT_UnitTests.hpp"
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
 
 #include "Teuchos_Tuple.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
-#include <vector>
-#include <thread>
 
 namespace {
 
-using Teuchos::null;
 using Teuchos::Tuple;
 
-
+// Note - this is going to be developed to include unit tests related to Tuple
 
 } // end namespace
 

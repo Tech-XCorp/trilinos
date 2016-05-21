@@ -216,6 +216,7 @@ public:
   /** \brief . */
   int deincr_count( const ERCPStrength strength )
     {
+	  debugAssertStrength(strength);
 #ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
 	  --count_[strength];
 	  return count_[strength];  // not atomically valid
@@ -231,7 +232,7 @@ public:
   /** \brief . */
   bool has_ownership() const
     {
-	  return has_ownership_;
+      return has_ownership_;
     }
   /** \brief . */
   void set_extra_data(

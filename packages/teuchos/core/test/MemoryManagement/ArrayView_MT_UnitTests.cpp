@@ -47,17 +47,13 @@
 #ifdef HAVE_TEUCHOSCORE_CXX11
 
 #include "Teuchos_ArrayView.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
-#include <vector>
-#include <thread>
 
 namespace {
 
-using Teuchos::null;
 using Teuchos::ArrayView;
-using Teuchos::arcp;
 
+// Note - this is going to be developed to include unit tests related to ArrayView
 
 } // end namespace
 

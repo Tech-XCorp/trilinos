@@ -41,8 +41,20 @@
 // @HEADER
 */
 
-#include "General_MT_UnitTests.hpp"
 #include "TeuchosCore_ConfigDefs.hpp"
+#include "General_MT_UnitTests.hpp"
+
 #ifdef HAVE_TEUCHOSCORE_CXX11
+
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_UnitTestHarness.hpp"
+
+namespace {
+
+using Teuchos::Ptr;
+
+// Note - this is going to be developed to include unit tests related to Ptr
+
+} // end namespace
 
 #endif // end HAVE_TEUCHOSCORE_CXX11
