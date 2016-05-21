@@ -216,7 +216,7 @@ public:
   /** \brief . */
   int deincr_count( const ERCPStrength strength )
     {
-	  debugAssertStrength(strength);
+      debugAssertStrength(strength);
 #ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
 	  --count_[strength];
 	  return count_[strength];  // not atomically valid
@@ -1017,7 +1017,7 @@ private:
 
   inline void bind()
     {
-	  if (node_)
+      if (node_)
         node_->incr_count(strength_);
     }
 
