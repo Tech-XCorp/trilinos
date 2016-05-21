@@ -506,7 +506,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
     }
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-  std::cout << "Conversions: " << s_count_successful_conversions;
+  std::cout << "WeakRCP->RCP conversion returned null " << s_count_failed_conversions << " times and succeeded " << s_count_successful_conversions << " times. We want to see some of each in this test." << std::endl;
 
   TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
   TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful

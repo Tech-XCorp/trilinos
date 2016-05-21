@@ -153,7 +153,7 @@ public:
   RCPNode(bool has_ownership_in)
     : has_ownership_(has_ownership_in), extra_data_map_(NULL)
 #ifdef TEUCHOS_DEBUG
-     ,insertion_number_(-1)
+    ,insertion_number_(-1)
 #endif // TEUCHOS_DEBUG
     {
       count_[RCP_STRONG] = 0;
@@ -207,6 +207,7 @@ public:
   /** \brief . */
   void incr_count( const ERCPStrength strength )
     {
+	  debugAssertStrength(strength);
 	  if (++count_[strength] == 1) {
 		  if (strength == RCP_STRONG) {
 		    ++count_[RCP_WEAK]; // this is the special condition - the first strong creates a weak
@@ -783,9 +784,10 @@ public:
   RCPNodeHandle (RCPNode* node, T *p, const std::string &T_name,
                  const std::string &ConcreteT_name,
                  const bool has_ownership_in,
-                 ERCPStrength strength_in = RCP_STRONG )
+                 ERCPStrength strength_in = RCP_STRONG)
     : node_ (node), strength_ (strength_in)
   {
+    TEUCHOS_ASSERT(strength_in == RCP_STRONG); // Can't handle weak yet!
     TEUCHOS_ASSERT(node_);
 
     bind();
@@ -1028,14 +1030,14 @@ private:
 	    	if (node_->deincr_count(RCP_STRONG) == 0) { // only strong checks for --strong == 0
 
 #ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
-	    	  node_->deincr_count(RCP_WEAK); // -1 to weak (undoes the boost trick where weak is +1 when strong != 0 - allows a weak node to race and delete simultaneously
+              node_->deincr_count(RCP_WEAK); // -1 to weak (undoes the boost trick where weak is +1 when strong != 0 - allows a weak node to race and delete simultaneously
 #endif
-	    	  unbindOneStrong();
+              unbindOneStrong();
 #ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
-	    	  node_->incr_count(RCP_WEAK); // restore the -1 we added to the weak
+              node_->incr_count(RCP_WEAK); // restore the -1 we added to the weak
 #endif
               if( node_->deincr_count(RCP_WEAK) == 0) {	// but if strong hits 0 it also decrements weak_count_plus which is weak + (strong != 0)
-        	    unbindOneTotal();
+                unbindOneTotal();
               }
             }
 	    }

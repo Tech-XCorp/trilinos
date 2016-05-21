@@ -207,7 +207,7 @@ private:
 public: // Bad bad bad
 
 #ifdef TEUCHOS_DEBUG
-  Ptr( const WeakRCP<T> &p );
+  Ptr( const RCP<T> &p );
   T* access_private_ptr() const
     { return ptr_; }
   const WeakRCP<T> access_weak_rcp() const

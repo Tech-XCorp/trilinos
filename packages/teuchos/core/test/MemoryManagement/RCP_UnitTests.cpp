@@ -597,7 +597,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( RCP, weakDelete, T )
 
 // MDM - removed in new WeakRCP class
 //  TEST_THROW( rcp_weak1.get(), DanglingReferenceError );
-  TEST_THROW( rcp_weak1.access_private_ptr(), DanglingReferenceError );
+//  TEST_THROW( rcp_weak1.getRawPtr(), DanglingReferenceError );
 //  TEST_THROW( rcp_weak1(), DanglingReferenceError );
 //  TEST_THROW( rcp_weak1.release(), DanglingReferenceError );
 #endif // TEUCHOS_DEBUG
