@@ -42,10 +42,12 @@
 #ifndef TEUCHOS_RCP_NODE_HPP
 #define TEUCHOS_RCP_NODE_HPP
 
+
 /** \file Teuchos_RCPNode.hpp
  *
  * \brief Reference-counted pointer node classes.
  */
+
 
 #include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_any.hpp"
@@ -56,6 +58,7 @@
 #include "Teuchos_TypeNameTraits.hpp"
 #include "Teuchos_toString.hpp"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
+
 
 namespace Teuchos {
 
@@ -766,7 +769,6 @@ public:
     // Add the node if this is the first RCPNodeHandle to get it.  We have
     // to add it because unbind() will call the remove_RCPNode(...) function
     // and it needs to match when node tracing is on from the beginning.
-
     if (RCPNodeTracer::isTracingActiveRCPNodes() && newNode) {
       std::ostringstream os;
       os << "{T=Unknown, ConcreteT=Unknown, p=Unknown,"
@@ -789,9 +791,7 @@ public:
   {
     TEUCHOS_ASSERT(strength_in == RCP_STRONG); // Can't handle weak yet!
     TEUCHOS_ASSERT(node_);
-
     bind();
-
     if (RCPNodeTracer::isTracingActiveRCPNodes()) {
       std::ostringstream os;
       os << "{T="<<T_name<<", ConcreteT="<< ConcreteT_name
@@ -914,7 +914,6 @@ public:
     }
     return 0;
   }
-
   //! The strong count; retained for backwards compatibility.
   int count() const {
     if (node_) {
@@ -1016,13 +1015,11 @@ public:
 private:
   RCPNode *node_;
   ERCPStrength strength_;
-
   inline void bind()
     {
       if (node_)
         node_->incr_count(strength_);
     }
-
   inline void unbind()
     {
 	  if (node_) {
