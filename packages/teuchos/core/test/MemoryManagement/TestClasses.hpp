@@ -164,10 +164,12 @@ public:
   static int get_A_g_on_delete() { return A_g_on_delete_; }
 private:
   Teuchos::RCP<A> a_;
+  Teuchos::WeakRCP<A> a_weak;
   bool call_A_on_delete_;
   static int A_g_on_delete_;
 public:
   void set_A(const Teuchos::RCP<A> &a ) { a_ = a; }
+  void set_A_Weak(const Teuchos::WeakRCP<A> &a ) { a_weak = a; }
   Teuchos::RCP<A> get_A() { return a_; }
 };
 

@@ -569,11 +569,8 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
 {
   typedef rcp_node_list_t::iterator itr_t;
   typedef std::pair<itr_t, itr_t> itr_itr_t;
-  if (!p) {
+  if (!p)
     return 0;
-  }
-
-  RCPNode* rcpNodeReturn = 0;
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   std::lock_guard<std::mutex> lockGuard(*rcp_node_list_mutex()); // lock_guard will unlock in the event of an exception
@@ -583,12 +580,14 @@ RCPNode* RCPNodeTracer::getExistingRCPNodeGivenLookupKey(const void* p)
   for (itr_t itr = itr_itr.first; itr != itr_itr.second; ++itr) {
     RCPNode* rcpNode = itr->second.nodePtr;
     if (rcpNode->has_ownership()) {
-      rcpNodeReturn = rcpNode;
+      return rcpNode;
       break;
     }
   }
 
-  return rcpNodeReturn;
+  return 0;
+  // NOTE: Above, we return the first RCPNode added that has the given key
+  // value.
 }
 
 
@@ -654,9 +653,9 @@ ActiveRCPNodesSetup::ActiveRCPNodesSetup()
 #ifdef TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
   std::cerr << "\nCalled ActiveRCPNodesSetup::ActiveRCPNodesSetup() : count = " << count_ << "\n";
 #endif // TEUCHOS_SHOW_ACTIVE_REFCOUNTPTR_NODE_TRACE
-  if (!rcp_node_list()) {
+  if (!rcp_node_list())
     rcp_node_list() = new rcp_node_list_t;
-  }
+
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   if (!rcp_node_list_mutex()) {
 	  rcp_node_list_mutex() = new std::mutex;

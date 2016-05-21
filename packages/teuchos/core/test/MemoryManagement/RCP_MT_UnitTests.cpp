@@ -127,23 +127,26 @@ TEUCHOS_UNIT_TEST( RCP, mtCreateIndependentRCP )
 }
 
 //
-// Unit Test 2b: mtNodeTracingWeakNoDealloc
+// Unit Test 2b: mtTestGetExistingRCPNodeGivenLookupKey
 // Related test to determine other problems with the node tracing
 // This test demonstrates the necessity of having mutex locks in RCPNodeTracer::getExistingRCPNodeGivenLookupKey for debug mode
-static void create_independent_weakNoDealloc_rcp_objects(int numAllocations) {
+// Using Teuchos::RCP_WEAK_NO_DEALLOC to construct will also cause problems with node tracing if not protected by the mutex
+static void create_independent_rcp_without_ownership(int numAllocations) {
   for(int n = 0; n < numAllocations; ++n ) { // note that getting the second issue to reproduce (the race condition between delete_obj() and removeRCPNode()) may not always hit in this configuration.
-    RCP<int> ptr( new int, Teuchos::RCP_WEAK_NO_DEALLOC ); // this allocates a new rcp ptr independent of all other rcp ptrs, and then dumps it, over and over
+    int * intPtr = new int;
+	RCP<int> ptr( intPtr, false ); // this allocates a new rcp independent of all other rcp ptrs, and then dumps it, over and over
+    delete intPtr;
   }
 }
 
-TEUCHOS_UNIT_TEST( RCP, mtNodeTracingWeakNoDealloc )
+TEUCHOS_UNIT_TEST( RCP, mtTestGetExistingRCPNodeGivenLookupKey )
 {
   const int numThreads = 4;
-  const int numRCPAllocations = 10000;
+  const int numRCPAllocations = 50000;
   try {
     std::vector<std::thread> threads;
     for (int i = 0; i < numThreads; ++i) {
-      threads.push_back(std::thread(create_independent_weakNoDealloc_rcp_objects, numRCPAllocations));
+      threads.push_back(std::thread(create_independent_rcp_without_ownership, numRCPAllocations));
     }
     for (int i = 0; i < threads.size(); ++i) {
       threads[i].join();
