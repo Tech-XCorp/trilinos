@@ -520,6 +520,7 @@ bool RCP<T>::shares_resource(const RCP<T2>& r_ptr) const
 // Assertions
 
 
+
 template<class T>
 inline
 const RCP<T>& RCP<T>::assert_not_null() const
