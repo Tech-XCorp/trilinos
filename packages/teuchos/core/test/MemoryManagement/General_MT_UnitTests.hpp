@@ -66,10 +66,10 @@ static void convenience_log_progress(int cycle, int totalCycles) {
 class CatchMemoryLeak // This class is a utility class which tracks constructor/destructor calls (for this test) or counts times a dealloc or deallocHandle was implemented (for later tests)
 {
 public:
-	CatchMemoryLeak() { ++s_countAllocated; }
-	~CatchMemoryLeak() { --s_countAllocated; }
-	static std::atomic<int> s_countAllocated;
-	static std::atomic<int> s_countDeallocs;
+  CatchMemoryLeak() { ++s_countAllocated; }
+  ~CatchMemoryLeak() { --s_countAllocated; }
+  static std::atomic<int> s_countAllocated;
+  static std::atomic<int> s_countDeallocs;
 };
 std::atomic<int> CatchMemoryLeak::s_countAllocated(0);	// counts constructor calls (+1) and destructor calls (-1) which may include double delete events
 std::atomic<int> CatchMemoryLeak::s_countDeallocs(0);	// counts dealloc or dellocHandle calls - used for test 4 and test 5

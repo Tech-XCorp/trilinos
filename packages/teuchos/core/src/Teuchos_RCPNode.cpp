@@ -667,7 +667,7 @@ ActiveRCPNodesSetup::ActiveRCPNodesSetup()
 
 #ifdef USE_MUTEX_TO_PROTECT_NODE_TRACING
   if (!rcp_node_list_mutex()) {
-	  rcp_node_list_mutex() = new std::mutex;
+    rcp_node_list_mutex() = new std::mutex;
   }
 #endif
   ++count_;
@@ -723,9 +723,9 @@ int Teuchos::ActiveRCPNodesSetup::count_ = 0;
 void RCPNodeHandle::unbindOneStrong()
 {
 #ifdef TEUCHOS_DEBUG
-    RCPNodeTracer::removeRCPNode(node_);
+  RCPNodeTracer::removeRCPNode(node_);
 #endif
-    node_->delete_obj();	// do this after removeRCPNode - otherwise another thread can jump in and grab the memory spot - then node tracing incorrectly thinks it's a double allocation
+  node_->delete_obj();	// do this after removeRCPNode - otherwise another thread can jump in and grab the memory spot - then node tracing incorrectly thinks it's a double allocation
 }
 
 void RCPNodeHandle::unbindOneTotal()
