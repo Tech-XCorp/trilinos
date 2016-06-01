@@ -169,6 +169,31 @@ public:
         delete extra_data_map_;
     }
   /** \brief . */
+  bool attemptIncrementStrongCountFromNonZeroValue()
+    {
+#if defined(USING_ATOMICS) && !defined(BREAK_ATOMIC_WEAK_TO_STRONG_CONVERSION)
+      // this code follows the boost method
+      int strong_count_non_atomic = count_[RCP_STRONG];
+      for( ;; ) {
+        if (strong_count_non_atomic == 0) {
+          return false;
+        }
+        if (std::atomic_compare_exchange_weak( &count_[RCP_STRONG], &strong_count_non_atomic, strong_count_non_atomic + 1)) {
+          return true;
+        }
+      }
+#else
+	    // the non-thread safe version - this fails with threads because strong_count_ can become 0 after the check if it is 0 and we would return true with no valid object
+      if (count_[RCP_STRONG] == 0) {
+        return false;
+      }
+      else {
+        ++count_[RCP_STRONG];
+        return true;
+      }
+#endif
+    }
+  /** \brief . */
   int strong_count() const
     {
       return count_[RCP_STRONG];
@@ -179,51 +204,22 @@ public:
       return count_[RCP_WEAK] - (count_[RCP_STRONG] ? 1 : 0 ); // weak is +1 when strong > 0
     }
   /** \brief . */
-  int total_count() const // not atomically safe
-    {
-      return weak_count() + count_[RCP_STRONG];
-    }
-  /** \brief . */
-  bool attemptIncrementStrongCountFromNonZeroValue() {
-#if defined(USING_ATOMICS) && !defined(BREAK_ATOMIC_WEAK_TO_STRONG_CONVERSION)
-	  // this code follows the boost method
-	  int strong_count_non_atomic = count_[RCP_STRONG];
-	  for( ;; ) {
-	    if (strong_count_non_atomic == 0) {
-	      return false;
-	    }
-	    if (std::atomic_compare_exchange_weak( &count_[RCP_STRONG], &strong_count_non_atomic, strong_count_non_atomic + 1)) {
-	      return true;
-	    }
-	  }
-#else
-	  // the non-thread safe version - this fails with threads because strong_count_ can become 0 after the check if it is 0 and we would return true with no valid object
-      if (count_[RCP_STRONG] == 0) {
-    	  return false;
-      }
-      else {
-    	  ++count_[RCP_STRONG];
-    	  return true;
-      }
-#endif
-    }
-  /** \brief . */
   void incr_count( const ERCPStrength strength )
     {
-	  debugAssertStrength(strength);
-	  if (++count_[strength] == 1) {
-		  if (strength == RCP_STRONG) {
-		    ++count_[RCP_WEAK]; // this is the special condition - the first strong creates a weak
-		  }
-	  }
+      debugAssertStrength(strength);
+      if (++count_[strength] == 1) {
+        if (strength == RCP_STRONG) {
+          ++count_[RCP_WEAK]; // this is the special condition - the first strong creates a weak
+        }
+      }
     }
   /** \brief . */
   int deincr_count( const ERCPStrength strength )
     {
       debugAssertStrength(strength);
 #ifdef BREAK_THREAD_SAFETY_OF_DEINCR_COUNT
-	  --count_[strength];
-	  return count_[strength];  // not atomically valid
+      --count_[strength];
+      return count_[strength];  // not atomically valid
 #else
       return --count_[strength];
 #endif
@@ -839,23 +835,14 @@ public:
     unbind();
   }
 
-  bool attemptConvertWeakToStrong() {
-	 if (node_->attemptIncrementStrongCountFromNonZeroValue()) {
-	   node_->deincr_count(RCP_WEAK); // because we converted strong + 1 we account for this by doing weak - 1
-	   strength_ = RCP_STRONG; // we have successfully incremented the strong count by one - to a strong ptr
-	   return true;
-	 }
-	 return false;
-  }
-
-  RCPNodeHandle create_strong_lock() const
-    {
-	  RCPNodeHandle possibleStrongNode(node_, RCP_WEAK, false); // make a weak handle
-	  if (possibleStrongNode.attemptConvertWeakToStrong()) {
-	    return possibleStrongNode; // success - we have a good strong handle
-	  }
-	  return RCPNodeHandle(); // failure - return an empty handle
+  //! Return a strong handle if possible using thread safe atomics - otherwise return a null handle
+  RCPNodeHandle create_strong_lock() const {
+    RCPNodeHandle possibleStrongNode(node_, RCP_WEAK, false); // make a weak handle
+    if (possibleStrongNode.attemptConvertWeakToStrong()) {
+      return possibleStrongNode; // success - we have a good strong handle
     }
+    return RCPNodeHandle(); // failure - return an empty handle
+  }
 
   //! Return a weak handle.
   RCPNodeHandle create_weak() const {
@@ -910,7 +897,7 @@ public:
   //! The sum of the weak and string counts.
   int total_count() const {
     if (node_) {
-      return node_->total_count(); // Not atomically safe
+      return node_->strong_count() + node_->weak_count(); // not atomically safe
     }
     return 0;
   }
@@ -1015,6 +1002,15 @@ public:
 private:
   RCPNode *node_;
   ERCPStrength strength_;
+  //! atomically safe conversion of a weak handle to a strong handle if possible - if not possible nothing changes
+  bool attemptConvertWeakToStrong() {
+    if (node_->attemptIncrementStrongCountFromNonZeroValue()) {
+      node_->deincr_count(RCP_WEAK); // because we converted strong + 1 we account for this by doing weak - 1
+      strength_ = RCP_STRONG; // we have successfully incremented the strong count by one - to a strong ptr
+      return true;
+    }
+    return false;
+  }
   inline void bind()
     {
       if (node_)
@@ -1022,26 +1018,25 @@ private:
     }
   inline void unbind()
     {
-	  if (node_) {
-	    if(strength_ == RCP_STRONG) {
-	    	if (node_->deincr_count(RCP_STRONG) == 0) { // only strong checks for --strong == 0
-
+      if (node_) {
+        if(strength_ == RCP_STRONG) {
+          if (node_->deincr_count(RCP_STRONG) == 0) { // only strong checks for --strong == 0
 #ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
-              node_->deincr_count(RCP_WEAK); // -1 to weak (undoes the boost trick where weak is +1 when strong != 0 - allows a weak node to race and delete simultaneously
+            node_->deincr_count(RCP_WEAK); // -1 to weak (undoes the boost trick where weak is +1 when strong != 0 - allows a weak node to race and delete simultaneously
 #endif
-              unbindOneStrong();
+            unbindOneStrong();
 #ifdef INTRODUCE_RACE_CONDITIONS_FOR_UNBINDING // for unit testing only
-              node_->incr_count(RCP_WEAK); // restore the -1 we added to the weak
+            node_->incr_count(RCP_WEAK); // restore the -1 we added to the weak
 #endif
-              if( node_->deincr_count(RCP_WEAK) == 0) {	// but if strong hits 0 it also decrements weak_count_plus which is weak + (strong != 0)
-                unbindOneTotal();
-              }
+            if( node_->deincr_count(RCP_WEAK) == 0) {	// but if strong hits 0 it also decrements weak_count_plus which is weak + (strong != 0)
+              unbindOneTotal();
             }
-	    }
-	    else if(node_->deincr_count(RCP_WEAK) == 0) {  // weak checks here
+          }
+        }
+        else if(node_->deincr_count(RCP_WEAK) == 0) {  // weak checks here
           unbindOneTotal();
+        }
 	    }
-	  }
     }
 
   void unbindOneStrong();
