@@ -327,6 +327,7 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( ArrayView, danglingView_std_vector, T )
 
 TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( ArrayView, danglingView_rcp_std_vector, T )
 {
+  
   ArrayView<T> av;
   {
     ArrayRCP<T> ap = arcp(rcp(new std::vector<T>(n)));

@@ -56,7 +56,6 @@
 */
 
 #include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_WeakRCPDecl.hpp"
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
@@ -477,19 +476,28 @@ Ptr<T> RCP<T>::release()
 
 template<class T>
 inline
-WeakRCP<T> RCP<T>::create_weak() const
+RCP<T> RCP<T>::create_weak() const
 {
   debug_assert_valid_ptr();
-  return WeakRCP<T>(ptr_, node_.create_weak());
+  return RCP<T>(ptr_, node_.create_weak());
 }
 
 
 template<class T>
 inline
-RCP<T> RCP<T>::create_strong() const
+RCP<T> RCP<T>::create_strong(bool bThreadSafe) const
 {
-  debug_assert_valid_ptr();
-  return RCP<T>(ptr_, node_.create_strong());
+  if (bThreadSafe && strength() == RCP_WEAK) // only weak needs to check - if we are strong already it's ok to just make it though perhaps we should just be calling a copy constructor anyways
+  {
+    // we don't check for debug_assert_valid_ptr() - probably doesn't hurt anything if we do but using it would be confusing because ptr could become invalid immediately after this line
+    RCPNodeHandle attemptStrong = node_.create_strong_lock();
+    return RCP<T>( attemptStrong.is_node_null() ? 0 : ptr_, attemptStrong);
+  }
+  else
+  {
+    debug_assert_valid_ptr();
+    return RCP<T>(ptr_, node_.create_strong());
+  }
 }
 
 
@@ -497,17 +505,6 @@ template<class T>
 template <class T2>
 inline
 bool RCP<T>::shares_resource(const RCP<T2>& r_ptr) const
-{
-  return node_.same_node(r_ptr.access_private_node());
-  // Note: above, r_ptr is *not* the same class type as *this so we can not
-  // access its node_ member directly!  This is an interesting detail to the
-  // C++ protected/private protection mechanism!
-}
-
-template<class T>
-template <class T2>
-inline
-bool RCP<T>::shares_resource(const WeakRCP<T2>& r_ptr) const
 {
   return node_.same_node(r_ptr.access_private_node());
   // Note: above, r_ptr is *not* the same class type as *this so we can not

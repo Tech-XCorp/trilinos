@@ -48,17 +48,34 @@
 */
 
 
-#include "Teuchos_WeakRCPDecl.hpp"
 #include "Teuchos_RCPNode.hpp"
 #include "Teuchos_ENull.hpp"
 #include "Teuchos_NullIteratorTraits.hpp"
-#include "Teuchos_RCPSharedDecl.hpp"
+
+
+#ifdef REFCOUNTPTR_INLINE_FUNCS
+#  define REFCOUNTPTR_INLINE inline
+#else
+#  define REFCOUNTPTR_INLINE
+#endif
+
+
+#ifdef TEUCHOS_DEBUG
+#  define TEUCHOS_REFCOUNTPTR_ASSERT_NONNULL
+#endif
+
 
 namespace Teuchos {
 
 
 /** \brief . */
 template<class T> class Ptr;
+
+
+enum ERCPWeakNoDealloc { RCP_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWeakNoDealloc { RCP_UNDEFINED_WEAK_NO_DEALLOC };
+enum ERCPUndefinedWithDealloc { RCP_UNDEFINED_WITH_DEALLOC };
+
 
 /** \brief Smart reference counting pointer class for automatic garbage
   collection.
@@ -743,7 +760,7 @@ public:
    * <li> <tt>returnVal.has_ownership() == this->has_ownership()</tt>
    * </ul>
    */
-  inline WeakRCP<T> create_weak() const;
+  inline RCP<T> create_weak() const;
 
   /** \brief Create a new strong RCP object from another (weak) RCP object.
    *
@@ -761,7 +778,7 @@ public:
    * <li> <tt>returnVal.has_ownership() == this->has_ownership()</tt>
    * </ul>
    */
-  inline RCP<T> create_strong() const;
+  inline RCP<T> create_strong(bool bThreadSafe = false) const; // we may reorganize this - for the moment thread safe creation of strong is used only in the new unit tests
 
   /** \brief Returns true if the smart pointers share the same underlying
    * reference-counted object.
@@ -772,8 +789,6 @@ public:
    */
   template<class T2>
   inline bool shares_resource(const RCP<T2>& r_ptr) const;
-  template<class T2>
-  inline bool shares_resource(const WeakRCP<T2>& r_ptr) const;
 
   //@}
 
@@ -893,8 +908,8 @@ public: // Bad bad bad
   // WARNING: A general user should *never* call these functions!
   inline RCP(T* p, const RCPNodeHandle &node);
   inline T* access_private_ptr() const; // Does not throw
-  inline RCPNodeHandle& nonconst_access_private_node(); // Does not throw
-  inline const RCPNodeHandle& access_private_node() const; // Does not throw
+  inline RCPNodeHandle& nonconst_access_private_node(); // Does not thorw
+  inline const RCPNodeHandle& access_private_node() const; // Does not thorw
 
 #endif
 
