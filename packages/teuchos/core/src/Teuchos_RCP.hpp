@@ -380,7 +380,7 @@ inline
 Ptr<T> RCP<T>::ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-  return Ptr<T>(*this); // we pass an RCP and PTR enforces storage of just the WeakRCP type - we could change this to pass a WeakRCP but in this form the Ptr class knows it is getting a valid Ptr at least at the time of construction
+  return Ptr<T>(this->create_weak());
 #else
   return Ptr<T>(getRawPtr());
 #endif
