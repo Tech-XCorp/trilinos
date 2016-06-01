@@ -183,7 +183,7 @@ public:
         }
       }
 #else
-	    // the non-thread safe version - this fails with threads because strong_count_ can become 0 after the check if it is 0 and we would return true with no valid object
+      // the non-thread safe version - this fails with threads because strong_count_ can become 0 after the check if it is 0 and we would return true with no valid object
       if (count_[RCP_STRONG] == 0) {
         return false;
       }

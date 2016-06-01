@@ -461,7 +461,7 @@ static std::atomic<int> s_count_failed_conversions(0);
 template<class SOURCE_RCP_TYPE>
 static void attempt_make_a_strong_ptr(SOURCE_RCP_TYPE ptr) {
   while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
-  RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong(true); // ptr can be weak or strong - the weak ptrs may fail
+  RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong_thread_safe(); // ptr can be weak or strong - the weak ptrs may fail
   if (possibleStrongPtr.is_null()) {
     ++s_count_failed_conversions;
   }
