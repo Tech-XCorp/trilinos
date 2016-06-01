@@ -192,7 +192,7 @@ private:
   T *ptr_;
 
 #ifdef TEUCHOS_DEBUG
-  WeakRCP<T> weak_rcp_;
+  RCP<T> rcp_;
 #endif
 
   void debug_assert_not_null() const
@@ -210,8 +210,8 @@ public: // Bad bad bad
   Ptr( const RCP<T> &p );
   T* access_private_ptr() const
     { return ptr_; }
-  const WeakRCP<T> access_weak_rcp() const
-    { return weak_rcp_; }
+  const RCP<T> access_rcp() const
+    { return rcp_; }
 #endif
 
 
@@ -314,8 +314,8 @@ RCP<T> rcpFromPtr( const Ptr<T>& ptr )
   // In a debug build, just grab out the WEAK RCP and return it.  That way we
   // can get dangling reference checking without having to turn on more
   // expensive RCPNode tracing.
-  if (!is_null(ptr.access_weak_rcp()))
-    return ptr.access_weak_rcp().create_strong(); // MDM  - have to resolve this!
+  if (!is_null(ptr.access_rcp()))
+    return ptr.access_rcp();
 #endif
   return rcpFromRef(*ptr);
 }

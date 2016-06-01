@@ -45,7 +45,7 @@
 
 
 #include "Teuchos_PtrDecl.hpp"
-#include "Teuchos_WeakRCP.hpp"
+#include "Teuchos_RCP.hpp"
 
 
 namespace Teuchos {
@@ -72,7 +72,7 @@ template<class T> inline
 Ptr<T>::Ptr(const Ptr<T>& ptr_in)
   :ptr_(ptr_in.ptr_)
 #ifdef TEUCHOS_DEBUG
-  ,weak_rcp_(ptr_in.access_weak_rcp())
+  ,rcp_(ptr_in.access_rcp())
 #endif
 {}
 
@@ -82,7 +82,7 @@ template<class T2> inline
 Ptr<T>::Ptr(const Ptr<T2>& ptr_in)
   :ptr_(ptr_in.get())
 #ifdef TEUCHOS_DEBUG
-  ,weak_rcp_(ptr_in.access_weak_rcp())
+  ,rcp_(ptr_in.access_rcp())
 #endif
 {}
 
@@ -92,7 +92,7 @@ Ptr<T>& Ptr<T>::operator=(const Ptr<T>& ptr_in)
 {
   ptr_ = ptr_in.get();
 #ifdef TEUCHOS_DEBUG
-  weak_rcp_ = ptr_in.weak_rcp_;
+  rcp_ = ptr_in.rcp_;
 #endif
   return *this;
 }
@@ -164,7 +164,7 @@ template<class T> inline
 void Ptr<T>::debug_assert_valid_ptr() const
 {
 #ifdef TEUCHOS_DEBUG
-  weak_rcp_.access_private_node().assert_valid_ptr(*this);
+  rcp_.access_private_node().assert_valid_ptr(*this);
 #endif
 }
 
@@ -174,7 +174,7 @@ void Ptr<T>::debug_assert_valid_ptr() const
 
 template<class T> inline
 Ptr<T>::Ptr( const RCP<T> &p )
-  : ptr_(p.access_private_ptr()), weak_rcp_(p.create_weak())
+  : ptr_(p.getRawPtr()), rcp_(p)
 {}
 
 

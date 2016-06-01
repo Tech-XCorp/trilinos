@@ -47,11 +47,20 @@
 #ifdef HAVE_TEUCHOSCORE_CXX11
 
 #include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayRCP.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
+#include "TestClasses.hpp"
 
 namespace {
 
 using Teuchos::ArrayView;
+using Teuchos::ArrayRCP;
+using Teuchos::RCP;
+using Teuchos::rcp;
+using Teuchos::rcpFromRef;
+using Teuchos::null;
+  
+
 
 // Note - this is going to be developed to include unit tests related to ArrayView
 

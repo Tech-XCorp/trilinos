@@ -62,7 +62,6 @@
 namespace {
 using Teuchos::null;
 using Teuchos::RCP;
-using Teuchos::WeakRCP;
 using Teuchos::rcp;
 
 //
@@ -391,7 +390,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPWeakStrongDeleteRace )
     		  threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr.create_strong()));
     		}
     		else {
-    		  threads.push_back(std::thread(thread_gets_a_copy_of_rcp<WeakRCP<CatchMemoryLeak>>, ptr.create_weak()));
+    		  threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr.create_weak()));
     		}
     	  bToggleStrong = !bToggleStrong;
     	}
@@ -464,7 +463,7 @@ static std::atomic<int> s_count_failed_conversions(0);
 template<class SOURCE_RCP_TYPE>
 static void attempt_make_a_strong_ptr(SOURCE_RCP_TYPE ptr) {
   while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
-  RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong(); // ptr can be weak or strong - the weak ptrs may fail
+  RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong(true); // ptr can be weak or strong - the weak ptrs may fail
   if (possibleStrongPtr.is_null()) {
     ++s_count_failed_conversions;
   }
@@ -491,7 +490,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
             threads.push_back(std::thread(attempt_make_a_strong_ptr<RCP<CatchMemoryLeak>>, ptr.create_strong()));
     	}
     	else {
-            threads.push_back(std::thread(attempt_make_a_strong_ptr<WeakRCP<CatchMemoryLeak>>, ptr.create_weak()));
+            threads.push_back(std::thread(attempt_make_a_strong_ptr<RCP<CatchMemoryLeak>>, ptr.create_weak()));
     	}
         bCycleStrong = !bCycleStrong;
       }
@@ -511,6 +510,8 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
   TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
   TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
   TEST_EQUALITY(CatchMemoryLeak::s_countAllocated, 0); 			// should be 0
+  
+
 }
 
 } // namespace
