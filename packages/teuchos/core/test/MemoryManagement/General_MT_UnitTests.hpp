@@ -74,6 +74,13 @@ public:
 std::atomic<int> CatchMemoryLeak::s_countAllocated(0);	// counts constructor calls (+1) and destructor calls (-1) which may include double delete events
 std::atomic<int> CatchMemoryLeak::s_countDeallocs(0);	// counts dealloc or dellocHandle calls - used for test 4 and test 5
 
+class ThreadTestManager // manages a bool for spin locking unit test threads - the idea is to hold all threads until ready and then release simultaneously to maximize race condition probability
+{
+public:
+  static std::atomic<bool> s_bAllowThreadsToRun;
+};
+std::atomic<bool> ThreadTestManager::s_bAllowThreadsToRun(false);
+
 } // end namespace
 
 #endif // end #ifdef HAVE_TEUCHOSCORE_CXX11
