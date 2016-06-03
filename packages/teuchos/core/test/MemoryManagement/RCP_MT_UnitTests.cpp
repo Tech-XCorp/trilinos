@@ -49,9 +49,9 @@
 // #define BREAK_ATOMIC_WEAK_TO_STRONG_CONVERSION     // breaks test 9 by making weak to strong conversion not thread safe
 
 #include "TeuchosCore_ConfigDefs.hpp"
-#include "General_MT_UnitTests.hpp"
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
+#include "General_MT_UnitTests.hpp"
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_RCPNode.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
@@ -93,10 +93,8 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
 // Test debug node tracing thread safety
 // Restore failure by defining DISABLE_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING at the top (and run debug mode) which removes protective mutex on RCPNodeTracer::removeRCPNode() and RCPNodeTracer::addNewRCPNode()
 //
-static std::atomic<bool> s_bAllowThreadsToRun;				// this static is used to spin lock all the threads - after we allocate we set this true and all threads can complete
-
 static void create_independent_rcp_objects(int numAllocations) {
-  while (!s_bAllowThreadsToRun) {}
+  while (!ThreadTestManager::s_bAllowThreadsToRun) {}
   for(int n = 0; n < numAllocations; ++n ) {
     RCP<int> ptr( new int ); // this allocates a new rcp ptr independent of all other rcp ptrs, and then dumps it, over and over
   }
@@ -112,11 +110,11 @@ TEUCHOS_UNIT_TEST( RCP, mtCreateIndependentRCP )
   int initialNodeCount = Teuchos::RCPNodeTracer::numActiveRCPNodes();
   try {
     std::vector<std::thread> threads;
-    s_bAllowThreadsToRun = false;
+    ThreadTestManager::s_bAllowThreadsToRun = false;
     for (int i = 0; i < numThreads; ++i) {
       threads.push_back(std::thread(create_independent_rcp_objects, numRCPAllocations));
     }
-    s_bAllowThreadsToRun = true;
+    ThreadTestManager::s_bAllowThreadsToRun = true;
     for (int i = 0; i < threads.size(); ++i) {
       threads[i].join();
     }
@@ -161,7 +159,7 @@ TEUCHOS_UNIT_TEST( RCP, mtTestGetExistingRCPNodeGivenLookupKey )
 //
 template<typename SOURCE_RCP_TYPE>
 static void thread_gets_a_copy_of_rcp(SOURCE_RCP_TYPE ptr) {
-  while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+  while(!ThreadTestManager::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
   // note we don't actually do anything - the thread was passed a copy which is all we need for this test - it will be deleted when the thread ends.
 }
 
@@ -173,13 +171,13 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThread )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countAllocated = 0;								// initialize
       RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak);						// only 1 new allocation happens in this test
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr));
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -199,7 +197,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThread )
 // Perhaps we can delete this one.
 //
 static void thread_sets_copy_of_rcp_to_null(RCP<CatchMemoryLeak> ptr) {
-  while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+  while(!ThreadTestManager::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
   ptr = null;
 }
 
@@ -211,13 +209,13 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadUsingSetNull )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countAllocated = 0;								// initialize
       RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak);						// only 1 new allocation happens in this test
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         threads.push_back(std::thread(thread_sets_copy_of_rcp_to_null, ptr));
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -250,13 +248,13 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadWithDealloc )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countDeallocs = 0; // set it to 0
       RCP<CatchMemoryLeak> ptr = rcpWithDealloc(new CatchMemoryLeak, Teuchos::deallocFunctorDelete<CatchMemoryLeak>(deallocCatchMemoryLeak));
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr));
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -276,7 +274,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadWithDealloc )
 // In initial tests we did not determine there was any problem with release()
 //
 static void call_release_on_rcp_if_flag_is_set(RCP<CatchMemoryLeak> ptr, int numCopies, bool bCallsRelease) {
-  while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+  while(!ThreadTestManager::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
   if(bCallsRelease) {
     ptr.release(); // should make a memory leak!
   }
@@ -292,14 +290,14 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPThreadCallsRelease )
       CatchMemoryLeak::s_countAllocated = 0;								// initialize
       CatchMemoryLeak * pMemoryToLeak = new CatchMemoryLeak;
       RCP<CatchMemoryLeak> ptr(pMemoryToLeak);
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         bool bCallRelease = (threadIndex==0); 							// only the first one calls release
         threads.push_back(std::thread(call_release_on_rcp_if_flag_is_set, ptr, 1, bCallRelease));
       }
       ptr = null;
-      s_bAllowThreadsToRun = true;
+      ThreadTestManager::s_bAllowThreadsToRun = true;
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();
       }
@@ -347,13 +345,13 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPExtraData )
       RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak[1]);					// standard delete will be wrong - should call delete[]
       ptr.release();		// extra data will handle the case
       Teuchos::set_extra_data( ExtraDataTest<CatchMemoryLeak>::create(ptr.getRawPtr()), "dealloc", Teuchos::inOutArg(ptr));
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr));
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -380,7 +378,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPWeakStrongDeleteRace )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countAllocated = 0;								// initialize
       RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak);						// only 1 new allocation happens in this test
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       bool bToggleStrong = true;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
@@ -394,7 +392,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPWeakStrongDeleteRace )
       }
       ptr = null;
       // at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -429,13 +427,13 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadWithDeallocHandle )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countDeallocs = 0; // set it to 0
       RCP<CatchMemoryLeak> ptr = rcpWithDealloc(new CatchMemoryLeak, Teuchos::deallocFunctorHandleDelete<CatchMemoryLeak>(deallocHandleCatchMemoryLeak));
-      s_bAllowThreadsToRun = false;										// prepare the threads to be spin locked
+      ThreadTestManager::s_bAllowThreadsToRun = false;										// prepare the threads to be spin locked
       std::vector<std::thread> threads;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
         threads.push_back(std::thread(thread_gets_a_copy_of_rcp<RCP<CatchMemoryLeak>>, ptr));
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;										// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;										// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();												// when join completes rcp should be completely deleted
       }
@@ -460,7 +458,7 @@ static std::atomic<int> s_count_failed_conversions(0);
 
 template<class SOURCE_RCP_TYPE>
 static void attempt_make_a_strong_ptr(SOURCE_RCP_TYPE ptr) {
-  while(!s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
+  while(!ThreadTestManager::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
   RCP<CatchMemoryLeak> possibleStrongPtr = ptr.create_strong_thread_safe(); // ptr can be weak or strong - the weak ptrs may fail
   if (possibleStrongPtr.is_null()) {
     ++s_count_failed_conversions;
@@ -480,7 +478,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
     for(int cycleIndex = 0; cycleIndex < numCycles; ++cycleIndex) {
       CatchMemoryLeak::s_countAllocated = 0;								// initialize
       RCP<CatchMemoryLeak> ptr(new CatchMemoryLeak);						// only 1 new allocation happens in this test
-      s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
+      ThreadTestManager::s_bAllowThreadsToRun = false; 										// prepare to spin lock the threads
       std::vector<std::thread> threads;
       bool bCycleStrong = true;
       for (int threadIndex = 0; threadIndex < numThreads; ++threadIndex) {
@@ -493,7 +491,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
         bCycleStrong = !bCycleStrong;
       }
       ptr = null;															// at this point threads are spin locked and holding copies - release the ptr in the main thread
-      s_bAllowThreadsToRun = true;											// now we release all the threads
+      ThreadTestManager::s_bAllowThreadsToRun = true;											// now we release all the threads
       for (int i = 0; i < threads.size(); ++i) {
         threads[i].join();													// when join completes rcp should be completely deleted
       }
@@ -505,11 +503,9 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPMixedWeakAndStrongConvertToStrong )
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
   std::cout << "WeakRCP->RCP conversion returned null " << s_count_failed_conversions << " times and succeeded " << s_count_successful_conversions << " times. We want to see some of each in this test." << std::endl;
 
-  TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);			// this has to be a mixed result or the test is not doing anything useful
+  TEST_INEQUALITY_CONST(s_count_failed_conversions, 0);       // this has to be a mixed result or the test is not doing anything useful
   TEST_INEQUALITY_CONST(s_count_successful_conversions, 0);		// this has to be a mixed result or the test is not doing anything useful
-  TEST_EQUALITY(CatchMemoryLeak::s_countAllocated, 0); 			// should be 0
-  
-
+  TEST_EQUALITY(CatchMemoryLeak::s_countAllocated, 0);        // should be 0
 }
 
 } // namespace

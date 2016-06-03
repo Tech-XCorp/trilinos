@@ -57,7 +57,12 @@
 
 namespace Teuchos {
 
-
+#ifdef HAVE_TEUCHOSCORE_CXX11
+#  ifndef REMOVE_THREAD_PROTECTION_FOR_ARRAY        // This is used to make an inverted unit test - to demonstrate we can show mangling if these protections don't exist
+#    define USE_MUTEX_LOCK_FOR_ARRAY
+#  endif
+#endif
+  
 /** \brief .
  *
  * \ingroup teuchos_mem_mng_grp
@@ -495,6 +500,9 @@ private:
   RCP<std::vector<T> > vec_;
   mutable ArrayRCP<T> extern_arcp_;
   mutable ArrayRCP<const T> extern_carcp_;
+#ifdef USE_MUTEX_LOCK_FOR_ARRAY
+  mutable std::mutex mutex_locks_arrayrcp;
+#endif
 #else
   std::vector<T> vec_;
 #endif
@@ -874,6 +882,9 @@ typename Array<T>::iterator
 Array<T>::begin()
 {
 #ifdef HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
+#ifdef USE_MUTEX_LOCK_FOR_ARRAY
+  std::lock_guard<std::mutex> lockGuard(mutex_locks_arrayrcp);
+#endif
   if (is_null(extern_arcp_)) {
     // Here we must use the same RCP to avoid creating two unrelated RCPNodes!
     extern_arcp_ = arcp(vec_); // Will be null if vec_ is sized!
@@ -904,6 +915,9 @@ typename Array<T>::const_iterator
 Array<T>::begin() const
 {
 #ifdef HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
+#ifdef USE_MUTEX_LOCK_FOR_ARRAY
+  std::lock_guard<std::mutex> lockGuard(mutex_locks_arrayrcp);
+#endif
   if (is_null(extern_carcp_)) {
     extern_carcp_ = const_cast<Array<T>*>(this)->begin();
   }
