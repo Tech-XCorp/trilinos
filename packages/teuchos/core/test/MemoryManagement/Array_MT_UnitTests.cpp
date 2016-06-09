@@ -38,7 +38,6 @@ namespace {
   static void share_const_array_to_threads(RCP<const Array<int>> shared_array) {
     while (!ThreadTestManager::s_bAllowThreadsToRun) {}
     for (Array<int>::const_iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {
-      // do nothing here - the point is to call the begin()
     }
   }
   
@@ -103,7 +102,7 @@ namespace {
         }
       }
       TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-      
+   
       convenience_log_progress(testCycle, numTests);					// this is just output
     }
 

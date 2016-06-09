@@ -45,6 +45,7 @@
 
 // This will be activated later - currently it detects undefined memory events and need to resolve how we will approach this
 #ifdef CURRENTLY_DISABLED // HAVE_TEUCHOSCORE_CXX11
+
 #include "General_MT_UnitTests.hpp"
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
@@ -160,8 +161,9 @@ TEUCHOS_UNIT_TEST( Ptr, mtPtrDangling )
   TEST_ASSERT( bDanglingReferenceDetectionCountIsOK ) // somewhat arbitrary - verify we detected at least of half of possible danglers
   TEST_EQUALITY_CONST(scrambledMemoryEvents, 0); // this is ultimately the final test - when we fix this issue we should never accidentally read bad memory
 }
+
 #endif // TEUCHOS_DEBUG
-  
+
 } // end namespace
 
 #endif // end HAVE_TEUCHOSCORE_CXX11
