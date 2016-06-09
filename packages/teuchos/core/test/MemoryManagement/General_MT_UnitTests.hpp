@@ -60,6 +60,7 @@ static void convenience_log_progress(int cycle, int totalCycles) {
   int mod = (totalCycles/10);														// log every 10% percent complete - using mod % to output at regular intervals
   if((cycle % (mod == 0 ? 1 : mod) == 0) || (cycle == totalCycles-1)) {				// sometimes quick testing so make sure mod is not 0
     std::cout << (int)( 100.0f * (float) cycle / (float) (totalCycles-1) ) << "% ";
+    std::flush( std::cout ); // not necessary on some setups but for Xcode this would not work without the flush command - it waits for an endl
   }
 }
 
@@ -78,8 +79,10 @@ class ThreadTestManager // manages a bool for spin locking unit test threads - t
 {
 public:
   static std::atomic<bool> s_bAllowThreadsToRun;
+  static std::atomic<int> s_countCompletedThreads; // utility to tell special threads when main threads have finished work
 };
 std::atomic<bool> ThreadTestManager::s_bAllowThreadsToRun(false);
+std::atomic<int> ThreadTestManager::s_countCompletedThreads(0);
 
 } // end namespace
 
