@@ -42,9 +42,8 @@
 */
 
 #include "TeuchosCore_ConfigDefs.hpp"
-
-// This will be activated later - currently it detects undefined memory events and need to resolve how we will approach this
-#ifdef CURRENTLY_DISABLED // HAVE_TEUCHOSCORE_CXX11
+#ifdef TEUCHOS_DEBUG // this test is only meaningful in DEBUG and would crash in RELEASE with undefined behavior
+#ifdef HAVE_TEUCHOSCORE_CXX11
 #include "General_MT_UnitTests.hpp"
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_UnitTestHarness.hpp"
@@ -63,78 +62,98 @@ using Teuchos::rcp;
 using Teuchos::ptrFromRef;
 using Teuchos::rcpFromPtr;
 
-#ifdef TEUCHOS_DEBUG // this test is only meaningful in DEBUG and would crash in RELEASE with undefined behavior
+#define UNSET_CYCLE_INDEX -1              // helps to track which thread cycle an event occurred on, -1 means it was never set
+struct Cycle_Index_Tracker
+{
+  Cycle_Index_Tracker()
+  {
+    danglingReference = UNSET_CYCLE_INDEX;
+    scambledMemory = UNSET_CYCLE_INDEX;
+    unknownError = UNSET_CYCLE_INDEX;
+  }
+  int danglingReference;                  // tracks when a dangling reference was hit
+  int scambledMemory;                     // tracks when scrambled memory was detected
+  int unknownError;                       // tracks an unknown exception - not expected to happen
+  std::atomic<int> trackCycle;            // this is for feedback to indicate how many times the thread has actually done a loop
+};
   
-static void share_ptr_to_threads(Ptr<int> shared_ptr, int theTestValue, int totalCycles, int & danglingReferenceDetectionCycle, int & scrambledMemoryDetectionCycle, std::atomic<int> & trackCycle) {
+static void share_ptr_to_threads(Ptr<int> shared_ptr, int theTestValue, Cycle_Index_Tracker & index_tracker) {
   while (!ThreadTestManager::s_bAllowThreadsToRun) {}
   int cycle = 0;
   try {
-    for (cycle = 0; cycle < totalCycles; ++cycle) {
+    while (true) {
+      bool bCheckStatus = ThreadTestManager::s_bMainThreadSetToNull;
+      
       // there are four possible outcomes of getRawPtr()
          // (1) the ptr debug check returns dangling and a proper throw is detected - in this case we are certain of our result
          // (2) the ptr debug check returns valid and we can read the data (because we are lucky and the data remains valid while we use it)
          // (3) the ptr debug check returns valid, gets deleted by another thread immediately after, but we read the deleted data without knowing because it still contains the proper memory
          // (4) the ptr debug check returns valid, gets deleted by another thread immediately after, is overwriteen by another heap allocation, and we read the scrambled data without knowing
       
-      trackCycle = cycle;
+      index_tracker.trackCycle = cycle;
       
       if (*shared_ptr != theTestValue) {
-        scrambledMemoryDetectionCycle = cycle;
+        index_tracker.scambledMemory = cycle;
       }
       
       // the scrambler int is trying to jump into the released memory spot through a heap allocation and disrupt the ptr value
       int * pScramblerInt = new int;
       *pScramblerInt = 0; // we hope to set the dangling memory space here
       delete pScramblerInt;
+      
+      if (bCheckStatus) {
+        index_tracker.unknownError = cycle;
+        break; // when bCheckStatus true it means we started the loop after the main rcp was set null - we should have thrown a DanglingReference by now
+      }
+      ++cycle;
     }
   }
   catch(DanglingReferenceError) {
-    danglingReferenceDetectionCycle = cycle;
+    index_tracker.danglingReference = cycle;
   }
 }
   
 TEUCHOS_UNIT_TEST( Ptr, mtPtrDangling )
 {
   const int numThreads = 4;
-  const int numCyclesInThread = 100;
   const int theTestValue = 1454083084;
   const int numTests = 1000000;
   
-  int countNonTrivialDanglingReferences = 0; // we want to count when it's not trivial (first cycle or last cycle)
-  int approximateNumberOfDanglingReferenceDetections = numThreads * numTests; // each thread is one possible dangling reference detection but we don't necessarily always read one - most of the time
+  int countDanglingReferences = 0; // we want to count when it's not trivial (first cycle or last cycle)
   int scrambledMemoryEvents = 0;
+  int unknownErrors = 0;
   for (int testCycle = 0; testCycle < numTests; ++testCycle) {
     try {
-      int * pInt = new int;                                 // create a new int - RCP will own this int and manage its memory
-      *pInt = theTestValue;                                 // set the int to a test value - we will check for
+      int * pInt = new int;                               // create a new int - RCP will own this int and manage its memory
+      *pInt = theTestValue;                               // set the int to a test value - we will check for
       RCP<int> shared_rcp = rcp(pInt);                    // first make an RCP
       Ptr<int> shared_ptr = shared_rcp.ptr();             // now make a Ptr which remembers a weak reference to that RCP
     
       std::vector<std::thread> threads;
       ThreadTestManager::s_bAllowThreadsToRun = false;
-      int danglingReferenceDetectionCycle[numThreads];
-      int scrambledMemoryDetectionCycle[numThreads];
-      std::atomic<int> trackCycle[numThreads];            // make these atomic - we will kill the rcp mid loop
+      ThreadTestManager::s_bMainThreadSetToNull = false;
+      Cycle_Index_Tracker index_tracker[numThreads];
       for (int i = 0; i < numThreads; ++i) {
-        trackCycle[i] = -1; // unset
-        danglingReferenceDetectionCycle[i] = -1; // unset
-        scrambledMemoryDetectionCycle[i] = -1; // unset
-        threads.push_back(std::thread(share_ptr_to_threads, shared_ptr, theTestValue, numCyclesInThread, std::ref(danglingReferenceDetectionCycle[i]), std::ref(scrambledMemoryDetectionCycle[i]), std::ref(trackCycle[i])));
+        threads.push_back(std::thread(share_ptr_to_threads, shared_ptr, theTestValue, std::ref(index_tracker[i])));
       }
       ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
-      while( trackCycle[0] < numCyclesInThread/2 ) {}     // spin lock the main thread until the sub threads are getting up to about halfway done
+      while( index_tracker[0].trackCycle < 1 ) {}         // spin lock the main thread until the sub threads get started with some looping
       shared_rcp = null;                                  // the RCP becomes invalid and the Ptr types all lose their valid object
+      ThreadTestManager::s_bMainThreadSetToNull = true;   // tell the threads
       for (unsigned int i = 0; i < threads.size(); ++i) {
         threads[i].join();
       }
       
-      // for this test to be legitimate we need dangling reference detection to be happening mid loop - so verify it was found and not on the first or last cycle - though this could happen sometimes
+      // check for danglers
       for (unsigned int i = 0; i < threads.size(); ++i) {
-        if (danglingReferenceDetectionCycle[i] != -1 && danglingReferenceDetectionCycle[i] != 0 && danglingReferenceDetectionCycle[i] != numCyclesInThread-1 ) {
-          ++countNonTrivialDanglingReferences;
+        if (index_tracker[i].danglingReference != -1) {
+          ++countDanglingReferences;
         }
-        if (scrambledMemoryDetectionCycle[i] != -1 ) {
+        if (index_tracker[i].scambledMemory != -1 ) {
           ++scrambledMemoryEvents;
+        }
+        if (index_tracker[i].unknownError != -1 ) {
+          ++unknownErrors;
         }
       }
     }
@@ -143,25 +162,23 @@ TEUCHOS_UNIT_TEST( Ptr, mtPtrDangling )
     convenience_log_progress(testCycle, numTests);					// this is just output
   }
   
-  int requiredDanglingReferenceCount = approximateNumberOfDanglingReferenceDetections/2;
-  bool bDanglingReferenceDetectionCountIsOK = (countNonTrivialDanglingReferences > requiredDanglingReferenceCount);
-  
-  if( !bDanglingReferenceDetectionCountIsOK ) {
-    std::cout << std::endl << "Test completed with " << countNonTrivialDanglingReferences << " non-trivial dangling reference detections which is below a desired threshold of " << requiredDanglingReferenceCount << "." << std::endl;
-  }
-  
-  if (scrambledMemoryEvents != 0) {
-    std::cout << std::endl << "Test failed because it detected " << scrambledMemoryEvents << " scrambled memory events. Note this is currently an expected behavior - no fix yet." << std::endl;
+  int expectedDanglingReferences = numThreads * numTests;
+  if( countDanglingReferences != expectedDanglingReferences) {
+    std::cout << std::endl << "Test FAILED because only " << countDanglingReferences << " dangling references were detected but expected " << expectedDanglingReferences << "." << std::endl;
   }
   else {
-    std::cout << std::endl << "No " << scrambledMemoryEvents << " events detected. In the current code setup we expect these to happen." << std::endl;
+    std::cout << "Danglers: " << countDanglingReferences << " Scrambles: " << scrambledMemoryEvents << " ";
   }
   
-  TEST_ASSERT( bDanglingReferenceDetectionCountIsOK ) // somewhat arbitrary - verify we detected at least of half of possible danglers
-  TEST_EQUALITY_CONST(scrambledMemoryEvents, 0); // this is ultimately the final test - when we fix this issue we should never accidentally read bad memory
+  if (unknownErrors != 0) {
+    std::cout << std::endl << "Detected " << unknownErrors << " dangling references were missed which should have been detected." << std::endl;
+  }
+  
+  TEST_ASSERT(countDanglingReferences  == expectedDanglingReferences) // somewhat arbitrary - verify we detected at least of half of possible danglers
+  TEST_EQUALITY_CONST(unknownErrors, 0); // not presently an issue - this is searching for the possibility of a dangling reference missed when it should have been recorded
 }
-#endif // TEUCHOS_DEBUG
   
 } // end namespace
 
 #endif // end HAVE_TEUCHOSCORE_CXX11
+#endif // TEUCHOS_DEBUG

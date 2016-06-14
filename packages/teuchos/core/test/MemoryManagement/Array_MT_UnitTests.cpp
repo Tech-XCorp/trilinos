@@ -9,7 +9,7 @@
 
 #ifdef HAVE_TEUCHOSCORE_CXX11
 
-//#define REMOVE_MUTEX_LOCK_FOR_ARRAY // adding this line will remove the mutex lock in Array and cause the mtArrayMultipleReads unit test to fail
+//#define REMOVE_THREAD_PROTECTION_FOR_ARRAY // adding this line will remove the mutex lock in Array and cause the mtArrayMultipleReads unit test to fail
 
 #include "General_MT_UnitTests.hpp"
 #include "Teuchos_Array.hpp"
@@ -29,16 +29,20 @@ namespace {
   // non-const form
   static void share_nonconst_array_to_threads(RCP<Array<int>> shared_array) {
     while (!ThreadTestManager::s_bAllowThreadsToRun) {}
-    for (Array<int>::iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {
-      // do nothing here - the point is to call the begin()
+    for( int n = 0; n < 1000; ++n) {
+      for (Array<int>::iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {
+        // do nothing here - the point is to call the begin()
+      }
     }
   }
   
   // const form
   static void share_const_array_to_threads(RCP<const Array<int>> shared_array) {
     while (!ThreadTestManager::s_bAllowThreadsToRun) {}
-    for (Array<int>::const_iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {
-      // do nothing here - the point is to call the begin()
+    for( int n = 0; n < 1000; ++n) {
+      for (Array<int>::const_iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {
+        // do nothing here - the point is to call the begin()
+      }
     }
   }
   
@@ -80,9 +84,6 @@ namespace {
   TEUCHOS_UNIT_TEST( Array, mtArrayMultipleReads_Const )
   {
     // same as prior except now we consider a const Array<int>
-    // note that this a much more subtle pipeline for begin() which has to progress from calling the const begin() to non-const begin()
-    // this is the reason why we have two mutex members - otherwise the second begin() call would lock indefinitely
-    
     const int numThreads = 4;
     const int numTests = 100;
     
@@ -127,6 +128,7 @@ namespace {
       if (ThreadTestManager::s_countCompletedThreads >= finishWhenThisThreadCountCompletes) {
         break;
       }
+      ++ThreadTestManager::s_countWritingThreadCycles; // track cycles
     }
   }
 
@@ -158,45 +160,85 @@ namespace {
   {
     Cycle_Index_Tracker()
     {
+      missedDanglingOnFirstCycle = UNSET_CYCLE_INDEX;
       danglingReference = UNSET_CYCLE_INDEX;
       scambledMemory = UNSET_CYCLE_INDEX;
       outOfRangeError = UNSET_CYCLE_INDEX;
       unknownError = UNSET_CYCLE_INDEX;
     }
+    int missedDanglingOnFirstCycle;         // for special test with detection designed to hit on the first cycle, this tracks if it actually missed that cycle
     int danglingReference;                  // tracks when a dangling reference was hit
     int scambledMemory;                     // tracks when scrambled memory was detected
     int outOfRangeError;                    // tracks when an out of range error was found
     int unknownError;                       // tracks an unknown exception - not expected to happen
   };
 
+  enum ArrayTest_Style{
+    ArrayTest_DoReadOperations,                         // will try to read the array - this currently can lead to out of range errors
+    ArrayTest_TriggerDanglingWithIteration,             // iterator will trigger dangling references but this simple form may not trigger dangling the first cycle
+    ArrayTest_TriggerDanglingWithIterationFirstCycle    // modified test to hit the dangling reference immediately on the first cycle - it's a sanity check and the test happens with well-defined behavior
+  };
+  
   template<class Array_Template_Form>
   static void do_read_operations_on_array(RCP<Array_Template_Form> shared_array, int setValue, int scrambleValue, int numCyclesInThread,
-          Cycle_Index_Tracker & index_tracker, int maxArraySize, bool bCheckReadOperations) {
+          Cycle_Index_Tracker & index_tracker, int maxArraySize, ArrayTest_Style arrayTestStyle) {
     while (!ThreadTestManager::s_bAllowThreadsToRun) {}
     int cycle = 0;
     try {
       for (cycle = 0; cycle < numCyclesInThread; ++cycle) {
-
-        // read some values and check for scrambles
-        // two things can happen - either we get a range error and get a valid exception
-        // or perhaps we just straight out read bad memory in which case we won't get an exception but will try to trap that event here and record it
-        
-        // Activating bCheckReadOperations will trigger std::out_of_range errors (STL), RangeError (Trilinos), and sometimes a detected scramble event meaning we though the data was fine but read the wrong value
-        // This all comes from the weak ArrayRCP which currently can't protect against some race conditions
-        if (bCheckReadOperations) {
-          int readValue = shared_array->at(0);
-          if( readValue != setValue ) {
-            // was using this to see if things were working properly - but we don't necessarily expect the scrambled int to always propagate here - something else could be going on
-            if( readValue == scrambleValue) {
-              index_tracker.scambledMemory = cycle;
-            }
-            else {
-              index_tracker.scambledMemory = cycle;
+        switch (arrayTestStyle) {
+          case ArrayTest_DoReadOperations:
+          {
+            // read some values and check for scrambles
+            // two things can happen - either we get a range error and get a valid exception
+            // or perhaps we just straight out read bad memory in which case we won't get an exception but will try to trap that event here and record it
+            // usually this test will often just miss the fact that the array is changing
+            // iterators are much more sensitivie - once they are created they will detect any future change to the aray as dangling
+            int readValue = shared_array->at(0);
+            if( readValue != setValue ) {
+              // was using this to see if things were working properly - but we don't necessarily expect the scrambled int to always propagate here - something else could be going on
+              if( readValue == scrambleValue) {
+                index_tracker.scambledMemory = cycle;
+              }
+              else {
+                index_tracker.scambledMemory = cycle;
+              }
             }
           }
+          break;
+          case ArrayTest_TriggerDanglingWithIteration:
+          {
+            // this is perhaps the most 'natural' way to test the danglers detection using iterators
+            // however note that this is not guaranteed to trigger a dangling reference on a particular cycle
+            // shared_array()->begin() and shared_array->end() do not depend on the iter arrayRCP so they won't pick up the dangling
+            // it's possible for shared_array to be changing in a state so that iter++ never gets called after it gets set to shared_array->begin()
+            // for example shared_array()->end() may change to be much smaller than begin(), or much larger()
+            // then the loop ends and we go to the next cycle - that is why this test loops in the first place
+            // Another test bGuaranteeDanglingDetectionOnFirstCycle true will always hit dangling on the first cycle
+            for (Array<int>::const_iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter)
+            {
+              // empty loop
+            }
+          }
+          break;
+          case ArrayTest_TriggerDanglingWithIterationFirstCycle:
+          {
+            if (cycle != 0) {
+              index_tracker.missedDanglingOnFirstCycle = cycle;
+              ++ThreadTestManager::s_countCompletedThreads; // let other threads know
+              return; // this will exit the thread loop immediately - multiple threads may trigger the same error if they are having trouble - the test will fail because it won't get the dangling reference count it expected
+            }
+            Array<int>::const_iterator iter = shared_array->begin();                                  // first we allocate iter
+            int getReadWriteThreadCycles = ThreadTestManager::s_countWritingThreadCycles;             // determine what thread cycle the read/write thread is currently on
+            while (ThreadTestManager::s_countWritingThreadCycles < getReadWriteThreadCycles + 2)      // spin lock this thread until the read/write thread does at least one full cycle
+            {
+              // empty loop
+            }
+            // not call ++iter once - this MUST fail and detect the dangler - in this condition iter is always a weak reference to a node with an invalid ptr
+            ++iter; // must throw here!
+          }
+          break;
         }
-        
-        for( Array<int>::const_iterator iter = shared_array->begin(); iter < shared_array->end(); ++iter) {} // do nothing - the dangling will be generated by ++iter
       }
     }
     catch (DanglingReferenceError) {
@@ -210,19 +252,16 @@ namespace {
       index_tracker.outOfRangeError = cycle; // Note that currently I am counting Trilinos RangeError and STL std::out_of_range as all the same - they both happen since the bad memory read can be triggered at any time
       //std::cout << std::endl << "Got std::out_of_range Exception" << std::endl;
     }
-    catch (...) {
-      std::cout << std::endl << "GOT UNEXPECTED UNHANDLED EXCEPTION" << std::endl;
-    }
 
     ++ThreadTestManager::s_countCompletedThreads; // advertise we are done - when all these threads complete the push/pop thread and scambler thread will quit
   }
 
-  bool runArrayDanglingReferenceTest( bool bUseConstVersion, bool bUseScramblerThread, bool bCheckReadOperations )
+  bool runArrayDanglingReferenceTest( bool bUseConstVersion, ArrayTest_Style arrayTestStyle )
   {
     // we create a non const Array<int> and have it do many insert calls while other threads try to read it
-    const int numThreads = 4; // note that 0 is the insert thread, and 1 is the scrambler thread - so set this to be 4 or more - 3 is not sufficient as you'll not have multiple threads calling read
+    const int numThreads = 4; // note that 0 is the insert thread, and 1 is the scrambler thread - so set this to be 4 or more - 3 is not ideal as you'll only have one thread reading
 
-    const int numTests = bCheckReadOperations ? 50000 : 50000;
+    const int numTests = (arrayTestStyle == ArrayTest_DoReadOperations) ? 50000 : 50000;
     const int setValue = 1;
     const int numCyclesInThread = 10000; // once we hit the dangle we stop, so this number can/should be large ... if things are not working as we hoped...
     const int scrambleValue = 12345;
@@ -230,115 +269,166 @@ namespace {
     
     int countTotalTestRuns = 0;                     // the maximum number of errors we can detect (one per thread which is doing read operations - does not count the push/pop thread or the scramble thread)
     int countDetectedDanglingReferences = 0;        // the actual number of dangling references we detect
+    int countMissedFirstCycleDanglers = 0;          // if we are using the test designed to hit first cycle, this tracks failures
     int countScrambledMemoryEvents = 0;             // this counts the times the dangling reference missed (thought memory was fine) but it was actually not and it was found to be overwritten to the scrambleValue
     int countOutOfRangeEvents = 0;                  // this counts out of range errors which are currently triggered by reading the array with a concurrent write - currently Trilinos RangeError and STL std::out_of_range are grouped together
 
-
     for (int testCycle = 0; testCycle < numTests; ++testCycle) {
-      try {
-        std::vector<std::thread> threads;
-        ThreadTestManager::s_bAllowThreadsToRun = false;
-        ThreadTestManager::s_countCompletedThreads = 0;
-        int finishWhenThisThreadCountCompletes = numThreads - ( bUseScramblerThread ? 2 : 1 ); // 0 is pushing/popping, 1 is optional memory reading/writing. The rest are the reader threads looking for troubles
-        Cycle_Index_Tracker index_tracker[numThreads];              // I avoid using general Arrays as we are testing them, makes debugging thread issues easier
+      std::vector<std::thread> threads;
+      ThreadTestManager::s_bAllowThreadsToRun = false;
+      ThreadTestManager::s_countCompletedThreads = 0;
+      ThreadTestManager::s_countWritingThreadCycles = 0;
+      int finishWhenThisThreadCountCompletes = numThreads - 2; // 0 is pushing/popping, 1 is memory reading/writing. The rest are the reader threads looking for troubles
+      Cycle_Index_Tracker index_tracker[numThreads];              // I avoid using general Arrays as we are testing them, makes debugging thread issues easier
         
-        RCP<Array<int>> array_rcp = rcp(new Array<int>(1, setValue)); // makes an array of length 1 - so we will cycle from size 1 to size maxArraySize then back to 1
+      RCP<Array<int>> array_rcp = rcp(new Array<int>(1, setValue)); // makes an array of length 1 - so we will cycle from size 1 to size maxArraySize then back to 1
 
-        for (int i = 0; i < numThreads; ++i) {
-          switch (i)
-          {
-            case 0:
-              threads.push_back( std::thread(call_inserts_on_array, array_rcp, setValue, maxArraySize, finishWhenThisThreadCountCompletes) );
-              break;
-            case 1:
-              threads.push_back( std::thread(scramble_memory, scrambleValue, finishWhenThisThreadCountCompletes) );
-              break;
-            default:
-              ++countTotalTestRuns;
-              if (bUseConstVersion) {
-                threads.push_back( std::thread(do_read_operations_on_array< const Array<int> >, array_rcp, setValue, scrambleValue, numCyclesInThread, std::ref(index_tracker[i]), maxArraySize, bCheckReadOperations));
-              }
-              else {
-                threads.push_back( std::thread(do_read_operations_on_array< Array<int> >, array_rcp, setValue, scrambleValue, numCyclesInThread, std::ref(index_tracker[i]), maxArraySize, bCheckReadOperations));
-              }
-              break;
-          }
-        }
-
-        ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
-        for (unsigned int i = 0; i < threads.size(); ++i) {
-          threads[i].join();
-        }
-
-        // for this test to be legitimate we need dangling reference detection to be happening mid loop - so verify it was found and not on the first or last cycle - though this could happen sometimes
-        for (unsigned int i = 0; i < threads.size(); ++i) {
-          if (index_tracker[i].danglingReference != UNSET_CYCLE_INDEX ) { // && danglingReferenceDetectionCycle[i] != 0 && danglingReferenceDetectionCycle[i] != numCyclesInThread-1 ) {
-            ++countDetectedDanglingReferences;
-          }
-          if (index_tracker[i].scambledMemory != UNSET_CYCLE_INDEX ) {
-            ++countScrambledMemoryEvents;
-          }
-          if (index_tracker[i].outOfRangeError != UNSET_CYCLE_INDEX ) {
-            ++countOutOfRangeEvents;
-          }
+      for (int i = 0; i < numThreads; ++i) {
+        switch (i)
+        {
+          case 0:
+            threads.push_back( std::thread(call_inserts_on_array, array_rcp, setValue, maxArraySize, finishWhenThisThreadCountCompletes) );
+            break;
+          case 1:
+            threads.push_back( std::thread(scramble_memory, scrambleValue, finishWhenThisThreadCountCompletes) );
+            break;
+          default:
+            ++countTotalTestRuns;
+            if (bUseConstVersion) {
+              threads.push_back( std::thread(do_read_operations_on_array< const Array<int> >, array_rcp, setValue, scrambleValue, numCyclesInThread,
+                                             std::ref(index_tracker[i]), maxArraySize, arrayTestStyle));
+            }
+            else {
+              threads.push_back( std::thread(do_read_operations_on_array< Array<int> >, array_rcp, setValue, scrambleValue, numCyclesInThread,
+                                             std::ref(index_tracker[i]), maxArraySize, arrayTestStyle));
+            }
+            break;
         }
       }
-      catch( ... ) {
-        std::cout << "Test threw an exception but did not handle it!" << std::endl;
+
+      ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
+      for (unsigned int i = 0; i < threads.size(); ++i) {
+        threads[i].join();
       }
 
+      // for this test to be legitimate we need dangling reference detection to be happening mid loop - so verify it was found and not on the first or last cycle - though this could happen sometimes
+      for (unsigned int i = 0; i < threads.size(); ++i) {
+        if (index_tracker[i].danglingReference != UNSET_CYCLE_INDEX ) { // && danglingReferenceDetectionCycle[i] != 0 && danglingReferenceDetectionCycle[i] != numCyclesInThread-1 ) {
+          ++countDetectedDanglingReferences;
+        }
+        if (index_tracker[i].scambledMemory != UNSET_CYCLE_INDEX ) {
+          ++countScrambledMemoryEvents;
+        }
+        if (index_tracker[i].outOfRangeError != UNSET_CYCLE_INDEX ) {
+          ++countOutOfRangeEvents;
+        }
+        // we don't count these unless we designed the test to find them
+        if (arrayTestStyle == ArrayTest_TriggerDanglingWithIterationFirstCycle && index_tracker[i].missedDanglingOnFirstCycle != UNSET_CYCLE_INDEX ) {
+          ++countMissedFirstCycleDanglers;
+        }
+      }
       convenience_log_progress(testCycle, numTests);					// this is just output
     }
 
-    int totalDetectedErrors = countDetectedDanglingReferences + countOutOfRangeEvents;
-    bool bPassed_ProperErrorCount = (totalDetectedErrors == countTotalTestRuns);
-    bool bPassed_ScrambledMemoryCount = (countScrambledMemoryEvents == 0);
-    bool bPass = bPassed_ProperErrorCount && bPassed_ScrambledMemoryCount;
-    if (!bPass) {
-      std::cout << std::endl; // cosmetic - get these errors on a new line
+    switch (arrayTestStyle) {
+      case ArrayTest_DoReadOperations:
+      {
+        std::cout << "Range Errors: " << countOutOfRangeEvents << " Scrambles: " << countScrambledMemoryEvents << " ";
+      }
+      break;
+      case ArrayTest_TriggerDanglingWithIterationFirstCycle:
+      case ArrayTest_TriggerDanglingWithIteration:
+      {
+        std::cout << "Danglers: " << countDetectedDanglingReferences << " ";
+      }
+      break;
     }
     
-    if( !bPassed_ProperErrorCount ) {
-      std::cout << "Test FAILED because it detected " << countDetectedDanglingReferences << " Dangling References and " << countOutOfRangeEvents << " Out of Range events which accounts for a total of " << totalDetectedErrors << " out of " <<  countTotalTestRuns << ". We missed something! Currently some undefined memory scrambling is expected due to the weak reference." << std::endl;
+    bool bPassed_DetectDanglers = (arrayTestStyle != ArrayTest_DoReadOperations) ? (countDetectedDanglingReferences == countTotalTestRuns) : true; // not expected right now to catch these
+    bool bPassed_DetectDanglersFirstCycle = (countMissedFirstCycleDanglers == 0);
+    bool bPassed_CountOutOfRangeErrors = (arrayTestStyle == ArrayTest_DoReadOperations) ? (countOutOfRangeEvents != 0) : (countOutOfRangeEvents == 0); // ArrayTest_DoReadOperations should find out of range errors but not the other tests
+  
+    bool bPass = bPassed_DetectDanglersFirstCycle && bPassed_DetectDanglersFirstCycle && bPassed_CountOutOfRangeErrors;
+
+    if (!bPass) {
+      std::cout << std::endl; // cosmetic - get these errors on a new line - we may output more than one message below so do this first
     }
-    else if (!bPassed_ScrambledMemoryCount) {
-      std::cout << "Test FAILED because it detected " << countScrambledMemoryEvents << " scrambled memory events. Note this is currently an expected behavior - no fix yet." << std::endl;
+    
+    if (!bPassed_DetectDanglers) {
+      std::cout << "Test FAILED because it detected only " << countDetectedDanglingReferences << " Dangling References but should have detected " << countTotalTestRuns << "." << std::endl; // might suppress this later - this is a pass message
     }
-    else if (countDetectedDanglingReferences == totalDetectedErrors) {
-      std::cout << "Detected " << totalDetectedErrors << " Danglers "; // might suppress this later - this is a pass message
+    
+    if( !bPassed_DetectDanglersFirstCycle ) {
+      std::cout << "Test FAILED because it missed " << countMissedFirstCycleDanglers << " Dangling References but should have detected " << countTotalTestRuns << " on the first cycle." << std::endl;
     }
-    else { // in this case we had a mix of danglers and range errors
-      std::cout << "Detected " << countDetectedDanglingReferences << "-" << countOutOfRangeEvents << " Danglers-RangeErrors "; // might suppress this later - this is a pass message
+    
+    if( !bPassed_CountOutOfRangeErrors ) {
+      std::cout << "Test FAILED because it detected " << countOutOfRangeEvents << " out of range events but should have detected: " << ( (arrayTestStyle == ArrayTest_DoReadOperations) ? "More Than 0" : "0" ) << std::endl;
     }
 
     return bPass;
   }
   
-  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_NonConst )
-  {
-    bool bPass = runArrayDanglingReferenceTest( false, true, false );
-    TEST_ASSERT( bPass ) // in our current form we demand 100% detection
-  }
-  
-  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_Const )
-  {
-    bool bPass = runArrayDanglingReferenceTest( true, true, false );
-    TEST_ASSERT( bPass ) // in our current form we demand 100% detection
-  }
-  
-  /*
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_NonConst_ReadValues )
   {
-    bool bPass = runArrayDanglingReferenceTest( false, true, true );
-    TEST_ASSERT( bPass ) // in our current form we demand 100% detection
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( false, ArrayTest_DoReadOperations );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
   }
   
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_Const_ReadValues )
   {
-    bool bPass = runArrayDanglingReferenceTest( true, true, true );
-    TEST_ASSERT( bPass ) // in our current form we demand 100% detection
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( true, ArrayTest_DoReadOperations );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
   }
-  */
+  
+  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_NonConst )
+  {
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( false, ArrayTest_TriggerDanglingWithIteration );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
+  }
+  
+  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_Const )
+  {
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( true, ArrayTest_TriggerDanglingWithIteration );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
+  }
+  
+  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReferenceFirstCycle_NonConst )
+  {
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( false, ArrayTest_TriggerDanglingWithIterationFirstCycle );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
+  }
+  
+  TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReferenceFirstCycle_Const )
+  {
+    bool bPass = false;
+    try {
+      bPass = runArrayDanglingReferenceTest( true, ArrayTest_TriggerDanglingWithIterationFirstCycle );
+    }
+    TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
+    TEST_ASSERT( bPass )
+  }
+
 #endif // TEUCHOS_DEBUG
   
 } // end namespace

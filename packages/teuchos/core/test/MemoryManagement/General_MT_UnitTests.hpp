@@ -79,10 +79,14 @@ class ThreadTestManager // manages a bool for spin locking unit test threads - t
 {
 public:
   static std::atomic<bool> s_bAllowThreadsToRun;
-  static std::atomic<int> s_countCompletedThreads; // utility to tell special threads when main threads have finished work
+  static std::atomic<bool> s_bMainThreadSetToNull;    // this lets the sub threads know the event happened so they can quit or give errors if they don't detect something after this occurs
+  static std::atomic<int> s_countCompletedThreads;    // utility to tell special threads when main threads have finished work
+  static std::atomic<int> s_countWritingThreadCycles; // utility to count how many times a working thread has run - using this to debug other threads if they are supposed to trigger an event once this thread completes a cycle
 };
 std::atomic<bool> ThreadTestManager::s_bAllowThreadsToRun(false);
+std::atomic<bool> ThreadTestManager::s_bMainThreadSetToNull(false);
 std::atomic<int> ThreadTestManager::s_countCompletedThreads(0);
+std::atomic<int> ThreadTestManager::s_countWritingThreadCycles(0);
 
 } // end namespace
 
