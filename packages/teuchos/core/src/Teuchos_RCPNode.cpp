@@ -325,7 +325,7 @@ int RCPNodeTracer::numActiveRCPNodes()
 {
   // This list always exists, no matter debug or not so just access it.
   TEUCHOS_TEST_FOR_EXCEPT(0==rcp_node_list());
-  return rcp_node_list()->size(); // note this is a multimap and this size call should be fine for thread safety
+  return rcp_node_list()->size();
 }
 
 
@@ -518,7 +518,7 @@ void RCPNodeTracer::addNewRCPNode( RCPNode* rcp_node, const std::string &info )
 void RCPNodeTracer::removeRCPNode( RCPNode* rcp_node )
 {
 
-  // Here, we will try to remove an RCPNode regardless if whether
+  // Here, we will try to remove an RCPNode reguardless if whether
   // loc_isTracingActiveRCPNodes==true or not.  This will not be a performance
   // problem and it will ensure that any RCPNode objects that are added to
   // this list will be removed and will not look like a memory leak.  In

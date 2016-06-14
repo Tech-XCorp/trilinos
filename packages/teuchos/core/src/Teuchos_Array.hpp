@@ -1494,7 +1494,11 @@ Array<T>::vec( bool isStructureBeingModified, bool activeIter )
 #ifdef HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
   (void)activeIter;
   if (isStructureBeingModified) {
-    // Note that these are mutex protected - the mutex should always be locked when this function is called with isStructureBeingModified true
+    // Give up my ArrayRCPs used for iterator access since the array we be
+    // getting modifed!  Any clients that have views through weak pointers
+    // better not touch them!
+
+    // Note that in debug mode these are mutex protected - the mutex should always be locked when this function is called with isStructureBeingModified true
     extern_arcp_ = null;
     extern_carcp_ = null;
   }
