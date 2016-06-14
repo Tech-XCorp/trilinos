@@ -35,7 +35,7 @@ namespace {
       }
     }
   }
-  
+
   // const form
   static void share_const_array_to_threads(RCP<const Array<int>> shared_array) {
     while (!ThreadTestManager::s_bAllowThreadsToRun) {}
@@ -45,7 +45,7 @@ namespace {
       }
     }
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayMultipleReads_NonConst )
   {
     // the point of this test was to validate that multiple threads can safely read an Array
@@ -60,21 +60,21 @@ namespace {
       try {
         std::vector<std::thread> threads;
         ThreadTestManager::s_bAllowThreadsToRun = false;
-        
+
         RCP<Array<int>> array_rcp = rcp(new Array<int>( 10, 3 )); // makes an array of length 1000 with each element set to 3
         array_rcp->resize( 10, 5 ); // resize the array - need to investigate if there is any subtle issue why we should check this
-        
+
         for (int i = 0; i < numThreads; ++i) {
           threads.push_back( std::thread(share_nonconst_array_to_threads, array_rcp) );
         }
-        
+
         ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
         for (unsigned int i = 0; i < threads.size(); ++i) {
           threads[i].join();
         }
       }
       TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-      
+
       convenience_log_progress(testCycle, numTests);					// this is just output
     }
 
@@ -86,25 +86,25 @@ namespace {
     // same as prior except now we consider a const Array<int>
     const int numThreads = 4;
     const int numTests = 100;
-    
+
     for (int testCycle = 0; testCycle < numTests; ++testCycle) {
       try {
         std::vector<std::thread> threads;
         ThreadTestManager::s_bAllowThreadsToRun = false;
-        
+
         RCP<const Array<int>> array_rcp = rcp(new Array<int>( 10, 3 )); // makes an array of length 1000 with each element set to 3
-        
+
         for (int i = 0; i < numThreads; ++i) {
           threads.push_back( std::thread(share_const_array_to_threads, array_rcp) );
         }
-        
+
         ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
         for (unsigned int i = 0; i < threads.size(); ++i) {
           threads[i].join();
         }
       }
       TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
-      
+
       convenience_log_progress(testCycle, numTests);					// this is just output
     }
 
@@ -154,7 +154,7 @@ namespace {
       }
     }
   }
-  
+
   #define UNSET_CYCLE_INDEX -1              // helps to track which thread cycle an event occurred on, -1 means it was never set
   struct Cycle_Index_Tracker
   {
@@ -178,7 +178,7 @@ namespace {
     ArrayTest_TriggerDanglingWithIteration,             // iterator will trigger dangling references but this simple form may not trigger dangling the first cycle
     ArrayTest_TriggerDanglingWithIterationFirstCycle    // modified test to hit the dangling reference immediately on the first cycle - it's a sanity check and the test happens with well-defined behavior
   };
-  
+
   template<class Array_Template_Form>
   static void do_read_operations_on_array(RCP<Array_Template_Form> shared_array, int setValue, int scrambleValue, int numCyclesInThread,
           Cycle_Index_Tracker & index_tracker, int maxArraySize, ArrayTest_Style arrayTestStyle) {
@@ -266,7 +266,7 @@ namespace {
     const int numCyclesInThread = 10000; // once we hit the dangle we stop, so this number can/should be large ... if things are not working as we hoped...
     const int scrambleValue = 12345;
     const int maxArraySize = 100;
-    
+
     int countTotalTestRuns = 0;                     // the maximum number of errors we can detect (one per thread which is doing read operations - does not count the push/pop thread or the scramble thread)
     int countDetectedDanglingReferences = 0;        // the actual number of dangling references we detect
     int countMissedFirstCycleDanglers = 0;          // if we are using the test designed to hit first cycle, this tracks failures
@@ -280,7 +280,7 @@ namespace {
       ThreadTestManager::s_countWritingThreadCycles = 0;
       int finishWhenThisThreadCountCompletes = numThreads - 2; // 0 is pushing/popping, 1 is memory reading/writing. The rest are the reader threads looking for troubles
       Cycle_Index_Tracker index_tracker[numThreads];              // I avoid using general Arrays as we are testing them, makes debugging thread issues easier
-        
+
       RCP<Array<int>> array_rcp = rcp(new Array<int>(1, setValue)); // makes an array of length 1 - so we will cycle from size 1 to size maxArraySize then back to 1
 
       for (int i = 0; i < numThreads; ++i) {
@@ -343,32 +343,32 @@ namespace {
       }
       break;
     }
-    
+
     bool bPassed_DetectDanglers = (arrayTestStyle != ArrayTest_DoReadOperations) ? (countDetectedDanglingReferences == countTotalTestRuns) : true; // not expected right now to catch these
     bool bPassed_DetectDanglersFirstCycle = (countMissedFirstCycleDanglers == 0);
     bool bPassed_CountOutOfRangeErrors = (arrayTestStyle == ArrayTest_DoReadOperations) ? (countOutOfRangeEvents != 0) : (countOutOfRangeEvents == 0); // ArrayTest_DoReadOperations should find out of range errors but not the other tests
-  
+
     bool bPass = bPassed_DetectDanglersFirstCycle && bPassed_DetectDanglersFirstCycle && bPassed_CountOutOfRangeErrors;
 
     if (!bPass) {
       std::cout << std::endl; // cosmetic - get these errors on a new line - we may output more than one message below so do this first
     }
-    
+
     if (!bPassed_DetectDanglers) {
       std::cout << "Test FAILED because it detected only " << countDetectedDanglingReferences << " Dangling References but should have detected " << countTotalTestRuns << "." << std::endl; // might suppress this later - this is a pass message
     }
-    
+
     if( !bPassed_DetectDanglersFirstCycle ) {
       std::cout << "Test FAILED because it missed " << countMissedFirstCycleDanglers << " Dangling References but should have detected " << countTotalTestRuns << " on the first cycle." << std::endl;
     }
-    
+
     if( !bPassed_CountOutOfRangeErrors ) {
       std::cout << "Test FAILED because it detected " << countOutOfRangeEvents << " out of range events but should have detected: " << ( (arrayTestStyle == ArrayTest_DoReadOperations) ? "More Than 0" : "0" ) << std::endl;
     }
 
     return bPass;
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_NonConst_ReadValues )
   {
     bool bPass = false;
@@ -378,7 +378,7 @@ namespace {
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
     TEST_ASSERT( bPass )
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_Const_ReadValues )
   {
     bool bPass = false;
@@ -388,7 +388,7 @@ namespace {
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
     TEST_ASSERT( bPass )
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_NonConst )
   {
     bool bPass = false;
@@ -398,7 +398,7 @@ namespace {
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
     TEST_ASSERT( bPass )
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReference_Const )
   {
     bool bPass = false;
@@ -408,7 +408,7 @@ namespace {
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
     TEST_ASSERT( bPass )
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReferenceFirstCycle_NonConst )
   {
     bool bPass = false;
@@ -418,7 +418,7 @@ namespace {
     TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
     TEST_ASSERT( bPass )
   }
-  
+
   TEUCHOS_UNIT_TEST( Array, mtArrayDanglingReferenceFirstCycle_Const )
   {
     bool bPass = false;
@@ -430,7 +430,7 @@ namespace {
   }
 
 #endif // TEUCHOS_DEBUG
-  
+
 } // end namespace
 
 #endif // HAVE_TEUCHOSCORE_CXX11

@@ -61,7 +61,7 @@
 #include <thread>
 
 namespace {
-  
+
 using Teuchos::null;
 using Teuchos::RCP;
 using Teuchos::rcp;
@@ -93,7 +93,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRefCount )
 // Test debug node tracing thread safety
 // Restore failure by defining DISABLE_MUTEX_WHICH_PROTECTS_DEBUG_NODE_TRACING at the top (and run debug mode) which removes protective mutex on RCPNodeTracer::removeRCPNode() and RCPNodeTracer::addNewRCPNode()
 //
-  
+
 static void create_independent_rcp_objects(int numAllocations) {
   while (!ThreadTestManager::s_bAllowThreadsToRun) {}
   for(int n = 0; n < numAllocations; ++n ) {
@@ -154,7 +154,7 @@ TEUCHOS_UNIT_TEST( RCP, mtTestGetExistingRCPNodeGivenLookupKey )
 // Test the RCP deletion when the main thread has released - so one of the threads will trigger the actual final delete
 // Restore failure by defining BREAK_THREAD_SAFETY_OF_DEINCR_COUNT at the top which restores deincr_count() to a form which is not atomic.
 //
-  
+
 template<typename SOURCE_RCP_TYPE>
 static void thread_gets_a_copy_of_rcp(SOURCE_RCP_TYPE ptr) {
   while(!ThreadTestManager::s_bAllowThreadsToRun) {} // spin lock the threads so we can trigger them all at once
@@ -189,7 +189,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThread )
   TEST_EQUALITY_CONST(CatchMemoryLeak::s_countAllocated, 0);				// test for valid RCP deletion
 }
 
-  
+
 //
 // A variation - let's call ptr = null in the thread (instead of letting it just die at the end of the thread)
 // Perhaps we can delete this one.
@@ -264,19 +264,19 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadWithDealloc )
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
   TEST_EQUALITY_CONST(CatchMemoryLeak::s_countDeallocs, 1);					// we should have ended with exactly one dealloc call
 }
-  
-  //
-  // Now try the dealloHandle for good measure - for same reason as dealloc, this seems fine
-  // We can remove this test I think it's probably redundant to the dealloc test.
-  //
-  void deallocHandleCatchMemoryLeak(CatchMemoryLeak** handle)
-  {
-    ++CatchMemoryLeak::s_countDeallocs;
-    CatchMemoryLeak *ptr = *handle;
-    delete ptr;
-    *handle = 0;
-  }
-  
+
+//
+// Now try the dealloHandle for good measure - for same reason as dealloc, this seems fine
+// We can remove this test I think it's probably redundant to the dealloc test.
+//
+void deallocHandleCatchMemoryLeak(CatchMemoryLeak** handle)
+{
+  ++CatchMemoryLeak::s_countDeallocs;
+  CatchMemoryLeak *ptr = *handle;
+  delete ptr;
+  *handle = 0;
+}
+
 TEUCHOS_UNIT_TEST( RCP, mtRCPLastReleaseByAThreadWithDeallocHandle )
 {
   const int numThreads = 4;
@@ -440,7 +440,7 @@ TEUCHOS_UNIT_TEST( RCP, mtRCPWeakStrongDeleteRace )
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
   TEST_EQUALITY_CONST(CatchMemoryLeak::s_countAllocated, 0);				// test for valid RCP deletion
 }
-  
+
 //
 // This test will force conversions to strong from weak while the strong pool is deleting
 // It will generate a series of successful conversions which will then begin to return null when strong is gone

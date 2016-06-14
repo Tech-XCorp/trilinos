@@ -59,7 +59,7 @@ using Teuchos::RCP;
 using Teuchos::rcp;
 using Teuchos::null;
 using Teuchos::DanglingReferenceError;
-  
+
 static void read_arrayrcp_in_thread(ArrayRCP<int> shared_arrayrcp, int expectedValue, std::atomic<int> & countErrors) {
   while (!ThreadTestManager::s_bAllowThreadsToRun) {}
   for( int n = 0; n < 1000; ++n) {
@@ -71,22 +71,22 @@ static void read_arrayrcp_in_thread(ArrayRCP<int> shared_arrayrcp, int expectedV
     }
   }
 }
-  
+
 TEUCHOS_UNIT_TEST( ArrayRCP, mtArrayRCPMultipleReads )
 {
   const int numThreads = 4;
   const int numTests = 1000;
   const int setValue = 67359487; // arbitrary
   const int arraySize = 10;
-  
+
   std::atomic<int> countErrors(0);
-  
+
   try {
     for (int testCycle = 0; testCycle < numTests; ++testCycle) {
       std::vector<std::thread> threads;
       ThreadTestManager::s_bAllowThreadsToRun = false;
       ArrayRCP<int> shared_arrayrcp(arraySize, setValue); // some array
-        
+
       for (int i = 0; i < numThreads; ++i) {
         threads.push_back( std::thread(read_arrayrcp_in_thread, shared_arrayrcp, setValue, std::ref(countErrors)));
       }
@@ -100,7 +100,7 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtArrayRCPMultipleReads )
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, std::cerr, success);
 }
-  
+
 static void read_rcp_of_arrayrcp_in_thread(RCP<ArrayRCP<int>> shared_rcp_of_arrayrcp, int expectedValue, std::atomic<int> & countErrors) {
   while (!ThreadTestManager::s_bAllowThreadsToRun) {}
   for( int n = 0; n < 1000; ++n) {
@@ -119,19 +119,19 @@ TEUCHOS_UNIT_TEST( ArrayRCP, mtRCPofArrayRCPMultipleReads )
   const int numTests = 1000;
   const int setValue = 67359487; // arbitrary
   const int arraySize = 10;
-  
+
   std::atomic<int> countErrors(0);
-  
+
   try {
     for (int testCycle = 0; testCycle < numTests; ++testCycle) {
       std::vector<std::thread> threads;
       ThreadTestManager::s_bAllowThreadsToRun = false;
       RCP<ArrayRCP<int>> shared_rcp_of_arrayrcp = rcp(new ArrayRCP<int>(arraySize, setValue)); // some array
-        
+
       for (int i = 0; i < numThreads; ++i) {
         threads.push_back( std::thread(read_rcp_of_arrayrcp_in_thread, shared_rcp_of_arrayrcp, setValue, std::ref(countErrors)) );
       }
-        
+
       ThreadTestManager::s_bAllowThreadsToRun = true;     // let the threads run
 
       for (unsigned int i = 0; i < threads.size(); ++i) {

@@ -83,7 +83,7 @@ class TupleContainingClass
       }
       return true;
     }
-  
+
   private:
     TupleClass myTuple;
 
@@ -97,7 +97,7 @@ static void share_tuple_to_threads(RCP<TupleContainingClass> shared_tuple, std::
     }
   }
 }
-  
+
 // sanity check - this mirrors the Array test (which will fail without mutex protection) but this is ok because the ArrayView begin does not have any mutable behavior (it is true const)
 TEUCHOS_UNIT_TEST( Tuple, mtTupleMultipleReads )
 {

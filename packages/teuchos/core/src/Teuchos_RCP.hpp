@@ -517,8 +517,8 @@ bool RCP<T>::shares_resource(const RCP<T2>& r_ptr) const
   // C++ protected/private protection mechanism!
 }
 
-// Assertions
 
+// Assertions
 
 
 template<class T>
