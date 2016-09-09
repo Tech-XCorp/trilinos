@@ -554,11 +554,14 @@ class TribitsDependencies:
       if packageDeps.parentPackage == "":
         
         xmlText += ("  <SubProject name=\""+packageName+"\">\n")
-  
-        xmlText += \
-          "    <EmailAddresses>\n"+\
-          "      <Email address=\""+packageDeps.emailAddresses.regression+"\"/>\n"+\
-          "    </EmailAddresses>\n"
+#
+#  MDM - This was a patch suggested by Ross to disable the e-mails going out
+#  The lines below were disabled.
+#  It is temporary and not intended for commit to Sandia
+#        xmlText += \
+#          "    <EmailAddresses>\n"+\
+#          "      <Email address=\""+packageDeps.emailAddresses.regression+"\"/>\n"+\
+#          "    </EmailAddresses>\n"
 
         xmlText += ("  </SubProject>\n")
 
