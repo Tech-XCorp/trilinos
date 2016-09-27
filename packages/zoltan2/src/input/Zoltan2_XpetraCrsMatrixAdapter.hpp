@@ -224,9 +224,10 @@ private:
   RCP<const Xpetra::Map<lno_t, gno_t, node_t> > rowMap_;
   RCP<const Xpetra::Map<lno_t, gno_t, node_t> > colMap_;
   lno_t base_;
-  ArrayRCP<lno_t> offset_;
-  ArrayRCP<gno_t> columnIds_;  // TODO:  KDD Is it necessary to copy and store
-  ArrayRCP<scalar_t> values_;  // TODO:  the matrix here?  Would prefer views.
+  ArrayRCP< lno_t > offset_;
+  ArrayRCP< const lno_t > localColumnIds_;
+  ArrayRCP< const scalar_t > values_;
+  ArrayRCP<gno_t> columnIds_;  // TODO:  Refactor adapter to localColumnIds_
 
   int nWeightsPerRow_;
   ArrayRCP<StridedData<lno_t, scalar_t> > rowWeights_;
@@ -261,26 +262,25 @@ template <typename User, typename UserCoord>
 
   size_t nrows = matrix_->getNodeNumRows();
   size_t nnz = matrix_->getNodeNumEntries();
+
+  // Get ArrayRCP pointers to the structures in the underlying matrix
+  Teuchos::ArrayRCP< const size_t > myOffset;
+  matrix_->getAllValues(myOffset,localColumnIds_,values_);
  
   offset_.resize(nrows+1, 0);
-  columnIds_.resize(nnz);
-  values_.resize(nnz);
-  ArrayView<const lno_t> indices;
-  ArrayView<const scalar_t> nzs;
+  columnIds_.resize(nnz, 0);
   lno_t next = 0;
-//TODO WE ARE COPYING THE MATRIX HERE.  IS THERE A WAY TO USE VIEWS?
-//TODO THEY ARE AVAILABLE IN EPETRA; ARE THEY AVAIL IN TPETRA AND XPETRA?
+  // TODO: Refactor the Adapter to use local column ids rather than global ids.
+  // TODO: Refactor the adapter so that offset_ has type size_t, rather than lno_t
+  // This will remove the need for this loop
   for (size_t i=0; i < nrows; i++){
     lno_t row = i + base_;
     nnz = matrix_->getNumEntriesInLocalRow(row);
-    matrix_->getLocalRowView(row, indices, nzs);
     for (size_t j=0; j < nnz; j++){
-      values_[next] = nzs[j];
-      // TODO - this will be slow
-      //   Is it possible that global columns ids might be stored in order?
-      columnIds_[next++] = colMap_->getGlobalElement(indices[j]);
+      columnIds_[next++] = colMap_->getGlobalElement(localColumnIds_[j+myOffset[i]]);
     }
-    offset_[i+1] = offset_[i] + nnz;
+    offset_[i] = (lno_t) myOffset[i];
+    if (i==(nrows-1)) offset_[i+1]=offset_[i] + nnz;
   } 
 
   if (nWeightsPerRow_ > 0){
