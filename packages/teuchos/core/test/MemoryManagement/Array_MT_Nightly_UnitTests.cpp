@@ -41,5 +41,5 @@
 // @HEADER
 */
 
-#define NUM_TESTS_TO_RUN 10 // quick Basic version - Nightly does more
-#include "Ptr_MT_UnitTests_Decl.hpp"
+#define NUM_TESTS_TO_RUN 10000 // heavy Nightly version - Basic does less
+#include "Array_MT_UnitTests_Decl.hpp"

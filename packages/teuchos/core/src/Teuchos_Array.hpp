@@ -54,7 +54,7 @@
 #include "Teuchos_Utils.hpp"
 #include "Teuchos_Assert.hpp"
 
-#if defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_ARRAY_BOUNDSCHECK) && !defined(REMOVE_THREAD_PROTECTION_FOR_ARRAY)
+#if defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_ARRAY_BOUNDSCHECK) && defined(HAVE_TEUCHOS_THREAD_SAFE) && !defined(REMOVE_THREAD_PROTECTION_FOR_ARRAY)
 #include <mutex>
 #define USE_MUTEX_LOCK_FOR_ARRAY
 #endif
@@ -929,13 +929,18 @@ Array<T>::begin() const
   std::lock_guard<std::mutex> lockGuard(mutex_lock);
 #endif
   if (is_null(extern_carcp_)) {
-    // Note that this used to call the non-const begin() function above - I've moved that code here to make the mutex locking more transparent and prevent the need to structure something awkward to avoid double locks
-    // The original line of code was this: extern_carcp_ = const_cast<Array<T>*>(this)->begin();
-    // Which is now replaced by the following code which mirrors the above begin() call
+    // Note that this used to call the non-const begin() function above
+    // I've moved that code here to make the mutex locking more transparent and
+    // prevent the need to structure something awkward to avoid double locks
+    // The original line of code was this:
+    // extern_carcp_ = const_cast<Array<T>*>(this)->begin();
+    // Now replaced by the following code which mirrors the above begin() call
     if (is_null(extern_arcp_)) {
       extern_arcp_ = arcp(vec_);
     }
-    extern_carcp_ = extern_arcp_.create_weak(); // note that we call create_weak() twice, first on the non-const and then below on the const - this preserves the original design exactly
+    // note that we call create_weak() twice, first on the non-const and then
+    // below on the const - this preserves the original design exactly
+    extern_carcp_ = extern_arcp_.create_weak();
   }
 
   // Returning a weak pointer will help to catch dangling references but still
@@ -1250,7 +1255,7 @@ Array<T>::erase(iterator position)
 #endif
   vec(true, true).erase(raw_poss);
 #ifdef USE_MUTEX_LOCK_FOR_ARRAY
-  } // must unlock mutex_lock before was call begin() or we will dead lock on second call
+  } // must unlock mutex_lock before call begin() or dead lock on second call
 #endif
   return begin() + i;
 #else
@@ -1280,7 +1285,7 @@ Array<T>::erase(iterator first, iterator last)
 #endif
   vec(true,true).erase(raw_first,raw_last);
 #ifdef USE_MUTEX_LOCK_FOR_ARRAY
-  }  // must unlock mutex_lock before was call begin() or we will dead lock on second call
+  }  // must unlock mutex_lock before call begin() or dead lock on second call
 #endif
   return begin() + i;
 #else
@@ -1498,7 +1503,9 @@ Array<T>::vec( bool isStructureBeingModified, bool activeIter )
     // getting modifed!  Any clients that have views through weak pointers
     // better not touch them!
 
-    // Note that in debug mode these are mutex protected - the mutex should always be locked when this function is called with isStructureBeingModified true
+    // Note that in debug mode these are mutex protected - the mutex should
+    // always be locked when this function is called with
+    // isStructureBeingModified true
     extern_arcp_ = null;
     extern_carcp_ = null;
   }

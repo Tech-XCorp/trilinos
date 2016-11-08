@@ -149,7 +149,6 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
     Tuple_MT_UnitTests.cpp
     ArrayRCP_MT_UnitTests.cpp
     RCP_MT_UnitTests.cpp
-    TestClasses.cpp
     ${TEUCHOS_STD_UNIT_TEST_MAIN}
   COMM serial mpi
   NUM_MPI_PROCS 1
@@ -157,6 +156,25 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
   ARGS --teuchos-suppress-startup-banner
   STANDARD_PASS_OUTPUT
   )
+
+TRIBITS_ADD_EXECUTABLE_AND_TEST(
+  MemoryManagement_MT_Nightly_UnitTests
+  SOURCES
+    Ptr_MT_Nightly_UnitTests.cpp
+    ArrayView_MT_Nightly_UnitTests.cpp
+    Array_MT_Nightly_UnitTests.cpp
+    Tuple_MT_Nightly_UnitTests.cpp
+    ArrayRCP_MT_Nightly_UnitTests.cpp
+    RCP_MT_Nightly_UnitTests.cpp
+    ${TEUCHOS_STD_UNIT_TEST_MAIN}
+  CATEGORIES NIGHTLY
+  COMM serial mpi
+  NUM_MPI_PROCS 1
+  NUM_TOTAL_CORES_USED 4
+  ARGS --teuchos-suppress-startup-banner
+  STANDARD_PASS_OUTPUT
+  )
+
 
 
 ASSERT_DEFINED(${PARENT_PACKAGE_NAME}_ENABLE_DEBUG)

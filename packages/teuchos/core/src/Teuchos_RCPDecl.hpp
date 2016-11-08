@@ -780,7 +780,7 @@ public:
    */
   inline RCP<T> create_strong() const;
 
-#ifdef HAVE_TEUCHOSCORE_CXX11
+#if defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_THREAD_SAFE)
   /** \brief This is the new thread safe version. */
   inline RCP<T> create_strong_thread_safe() const; // this format to be determined
 #endif
