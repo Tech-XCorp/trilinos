@@ -43,6 +43,9 @@
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_Exceptions.hpp"
 
+#ifdef TEUCHOS_DEBUG
+#include "Teuchos_StandardCatchMacros.hpp"
+#endif
 
 // Defined this to see tracing of RCPNodes created and destroyed
 //#define RCP_NODE_DEBUG_TRACE_PRINT
@@ -754,3 +757,26 @@ void Teuchos::throw_null_ptr_error( const std::string &type_name )
     type_name << " : You can not call operator->() or operator*()"
     <<" if getRawPtr()==0!" );
 }
+
+// Implement abort and exception handling for RCPNode
+// Note "PROGRAM ABORTING" text will be checked and to avoid having a more
+// complex code here to ensure no mixed output, I kept that as 1 MPI.
+#ifdef TEUCHOS_DEBUG
+#define TEUCHOS_IMPLEMENT_ABORT(excpt)                                         \
+  bool success = false;                                                        \
+  try { throw excpt; }                                                         \
+  TEUCHOS_STANDARD_CATCH_STATEMENTS(true,std::cerr,success);                   \
+  std::cerr << "PROGRAM ABORTING\n";                                           \
+  GlobalMPISession::abort();
+  
+void Teuchos::abort_for_exception_in_destructor(const std::exception &excpt) {
+  TEUCHOS_IMPLEMENT_ABORT(excpt);
+}
+void Teuchos::abort_for_exception_in_destructor(const int &excpt_code) {
+  TEUCHOS_IMPLEMENT_ABORT(excpt_code);
+}
+void Teuchos::abort_for_exception_in_destructor() {
+  TEUCHOS_IMPLEMENT_ABORT(std::logic_error(
+    "Caught unknown exception from destructor of RCPNode. Aborting."););
+}
+#endif // TEUCHOS_DEBUG

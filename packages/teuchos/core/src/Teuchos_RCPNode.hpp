@@ -334,6 +334,21 @@ public:
 TEUCHOSCORE_LIB_DLL_EXPORT void throw_null_ptr_error( const std::string &type_name );
 
 
+#ifdef TEUCHOS_DEBUG
+  // to fully implement abort for TEUCHOS_STANDARD_CATCH_STATEMENTS in the cpp
+  /** \brief handle std::exception when deleting RCP node. */
+  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const std::exception &excpt);
+  /** \brief handle const int &excpt_code when deleting RCP node. */
+  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const int &excpt_code);
+  /** \brief handle unknown exception when deleting RCP node. */
+  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor();
+  // called when RCPNode detects any exception in a destructor
+  #define TEUCHOS_CATCH_AND_ABORT                                                   \
+  catch(const std::exception &excpt) { abort_for_exception_in_destructor(excpt); }  \
+  catch(const int &excpt_code) { abort_for_exception_in_destructor(excpt_code); }   \
+  catch(...) { abort_for_exception_in_destructor(); }
+#endif
+
 /** \brief Debug-mode RCPNode tracing class.
  *
  * This is a static class that is used to trace all RCP nodes that are created
@@ -581,9 +596,7 @@ public:
       return ptr_ != 0;
     }
   /** \brief Delete the underlying object.
-   *
-   * Provides the "strong guarantee" when exceptions are thrown in debug mode
-   * and but may not even provide the "basic guarantee" in release mode.  .
+   * Will abort if an exception is detected in the destructor.
    */
   virtual void delete_obj()
     {
@@ -601,17 +614,7 @@ public:
             dealloc_.free(tmp_ptr);
 #ifdef TEUCHOS_DEBUG
           }
-          catch(...) { // for multithread we hope to get here...nothing is for sure
-            // in new thread safe system we abort immediately if an exception
-            // was thrown - the handling of this exception would not be thread safe
-            ptr_ = tmp_ptr; // can still do this - but may want to remove tmp_ptr completely
-
-            // Need to implement TEUCHOS_ABORT_IF(condition,statement)
-            // But need to discuss and resolve exactly how we want to resolve this
-            // and detect this.
-            std::cerr << "Abort due to exception in RCP destructor!: " << std::endl;
-            std::abort();
-          }
+          TEUCHOS_CATCH_AND_ABORT
 #endif
         }
       }

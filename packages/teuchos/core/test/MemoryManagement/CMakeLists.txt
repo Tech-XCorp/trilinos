@@ -179,6 +179,24 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
 
 ASSERT_DEFINED(${PARENT_PACKAGE_NAME}_ENABLE_DEBUG)
 
+IF (${PARENT_PACKAGE_NAME}_ENABLE_DEBUG)
+  TRIBITS_ADD_EXECUTABLE(
+    MemoryManagement_RCP_Abort
+    SOURCES
+      RCP_Abort.cpp
+    )
+
+  TRIBITS_ADD_ADVANCED_TEST(
+    MemoryManagement_RCP_Abort_Verify
+    TEST_0 EXEC MemoryManagement_RCP_Abort
+      ARGS  --enable-stacktrace
+      PASS_REGULAR_EXPRESSION_ALL
+        "PROGRAM ABORTING"
+    OVERALL_NUM_MPI_PROCS 1
+    )
+ENDIF()
+
+
 IF (HAS_TEUCHOS_GET_BASE_OBJ_VOID_PTR  AND  ${PARENT_PACKAGE_NAME}_ENABLE_DEBUG)
 
   # These tests just provide additional verification that the unit tests show
