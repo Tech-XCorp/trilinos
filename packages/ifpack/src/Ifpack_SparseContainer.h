@@ -44,7 +44,6 @@
 #define IFPACK_SPARSECONTAINER_H
 
 #include "Ifpack_Container.h"
-#include "Epetra_DataAccess.h"
 #include "Epetra_IntSerialDenseVector.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
@@ -392,7 +391,7 @@ int Ifpack_SparseContainer<T>::Initialize()
   RHS_ = Teuchos::rcp( new Epetra_MultiVector(*Map_,NumVectors_) );
   GID_.Reshape(NumRows_,1);
 
-  Matrix_ = Teuchos::rcp( new Epetra_CrsMatrix(Epetra_DataAccess::Copy,*Map_,0) );
+  Matrix_ = Teuchos::rcp( new Epetra_CrsMatrix(::Copy,*Map_,0) );
 
   // create the inverse
   Inverse_ = Teuchos::rcp( new T(Matrix_.get()) );
