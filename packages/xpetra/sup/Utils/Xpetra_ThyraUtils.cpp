@@ -67,7 +67,7 @@ namespace Xpetra {
     int nCols = mat->Cols();
 
     Teuchos::RCP<Xpetra::Matrix<double, int, int, EpetraNode> > Ablock = mat->getInnermostCrsMatrix();
-    Teuchos::RCP<Xpetra::CrsMatrixWrap<double, int, int, EpetraNode> > Ablock_wrap = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<double, int, int, EpetraNode>>(Ablock);
+    Teuchos::RCP<Xpetra::CrsMatrixWrap<double, int, int, EpetraNode> > Ablock_wrap = Teuchos::rcp_dynamic_cast<Xpetra::CrsMatrixWrap<double, int, int, EpetraNode> >(Ablock);
     TEUCHOS_TEST_FOR_EXCEPT(Ablock_wrap.is_null() == true);
 
     bool bTpetra = false;
