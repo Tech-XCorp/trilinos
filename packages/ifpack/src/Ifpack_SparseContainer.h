@@ -44,6 +44,7 @@
 #define IFPACK_SPARSECONTAINER_H
 
 #include "Ifpack_Container.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_IntSerialDenseVector.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
