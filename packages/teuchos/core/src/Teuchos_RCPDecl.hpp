@@ -780,6 +780,11 @@ public:
    */
   inline RCP<T> create_strong() const;
 
+#ifdef HAVE_TEUCHOSCORE_CXX11
+  /** \brief This is the new thread safe version. */
+  inline RCP<T> create_strong_thread_safe() const; // this format to be determined
+#endif
+
   /** \brief Returns true if the smart pointers share the same underlying
    * reference-counted object.
    *
