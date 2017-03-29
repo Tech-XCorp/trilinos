@@ -70,41 +70,41 @@
 }
 
 /* function names */
-#define KLU_scale klu_scale
-#define KLU_solve klu_solve
-#define KLU_tsolve klu_tsolve
-#define KLU_free_numeric klu_free_numeric
-#define KLU_factor klu_factor
-#define KLU_refactor klu_refactor
-#define KLU_kernel_factor klu_kernel_factor 
-#define KLU_lsolve klu_lsolve
-#define KLU_ltsolve klu_ltsolve
-#define KLU_usolve klu_usolve
-#define KLU_utsolve klu_utsolve
-#define KLU_kernel klu_kernel
-#define KLU_valid klu_valid
-#define KLU_valid_LU klu_valid_LU
-#define KLU_sort klu_sort
-#define KLU_rgrowth klu_rgrowth
-#define KLU_rcond klu_rcond
-#define KLU_extract klu_extract
-#define KLU_condest klu_condest
-#define KLU_flops klu_flops
+#define TRILINOS_KLU_scale klu_scale
+#define TRILINOS_KLU_solve klu_solve
+#define TRILINOS_KLU_tsolve klu_tsolve
+#define TRILINOS_KLU_free_numeric klu_free_numeric
+#define TRILINOS_KLU_factor klu_factor
+#define TRILINOS_KLU_refactor klu_refactor
+#define TRILINOS_KLU_kernel_factor klu_kernel_factor 
+#define TRILINOS_KLU_lsolve klu_lsolve
+#define TRILINOS_KLU_ltsolve klu_ltsolve
+#define TRILINOS_KLU_usolve klu_usolve
+#define TRILINOS_KLU_utsolve klu_utsolve
+#define TRILINOS_KLU_kernel klu_kernel
+#define TRILINOS_KLU_valid klu_valid
+#define TRILINOS_KLU_valid_LU klu_valid_LU
+#define TRILINOS_KLU_sort klu_sort
+#define TRILINOS_KLU_rgrowth klu_rgrowth
+#define TRILINOS_KLU_rcond klu_rcond
+#define TRILINOS_KLU_extract klu_extract
+#define TRILINOS_KLU_condest klu_condest
+#define TRILINOS_KLU_flops klu_flops
 
-#define KLU_analyze klu_analyze
-#define KLU_analyze_given klu_analyze_given
-#define KLU_alloc_symbolic klu_alloc_symbolic
-#define KLU_free_symbolic klu_free_symbolic
-#define KLU_defaults klu_defaults
-#define KLU_free klu_free
-#define KLU_malloc klu_malloc
-#define KLU_realloc klu_realloc
-#define KLU_add_size_t klu_add_size_t
-#define KLU_mult_size_t klu_mult_size_t
+#define TRILINOS_KLU_analyze klu_analyze
+#define TRILINOS_KLU_analyze_given klu_analyze_given
+#define TRILINOS_KLU_alloc_symbolic klu_alloc_symbolic
+#define TRILINOS_KLU_free_symbolic klu_free_symbolic
+#define TRILINOS_KLU_defaults klu_defaults
+#define TRILINOS_KLU_free klu_free
+#define TRILINOS_KLU_malloc klu_malloc
+#define TRILINOS_KLU_realloc klu_realloc
+#define TRILINOS_KLU_add_size_t klu_add_size_t
+#define TRILINOS_KLU_mult_size_t klu_mult_size_t
 
-#define KLU_symbolic klu_symbolic
-#define KLU_numeric klu_numeric
-#define KLU_common klu_common
+#define TRILINOS_KLU_symbolic trilinos_klu_symbolic
+#define TRILINOS_KLU_numeric trilinos_klu_numeric
+#define TRILINOS_KLU_common trilinos_klu_common
 
 
 /* -------------------------------------------------------------------------- */

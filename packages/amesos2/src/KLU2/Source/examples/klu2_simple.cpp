@@ -61,9 +61,9 @@ std::complex<float> b_cf [ ] = {8., 45., -3., 3., 19.} ;
 
 int main (void)
 {
-    klu_symbolic<double, int> *Symbolic ;
-    klu_numeric<double, int> *Numeric ;
-    klu_common<double, int> Common ;
+    trilinos_klu_symbolic<double, int> *Symbolic ;
+    trilinos_klu_numeric<double, int> *Numeric ;
+    trilinos_klu_common<double, int> Common ;
     int i ;
     klu_defaults<double, int> (&Common) ;
     Symbolic = klu_analyze<double, int> (n, Ap, Ai, &Common) ;
@@ -76,9 +76,9 @@ int main (void)
     klu_free_numeric<double, int> (&Numeric, &Common) ;
 
     std::cout << "Float case " << std::endl ;
-    klu_symbolic<float, int> *Symbolic_ff ;
-    klu_numeric<float, int> *Numeric_ff ;
-    klu_common<float, int> Common_ff ;
+    trilinos_klu_symbolic<float, int> *Symbolic_ff ;
+    trilinos_klu_numeric<float, int> *Numeric_ff ;
+    trilinos_klu_common<float, int> Common_ff ;
     klu_defaults<float, int> (&Common_ff) ;
     Symbolic_ff = klu_analyze<float, int> (n, Ap, Ai, &Common_ff) ;
     Numeric_ff = klu_factor<float, int> (Ap, Ai, Ax_f, Symbolic_ff, &Common_ff) ;
@@ -92,9 +92,9 @@ int main (void)
 #ifdef HAVE_TEUCHOS_COMPLEX
     std::cout << "Complex double case " << std::endl ;
     typedef std::complex<double> ComplexD ;
-    klu_symbolic<ComplexD, int> *Symbolic_C ;
-    klu_numeric<ComplexD, int> *Numeric_C ;
-    klu_common<ComplexD, int> Common_C ;
+    trilinos_klu_symbolic<ComplexD, int> *Symbolic_C ;
+    trilinos_klu_numeric<ComplexD, int> *Numeric_C ;
+    trilinos_klu_common<ComplexD, int> Common_C ;
     klu_defaults<ComplexD, int> (&Common_C) ;
     Symbolic_C = klu_analyze<ComplexD, int> (n, Ap, Ai, &Common_C) ;
     Numeric_C = klu_factor<ComplexD, int> (Ap, Ai, Ax_cd, Symbolic_C, &Common_C) ;
@@ -110,9 +110,9 @@ int main (void)
 
 /*    std::cout << "Complex float case " << std::endl ;
     typedef std::complex<float> ComplexF ;
-    klu_symbolic<ComplexF, int> *Symbolic_F ;
-    klu_numeric<ComplexF, int> *Numeric_F ;
-    klu_common<ComplexF, int> Common_F ;
+    trilinos_klu_symbolic<ComplexF, int> *Symbolic_F ;
+    trilinos_klu_numeric<ComplexF, int> *Numeric_F ;
+    trilinos_klu_common<ComplexF, int> Common_F ;
     klu_defaults<ComplexF, int> (&Common_F) ;
     Symbolic_F = klu_analyze<ComplexF, int> (n, Ap, Ai, &Common_F) ;
     Numeric_F = klu_factor<ComplexF, int> (Ap, Ai, Ax_cf, Symbolic_F, &Common_F) ;
