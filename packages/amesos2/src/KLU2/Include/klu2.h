@@ -50,7 +50,7 @@
 /* -------------------------------------------------------------------------- */
 
 /* TODO : Entry is not needed in symbolic, numeric and common. Remove TODO */
-template <typename Entry, typename Int> struct trilinos_klu_symbolic
+template <typename Entry, typename Int> struct klu_symbolic
 {
     /* A (P,Q) is in upper block triangular form.  The kth block goes from
      * row/col index R [k] to R [k+1]-1.  The estimated number of nonzeros
@@ -86,7 +86,7 @@ template <typename Entry, typename Int> struct trilinos_klu_symbolic
 /* -------------------------------------------------------------------------- */
 /* Numeric object - contains the factors computed by klu_factor */
 /* -------------------------------------------------------------------------- */
-template <typename Entry, typename Int> struct trilinos_klu_numeric 
+template <typename Entry, typename Int> struct klu_numeric 
 {
     /* LU factors of each block, the pivot row permutation, and the
      * entries in the off-diagonal blocks */
@@ -131,13 +131,13 @@ template <typename Entry, typename Int> struct trilinos_klu_numeric
 /* -------------------------------------------------------------------------- */
 
 /* Common->status values */
-#define TRILINOS_KLU_OK 0
-#define TRILINOS_KLU_SINGULAR (1)            /* status > 0 is a warning, not an error */
-#define TRILINOS_KLU_OUT_OF_MEMORY (-2)
-#define TRILINOS_KLU_INVALID (-3)
-#define TRILINOS_KLU_TOO_LARGE (-4)          /* integer overflow has occured */
+#define KLU_OK 0
+#define KLU_SINGULAR (1)            /* status > 0 is a warning, not an error */
+#define KLU_OUT_OF_MEMORY (-2)
+#define KLU_INVALID (-3)
+#define KLU_TOO_LARGE (-4)          /* integer overflow has occured */
 
-template <typename Entry, typename Int>  struct trilinos_klu_common
+template <typename Entry, typename Int>  struct klu_common
 {
 
     /* --------------------------------------------------------------------- */
@@ -163,7 +163,7 @@ template <typename Entry, typename Int>  struct trilinos_klu_common
     void *(*calloc_memory) (size_t, size_t) ;   /* pointer to calloc */
 
     /* pointer to user ordering function */
-    int (*user_order) (int, int *, int *, int *, struct trilinos_klu_common<Entry, Int> *) ;
+    int (*user_order) (int, int *, int *, int *, struct klu_common<Entry, Int> *) ;
 
     /* pointer to user data, passed unchanged as the last parameter to the
      * user ordering function (optional, the user function need not use this
@@ -183,7 +183,7 @@ template <typename Entry, typename Int>  struct trilinos_klu_common
     /* statistics */
     /* ---------------------------------------------------------------------- */
 
-    Int status ;                /* TRILINOS_KLU_OK if OK, < 0 if error */
+    Int status ;                /* KLU_OK if OK, < 0 if error */
     Int nrealloc ;              /* # of reallocations of L and U */
 
     Int structural_rank ;       /* 0 to n-1 if the matrix is structurally rank
@@ -222,7 +222,7 @@ template <typename Entry, typename Int>  struct trilinos_klu_common
 template <typename Entry, typename Int>
 Int klu_defaults
 (
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -233,13 +233,13 @@ Int klu_defaults
  * a natural ordering, or with a user-provided ordering function */
 
 template <typename Entry, typename Int>
-trilinos_klu_symbolic<Entry, Int> *klu_analyze
+klu_symbolic<Entry, Int> *klu_analyze
 (
     /* inputs, not modified */
     Int n,              /* A is n-by-n */
     Int Ap [ ],         /* size n+1, column pointers */
     Int Ai [ ],         /* size nz, row indices */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -251,7 +251,7 @@ trilinos_klu_symbolic<Entry, Int> *klu_analyze
  * if NULL. */
 
 template <typename Entry, typename Int>
-trilinos_klu_symbolic<Entry, Int> *klu_analyze_given
+klu_symbolic<Entry, Int> *klu_analyze_given
 (
     /* inputs, not modified */
     Int n,              /* A is n-by-n */
@@ -259,7 +259,7 @@ trilinos_klu_symbolic<Entry, Int> *klu_analyze_given
     Int Ai [ ],         /* size nz, row indices */
     Int P [ ],          /* size n, user's row permutation (may be NULL) */
     Int Q [ ],          /* size n, user's column permutation (may be NULL) */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -267,14 +267,14 @@ trilinos_klu_symbolic<Entry, Int> *klu_analyze_given
 /* -------------------------------------------------------------------------- */
 
 template <typename Entry, typename Int>
-trilinos_klu_numeric<Entry, Int> *klu_factor /* returns TRILINOS_KLU_OK if OK, < 0 if error */
+klu_numeric<Entry, Int> *klu_factor /* returns KLU_OK if OK, < 0 if error */
 (
     /* inputs, not modified */
     Int Ap [ ],         /* size n+1, column pointers */
     Int Ai [ ],         /* size nz, row indices */
     Entry Ax [ ],      /* size nz, numerical values */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
-    trilinos_klu_common<Entry, Int> *Common
+    klu_symbolic<Entry, Int> *Symbolic,
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -285,14 +285,14 @@ template <typename Entry, typename Int>
 Int klu_solve
 (
     /* inputs, not modified */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
-    trilinos_klu_numeric<Entry, Int> *Numeric,
+    klu_symbolic<Entry, Int> *Symbolic,
+    klu_numeric<Entry, Int> *Numeric,
     Int ldim,               /* leading dimension of B */
     Int nrhs,               /* number of right-hand-sides */
 
     /* right-hand-side on input, overwritten with solution to Ax=b on output */
     Entry B [ ],           /* size ldim*nrhs */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 
@@ -304,14 +304,14 @@ template <typename Entry, typename Int>
 Int klu_tsolve
 (
     /* inputs, not modified */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
-    trilinos_klu_numeric<Entry, Int> *Numeric,
+    klu_symbolic<Entry, Int> *Symbolic,
+    klu_numeric<Entry, Int> *Numeric,
     Int ldim,               /* leading dimension of B */
     Int nrhs,               /* number of right-hand-sides */
 
     /* right-hand-side on input, overwritten with solution to Ax=b on output */
     Entry B [ ],           /* size ldim*nrhs */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -325,10 +325,10 @@ Int klu_refactor         /* return TRUE if successful, FALSE otherwise */
     Int Ap [ ],         /* size n+1, column pointers */
     Int Ai [ ],         /* size nz, row indices */
     Entry Ax [ ],      /* size nz, numerical values */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
+    klu_symbolic<Entry, Int> *Symbolic,
     /* input, and numerical values modified on output */
-    trilinos_klu_numeric<Entry, Int> *Numeric,
-    trilinos_klu_common<Entry, Int> *Common
+    klu_numeric<Entry, Int> *Numeric,
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -338,8 +338,8 @@ Int klu_refactor         /* return TRUE if successful, FALSE otherwise */
 template <typename Entry, typename Int>
 Int klu_free_symbolic
 (
-    trilinos_klu_symbolic<Entry, Int> **Symbolic,
-    trilinos_klu_common<Entry, Int> *Common
+    klu_symbolic<Entry, Int> **Symbolic,
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -352,8 +352,8 @@ Int klu_free_symbolic
 template <typename Entry, typename Int>
 Int klu_free_numeric
 (
-    trilinos_klu_numeric<Entry, Int> **Numeric,
-    trilinos_klu_common<Entry, Int> *Common
+    klu_numeric<Entry, Int> **Numeric,
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -366,10 +366,10 @@ template <typename Entry, typename Int>
 Int klu_sort
 (
     /* inputs, not modified */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
+    klu_symbolic<Entry, Int> *Symbolic,
     /* input/output */
-    trilinos_klu_numeric<Entry, Int> *Numeric,
-    trilinos_klu_common<Entry, Int> *Common
+    klu_numeric<Entry, Int> *Numeric,
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -380,10 +380,10 @@ template <typename Entry, typename Int>
 Int klu_flops
 (
     /* inputs, not modified */
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
-    trilinos_klu_numeric<Entry, Int> *Numeric,
+    klu_symbolic<Entry, Int> *Symbolic,
+    klu_numeric<Entry, Int> *Numeric,
     /* input/output */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -409,9 +409,9 @@ Int klu_rgrowth
     Int Ap [ ],
     Int Ai [ ],
     Entry Ax [ ],
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
-    trilinos_klu_numeric<Entry, Int> *Numeric,
-    trilinos_klu_common<Entry, Int> *Common  /* Common->rgrowth = reciprocal pivot growth */
+    klu_symbolic<Entry, Int> *Symbolic,
+    klu_numeric<Entry, Int> *Numeric,
+    klu_common<Entry, Int> *Common  /* Common->rgrowth = reciprocal pivot growth */
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -427,9 +427,9 @@ Int klu_condest
 (
     Int Ap [ ],             /* size n+1, column pointers, not modified */
     Entry Ax [ ],           /* size nz = Ap[n], numerical values, not modified*/
-    trilinos_klu_symbolic<Entry, Int> *Symbolic, /* symbolic analysis, not modified */
-    trilinos_klu_numeric<Entry, Int> *Numeric,   /* numeric factorization, not modified */
-    trilinos_klu_common<Entry, Int> *Common      /* result returned in Common->condest */
+    klu_symbolic<Entry, Int> *Symbolic, /* symbolic analysis, not modified */
+    klu_numeric<Entry, Int> *Numeric,   /* numeric factorization, not modified */
+    klu_common<Entry, Int> *Common      /* result returned in Common->condest */
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -439,9 +439,9 @@ Int klu_condest
 template <typename Entry, typename Int>
 Int klu_rcond
 (
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,         /* input, not modified */
-    trilinos_klu_numeric<Entry, Int> *Numeric,           /* input, not modified */
-    trilinos_klu_common<Entry, Int> *Common              /* result in Common->rcond */
+    klu_symbolic<Entry, Int> *Symbolic,         /* input, not modified */
+    klu_numeric<Entry, Int> *Numeric,           /* input, not modified */
+    klu_common<Entry, Int> *Common              /* result in Common->rcond */
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -461,7 +461,7 @@ Int klu_scale           /* return TRUE if successful, FALSE otherwise */
     double Rs [ ],
     /* workspace, not defined on input or output */
     Int W [ ],          /* size n, can be NULL */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* -------------------------------------------------------------------------- */
@@ -472,8 +472,8 @@ template <typename Entry, typename Int>
 Int klu_extract     /* returns TRUE if successful, FALSE otherwise */
 (
     /* inputs: */
-    trilinos_klu_numeric<Entry, Int> *Numeric,
-    trilinos_klu_symbolic<Entry, Int> *Symbolic,
+    klu_numeric<Entry, Int> *Numeric,
+    klu_symbolic<Entry, Int> *Symbolic,
 
     /* outputs, either allocated on input, or ignored otherwise */
 
@@ -504,7 +504,7 @@ Int klu_extract     /* returns TRUE if successful, FALSE otherwise */
     /* R, block boundaries */
     Int *R,         /* size Symbolic->nblocks+1 (nblocks is at most n) */
 
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 
@@ -519,7 +519,7 @@ void *klu_malloc        /* returns pointer to the newly malloc'd block */
     size_t n,           /* number of items */
     size_t size,        /* size of each item */
     /* --------------- */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 template <typename Entry, typename Int>
@@ -530,7 +530,7 @@ void *klu_free          /* always returns NULL */
     size_t n,           /* number of items */
     size_t size,        /* size of each item */
     /* --------------- */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 template <typename Entry, typename Int>
@@ -543,7 +543,7 @@ void *klu_realloc       /* returns pointer to reallocated block */
     /* ---- in/out --- */
     void *p,            /* block of memory to realloc */
     /* --------------- */
-    trilinos_klu_common<Entry, Int> *Common
+    klu_common<Entry, Int> *Common
 ) ;
 
 /* ========================================================================== */
@@ -553,22 +553,22 @@ void *klu_realloc       /* returns pointer to reallocated block */
 /* All versions of KLU include these definitions.
  * As an example, to test if the version you are using is 1.2 or later:
  *
- *      if (TRILINOS_KLU_VERSION >= TRILINOS_KLU_VERSION_CODE (1,2)) ...
+ *      if (KLU_VERSION >= KLU_VERSION_CODE (1,2)) ...
  *
  * This also works during compile-time:
  *
- *      #if (KLU >= TRILINOS_KLU_VERSION_CODE (1,2))
+ *      #if (KLU >= KLU_VERSION_CODE (1,2))
  *          printf ("This is version 1.2 or later\n") ;
  *      #else
  *          printf ("This is an early version\n") ;
  *      #endif
  */
 
-#define TRILINOS_KLU_DATE "Mar 24, 2009"
-#define TRILINOS_KLU_VERSION_CODE(main,sub) ((main) * 1000 + (sub))
-#define TRILINOS_KLU_MAIN_VERSION 1
-#define TRILINOS_KLU_SUB_VERSION 1
-#define TRILINOS_KLU_SUBSUB_VERSION 0
-#define TRILINOS_KLU_VERSION TRILINOS_KLU_VERSION_CODE(TRILINOS_KLU_MAIN_VERSION,TRILINOS_KLU_SUB_VERSION)
+#define KLU_DATE "Mar 24, 2009"
+#define KLU_VERSION_CODE(main,sub) ((main) * 1000 + (sub))
+#define KLU_MAIN_VERSION 1
+#define KLU_SUB_VERSION 1
+#define KLU_SUBSUB_VERSION 0
+#define KLU_VERSION KLU_VERSION_CODE(KLU_MAIN_VERSION,KLU_SUB_VERSION)
 
 #endif

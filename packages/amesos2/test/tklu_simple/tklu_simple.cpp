@@ -117,9 +117,9 @@ int main(int argc, char *argv[]) {
 
   Teuchos::ArrayView<const Ordinal> myGlobalElements = map->getNodeElementList();
 
-//    trilinos_klu_symbolic *Symbolic ;
-//    trilinos_klu_numeric *Numeric ;
-//    trilinos_klu_common Common ;
+//    klu_symbolic *Symbolic ;
+//    klu_numeric *Numeric ;
+//    klu_common Common ;
 //    klu_defaults (&Common) ;
 
   // Solve for x the linear system Ax=b

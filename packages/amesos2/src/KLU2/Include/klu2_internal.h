@@ -114,7 +114,7 @@
 #define UNFLIP(i) (((i) < EMPTY) ? FLIP (i) : (i))
 
 template <typename Entry, typename Int>
-size_t TRILINOS_KLU_kernel   /* final size of LU on output */
+size_t KLU_kernel   /* final size of LU on output */
 (
     /* input, not modified */
     Int n,              /* A is n-by-n */
@@ -156,12 +156,12 @@ size_t TRILINOS_KLU_kernel   /* final size of LU on output */
     Int Offp [ ],   /* off-diagonal matrix (modified by this routine) */
     Int Offi [ ],
     Entry Offx [ ],
-    TRILINOS_KLU_common<Entry, Int> *Common  /* the control input/output structure */
+    KLU_common<Entry, Int> *Common  /* the control input/output structure */
 ) ;
 
 
 template <typename Entry, typename Int>
-size_t TRILINOS_KLU_kernel_factor            /* 0 if failure, size of LU if OK */
+size_t KLU_kernel_factor            /* 0 if failure, size of LU if OK */
 (
     /* inputs, not modified */
     Int n,          /* A is n-by-n. n must be > 0. */
@@ -195,11 +195,11 @@ size_t TRILINOS_KLU_kernel_factor            /* 0 if failure, size of LU if OK *
     Int Offp [ ],   /* off-diagonal matrix (modified by this routine) */
     Int Offi [ ],
     Entry Offx [ ],
-    TRILINOS_KLU_common<Entry, Int> *Common  /* the control input/output structure */
+    KLU_common<Entry, Int> *Common  /* the control input/output structure */
 ) ;
 
 template <typename Entry, typename Int>
-void TRILINOS_KLU_lsolve
+void KLU_lsolve
 (
     /* inputs, not modified: */
     Int n,
@@ -212,7 +212,7 @@ void TRILINOS_KLU_lsolve
 ) ;
 
 template <typename Entry, typename Int>
-void TRILINOS_KLU_ltsolve
+void KLU_ltsolve
 (
     /* inputs, not modified: */
     Int n,
@@ -229,7 +229,7 @@ void TRILINOS_KLU_ltsolve
 
 
 template <typename Entry, typename Int>
-void TRILINOS_KLU_usolve
+void KLU_usolve
 (
     /* inputs, not modified: */
     Int n,
@@ -243,7 +243,7 @@ void TRILINOS_KLU_usolve
 ) ;
 
 template <typename Entry, typename Int>
-void TRILINOS_KLU_utsolve
+void KLU_utsolve
 (
     /* inputs, not modified: */
     Int n,
@@ -260,7 +260,7 @@ void TRILINOS_KLU_utsolve
 ) ;
 
 template <typename Entry, typename Int>
-Int TRILINOS_KLU_valid 
+Int KLU_valid 
 (
     Int n, 
     Int Ap [ ], 
@@ -269,7 +269,7 @@ Int TRILINOS_KLU_valid
 ) ;
 
 template <typename Int>
-Int TRILINOS_KLU_valid_LU 
+Int KLU_valid_LU 
 (
     Int n, 
     Int flag_test_start_ptr, 
@@ -279,12 +279,12 @@ Int TRILINOS_KLU_valid_LU
 );
 
 template <typename Int>
-size_t TRILINOS_KLU_add_size_t (size_t a, size_t b, Int *ok) ;
+size_t KLU_add_size_t (size_t a, size_t b, Int *ok) ;
 
 template <typename Int>
-size_t TRILINOS_KLU_mult_size_t (size_t a, size_t k, Int *ok) ;
+size_t KLU_mult_size_t (size_t a, size_t k, Int *ok) ;
 
 template <typename Entry, typename Int>
-TRILINOS_KLU_symbolic<Entry, Int> *TRILINOS_KLU_alloc_symbolic (Int n, Int *Ap, Int *Ai, TRILINOS_KLU_common<Entry, Int> *Common) ;
+KLU_symbolic<Entry, Int> *KLU_alloc_symbolic (Int n, Int *Ap, Int *Ai, KLU_common<Entry, Int> *Common) ;
 
 #endif
