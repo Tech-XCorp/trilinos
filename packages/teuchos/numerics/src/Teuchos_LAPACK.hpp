@@ -1821,8 +1821,10 @@ namespace Teuchos
     void TREVC(const char& SIDE, const char& HOWMNY, int* select, const int& n, const std::complex<float>* T, const int& ldt, std::complex<float>* VL, const int& ldvl, std::complex<float>* VR, const int& ldvr, const int& mm, int* m, std::complex<float>* WORK, float* RWORK, int* info) const;
     void TREVC(const char& SIDE, const int& n, const std::complex<float>* T, const int& ldt, std::complex<float>* VL, const int& ldvl, std::complex<float>* VR, const int& ldvr, const int& mm, int* m, std::complex<float>* WORK, float* RWORK, int* info) const;
 
+    // this is the form which matches the lapack
     void TREXC(const char& COMPQ, const int& n, std::complex<float>* T, const int& ldt, std::complex<float>* Q, const int& ldq, const int& ifst, const int& ilst, std::complex<float>* WORK, int* info) const;
-
+    // this form allows a consistent API for complex and non-complex with both taking ptrs - but only the non-complex can be modified by lapack
+    void TREXC(const char& COMPQ, const int& n, std::complex<float>* T, const int& ldt, std::complex<float>* Q, const int& ldq, const int* ifst, const int* ilst, std::complex<float>* WORK, int* info) const;
     // Rotation/reflection generators
     void LARTG( const std::complex<float> f, const std::complex<float> g, float* c, std::complex<float>* s, std::complex<float>* r ) const;
     void LARFG( const int& n, std::complex<float>* alpha, std::complex<float>* x, const int& incx, std::complex<float>* tau ) const;
@@ -1951,7 +1953,11 @@ namespace Teuchos
     // Triangular matrix routines.
     void TREVC(const char& SIDE, const char& HOWMNY, int* select, const int& n, const std::complex<double>* T, const int& ldt, std::complex<double>* VL, const int& ldvl, std::complex<double>* VR, const int& ldvr, const int& mm, int* m, std::complex<double>* WORK, double* RWORK, int* info) const;
     void TREVC(const char& SIDE, const int& n, const std::complex<double>* T, const int& ldt, std::complex<double>* VL, const int& ldvl, std::complex<double>* VR, const int& ldvr, const int& mm, int* m, std::complex<double>* WORK, double* RWORK, int* info) const;
+
+    // this is the form consistent to lapack
     void TREXC(const char& COMPQ, const int& n, std::complex<double>* T, const int& ldt, std::complex<double>* Q, const int& ldq, const int& ifst, const int& ilst, std::complex<double>* WORK, int* info) const;
+    // this form allows a consistent interface for complex and non-complex with both taking ptrs for ifst and ilst
+    void TREXC(const char& COMPQ, const int& n, std::complex<double>* T, const int& ldt, std::complex<double>* Q, const int& ldq, const int* ifst, const int* ilst, std::complex<double>* WORK, int* info) const;
 
     // Rotation/reflection generators
     void LARTG( const std::complex<double> f, const std::complex<double> g, double* c, std::complex<double>* s, std::complex<double>* r ) const;

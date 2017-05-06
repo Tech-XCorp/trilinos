@@ -1379,6 +1379,13 @@ namespace Teuchos
     CTREXC_F77(CHAR_MACRO(COMPQ), &n, T, &ldt, Q, &ldq, &ifst, &ilst, info);
   }
 
+  // added this second form with ptr so complex and non-complex can use the same forms
+  // the complex forms do not modify ifst and ilst, but the non-complex forms do
+  void LAPACK<int, std::complex<float> >::TREXC(const char& COMPQ, const int& n, std::complex<float>* T, const int& ldt, std::complex<float>* Q, const int& ldq, const int* ifst, const int* ilst, std::complex<float>* WORK, int* info) const
+  {
+    CTREXC_F77(CHAR_MACRO(COMPQ), &n, T, &ldt, Q, &ldq, ifst, ilst, info);
+  }
+
 
   void LAPACK<int, std::complex<float> >::LARTG( const std::complex<float> f, const std::complex<float> g, float* c, std::complex<float>* s, std::complex<float>* r ) const
   {
@@ -1816,6 +1823,12 @@ namespace Teuchos
     ZTREXC_F77(CHAR_MACRO(COMPQ), &n, T, &ldt, Q, &ldq, &ifst, &ilst, info);
   }
 
+  // added this second form with ptr so complex and non-complex can use the same forms
+  // the complex forms do not modify ifst and ilst, but the non-complex forms do
+  void LAPACK<int, std::complex<double> >::TREXC(const char& COMPQ, const int& n, std::complex<double>* T, const int& ldt, std::complex<double>* Q, const int& ldq, const int* ifst, const int* ilst, std::complex<double>* WORK, int* info) const
+  {
+    ZTREXC_F77(CHAR_MACRO(COMPQ), &n, T, &ldt, Q, &ldq, ifst, ilst, info);
+  }
 
   void LAPACK<int, std::complex<double> >::LARTG( const std::complex<double> f, const std::complex<double> g, double* c, std::complex<double>* s, std::complex<double>* r ) const
   {
