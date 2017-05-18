@@ -337,9 +337,9 @@ TEUCHOSCORE_LIB_DLL_EXPORT void throw_null_ptr_error( const std::string &type_na
 #ifdef TEUCHOS_DEBUG
   // to fully implement abort for TEUCHOS_STANDARD_CATCH_STATEMENTS in the cpp
   /** \brief handle std::exception when deleting RCP node. */
-  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const std::exception &excpt);
+  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const std::exception &);
   /** \brief handle const int &excpt_code when deleting RCP node. */
-  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const int &excpt_code);
+  TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor(const int &);
   /** \brief handle unknown exception when deleting RCP node. */
   TEUCHOSCORE_LIB_DLL_EXPORT void abort_for_exception_in_destructor();
   // called when RCPNode detects any exception in a destructor

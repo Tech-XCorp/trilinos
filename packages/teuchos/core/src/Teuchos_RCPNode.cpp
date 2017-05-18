@@ -759,21 +759,22 @@ void Teuchos::throw_null_ptr_error( const std::string &type_name )
 }
 
 // Implement abort and exception handling for RCPNode
-// Note "PROGRAM ABORTING" text will be checked and to avoid having a more
-// complex code here to ensure no mixed output, I kept that as 1 MPI.
+// Note "PROGRAM ABORTING" text will be checked in a unit test and to
+// avoid having a more complex code here to ensure no mixed output, I kept that as 1 MPI.
+// if(!success) added to prevent DEBUG unused variable warning.
 #ifdef TEUCHOS_DEBUG
 #define TEUCHOS_IMPLEMENT_ABORT(excpt)                                         \
   bool success = false;                                                        \
   try { throw excpt; }                                                         \
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true,std::cerr,success);                   \
-  std::cerr << "PROGRAM ABORTING\n";                                           \
+  if(!success) std::cerr << "PROGRAM ABORTING\n";                              \
   GlobalMPISession::abort();
   
-void Teuchos::abort_for_exception_in_destructor(const std::exception &excpt) {
-  TEUCHOS_IMPLEMENT_ABORT(excpt);
+void Teuchos::abort_for_exception_in_destructor(const std::exception &exception) {
+  TEUCHOS_IMPLEMENT_ABORT(exception);
 }
-void Teuchos::abort_for_exception_in_destructor(const int &excpt_code) {
-  TEUCHOS_IMPLEMENT_ABORT(excpt_code);
+void Teuchos::abort_for_exception_in_destructor(const int &code) {
+  TEUCHOS_IMPLEMENT_ABORT(code);
 }
 void Teuchos::abort_for_exception_in_destructor() {
   TEUCHOS_IMPLEMENT_ABORT(std::logic_error(
