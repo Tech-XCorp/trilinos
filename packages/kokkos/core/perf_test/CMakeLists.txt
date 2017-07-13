@@ -8,6 +8,8 @@ INCLUDE_DIRECTORIES(REQUIRED_DURING_INSTALLATION_TESTING ${CMAKE_CURRENT_SOURCE_
 # that in TriBITS KokkosAlgorithms can be disabled...
 INCLUDE_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/../../algorithms/src")
 
+ADD_SUBDIRECTORY(trial)
+
 SET(SOURCES
   PerfTestMain.cpp
   PerfTestGramSchmidt.cpp

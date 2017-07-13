@@ -65,6 +65,11 @@
 #include <algorithm>
 #include <functional>
 
+#ifdef CONVERT_YAML
+typedef Teuchos::YAMLTestNode node_t;
+#else
+typedef Teuchos::XMLTestNode node_t;
+#endif
 
 struct result_struct {
   double addtime,dottime,matvectime,final_residual;
@@ -76,25 +81,25 @@ struct result_struct {
 
 
 template<class Node>
-Teuchos::XMLTestNode machine_configuration(Node node);
+node_t machine_configuration(Node node);
 
 template<class Node>
-Teuchos::XMLTestNode machine_configuration(Node node) {
-  Teuchos::XMLTestNode config = Teuchos::PerfTest_MachineConfig();
+node_t machine_configuration(Node node) {
+  node_t config = Teuchos::PerfTest_MachineConfig();
   config.addString("KokkosNodeType",node->name());
   return config;
 }
 
 
 template<class CrsMatrix>
-Teuchos::XMLTestNode test_entry(
+node_t test_entry(
     const std::string& filename_matrix,
     const std::string& filename_vector,
     int nsize, int mpi_ranks, int teams, int threads,
     Teuchos::RCP<CrsMatrix> A,
     result_struct results,int max_iters,int res_tolerance,
     double tol_small, double tol_large) {
-  Teuchos::XMLTestNode configuration("TestConfiguration");
+  node_t configuration("TestConfiguration");
   configuration.addInt("MPI_Ranks",mpi_ranks);
   configuration.addInt("Teams",teams);
   configuration.addInt("Threads",threads);
@@ -120,7 +125,7 @@ Teuchos::XMLTestNode test_entry(
   configuration.addInt("Tolerance",res_tolerance);
 
 
-  Teuchos::XMLTestNode times("TestResults");
+  node_t times("TestResults");
   times.addValueTolerance("Time_Add", Teuchos::ValueTolerance(results.addtime,tol_large));
   times.addValueTolerance("Time_Dot", Teuchos::ValueTolerance(results.dottime,tol_large));
   times.addValueTolerance("Time_MatVec", Teuchos::ValueTolerance(results.matvectime,tol_large));
@@ -132,8 +137,8 @@ Teuchos::XMLTestNode test_entry(
 
   //times.addString("Result_Residual", ValueTolerance(atof(argc[8]),4,6).as_string());
 
-  Teuchos::XMLTestNode test("TPetra::CG-Solve");
-  Teuchos::XMLTestNode entry("TestEntry");
+  node_t test("TPetra::CG-Solve");
+  node_t entry("TestEntry");
   entry.addChild(configuration);
   entry.addChild(times);
   test.addChild(entry);
@@ -260,7 +265,7 @@ run (int argc, char *argv[])
   typedef typename Tpetra::Map<>::local_ordinal_type    LO;
   typedef typename Tpetra::Map<>::global_ordinal_type   GO;
 
-  typedef Tpetra::MpiPlatform<Node>                     Platform;
+  typedef Tpetra::SerialPlatform<Node>                     Platform;
   typedef Tpetra::CrsMatrix<Scalar,LO,GO,Node>          crs_matrix_type;
   typedef Tpetra::Vector<Scalar,LO,GO,Node>             vec_type;
   typedef Tpetra::Map<LO,GO,Node>                       map_type;
@@ -385,9 +390,9 @@ run (int argc, char *argv[])
 
   // Print results.
   if (myRank == 0) {
-    Teuchos::XMLTestNode machine_config =
+    node_t machine_config =
       machine_configuration (map->getNode ());
-    Teuchos::XMLTestNode test =
+    node_t test =
       test_entry (filename, filename_vector, nsize, comm->getSize (), numteams,
                   numthreads, A, results, niters, tolerance, tol_small,
                   tol_large);

@@ -44,14 +44,7 @@
 #include <fstream>
 #include <cstring>
 #include <cstdlib>
-
-#include <Teuchos_XMLPerfTestArchive.hpp>
-
-#ifndef CONVERT_YAML
-#include <Teuchos_XMLObject.hpp>
-#include <Teuchos_FileInputSource.hpp>
-#endif
-
+#include <Kokkos_YAMLPerfTestArchive.hpp>
 
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
@@ -60,7 +53,7 @@
 #include <unistd.h>
 #endif
 
-namespace Teuchos {
+namespace Kokkos {
 
 ValueTolerance::ValueTolerance() {
   value = 0;
@@ -123,84 +116,26 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
   }
 }
 
-#ifdef CONVERT_YAML
-  YAMLTestNode::YAMLTestNode() {
-    std::cout << "Constructed empty node..." << std::endl;
-  }
-#else
-  XMLTestNode::XMLTestNode():XMLObject() {}
-#endif
-
-#ifdef CONVERT_YAML
-  YAMLTestNode::YAMLTestNode(const std::string &tag_) : tag(tag_) {
-    std::cout << "Constructed node with tag: " << tag << std::endl;
-  }
-#else
-  XMLTestNode::XMLTestNode(const std::string &tag):XMLObject(tag) {}
-#endif
-
-#ifndef CONVERT_YAML
-  XMLTestNode::XMLTestNode(XMLObjectImplem *ptr):XMLObject(ptr) {}
-#endif
-
-#ifdef CONVERT_YAML
-  // Currently don't need the copy constructor specialized...
-#else
-  XMLTestNode::XMLTestNode(XMLObject obj):XMLObject(obj) {}
-#endif
-
-#ifdef CONVERT_YAML
   void  YAMLTestNode::addDouble (const std::string &name, double val) {
     addAttribute<double>(name,val);
   }
-#else
-  void  XMLTestNode::addDouble (const std::string &name, double val) {
-    addAttribute<double>(name,val);
-  }
-#endif
 
-
-#ifdef CONVERT_YAML
   void  YAMLTestNode::addInt (const std::string &name, int val) {
     addAttribute<int>(name,val);
   }
-#else
-  void  XMLTestNode::addInt (const std::string &name, int val) {
-    addAttribute<int>(name,val);
-  }
-#endif
 
-#ifdef CONVERT_YAML
   void  YAMLTestNode::addBool (const std::string &name, bool val) {
     addAttribute<bool>(name,val);
   }
-#else
-  void  XMLTestNode::addBool (const std::string &name, bool val) {
-    addAttribute<bool>(name,val);
-  }
-#endif
 
-#ifdef CONVERT_YAML
   void YAMLTestNode::addValueTolerance(const std::string &name, ValueTolerance val){
     addAttribute<std::string>(name,val.as_string());
   }
-#else
-  void XMLTestNode::addValueTolerance(const std::string &name, ValueTolerance val){
-    addAttribute<std::string>(name,val.as_string());
-  }
-#endif
 
-#ifdef CONVERT_YAML
   void  YAMLTestNode::addString (const std::string &name, std::string val) {
     addAttribute<std::string>(name,val);
   }
-#else
-  void  XMLTestNode::addString (const std::string &name, std::string val) {
-    addAttribute<std::string>(name,val);
-  }
-#endif
 
-#ifdef CONVERT_YAML
   bool YAMLTestNode::hasChild(const std::string &name) const {
     bool found = false;
     for(int i = 0; i < numChildren(); i++) {
@@ -211,68 +146,25 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
     }
     return found;
   }
-#else
-  bool XMLTestNode::hasChild(const std::string &name) const {
-    bool found = false;
-    for(int i = 0; i < numChildren(); i++) {
-      if(name.compare(XMLObject::getChild(i).getTag()) == 0) {
-        found = true;
-        i = numChildren();
-      }
-    }
-    return found;
-  }
-#endif
 
-#ifdef CONVERT_YAML
   void YAMLTestNode::appendContentLine(const size_t& i, const std::string &str) {
-    throw std::logic_error( "To implement" );
+    throw std::logic_error("Not implemented");    
+    //ptr_->appendContentLine(i,str);
   }
-#else
-  void XMLTestNode::appendContentLine(const size_t& i, const std::string &str) {
-    ptr_->appendContentLine(i,str);
-  }
-#endif
 
-#ifdef CONVERT_YAML
   YAMLTestNode YAMLTestNode::getChild(const std::string &name) const {
     YAMLTestNode child;
-    for(size_t i = 0; i < numChildren(); i++) {
+    for(int i = 0; i < numChildren(); i++) {
       if(name.compare(getChild(i).getTag()) == 0)
         child = getChild(i);
     }
     return child;
   }
-#else
-  XMLTestNode XMLTestNode::getChild(const std::string &name) const {
-    XMLTestNode child;
-    for(int i = 0; i < numChildren(); i++) {
-      if(name.compare(XMLObject::getChild(i).getTag()) == 0)
-        child = XMLObject::getChild(i);
-    }
-    return child;
-  }
-#endif
 
-#ifdef CONVERT_YAML
-  YAMLTestNode YAMLTestNode::getChild(const int &i) const {
-    return children[i];
+  YAMLTestNode YAMLTestNode::getChild(int i) const {
+    throw std::logic_error("Not implemented!");
   }
-#else
-  XMLTestNode XMLTestNode::getChild(const int &i) const {
-    return XMLObject::getChild(i);
-  }
-#endif
 
-#ifdef CONVERT_YAML
-
-#else
-  const XMLObject* XMLTestNode::xml_object() const {
-    return (XMLObject*) this;
-  }
-#endif
-
-#ifdef CONVERT_YAML
   bool YAMLTestNode::hasSameElements(YAMLTestNode const & lhs) const {
     if((numChildren()!=lhs.numChildren()) ||
        (numContentLines()!= lhs.numContentLines()) ||
@@ -289,31 +181,8 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
 
     return true;
   }
-#else
-  bool XMLTestNode::hasSameElements(XMLTestNode const & lhs) const {
-    if((numChildren()!=lhs.numChildren()) ||
-       (numContentLines()!= lhs.numContentLines()) ||
-       (getTag().compare(lhs.getTag())!=0)) return false;
 
-    for(int i = 0; i<numChildren(); i++) {
-      const XMLTestNode child = XMLObject::getChild(i);
-      if( (!lhs.hasChild(child.getTag())) ||
-          (!child.hasSameElements(lhs.getChild(child.getTag()))) ) return false;
-    }
-
-    for(int i = 0; i<numContentLines(); i++)
-      if(getContentLine(i).compare(lhs.getContentLine(i))!=0) return false;
-
-    return true;
-  }
-#endif
-
-#ifdef CONVERT_YAML
-  YAMLTestNode PerfTest_MachineConfig() {
-#else
-  XMLTestNode PerfTest_MachineConfig() {
-#endif
-
+YAMLTestNode PerfTest_MachineConfig() {
   // Get CPUName, Number of Sockets, Number of Cores, Number of Hyperthreads
   std::string cpuname("Undefined");
   unsigned int threads = 0;
@@ -323,7 +192,8 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
   {
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
-    if((cpuinfo.rdstate()&cpuinfo.failbit)) std::cout<<"Failed to open filen\n";
+    if((cpuinfo.rdstate()&cpuinfo.failbit)) 
+      std::cout<<"Failed to open file /proc/cpuinfo... \n";
     while (!cpuinfo.eof() && !(cpuinfo.rdstate()&cpuinfo.failbit)) {
       getline (cpuinfo,line);
       if (line.find("model name") < line.size()) {
@@ -340,14 +210,11 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
     }
   }
 
-#ifdef CONVERT_YAML
-  YAMLTestNode machine_config("MachineConfiguration");
-#else
-  XMLTestNode machine_config("MachineConfiguration");
-#endif
 
-  machine_config.addString("Compiler", TEUCHOS_COMPILER_NAME);
-  machine_config.addInt("Compiler_Version",  TEUCHOS_COMPILER_VERSION);
+  YAMLTestNode machine_config("MachineConfiguration");
+
+  machine_config.addString("Compiler", KOKKOS_COMPILER_NAME);
+  machine_config.addInt("Compiler_Version",  KOKKOS_COMPILER_VERSION);
   machine_config.addString("CPU_Name", cpuname);
   machine_config.addInt("CPU_Sockets", highest_socketid+1);
   machine_config.addInt("CPU_Cores_Per_Socket", cores_per_socket);
@@ -355,37 +222,20 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
   return machine_config;
 }
 
-#ifdef CONVERT_YAML
 PerfTestResult
 PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
                           YAMLTestNode new_test,
                           const std::string filename,
                           const std::string ext_hostname)
-#else
-PerfTestResult
-PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
-                          XMLTestNode new_test,
-                          const std::string filename,
-                          const std::string ext_hostname)
-#endif
 {
-#ifdef CONVERT_YAML
   YAMLTestNode database;
-#else
-  XMLTestNode database;
-#endif
   PerfTestResult return_value = PerfTestPassed;
   bool is_new_config = true;
 
-  // Open Database File
-  //
-  // FIXME (mfh 09 Apr 2014) This actually opens the file twice.
+  // Open YAML File
+  
   if (std::ifstream (filename.c_str ())) {
-#ifdef CONVERT_YAML
     database.loadYAMLFile(filename);
-#else
-    database = FileInputSource (filename).getObject ();
-#endif
   }
 
   // Get Current Hostname
@@ -397,58 +247,30 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
     strncat (hostname, ext_hostname.c_str (), 255);
   }
 
-#ifdef CONVERT_YAML
   YAMLTestNode new_test_entry = new_test.getChild ("TestEntry");
-#else
-  XMLTestNode new_test_entry = new_test.getChild ("TestEntry");
-#endif
 
   if (database.isEmpty ()) {
-#ifdef CONVERT_YAML
     database = YAMLTestNode ("PerfTests");
-#else
-    database = XMLTestNode ("PerfTests");
-#endif
   }
   // Does hostname exist?
   if (database.hasChild (hostname)) {
-  
-#ifdef CONVERT_YAML
     YAMLTestNode machine = database.getChild (hostname);
-#else
-    XMLTestNode machine = database.getChild (hostname);
-#endif
 
     // Find matching machine configuration
     for (int i = 0; i < machine.numChildren (); ++i) {
-#ifdef CONVERT_YAML
       YAMLTestNode configuration = machine.getChild (i);
-#else
-      XMLTestNode configuration = machine.getChild (i);
-#endif
       
-#ifndef CONVERT_YAML
-      TEUCHOS_TEST_FOR_EXCEPTION(
-        configuration.getTag ().compare ("Configuration") != 0,
-        std::runtime_error, "Unexpected Tag \"" << configuration.getTag ()
-        << "\"; only children with Tag = \"Configuration\" are allowed in a "
-        "MachineEntry.");
+      if(configuration.getTag ().compare ("Configuration") != 0) {
+        throw std::logic_error( "Unexpected Tag" );
+      }
+  
+      if(!configuration.hasChild ("MachineConfiguration") ||
+        !configuration.hasChild ("Tests")) {
+        throw std::logic_error( "A Configuration needs to have a child" );
+      }
 
-      TEUCHOS_TEST_FOR_EXCEPTION(
-        ! configuration.hasChild ("MachineConfiguration") ||
-        ! configuration.hasChild ("Tests"),
-        std::runtime_error,
-        "A Configuration needs to have a child \"MachineConfiguration\" and a "
-        "child \"Tests\".");
-#endif
-
-#ifdef CONVERT_YAML
       YAMLTestNode machine_configuration = configuration.getChild ("MachineConfiguration");
       YAMLTestNode old_tests = configuration.getChild ("Tests");
-#else
-      XMLTestNode machine_configuration = configuration.getChild ("MachineConfiguration");
-      XMLTestNode old_tests = configuration.getChild ("Tests");
-#endif
 
       if (machine_configuration.hasSameElements (machine_config)) {
         is_new_config = false;
@@ -456,27 +278,16 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
         // Find existing test with same tag as the new test
         if (old_tests.hasChild (new_test.getTag ())) {
 
-#ifdef CONVERT_YAML
           YAMLTestNode old_test = old_tests.getChild (new_test.getTag ());
-#else
-          XMLTestNode old_test = old_tests.getChild (new_test.getTag ());
-#endif
 
           int new_test_config = -1;
           for (int k = 0; k < old_test.numChildren (); ++k) {
-#ifdef CONVERT_YAML
             YAMLTestNode old_test_entry = old_test.getChild (k);
-#else
-            XMLTestNode old_test_entry = old_test.getChild (k);
-#endif
 
-#ifndef CONVERT_YAML
-            TEUCHOS_TEST_FOR_EXCEPTION(
-              ! old_test_entry.hasChild ("TestConfiguration") ||
-              ! new_test_entry.hasChild ("TestResults"),
-              std::runtime_error, "A TestEntry needs to have a child "
-              "\"TestConfiguration\" and a child \"TestResults\".");
-#endif
+            if(!old_test_entry.hasChild ("TestConfiguration") ||
+              !new_test_entry.hasChild ("TestResults")) {
+              throw std::logic_error( "A TestEntry needs to have a chil" );
+            }
 
             if (old_test_entry.getChild ("TestConfiguration").hasSameElements (new_test_entry.getChild ("TestConfiguration"))) {
               new_test_config = k;
@@ -488,25 +299,13 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
             return_value = PerfTestNewTestConfiguration;
           } else {
             bool deviation = false;
-            
-#ifdef CONVERT_YAML
             YAMLTestNode old_test_entry = old_test.getChild (new_test_config);
             YAMLTestNode old_results = old_test_entry.getChild ("TestResults");
             YAMLTestNode new_results = new_test_entry.getChild ("TestResults");
-#else
-            XMLTestNode old_test_entry = old_test.getChild (new_test_config);
-            XMLTestNode old_results = old_test_entry.getChild ("TestResults");
-            XMLTestNode new_results = new_test_entry.getChild ("TestResults");
-#endif
 
             // Compare all entries
             for (int old_r = 0; old_r < old_results.numChildren (); ++old_r) {
-            
-#ifdef CONVERT_YAML
               YAMLTestNode result_entry = old_results.getChild (old_r);
-#else
-              XMLTestNode result_entry = old_results.getChild (old_r);
-#endif
 
               // Finding entry with same name
               bool exists = new_results.hasChild (result_entry.getTag ());
@@ -587,17 +386,9 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
 
     // Did not find matching MachineConfiguration
     if(is_new_config) {
-    
-#ifdef CONVERT_YAML
       YAMLTestNode config("Configuration");
       config.addChild(machine_config);
       YAMLTestNode tests("Tests");
-#else
-      XMLTestNode config("Configuration");
-      config.addChild(machine_config);
-      XMLTestNode tests("Tests");
-#endif
-
       tests.addChild(new_test);
 
       config.addChild(tests);
@@ -606,21 +397,11 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
       return_value = PerfTestNewConfiguration;
     }
   } else { // Machine Entry does not exist
-  
-#ifdef CONVERT_YAML
     YAMLTestNode machine(hostname);
 
     YAMLTestNode config("Configuration");
     config.addChild(machine_config);
     YAMLTestNode tests("Tests");
-#else
-    XMLTestNode machine(hostname);
-
-    XMLTestNode config("Configuration");
-    config.addChild(machine_config);
-    XMLTestNode tests("Tests");
-#endif
-
     tests.addChild(new_test);
     config.addChild(tests);
 
@@ -634,7 +415,8 @@ PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
 
   if(return_value>PerfTestPassed) {
     std::ofstream fout(filename.c_str());
-    fout << database << std::endl;
+    throw std::logic_error( "Need to implement the << operator." );
+ //   fout << database << std::endl;
   }
 
   return return_value;

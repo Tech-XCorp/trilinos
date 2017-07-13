@@ -14,7 +14,7 @@ TRIBITS_ADD_EXECUTABLE(
   Performance-CGSolve
   SOURCES
     ${SOURCES}
-  COMM mpi
+  COMM mpi serial
 )
 
 #TRIBITS_COPY_FILES_TO_BINARY_DIR(CopyXmlForTpetraPerfCgSolve
