@@ -168,172 +168,7 @@ struct ValueTolerance {
  */
 
 
-#ifdef CONVERT_YAML
-
-class YAMLTestNode {
-public:
-  YAMLTestNode();
-  YAMLTestNode(const std::string &tag);
-  void addDouble (const std::string& name, double val);
-  void addInt (const std::string& name, int val);
-  void addBool (const std::string& name, bool val);
-  void addValueTolerance(const std::string& name, ValueTolerance val);
-  void addString (const std::string& name, std::string val);
-
-  template<class T>
-  void addAttribute (const std::string& name, T val) {
-    for (size_t i = 0; i < name.length (); i++) {
-      if (name[i] == ' ') {
-        return;
-      }
-    }
-    std::ostringstream strs;
-    strs << val;
-    YAMLTestNode entry (name);
-    entry.addContent (strs.str ());
-    addChild (entry);
-  }
-
-  std::string terminatedHeader() const
-  {
-    std::string rtn = "<" + tag;
-    
-    /*
-    for (Map::const_iterator i=attributes_.begin(); i!=attributes_.end(); ++i)
-    {
-        rtn += " "
-    + (*i).first
-    + "="
-    + XMLifyAttVal((*i).second);
-    }
-    */
-
-    rtn += "/>";
-    return rtn;
-  }
-
-  std::string header() const
-  {
-    std::string rtn = "<" + tag;
-    
-    /*
-    for (Map::const_iterator i=attributes_.begin(); i!=attributes_.end(); ++i)
-    {
-        rtn += " "
-    + (*i).first
-    + "="
-    + XMLifyAttVal((*i).second);
-    }
-    */
-
-    rtn += ">";
-    return rtn;
-  }
-
-  void print(std::ostream& os, int indent) const
-  {
-    for (int i=0; i<indent; i++) os << " ";
-    if (contentLines.size()==0 && children.size()==0)
-    {
-      os << terminatedHeader() << std::endl;
-      return;
-    }
-    else
-    {
-      os << header() << std::endl;
-      printContent(os, indent+2);
-
-      for (size_t i=0; i<children.size(); i++) {
-        children[i].print(os, indent+2);
-      }
-      for (int i=0; i<indent; i++) os << " ";
-      os << "</" << tag << ">\n";
-    }
-  }
-
-  void printContent(std::ostream& os, int indent) const
-  {
-    std::string space = "";
-    for (int i=0; i<indent; i++) space += " ";
-    for (size_t i=0; i<contentLines.size(); i++)
-    {
-      // remove leading spaces, we will indent
-      std::string s(contentLines[i]);
-      s.erase(size_t(0), s.find_first_not_of(" \r\t"));
-      if(s.length()>0) {
-        os << space << s << '\n';
-      }
-    }
-  }
-
-  friend std::ostream& operator<< (std::ostream& os, const YAMLTestNode& obj) {
-    obj.print(os, 0);
-    return os;
-  }
-
-  bool hasChild(const std::string &name) const;
-
-  void appendContentLine(const size_t& i, const std::string &str);
-
-  YAMLTestNode getChild(const std::string &name) const;
-
-  YAMLTestNode getChild(const int &i) const;
-
-  bool hasSameElements(YAMLTestNode const & lhs) const;
-  
-  void addChild(const YAMLTestNode& child)
-  {
-    children.push_back(child);
-  }
-
-  void addContent(const std::string& contentLine)
-  {
-    contentLines.push_back(contentLine);
-    
-    std::cout << "Added content: " << contentLine << std::endl;
-  }
-  
-  size_t numChildren() const
-  {
-    return children.size();
-  }
-
-  const std::string& getTag() const
-  {
-    return tag;
-  }
-
-  int numContentLines() const
-  {
-    throw std::logic_error("Implement!");
-  }
-  
-  const std::string& getContentLine(int i) const
-  {
-    throw std::logic_error("Implement!");
-  }
-  
-  bool isEmpty() const
-  {
-    // TODO: Decide if this is workable
-    return (nodes.size() == 0 && children.size() == 0);
-  }
-  
-  void loadYAMLFile(const std::string &filename) {
-    this->filename = filename;
-    nodes = YAML::LoadAllFromFile(filename); // get all the nodes
-  }
-
-  std::string tag;
-  std::vector<YAML::Node> nodes;
-  std::string filename;
-  
-  std::vector<YAMLTestNode> children;
-  
-  std::vector<std::string> contentLines;
-};
-
-#else
+#ifndef CONVERT_YAML
 
 class XMLTestNode : public XMLObject {
 public:
@@ -394,7 +229,7 @@ public:
  */
  
 #ifdef CONVERT_YAML
-  YAMLTestNode PerfTest_MachineConfig();
+  YAML::Node PerfTest_MachineConfig();
 #else
   XMLTestNode PerfTest_MachineConfig();
 #endif
@@ -454,8 +289,8 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
  */
 #ifdef CONVERT_YAML
 PerfTestResult
-PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
-                          YAMLTestNode new_test,
+PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
+                          YAML::Node new_test,
                           const std::string filename,
                           const std::string ext_hostname = std::string ());
 #else
