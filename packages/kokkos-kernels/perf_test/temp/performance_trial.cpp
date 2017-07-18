@@ -41,7 +41,7 @@
 // @HEADER
 */
 
-#include <Kokkos_YAMLPerfTestArchive.hpp>
+#include "Kokkos_Performance_impl.hpp"
 #include <iostream>
 
 // Some dummy values for demo

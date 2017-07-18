@@ -51,6 +51,7 @@
 #include <istream>
 
 // Define compiler name, version
+// TODO: Not sure we really want these here
 #if defined __clang__
   #define KOKKOS_COMPILER_NAME "Clang"
   #define KOKKOS_COMPILER_VERSION __clang_major__*100+__clang_minor__*10+__clang_patchlevel__

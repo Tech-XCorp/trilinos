@@ -39,9 +39,9 @@
 // ***********************************************************************
 // @HEADER
 
+#include "Kokkos_Performance.hpp"
 #include <iostream>
 #include <fstream>
-#include <Kokkos_YAMLPerfTestArchive.hpp>
 
 // For determining hostname
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
