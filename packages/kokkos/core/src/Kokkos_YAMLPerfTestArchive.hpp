@@ -43,12 +43,27 @@
 #define KOKKOS_YAMLPERFTESTARCHIVE_HPP
 
 #include "yaml-cpp/yaml.h"
-#include <sstream>
 
+/// \file Kokkos_YAMLPerfTestArchive.hpp
+/// \brief Tools for an YAML-based performance test archive
+
+#include <ostream>
+#include <istream>
+
+// Define compiler name, version
 #if defined __clang__
   #define KOKKOS_COMPILER_NAME "Clang"
   #define KOKKOS_COMPILER_VERSION __clang_major__*100+__clang_minor__*10+__clang_patchlevel__
-  #define KOKKOS_COMPILER_CLANG 1
+#endif
+
+#if defined __GNUC__ && !defined KOKKOS_COMPILER_NAME && !defined __clang__
+  #define KOKKOS_COMPILER_NAME "Gnu GCC"
+  #define KOKKOS_COMPILER_VERSION __GNUC__*100+__GNUC_MINOR__*10+__GNUC_PATCHLEVEL__
+#endif
+
+#if defined __PGIC__ && !defined KOKKOS_COMPILER_NAME
+  #define KOKKOS_COMPILER_NAME "PGI C++"
+  #define KOKKOS_COMPILER_VERSION __PGIC__*100+__PGIC_MINOR__*10+__PGIC_PATCHLEVEL__
 #endif
 
 namespace Kokkos {
@@ -63,105 +78,21 @@ struct ValueTolerance {
   double upper;
   double tolerance;
   bool use_tolerance;
-
   ValueTolerance();
   ValueTolerance(double val, double tol);
   ValueTolerance(double val, double low, double up);
-
   ValueTolerance(std::string str);
-
   bool operator ==(ValueTolerance& rhs);
-
   std::string as_string();
   void from_string(const std::string& valtol_str);
 };
 
-/**
- * \class YAMLTestNode
- * \brief 
- *
- * This subclass of YAMLObject generates an YAML list in a style more
- * suitable for a performance test archive. It also provides a number
- * of convenience functions helpful for working with a test archive.
- */
-
-class YAMLTestNode {
-  public:
-    YAMLTestNode() {
-    }
-
-    YAMLTestNode(const std::string &tag) {
-    }
-    
-    void addDouble (const std::string& name, double val);
-    void addInt (const std::string& name, int val);
-    void addBool (const std::string& name, bool val);
-    void addValueTolerance(const std::string& name, ValueTolerance val);
-    void addString (const std::string& name, std::string val);
-
-    template<class T>
-    void addAttribute (const std::string& name, T val) {
-      for (size_t i = 0; i < name.length (); i++) {
-        if (name[i] == ' ') {
-          return;
-        }
-      }
-      std::ostringstream strs;
-      strs << val;
-      YAMLTestNode entry (name);
-      entry.addContent (strs.str ());
-      YAMLTestNode::addChild (entry);
-    }
-    
-    bool isEmpty() const {
-      return true;
-    }
-    void addContent(const std::string& contentLine) {
-      throw std::logic_error( "Not implemented" );
-    }   
-    void addChild(const YAMLTestNode& child) {
-      throw std::logic_error( "Not implemented" );
-    }
-
-    YAMLTestNode getChild(int i) const;
-
-    YAMLTestNode getChild(const std::string &name) const;
-
-    const std::string& getTag() const
-    {
-      throw std::logic_error( "Not implemented" );
-    }
-    int numContentLines() const
-    {
-      throw std::logic_error( "Not implemented" );
-    }
-    const std::string& getContentLine(int i) const
-    {
-      throw std::logic_error( "Not implemented" );
-    }
-    int numChildren() const {
-      throw std::logic_error( "Not implemented" );    
-    }
-
-    bool hasChild(const std::string &name) const;
-
-    void appendContentLine(const size_t& i, const std::string &str);
-
-    bool hasSameElements(YAMLTestNode const & lhs) const;
-    
-    void loadYAMLFile(const std::string &fileName) {
-      nodes = YAML::LoadAllFromFile(fileName); // get all the nodes
-    }
-
-  private:
-    std::vector<YAML::Node> nodes;
-};
 
 /**
- * \brief PerfTest_MachineConfig generates a basic machine configuration XMLTestNode.
+ * \brief PerfTest_MachineConfig generates a basic machine configuration YAML::Node.
  *
  * \details The function provides a starting point for a machine configuration. Users
- * should add new entries to the returned XMLTestNode to provide test relevant machine
+ * should add new entries to the returned YAML::Node to provide test relevant machine
  * configuration entries. For example Kokkos users might want to provide the name of the
  * user Kokkos NodeType or Kokkos DeviceType. The returned config contains information
  * mostly extracted from /proc/cpuinfo if possible. On non unix systems most values
@@ -173,7 +104,7 @@ class YAMLTestNode {
  * - CPU_Cores_Per_Socket: Number of CPU cores per socket.
  * - CPU_Total_HyperThreads: Total number of threads in a node.
  */
-YAMLTestNode PerfTest_MachineConfig();
+YAML::Node PerfTest_MachineConfig();
 
 /**
  * \brief ReturnValues for PerfTest_CheckOrAdd_Test
@@ -184,11 +115,16 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
                      PerfTestUpdatedTest};
 
 /**
+ *  \brief Utility to get a string from the enum codes
+ */
+std::string message_from_test_result(PerfTestResult result);
+
+/**
  * \brief Check whether a test is present and match an existing test
  *   in an archive.
  *
- * This function consumes a machine configuration XMLTestNode and a
- * test entry XMLTestNode.  It will attempt to read from an existing
+ * This function consumes a machine configuration YAML::Node and a
+ * test entry YAML::Node.  It will attempt to read from an existing
  * file containing a test archive, or generate a new one.  Optionally
  * a hostname override can be provided, which is for example useful
  * when running on clusters, where the cluster name should be used for
@@ -199,9 +135,9 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
  * result values will be compared, if not a new test entry is
  * generated and the result written back to the file.
  *
- * \param machine_config [in] An XMLTestNode describing the machine
+ * \param machine_config [in] An YAML::Node describing the machine
  *   configuration.
- * \param new_test [in] An XMLTestNode describing the test.
+ * \param new_test [in] An YAML::Node describing the test.
  * \param filename [in] The name of a file containing a performance
  *   test archive.
  * \param ext_hostname [in] An optional hostname to be used instead of
@@ -230,11 +166,11 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
  *   the new ones, and are within their respective tolerances.
  */
 PerfTestResult
-PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
-                          YAMLTestNode new_test,
+PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
+                          YAML::Node new_test,
                           const std::string filename,
                           const std::string ext_hostname = std::string ());
 
 } // namespace Kokkos
 
-#endif
+#endif // KOKKOS_YAMLPERFTESTARCHIVE_HPP

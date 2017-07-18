@@ -39,13 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
-
 #include <iostream>
 #include <fstream>
-#include <cstring>
-#include <cstdlib>
 #include <Kokkos_YAMLPerfTestArchive.hpp>
 
+// For determining hostname
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
@@ -116,73 +114,8 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
   }
 }
 
-  void  YAMLTestNode::addDouble (const std::string &name, double val) {
-    addAttribute<double>(name,val);
-  }
+YAML::Node PerfTest_MachineConfig() {
 
-  void  YAMLTestNode::addInt (const std::string &name, int val) {
-    addAttribute<int>(name,val);
-  }
-
-  void  YAMLTestNode::addBool (const std::string &name, bool val) {
-    addAttribute<bool>(name,val);
-  }
-
-  void YAMLTestNode::addValueTolerance(const std::string &name, ValueTolerance val){
-    addAttribute<std::string>(name,val.as_string());
-  }
-
-  void  YAMLTestNode::addString (const std::string &name, std::string val) {
-    addAttribute<std::string>(name,val);
-  }
-
-  bool YAMLTestNode::hasChild(const std::string &name) const {
-    bool found = false;
-    for(int i = 0; i < numChildren(); i++) {
-      if(name.compare(getChild(i).getTag()) == 0) {
-        found = true;
-        i = numChildren();
-      }
-    }
-    return found;
-  }
-
-  void YAMLTestNode::appendContentLine(const size_t& i, const std::string &str) {
-    throw std::logic_error("Not implemented");    
-    //ptr_->appendContentLine(i,str);
-  }
-
-  YAMLTestNode YAMLTestNode::getChild(const std::string &name) const {
-    YAMLTestNode child;
-    for(int i = 0; i < numChildren(); i++) {
-      if(name.compare(getChild(i).getTag()) == 0)
-        child = getChild(i);
-    }
-    return child;
-  }
-
-  YAMLTestNode YAMLTestNode::getChild(int i) const {
-    throw std::logic_error("Not implemented!");
-  }
-
-  bool YAMLTestNode::hasSameElements(YAMLTestNode const & lhs) const {
-    if((numChildren()!=lhs.numChildren()) ||
-       (numContentLines()!= lhs.numContentLines()) ||
-       (getTag().compare(lhs.getTag())!=0)) return false;
-
-    for(int i = 0; i<numChildren(); i++) {
-      const YAMLTestNode child = getChild(i);
-      if( (!lhs.hasChild(child.getTag())) ||
-          (!child.hasSameElements(lhs.getChild(child.getTag()))) ) return false;
-    }
-
-    for(int i = 0; i<numContentLines(); i++)
-      if(getContentLine(i).compare(lhs.getContentLine(i))!=0) return false;
-
-    return true;
-  }
-
-YAMLTestNode PerfTest_MachineConfig() {
   // Get CPUName, Number of Sockets, Number of Cores, Number of Hyperthreads
   std::string cpuname("Undefined");
   unsigned int threads = 0;
@@ -192,8 +125,7 @@ YAMLTestNode PerfTest_MachineConfig() {
   {
     std::ifstream cpuinfo("/proc/cpuinfo");
     std::string line;
-    if((cpuinfo.rdstate()&cpuinfo.failbit)) 
-      std::cout<<"Failed to open file /proc/cpuinfo... \n";
+    if((cpuinfo.rdstate()&cpuinfo.failbit)) std::cout<<"Failed to open filen\n";
     while (!cpuinfo.eof() && !(cpuinfo.rdstate()&cpuinfo.failbit)) {
       getline (cpuinfo,line);
       if (line.find("model name") < line.size()) {
@@ -210,32 +142,85 @@ YAMLTestNode PerfTest_MachineConfig() {
     }
   }
 
+  YAML::Node machine_config;
+  machine_config["Compiler"] = KOKKOS_COMPILER_NAME;
+  machine_config["Compiler_Version"] = KOKKOS_COMPILER_VERSION;
+  machine_config["CPU_Name"] = cpuname;
+  machine_config["CPU_Sockets"] = highest_socketid+1;
+  machine_config["CPU_Cores_Per_Socket"] = cores_per_socket;
+  machine_config["CPU_Total_HyperThreads"] = threads;
 
-  YAMLTestNode machine_config("MachineConfiguration");
-
-  machine_config.addString("Compiler", KOKKOS_COMPILER_NAME);
-  machine_config.addInt("Compiler_Version",  KOKKOS_COMPILER_VERSION);
-  machine_config.addString("CPU_Name", cpuname);
-  machine_config.addInt("CPU_Sockets", highest_socketid+1);
-  machine_config.addInt("CPU_Cores_Per_Socket", cores_per_socket);
-  machine_config.addInt("CPU_Total_HyperThreads", threads);
   return machine_config;
 }
 
+bool hasSameElements(YAML::Node a, YAML::Node b, int rec = 0) {
+  if(a.size()!=b.size()) {
+    return false;
+  }
+
+  for (YAML::const_iterator i = a.begin(); i != a.end(); ++i) {
+    std::string cat_name = i->first.Scalar();
+    // validate we can find this cat in b
+    if(!b[cat_name]) {
+      return false;
+    }
+    YAML::Node sub_a = i->second;
+    YAML::Node sub_b = b[cat_name];
+    if(sub_a.Scalar() != sub_b.Scalar()) {
+      return false;
+    }
+
+    if(!hasSameElements(sub_a, sub_b)) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+std::string message_from_test_result(PerfTestResult result) {
+  // Print results.
+  switch (result) {
+    case Kokkos::PerfTestPassed:
+      return "PASSED";
+      break;
+    case Kokkos::PerfTestFailed:
+      return "FAILED";
+      break;
+    case Kokkos::PerfTestNewMachine:
+      return "PASSED. Adding new machine entry.";
+      break;
+    case Kokkos::PerfTestNewConfiguration:
+      return "PASSED. Adding new machine configuration.";
+      break;
+    case Kokkos::PerfTestNewTest:
+      return "PASSED. Adding new test entry.";
+      break;
+    case Kokkos::PerfTestNewTestConfiguration:
+      return "PASSED. Adding new test entry configuration.";
+      break;
+    case Kokkos::PerfTestUpdatedTest:
+      return "PASSED. Updating test entry.";
+      break;
+    default:
+      return "FAILED: Invalid comparison result.";
+  }
+}
+
 PerfTestResult
-PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
-                          YAMLTestNode new_test,
+PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
+                          YAML::Node new_test_with_name,
                           const std::string filename,
                           const std::string ext_hostname)
 {
-  YAMLTestNode database;
+  YAML::Node database;
+
   PerfTestResult return_value = PerfTestPassed;
   bool is_new_config = true;
 
-  // Open YAML File
-  
+  // Open YAML File whhich stores test database
   if (std::ifstream (filename.c_str ())) {
-    database.loadYAMLFile(filename);
+    database = YAML::LoadFile(filename);
   }
 
   // Get Current Hostname
@@ -247,111 +232,107 @@ PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
     strncat (hostname, ext_hostname.c_str (), 255);
   }
 
-  YAMLTestNode new_test_entry = new_test.getChild ("TestEntry");
+  // this gets the test info without the test name
+  YAML::Node new_test_entry = new_test_with_name.begin()->second;
 
-  if (database.isEmpty ()) {
-    database = YAMLTestNode ("PerfTests");
+  // get the actual test name which will be used for matching in the database
+  std::string new_test_entry_name = new_test_with_name.begin()->first.Scalar();
+
+  // make sure the test is set up properly
+  if(!new_test_entry["TestConfiguration"]) {
+    throw std::logic_error("A TestEntry needs to have a child \"TestConfiguration\".");
   }
+  if(!new_test_entry["TestResults"]) {
+    throw std::logic_error("A TestEntry needs to have \"TestResults\".");
+  }
+            
   // Does hostname exist?
-  if (database.hasChild (hostname)) {
-    YAMLTestNode machine = database.getChild (hostname);
+  if (database[hostname]) {
+    YAML::Node machine = database[hostname];
 
     // Find matching machine configuration
-    for (int i = 0; i < machine.numChildren (); ++i) {
-      YAMLTestNode configuration = machine.getChild (i);
-      
-      if(configuration.getTag ().compare ("Configuration") != 0) {
-        throw std::logic_error( "Unexpected Tag" );
-      }
-  
-      if(!configuration.hasChild ("MachineConfiguration") ||
-        !configuration.hasChild ("Tests")) {
-        throw std::logic_error( "A Configuration needs to have a child" );
+    for (size_t machine_index = 0; machine_index < machine.size(); ++machine_index) {
+      YAML::Node configuration = machine[machine_index];
+      if(!configuration["MachineConfiguration"] || !configuration["Tests"]) {
+        throw std::logic_error("Configuration must has child MachineConfiguration and a child \"Tests\".");
       }
 
-      YAMLTestNode machine_configuration = configuration.getChild ("MachineConfiguration");
-      YAMLTestNode old_tests = configuration.getChild ("Tests");
-
-      if (machine_configuration.hasSameElements (machine_config)) {
+      YAML::Node machine_configuration = configuration["MachineConfiguration"];
+      YAML::Node old_tests = configuration["Tests"];
+      if (hasSameElements(machine_configuration, machine_config)) {
         is_new_config = false;
 
         // Find existing test with same tag as the new test
-        if (old_tests.hasChild (new_test.getTag ())) {
-
-          YAMLTestNode old_test = old_tests.getChild (new_test.getTag ());
-
-          int new_test_config = -1;
-          for (int k = 0; k < old_test.numChildren (); ++k) {
-            YAMLTestNode old_test_entry = old_test.getChild (k);
-
-            if(!old_test_entry.hasChild ("TestConfiguration") ||
-              !new_test_entry.hasChild ("TestResults")) {
-              throw std::logic_error( "A TestEntry needs to have a chil" );
-            }
-
-            if (old_test_entry.getChild ("TestConfiguration").hasSameElements (new_test_entry.getChild ("TestConfiguration"))) {
-              new_test_config = k;
+        if(old_tests[new_test_entry_name]) {
+          YAML::Node old_test_array = old_tests[new_test_entry_name];
+          int match_test_index = -1;
+          for (size_t entry_index = 0; entry_index < old_test_array.size(); ++entry_index) {
+            YAML::Node old_test_entry = old_test_array[entry_index];
+            if (hasSameElements(old_test_entry["TestConfiguration"], new_test_entry["TestConfiguration"])) {
+              match_test_index = static_cast<int>(entry_index);
             }
           }
-
-          if (new_test_config < 0) {
-            old_test.addChild (new_test_entry);
+          if (match_test_index == -1) {
+            database[hostname][machine_index]["Tests"][new_test_entry_name].push_back(new_test_entry);
             return_value = PerfTestNewTestConfiguration;
-          } else {
+          }
+          else {
             bool deviation = false;
-            YAMLTestNode old_test_entry = old_test.getChild (new_test_config);
-            YAMLTestNode old_results = old_test_entry.getChild ("TestResults");
-            YAMLTestNode new_results = new_test_entry.getChild ("TestResults");
-
+            YAML::Node old_test_entry = old_test_array[match_test_index];
+            YAML::Node old_results = old_test_entry["TestResults"];
+            YAML::Node new_results = new_test_entry["TestResults"];
             // Compare all entries
-            for (int old_r = 0; old_r < old_results.numChildren (); ++old_r) {
-              YAMLTestNode result_entry = old_results.getChild (old_r);
-
+            for (YAML::const_iterator old_r = old_results.begin(); old_r != old_results.end(); ++old_r) {
+              YAML::Node result_entry = old_r->second;
               // Finding entry with same name
-              bool exists = new_results.hasChild (result_entry.getTag ());
-
+              std::string result_name = old_r->first.Scalar();
+              bool exists = new_results[result_name];
               if (exists) {
-                std::string oldv_str = result_entry.getContentLine (0);
+                std::string oldv_str = old_r->second.Scalar();
+                std::string old_test_name = new_test_entry_name;
+                std::ostringstream new_result_entry_name_stream;
+                new_result_entry_name_stream << new_results[result_name];
+                std::string new_result_data = new_result_entry_name_stream.str();
 
                 // If it is a time or result compare numeric values with tolerance
-                if((result_entry.getTag().find("Time")==0) || (result_entry.getTag().find("Result")==0)) {
+                if((result_name.find("Time")==0) || (result_name.find("Result")==0)) {
                   ValueTolerance old_valtol(oldv_str);
-                  ValueTolerance new_valtol(new_results.getChild(result_entry.getTag()).getContentLine(0));
-
+                  ValueTolerance new_valtol(new_results[result_name].Scalar());
                   if(old_valtol.use_tolerance) {
                     double diff = old_valtol.value - new_valtol.value;
                     diff*=diff;
 
                     double normalization = old_valtol.value;
                     normalization*=normalization;
-
                     if(normalization==0?diff>0:diff/normalization>old_valtol.tolerance*old_valtol.tolerance) {
                       deviation = true;
                       std::cout << std::endl
-                          << "DeviationA in Test: \"" << old_test.getTag()
-                          << "\" for entry \"" <<  result_entry.getTag() << "\"" << std::endl;
+                          << "DeviationA in Test: \"" << old_test_name
+                          << "\" for entry \"" <<  result_name << "\"" << std::endl;
                       std::cout << "  Existing Value: \"" << oldv_str << "\"" << std::endl;
-                      std::cout << "  New Value:      \"" << new_results.getChild(result_entry.getTag()).getContentLine(0) << "\"" << std::endl << std::endl;
+                      std::cout << "  New Value:      \"" << new_result_data << "\"" << std::endl << std::endl;
                     }
-                  } else {
+                  }
+                  else {
                     if( (old_valtol.lower>new_valtol.value) || (old_valtol.upper<new_valtol.value)) {
                       deviation = true;
                       std::cout << std::endl
-                          << "DeviationB in Test: \"" << old_test.getTag()
-                          << "\" for entry \"" <<  result_entry.getTag() << "\"" << std::endl;
+                          << "DeviationB in Test: \"" << old_test_name
+                          << "\" for entry \"" <<  result_name << "\"" << std::endl;
                       std::cout << "  Existing Value: \"" << oldv_str << "\"" << std::endl;
-                      std::cout << "  New Value:      \"" << new_results.getChild(result_entry.getTag()).getContentLine(0) << "\"" << std::endl << std::endl;
+                      std::cout << "  New Value:      \"" << new_result_data << "\"" << std::endl << std::endl;
                     }
                   }
-                } else {
+                }
+                else {
                   // Compare exact match for every other type of entry
-                  if(oldv_str.compare(new_results.getChild(result_entry.getTag()).getContentLine(0))!=0) {
+                  if(oldv_str.compare(new_result_data)!=0) {
                     deviation = true;
                     std::cout << std::endl
-                        << "DeviationC in Test: \"" << old_test.getTag()
-                        << "\" for entry \"" <<  result_entry.getTag() << "\"" << std::endl;
+                        << "DeviationC in Test: \"" << old_test_name
+                        << "\" for entry \"" <<  result_name << "\"" << std::endl;
                     std::cout << "  Existing Value: \"" << oldv_str << "\"" << std::endl;
-                    std::cout << "  New Value:      \"" << new_results.getChild(result_entry.getTag()).getContentLine(0) << "\"" << std::endl << std::endl;
+                    std::cout << "  New Value:      \"" << new_result_data << "\"" << std::endl << std::endl;
                   }
                 }
               }
@@ -361,24 +342,25 @@ PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
                 deviation = true;
               }
             }
-
-            if(deviation) { return_value = PerfTestFailed; }
+            if(deviation) {
+              return_value = PerfTestFailed;
+            }
             else {
               // Did someone add new values to the test?
-              if(new_results.numChildren()!=old_results.numChildren()) {
-                for(int new_r = 0; new_r < new_results.numChildren() ; new_r++) {
-                  if(!old_results.hasChild(new_results.getChild(new_r).getTag())) {
-                    old_results.addChild(new_results.getChild(new_r));
+              if(new_results.size()!=old_results.size()) {
+                for (YAML::const_iterator new_r = new_results.begin(); new_r != new_results.end(); ++new_r) {
+                  if(!old_results[new_r->first.Scalar()]) {
+                    old_results[new_r->first.Scalar()] = (new_r->second);
                   }
                 }
-
                 return_value = PerfTestUpdatedTest;
               }
             }
           }
-        } else { // End Test Exists
+        }
+        else { // End Test Exists
           // Add new test if no match was found
-          old_tests.addChild(new_test);
+          database[hostname][machine_index]["Tests"][new_test_entry_name].push_back(new_test_entry);
           return_value = PerfTestNewTest;
         }
       } // End MachineConfiguration Exists
@@ -386,39 +368,26 @@ PerfTest_CheckOrAdd_Test (YAMLTestNode machine_config,
 
     // Did not find matching MachineConfiguration
     if(is_new_config) {
-      YAMLTestNode config("Configuration");
-      config.addChild(machine_config);
-      YAMLTestNode tests("Tests");
-      tests.addChild(new_test);
-
-      config.addChild(tests);
-      machine.addChild(config);
-
+      YAML::Node machine_entry;
+      machine_entry["MachineConfiguration"] = machine_config;
+      machine_entry["Tests"][new_test_entry_name].push_back(new_test_entry);
+      database[hostname].push_back(machine_entry);
       return_value = PerfTestNewConfiguration;
     }
-  } else { // Machine Entry does not exist
-    YAMLTestNode machine(hostname);
-
-    YAMLTestNode config("Configuration");
-    config.addChild(machine_config);
-    YAMLTestNode tests("Tests");
-    tests.addChild(new_test);
-    config.addChild(tests);
-
-    machine.addChild(config);
-
-    database.addChild(machine);
-
+  }
+  else { // Machine Entry does not exist
+    YAML::Node machine_entry;
+    machine_entry["MachineConfiguration"] = machine_config;
+    machine_entry["Tests"][new_test_entry_name].push_back(new_test_entry);
+    database[hostname].push_back(machine_entry);
     return_value = PerfTestNewMachine;
   }
 
-
   if(return_value>PerfTestPassed) {
     std::ofstream fout(filename.c_str());
-    throw std::logic_error( "Need to implement the << operator." );
- //   fout << database << std::endl;
+    fout << database << std::endl;
   }
-
   return return_value;
 }
-}
+
+} // namespace Kokkos

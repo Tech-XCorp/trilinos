@@ -44,60 +44,72 @@
 #include <Kokkos_YAMLPerfTestArchive.hpp>
 #include <iostream>
 
+// Some dummy values for demo
+struct resultstruct {
+  double time1;
+  double time2;
+  int niters;
+  double residual;
+};
+
+// example set up of a test entry
+YAML::Node test_entry(resultstruct results, const std::string& filename,
+  int mpi_ranks, int teams, int threads, double tol_small, double tol_large) {
+
+  // Create a configuration
+  YAML::Node configuration;
+  configuration["MPI_Ranks"] = mpi_ranks;
+  configuration["Teams"] = teams;
+  configuration["Threads"] = threads;
+  configuration["Filename"] = filename;
+
+  // Create a times block - Keep Time in name - part of key work searching
+  YAML::Node times;
+  times["Time_1"] = Kokkos::ValueTolerance(results.time1,tol_large).as_string();
+  times["Time_2"] = Kokkos::ValueTolerance(results.time2,tol_large).as_string();
+  // Keep Result in name - part of key word searching
+  times["Result_Iterations"] = Kokkos::ValueTolerance(results.niters,
+    results.niters>0?results.niters-1:0, results.niters+1).as_string();
+  times["Result_Residual"] =
+    Kokkos::ValueTolerance(results.residual,tol_small).as_string();
+
+  // Create the full test entry
+  YAML::Node entry;
+  entry["TestConfiguration"] = configuration;
+  entry["TestResults"] = times;
+  
+  YAML::Node test;
+  test["ExampleTestName"] = entry;
+  return test;
+}
+
 int main(int argc, char *argv[]) {
 
-  int numgpus = 1;
-  int skipgpu = 999;
-  std::string filename;
-  std::string filename_vector;
-  std::string testarchive("Kokkos_PerformanceTests.xml");
+  // define some values for a test mock up
+  std::string yaml_archive("Kokkos_YAMLPerformanceTestsExample.yaml");
+  std::string filename = "somefilename";
   std::string hostname;
 
-  int myRank = 0;
-#ifdef HAVE_MPI
-  (void) MPI_Comm_rank (MPI_COMM_WORLD, &myRank);
-#endif // HAVE_MPI
+  const int mpi_ranks = 1;
+  const int teams = 1;
+  const int threads = 4;
+  const double tol_small = 0.01;
+  const double tol_large = 0.05;
 
-  int device = myRank % numgpus;
-  if(device>=skipgpu) device++;
+  resultstruct results;
+  results.time1 = 10.0;
+  results.time2 = 13.3;
+  results.niters = 44;
+  results.residual = 0.001;
 
-  using std::cout;
-  using std::endl;
+  // Process the test
+  YAML::Node machine_config = Kokkos::PerfTest_MachineConfig();
+  YAML::Node test = test_entry( results, filename, mpi_ranks, teams, threads,
+    tol_small, tol_large);
+  Kokkos::PerfTestResult resultCode = Kokkos::PerfTest_CheckOrAdd_Test
+    (machine_config, test, yaml_archive, hostname);
   
-  std::cout << "running..." << std::endl;
-  
-  // Print results.
-    Kokkos::YAMLTestNode machine_config = Kokkos::PerfTest_MachineConfig();
-    Kokkos::YAMLTestNode test;
-    Kokkos::PerfTestResult comparison_result =
-      Kokkos::PerfTest_CheckOrAdd_Test (machine_config, test, testarchive, hostname);
-    switch (comparison_result) {
-      case Kokkos::PerfTestPassed:
-        cout << "PASSED" << endl;
-        break;
-      case Kokkos::PerfTestFailed:
-        cout << "FAILED" << endl;
-        break;
-      case Kokkos::PerfTestNewMachine:
-        cout << "PASSED. Adding new machine entry." << endl;
-        break;
-      case Kokkos::PerfTestNewConfiguration:
-        cout << "PASSED. Adding new machine configuration." << endl;
-        break;
-      case Kokkos::PerfTestNewTest:
-        cout << "PASSED. Adding new test entry." << endl;
-        break;
-      case Kokkos::PerfTestNewTestConfiguration:
-        cout << "PASSED. Adding new test entry configuration." << endl;
-        break;
-      case Kokkos::PerfTestUpdatedTest:
-        cout << "PASSED. Updating test entry." << endl;
-        break;
-    default:
-      cout << "FAILED: Invalid comparison result." << endl;
-    }
-
-  return EXIT_SUCCESS;
+  std::cout << Kokkos::message_from_test_result(resultCode) << std::endl;
   
   return 0;
 }
