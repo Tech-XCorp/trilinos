@@ -44,9 +44,6 @@
 
 #include "yaml-cpp/yaml.h"
 
-/// \file Kokkos_YAMLPerfTestArchive.hpp
-/// \brief Tools for an YAML-based performance test archive
-
 #include <ostream>
 #include <istream>
 
@@ -114,11 +111,6 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
                      PerfTestNewMachine, PerfTestNewConfiguration,
                      PerfTestNewTest, PerfTestNewTestConfiguration,
                      PerfTestUpdatedTest};
-
-/**
- *  \brief Utility to get a string from the enum codes
- */
-std::string message_from_test_result(PerfTestResult result);
 
 /**
  * \brief Check whether a test is present and match an existing test

@@ -1,7 +1,7 @@
 // @HEADER
 // ***********************************************************************
 //
-//                    Teuchos: Common Tools Package
+//                    Kokkos: Common Tools Package
 //                 Copyright (2004) Sandia Corporation
 //
 // Under terms of Contract DE-AC04-94AL85000, there is a non-exclusive
@@ -43,7 +43,7 @@
 #include <iostream>
 #include <fstream>
 
-// For determining hostname
+// For automatically determining hostname
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
 #pragma comment(lib, "ws2_32.lib")
@@ -52,6 +52,10 @@
 #endif
 
 namespace Kokkos {
+
+// TODO Decide a better home for these
+#define TestConfigurationString "TestConfiguration"
+#define TestResultsString "TestResults"
 
 ValueTolerance::ValueTolerance() {
   value = 0;
@@ -115,30 +119,29 @@ void ValueTolerance::from_string(const std::string& valtol_str) {
 }
 
 YAML::Node PerfTest_MachineConfig() {
-
   // Get CPUName, Number of Sockets, Number of Cores, Number of Hyperthreads
   std::string cpuname("Undefined");
   unsigned int threads = 0;
   unsigned int cores_per_socket = 0;
   unsigned int highest_socketid = 0;
 
-  {
-    std::ifstream cpuinfo("/proc/cpuinfo");
-    std::string line;
-    if((cpuinfo.rdstate()&cpuinfo.failbit)) std::cout<<"Failed to open filen\n";
-    while (!cpuinfo.eof() && !(cpuinfo.rdstate()&cpuinfo.failbit)) {
-      getline (cpuinfo,line);
-      if (line.find("model name") < line.size()) {
-        cpuname = line.substr(line.find(":")+2);
-        threads++;
-      }
-      if (line.find("physical id") < line.size()) {
-        unsigned int socketid = atoi(line.substr(line.find(":")+2).c_str());
-        highest_socketid = highest_socketid>socketid?highest_socketid:socketid;
-      }
-      if (line.find("cpu cores") < line.size()) {
-        cores_per_socket = atoi(line.substr(line.find(":")+2).c_str());
-      }
+  std::ifstream cpuinfo("/proc/cpuinfo");
+  std::string line;
+  if((cpuinfo.rdstate()&cpuinfo.failbit)) {
+    std::cout<<"Failed to open /proc/cpuinfo\n";
+  }
+  while (!cpuinfo.eof() && !(cpuinfo.rdstate()&cpuinfo.failbit)) {
+    getline (cpuinfo,line);
+    if (line.find("model name") < line.size()) {
+      cpuname = line.substr(line.find(":")+2);
+      threads++;
+    }
+    if (line.find("physical id") < line.size()) {
+      unsigned int socketid = atoi(line.substr(line.find(":")+2).c_str());
+      highest_socketid = highest_socketid>socketid?highest_socketid:socketid;
+    }
+    if (line.find("cpu cores") < line.size()) {
+      cores_per_socket = atoi(line.substr(line.find(":")+2).c_str());
     }
   }
 
@@ -149,7 +152,6 @@ YAML::Node PerfTest_MachineConfig() {
   machine_config["CPU_Sockets"] = highest_socketid+1;
   machine_config["CPU_Cores_Per_Socket"] = cores_per_socket;
   machine_config["CPU_Total_HyperThreads"] = threads;
-
   return machine_config;
 }
 
@@ -174,37 +176,8 @@ bool hasSameElements(YAML::Node a, YAML::Node b, int rec = 0) {
       return false;
     }
   }
-  
-  return true;
-}
 
-std::string message_from_test_result(PerfTestResult result) {
-  // Print results.
-  switch (result) {
-    case Kokkos::PerfTestPassed:
-      return "PASSED";
-      break;
-    case Kokkos::PerfTestFailed:
-      return "FAILED";
-      break;
-    case Kokkos::PerfTestNewMachine:
-      return "PASSED. Adding new machine entry.";
-      break;
-    case Kokkos::PerfTestNewConfiguration:
-      return "PASSED. Adding new machine configuration.";
-      break;
-    case Kokkos::PerfTestNewTest:
-      return "PASSED. Adding new test entry.";
-      break;
-    case Kokkos::PerfTestNewTestConfiguration:
-      return "PASSED. Adding new test entry configuration.";
-      break;
-    case Kokkos::PerfTestUpdatedTest:
-      return "PASSED. Updating test entry.";
-      break;
-    default:
-      return "FAILED: Invalid comparison result.";
-  }
+  return true;
 }
 
 PerfTestResult
@@ -239,13 +212,13 @@ PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
   std::string new_test_entry_name = new_test_with_name.begin()->first.Scalar();
 
   // make sure the test is set up properly
-  if(!new_test_entry["TestConfiguration"]) {
+  if(!new_test_entry[TestConfigurationString]) {
     throw std::logic_error("A TestEntry needs to have a child \"TestConfiguration\".");
   }
-  if(!new_test_entry["TestResults"]) {
+  if(!new_test_entry[TestResultsString]) {
     throw std::logic_error("A TestEntry needs to have \"TestResults\".");
   }
-            
+
   // Does hostname exist?
   if (database[hostname]) {
     YAML::Node machine = database[hostname];
@@ -268,7 +241,7 @@ PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
           int match_test_index = -1;
           for (size_t entry_index = 0; entry_index < old_test_array.size(); ++entry_index) {
             YAML::Node old_test_entry = old_test_array[entry_index];
-            if (hasSameElements(old_test_entry["TestConfiguration"], new_test_entry["TestConfiguration"])) {
+            if (hasSameElements(old_test_entry[TestConfigurationString], new_test_entry[TestConfigurationString])) {
               match_test_index = static_cast<int>(entry_index);
             }
           }
@@ -279,8 +252,8 @@ PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
           else {
             bool deviation = false;
             YAML::Node old_test_entry = old_test_array[match_test_index];
-            YAML::Node old_results = old_test_entry["TestResults"];
-            YAML::Node new_results = new_test_entry["TestResults"];
+            YAML::Node old_results = old_test_entry[TestResultsString];
+            YAML::Node new_results = new_test_entry[TestResultsString];
             // Compare all entries
             for (YAML::const_iterator old_r = old_results.begin(); old_r != old_results.end(); ++old_r) {
               YAML::Node result_entry = old_r->second;

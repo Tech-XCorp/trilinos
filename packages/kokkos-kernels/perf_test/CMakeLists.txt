@@ -9,7 +9,6 @@ INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
 # MPI process.
 
 ADD_SUBDIRECTORIES(graph)
-ADD_SUBDIRECTORIES(temp)
 
 TRIBITS_ADD_EXECUTABLE(
   blas1
@@ -20,5 +19,17 @@ TRIBITS_ADD_EXECUTABLE(
 TRIBITS_ADD_EXECUTABLE(
   blas1_MV
   SOURCES blas1_MV.cpp
+  COMM serial mpi
+  )
+
+TRIBITS_ADD_EXECUTABLE(
+  performance_demo
+  SOURCES performance_demo.cpp
+  COMM serial mpi
+  )
+
+TRIBITS_ADD_EXECUTABLE(
+  performance_demo_blas1
+  SOURCES performance_demo_blas1.cpp
   COMM serial mpi
   )

@@ -2,7 +2,7 @@
 # Add test-only library for gtest to be reused by all the subpackages
 #
 
-SET(GTEST_SOURCE_DIR /Users/micheldemessieres/Documents/trilinosall-refactor/trilinosrepo/commonTools/gtest)
+SET(GTEST_SOURCE_DIR ${${PARENT_PACKAGE_NAME}_SOURCE_DIR}/tpls/gtest)
 
 INCLUDE_DIRECTORIES(${GTEST_SOURCE_DIR})
 TRIBITS_ADD_LIBRARY(

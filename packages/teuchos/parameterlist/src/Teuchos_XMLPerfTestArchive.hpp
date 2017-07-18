@@ -42,23 +42,13 @@
 #ifndef TEUCHOS_XMLPERFTESTARCHIVE_HPP
 #define TEUCHOS_XMLPERFTESTARCHIVE_HPP
 
-#define CONVERT_YAML
-
-#ifdef CONVERT_YAML
-#include "yaml-cpp/yaml.h"
-#endif
-
 /// \file Teuchos_XMLPerfTestArchive.hpp
 /// \brief Tools for an XML-based performance test archive
 
-#ifndef CONVERT_YAML
 #include <Teuchos_ConfigDefs.hpp>
 #include <Teuchos_FileInputSource.hpp>
 #include <Teuchos_XMLObject.hpp>
-#endif
-
-#include <ostream>
-#include <istream>
+#include <sstream>
 
 //----------------------------------------------------------------------------
 //-------- Identify Compiler Version -----------------------------------------
@@ -166,10 +156,6 @@ struct ValueTolerance {
  * suitable for a performance test archive. It also provides a number
  * of convenience functions helpful for working with a test archive.
  */
-
-
-#ifndef CONVERT_YAML
-
 class XMLTestNode : public XMLObject {
 public:
   XMLTestNode();
@@ -209,8 +195,6 @@ public:
   bool hasSameElements(XMLTestNode const & lhs) const;
 };
 
-#endif
-
 /**
  * \brief PerfTest_MachineConfig generates a basic machine configuration XMLTestNode.
  *
@@ -227,12 +211,8 @@ public:
  * - CPU_Cores_Per_Socket: Number of CPU cores per socket.
  * - CPU_Total_HyperThreads: Total number of threads in a node.
  */
- 
-#ifdef CONVERT_YAML
-  YAML::Node PerfTest_MachineConfig();
-#else
-  XMLTestNode PerfTest_MachineConfig();
-#endif
+XMLTestNode PerfTest_MachineConfig();
+
 /**
  * \brief ReturnValues for PerfTest_CheckOrAdd_Test
  */
@@ -287,19 +267,11 @@ enum PerfTestResult {PerfTestFailed, PerfTestPassed,
  *   This will only happen if all the old result values are present in
  *   the new ones, and are within their respective tolerances.
  */
-#ifdef CONVERT_YAML
-PerfTestResult
-PerfTest_CheckOrAdd_Test (YAML::Node machine_config,
-                          YAML::Node new_test,
-                          const std::string filename,
-                          const std::string ext_hostname = std::string ());
-#else
 PerfTestResult
 PerfTest_CheckOrAdd_Test (XMLTestNode machine_config,
                           XMLTestNode new_test,
                           const std::string filename,
                           const std::string ext_hostname = std::string ());
-#endif
 
 } // namespace Teuchos
 
