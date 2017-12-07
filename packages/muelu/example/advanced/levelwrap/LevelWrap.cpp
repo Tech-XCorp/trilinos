@@ -70,8 +70,11 @@
 // Belos
 #ifdef HAVE_MUELU_BELOS
 #include "BelosConfigDefs.hpp"
+// NO ETI currently for the Xpetra::MultiVector SolverFactory
 #include "BelosLinearProblem.hpp"
-#include "BelosSolverFactory.hpp"
+#include "BelosLinearProblem.hpp"
+#include "BelosSolverFactory_decl.hpp"
+#include "BelosSolverFactory_impl.hpp"
 #include "BelosXpetraAdapter.hpp"
 #include "BelosMueLuAdapter.hpp"
 #endif

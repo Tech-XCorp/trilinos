@@ -77,7 +77,8 @@ APPEND_SET(HEADERS
   BelosRCGSolMgr.hpp
   BelosSimpleOrthoManager.hpp
   BelosSolverManager.hpp
-  BelosSolverFactory.hpp
+  BelosSolverFactory_decl.hpp
+  BelosSolverFactory_impl.hpp
   BelosCustomSolverFactory.hpp
   BelosStatusTestCombo.hpp
   BelosStatusTestFactory.hpp
@@ -176,6 +177,34 @@ IF(${PACKAGE_NAME}_ENABLE_Experimental)
   APPEND_SET(HEADERS ${${PACKAGE_NAME}_EXPERIMENTAL_HEADERS})
   APPEND_SET(SOURCES ${${PACKAGE_NAME}_EXPERIMENTAL_SOURCES})
 ENDIF() # ${PACKAGE_NAME}_ENABLE_Experimental
+
+######################################################################
+## Create headers for ETI and instantiate
+######################################################################
+# glob the binary dir last to get all auto-generated ETI headers
+INCLUDE(TribitsLibraryMacros)
+INCLUDE(TrilinosCreateClientTemplateHeaders)
+SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_SOURCE_DIR})
+TRILINOS_CREATE_CLIENT_TEMPLATE_HEADERS(${DIR})
+SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_BINARY_DIR})
+APPEND_GLOB(HEADERS ${DIR}/*.hpp)
+
+IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+  # Not sure for this yet
+  # We have createValidParameterList.cpp in the doc folder
+  # which needs tpetra/src/BelosTpetraAdapter.hpp
+  # It might be more appropriate to just make that exe be the explicit instantiation
+  # and use the decl.hpp and def.hpp includes. But that might lead to duplication eventually
+  # so started by moving that to the ETI class.
+  IF (${PACKAGE_NAME}_ENABLE_Tpetra)
+    INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../tpetra/src )
+  ENDIF()
+  APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation.cpp)
+  MESSAGE(STATUS "Belos ETI Enabled")
+ELSE()
+  MESSAGE(STATUS "Belos ETI Disabled")
+ENDIF()
+
 
 ######################################################################
 ## Define the targets for the package's library/ies.

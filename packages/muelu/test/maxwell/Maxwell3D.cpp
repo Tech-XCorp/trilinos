@@ -67,7 +67,11 @@
 #ifdef HAVE_MUELU_BELOS
 #include <BelosConfigDefs.hpp>
 #include <BelosLinearProblem.hpp>
-#include <BelosSolverFactory.hpp>
+
+// FOR ETI - need to come back to this - can we use it - what is happening with SC here?
+#include <BelosSolverFactory_decl.hpp>
+#include <BelosSolverFactory_impl.hpp>
+
 #include <BelosTpetraAdapter.hpp>
 #include <BelosXpetraAdapter.hpp>     // => This header defines Belos::XpetraOp
 //#include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp

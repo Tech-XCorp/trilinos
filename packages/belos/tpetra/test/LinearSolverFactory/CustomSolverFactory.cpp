@@ -42,7 +42,11 @@
 #include "Teuchos_UnitTestHarness.hpp"
 #include "BelosTpetraAdapter.hpp"
 #include "MatrixMarket_Tpetra.hpp"
-#include "BelosSolverFactory.hpp"
+
+// The custom factory won't be handled by ETI
+#include "BelosSolverFactory_decl.hpp"
+#include "BelosSolverFactory_impl.hpp"
+
 #include "TpetraCore_ETIHelperMacros.h"
 
 // mfh 13 Oct 2017: Test Belos::CustomSolverFactory, for the Tpetra
