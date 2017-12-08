@@ -6,6 +6,13 @@
 TRIBITS_PACKAGE(Belos)
 
 ######################################################################
+## Set up explicit template instantiation
+######################################################################
+TRIBITS_ADD_EXPLICIT_INSTANTIATION_OPTION()
+SET(${PARENT_PACKAGE_NAME}_TEMPLATE_DECL_EXT "_decl.hpp")
+SET(${PARENT_PACKAGE_NAME}_TEMPLATE_DEF_EXT "_impl.hpp")
+
+######################################################################
 ## Set up package-specific options
 ######################################################################
 

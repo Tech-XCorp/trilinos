@@ -77,7 +77,8 @@ APPEND_SET(HEADERS
   BelosRCGSolMgr.hpp
   BelosSimpleOrthoManager.hpp
   BelosSolverManager.hpp
-  BelosSolverFactory.hpp
+  BelosSolverFactory_decl.hpp
+  BelosSolverFactory_impl.hpp
   BelosCustomSolverFactory.hpp
   BelosStatusTestCombo.hpp
   BelosStatusTestFactory.hpp
@@ -176,6 +177,20 @@ IF(${PACKAGE_NAME}_ENABLE_Experimental)
   APPEND_SET(HEADERS ${${PACKAGE_NAME}_EXPERIMENTAL_HEADERS})
   APPEND_SET(SOURCES ${${PACKAGE_NAME}_EXPERIMENTAL_SOURCES})
 ENDIF() # ${PACKAGE_NAME}_ENABLE_Experimental
+
+######################################################################
+## Create headers for ETI
+######################################################################
+# glob the binary dir last to get all of the
+# auto-generated ETI headers
+INCLUDE(TribitsLibraryMacros)
+INCLUDE(TrilinosCreateClientTemplateHeaders)
+SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_SOURCE_DIR})
+APPEND_GLOB(HEADERS ${DIR}/*.hpp)
+APPEND_GLOB(SOURCES ${DIR}/*.cpp)
+TRILINOS_CREATE_CLIENT_TEMPLATE_HEADERS(${DIR})
+SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_BINARY_DIR})
+APPEND_GLOB(HEADERS ${DIR}/*.hpp)
 
 ######################################################################
 ## Define the targets for the package's library/ies.
