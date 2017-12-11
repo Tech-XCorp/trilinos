@@ -45,10 +45,9 @@
 #include "BelosTpetraAdapter.hpp"
 
 namespace Belos {
-
 #define BELOS_ETI_GROUP(SC,LO,GO,NO) \
-  template class SolverFactory<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>; \
-  template class SolverManager<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>;
+  template class       SolverFactory<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>; \
+  template class       SolverManager<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>;
   
 // TODO might decide it's cleaner to just eliminate this file and bring it here?
 #include "Belos_ExplicitTemplateInstantiation_Tpetra.hpp"

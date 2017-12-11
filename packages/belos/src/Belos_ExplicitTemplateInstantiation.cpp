@@ -45,6 +45,26 @@
 #include "BelosOperator.hpp"
 #include "BelosMultiVec.hpp"
 
+
+// TODO run this for enable Tpetra only
+// Add #include statements here to pull in the code that will be
+// needed to generate one or more validated ParameterLists
+#include "Tpetra_MultiVector.hpp"
+#include "BelosTpetraAdapter.hpp"
+#include "BelosSolverFactory.hpp"
+
+typedef Tpetra::MultiVector<> multivector_type;
+typedef Tpetra::Operator<> operator_type;
+typedef multivector_type::scalar_type scalar_type;
+typedef Belos::SolverManager<scalar_type, multivector_type, operator_type> solver_type;
+
+namespace Belos {
+	Belos::SolverFactory<scalar_type, multivector_type, operator_type> sFactory;
+	Teuchos::RCP<solver_type> solver;
+  
+};
+
+// This covers src/test/Factory.cpp
 namespace Belos {
   typedef double ST;
   typedef Belos::MultiVec<ST> MV;
