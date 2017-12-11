@@ -45,34 +45,19 @@
 #include "BelosOperator.hpp"
 #include "BelosMultiVec.hpp"
 
-
-// TODO run this for enable Tpetra only
-// Add #include statements here to pull in the code that will be
-// needed to generate one or more validated ParameterLists
+// For createValidParameterLists.cpp we can ETI the required factory here
 #include "Tpetra_MultiVector.hpp"
-#include "BelosTpetraAdapter.hpp"
-#include "BelosSolverFactory.hpp"
-
-typedef Tpetra::MultiVector<> multivector_type;
-typedef Tpetra::Operator<> operator_type;
-typedef multivector_type::scalar_type scalar_type;
-typedef Belos::SolverManager<scalar_type, multivector_type, operator_type> solver_type;
+#include "BelosTpetraAdapter.hpp" // this is in the tpetra folder - TODO: better placement?
 
 namespace Belos {
-	Belos::SolverFactory<scalar_type, multivector_type, operator_type> sFactory;
-	Teuchos::RCP<solver_type> solver;
-  
+  template class SolverFactory<Tpetra::MultiVector<>::scalar_type, Tpetra::MultiVector<>, Tpetra::Operator<>>;
 };
 
-// This covers src/test/Factory.cpp
+// This covers src/test/Factory.cpp setup as double
+// TODO: Fix the types to make sure this compiles only once and covers the rest
 namespace Belos {
   typedef double ST;
-  typedef Belos::MultiVec<ST> MV;
-  typedef Belos::Operator<ST> OP;
-  typedef Belos::SolverManager<ST, MV, OP> solver_base_type;
-  typedef Belos::SolverFactory<ST, MV, OP> factory_type;
   template class SolverFactory<ST, Belos::MultiVec<ST>, Belos::Operator<ST>>;
-  template class SolverManager<ST, Belos::MultiVec<ST>, Belos::Operator<ST>>;
 
 } // namespace Belos
 
