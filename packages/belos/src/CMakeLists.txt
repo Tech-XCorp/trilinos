@@ -179,7 +179,7 @@ IF(${PACKAGE_NAME}_ENABLE_Experimental)
 ENDIF() # ${PACKAGE_NAME}_ENABLE_Experimental
 
 ######################################################################
-## Create headers for ETI
+## Create headers for ETI and instantiate
 ######################################################################
 # glob the binary dir last to get all of the
 # auto-generated ETI headers
@@ -191,6 +191,16 @@ APPEND_GLOB(SOURCES ${DIR}/*.cpp)
 TRILINOS_CREATE_CLIENT_TEMPLATE_HEADERS(${DIR})
 SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_BINARY_DIR})
 APPEND_GLOB(HEADERS ${DIR}/*.hpp)
+
+# TODO Add Belos_ENABLE_EXPLICIT_INSTANTIATION and switch this
+# IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+  APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation.cpp)
+  MESSAGE(STATUS "Belos ETI Enabled")
+ELSE()
+  MESSAGE(STATUS "Belos ETI Disabled")
+ENDIF()
+
 
 ######################################################################
 ## Define the targets for the package's library/ies.

@@ -36,22 +36,21 @@ APPEND_SET(SOURCES
   Belos_Details_Tpetra_registerLinearSolverFactory.cpp
   )
 
-# ETI cpp and cpp
+#
+# C) Handle ETI for Belos Tpetra
+#
 # TODO Add Belos_ENABLE_EXPLICIT_INSTANTIATION and switch this
 # IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
 IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
   APPEND_SET(HEADERS Belos_ExplicitTemplateInstantiation_Tpetra.hpp)
-  APPEND_SET(SOURCES Belos_ETI_Tpetra.cpp)
-  MESSAGE(STATUS "Belos ETI Enabled")
+  APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation_Tpetra.cpp)
+  MESSAGE(STATUS "Belos ETI Enabled for Tpetra")
 ELSE()
-  MESSAGE(STATUS "Belos ETI Disabled")
+  MESSAGE(STATUS "Belos ETI Disabled for Tpetra")
 ENDIF()
 
-
-
-
 #
-# C) Define the targets for package's library(s)
+# D) Define the targets for package's library(s)
 #
 TRIBITS_ADD_LIBRARY(
   belostpetra

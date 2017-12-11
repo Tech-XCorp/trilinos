@@ -180,6 +180,83 @@ makeSolverManagerTmpl (const Teuchos::RCP<Teuchos::ParameterList>& params)
 namespace Impl {
 
 template<class Scalar, class MV, class OP>
+Teuchos::RCP<typename SolverFactoryParent<Scalar, MV, OP>::solver_base_type>
+SolverFactoryParent<Scalar, MV, OP>::
+create (const std::string& solverName,
+        const Teuchos::RCP<Teuchos::ParameterList>& solverParams)
+{
+  using Teuchos::RCP;
+  RCP<solver_base_type> solver = this->getSolver (solverName, solverParams);
+  TEUCHOS_TEST_FOR_EXCEPTION
+    (solver.is_null (), std::invalid_argument,
+     "Invalid or unsupported Belos solver name \"" << solverName << "\".");
+  return solver;
+}
+
+
+template<class Scalar, class MV, class OP>
+Teuchos::RCP<typename SolverFactoryParent<Scalar, MV, OP>::solver_base_type>
+SolverFactoryParent<Scalar, MV, OP>::
+getSolver (const std::string& solverName,
+           const Teuchos::RCP<Teuchos::ParameterList>& solverParams)
+{
+  using Teuchos::RCP;
+  const char prefix[] = "Belos::SolverFactoryParent::getSolver: ";
+
+  // First, check the overriding factories.
+  for (std::size_t k = 0; k < factories_.size (); ++k) {
+    RCP<CustomSolverFactory<Scalar, MV, OP> > factory = factories_[k];
+    if (! factory.is_null ()) {
+      RCP<SolverManager<Scalar, MV, OP> > solver =
+        factory->getSolver (solverName, solverParams);
+      if (! solver.is_null ()) {
+        return solver;
+      }
+    }
+  }
+
+  // Upper-case version of the input solver name.
+  const std::string solverNameUC = Impl::upperCase (solverName);
+
+  // Check whether the given name is an alias.
+  std::pair<std::string, bool> aliasResult =
+    Details::getCanonicalNameFromAlias (solverNameUC);
+  const std::string candidateCanonicalName = aliasResult.first;
+  const bool isAnAlias = aliasResult.second;
+
+  // Get the canonical name.
+  const Details::EBelosSolverType solverEnum =
+    Details::getEnumFromCanonicalName (isAnAlias ?
+                                       candidateCanonicalName :
+                                       solverNameUC);
+  const bool validCanonicalName =
+    (solverEnum != Details::SOLVER_TYPE_UPPER_BOUND);
+  if (! validCanonicalName) {
+    TEUCHOS_TEST_FOR_EXCEPTION
+      (isAnAlias, std::logic_error, prefix << "Valid alias \"" << solverName
+       << "\" has candidate canonical name \"" << candidateCanonicalName
+       << "\", which is not a canonical solver name.  "
+       "Please report this bug to the Belos developers.");
+    return Teuchos::null; // unsupported / invalid solver name
+  }
+
+  // If the input list is null, we create a new list and use that.
+  // This is OK because the effect of a null parameter list input is
+  // to use default parameter values.  Thus, we can always replace a
+  // null list with an empty list.
+  Teuchos::RCP<Teuchos::ParameterList> pl =
+    solverParams.is_null() ? Teuchos::parameterList() : solverParams;
+
+  // Possibly modify the input parameter list as needed.
+  if (isAnAlias) {
+    Details::reviseParameterListForAlias (solverNameUC, *pl);
+  }
+
+  return Details::makeSolverManagerFromEnum<Scalar, MV, OP> (solverEnum, pl);
+}
+
+
+template<class Scalar, class MV, class OP>
 void
 SolverFactoryParent<Scalar, MV, OP>::
 addFactory (const Teuchos::RCP<CustomSolverFactory<Scalar, MV, OP> >& factory)

@@ -40,20 +40,19 @@
 //@HEADER
 
 
-#ifdef HAVE_BELOS_EXPLICIT_INSTANTIATION
 #include "BelosSolverFactory_decl.hpp"
 #include "BelosSolverFactory_impl.hpp"
-
-#include "BelosTpetraAdapter.hpp"
+#include "BelosOperator.hpp"
+#include "BelosMultiVec.hpp"
 
 namespace Belos {
-
-#define BELOS_ETI_GROUP(SC,LO,GO,NO) \
-  template class SolverFactory<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>; \
-  template class SolverManager<SC, Tpetra::MultiVector<SC,LO,GO,NO>, Tpetra::Operator<SC,LO,GO,NO>>;
-
-#include "Belos_ExplicitTemplateInstantiation_Tpetra.hpp"
+  typedef double ST;
+  typedef Belos::MultiVec<ST> MV;
+  typedef Belos::Operator<ST> OP;
+  typedef Belos::SolverManager<ST, MV, OP> solver_base_type;
+  typedef Belos::SolverFactory<ST, MV, OP> factory_type;
+  template class SolverFactory<ST, Belos::MultiVec<ST>, Belos::Operator<ST>>;
+  template class SolverManager<ST, Belos::MultiVec<ST>, Belos::Operator<ST>>;
 
 } // namespace Belos
 
-#endif // HAVE_BELOS_EXPLICIT_INSTANTIATION
