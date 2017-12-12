@@ -38,7 +38,20 @@ APPEND_SET(SOURCES
   )
 
 #
-# C) Define the targets for package's library(s)
+# C) Handle ETI for Belos Epetra
+#
+# TODO Add Belos_ENABLE_EXPLICIT_INSTANTIATION and switch this
+# IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+  APPEND_SET(HEADERS Belos_ExplicitTemplateInstantiation_Epetra.hpp)
+  APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation_Epetra.cpp)
+  MESSAGE(STATUS "Belos ETI Enabled for Epetra")
+ELSE()
+  MESSAGE(STATUS "Belos ETI Disabled for Epetra")
+ENDIF()
+
+#
+# D) Define the targets for package's library(s)
 #
 TRIBITS_ADD_LIBRARY(
   belosepetra

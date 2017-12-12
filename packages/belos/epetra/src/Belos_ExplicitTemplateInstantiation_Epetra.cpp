@@ -42,23 +42,10 @@
 
 #include "BelosSolverFactory_decl.hpp"
 #include "BelosSolverFactory_impl.hpp"
-#include "BelosOperator.hpp"
-#include "BelosMultiVec.hpp"
+#include "BelosEpetraOperator.h" // TODO make includes more efficient here  
 
-// For createValidParameterLists.cpp we can ETI the required factory here
-#include "Tpetra_MultiVector.hpp"
-#include "BelosTpetraAdapter.hpp" // this is in the tpetra folder - TODO: better placement?
-
-namespace Belos {
-  template class SolverFactory<Tpetra::MultiVector<>::scalar_type, Tpetra::MultiVector<>, Tpetra::Operator<>>;
-}
-
-// This covers src/test/Factory.cpp setup as double
-// TODO: Fix the types to make sure this compiles only once and covers the rest
 namespace Belos {
   typedef double ST;
-  template class SolverFactory<ST, Belos::MultiVec<ST>, Belos::Operator<ST>>;
-
-} // namespace Belos
-
+  template class SolverFactory<ST, Epetra_MultiVector, Epetra_Operator>;
+}
 
