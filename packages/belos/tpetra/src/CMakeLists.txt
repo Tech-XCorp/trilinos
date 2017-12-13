@@ -39,9 +39,7 @@ APPEND_SET(SOURCES
 #
 # C) Handle ETI for Belos Tpetra
 #
-# TODO Add Belos_ENABLE_EXPLICIT_INSTANTIATION and switch this
-# IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
-IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
   APPEND_SET(HEADERS Belos_ExplicitTemplateInstantiation_Tpetra.hpp)
   APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation_Tpetra.cpp)
   MESSAGE(STATUS "Belos ETI Enabled for Tpetra")

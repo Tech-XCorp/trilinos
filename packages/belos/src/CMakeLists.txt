@@ -181,8 +181,7 @@ ENDIF() # ${PACKAGE_NAME}_ENABLE_Experimental
 ######################################################################
 ## Create headers for ETI and instantiate
 ######################################################################
-# glob the binary dir last to get all of the
-# auto-generated ETI headers
+# glob the binary dir last to get all auto-generated ETI headers
 INCLUDE(TribitsLibraryMacros)
 INCLUDE(TrilinosCreateClientTemplateHeaders)
 SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_SOURCE_DIR})
@@ -190,9 +189,7 @@ TRILINOS_CREATE_CLIENT_TEMPLATE_HEADERS(${DIR})
 SET_AND_INC_DIRS(DIR ${CMAKE_CURRENT_BINARY_DIR})
 APPEND_GLOB(HEADERS ${DIR}/*.hpp)
 
-# TODO Add Belos_ENABLE_EXPLICIT_INSTANTIATION and switch this
-# IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
-IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
+IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
   # Not sure for this yet
   # We have createValidParameterList.cpp in the doc folder
   # which needs tpetra/src/BelosTpetraAdapter.hpp
@@ -202,7 +199,6 @@ IF(${PROJECT_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
   IF (${PACKAGE_NAME}_ENABLE_Tpetra)
     INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/../tpetra/src )
   ENDIF()
-
   APPEND_SET(SOURCES Belos_ExplicitTemplateInstantiation.cpp)
   MESSAGE(STATUS "Belos ETI Enabled")
 ELSE()
