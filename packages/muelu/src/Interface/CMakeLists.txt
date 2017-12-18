@@ -109,6 +109,9 @@ IF(${PACKAGE_NAME}_ENABLE_EXPLICIT_INSTANTIATION)
   APPEND_SET(SOURCES ${DIR}/../Utils/ExplicitInstantiation/MueLu_MLParameterListInterpreter.cpp)
   APPEND_SET(SOURCES ${DIR}/../Utils/ExplicitInstantiation/MueLu_FactoryFactory.cpp)
   APPEND_SET(SOURCES ${DIR}/../Utils/ExplicitInstantiation/MueLu_AdaptiveSaMLParameterListInterpreter.cpp)
+
+  MESSAGE(STATUS "Setting up ETI for TestHelpers classes.") 
+  APPEND_SET(SOURCES ${DIR}/../Utils/ExplicitInstantiation/TestHelpers.cpp)
 ENDIF()
 
 ENDIF() # split cpp files
