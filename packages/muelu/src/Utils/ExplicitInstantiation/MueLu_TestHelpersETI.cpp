@@ -43,55 +43,17 @@
 // ***********************************************************************
 //
 // @HEADER
-#include <Teuchos_UnitTestRepository.hpp>
 
-// TODO: Move this to ETI in Utils - determine best include pathing
-// TODO: Add Tpetra Epetra versions
+/*
+
 #include "MueLu_TestHelpers_decl.hpp"
 #include "MueLu_TestHelpers_def.hpp"
-namespace MueLuTests {
-  namespace TestHelpers {
-// Prototype ETI
+
+// TODO: Add Tpetra Epetra versions
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
-  template class TestFactory<SC,LO,GO,NO>; \
-  template class TpetraTestFactory<SC,LO,GO,NO>;
+  template class MueLu::TestFactory<SC,LO,GO,NO>;
 
 #include "MueLu_ETI_4arg.hpp"
-}
-}
 
+*/
 
-#include "MueLu_TestHelpers.hpp"
-
-namespace MueLuTests {
-
-  // static members initialization of the class TestHelpers::Parameters
-  Xpetra::Parameters TestHelpers::Parameters::xpetraParameters = Xpetra::Parameters(Teuchos::UnitTestRepository::getCLP());
-
-}
-
-namespace MueLuTests {
-  namespace TestHelpers {
-
-    ArrayRCP<std::string> GetFileList(const std::string& dirPath, const std::string& filter) {
-      RCP<std::vector<std::string> > files = rcp(new std::vector<std::string>());
-
-      DIR *dir = opendir(dirPath.c_str());
-      TEUCHOS_TEST_FOR_EXCEPTION(dir == NULL, MueLu::Exceptions::RuntimeError, "GetFileList(\"" + dirPath + "\") : " + strerror(errno));
-
-      struct dirent *dirEntry;
-      while ((dirEntry = readdir(dir)) != NULL) {
-        std::string dirEntryS(dirEntry->d_name);
-
-        size_t pos = dirEntryS.rfind(filter);
-        if (pos != std::string::npos && pos+filter.size() == dirEntryS.size())
-          files->push_back(std::string(dirEntryS));
-      }
-
-      closedir(dir);
-
-      return arcp(files);
-    }
-
-  }
-}
