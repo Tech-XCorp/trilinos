@@ -476,9 +476,6 @@ namespace MueLuTests {
     // with an empty BuildBlockMatrix routine for all instantiations Teptra is not
     // enabled for, but are existing in Xpetra due to Epetra enabled.
     
-
-
-/*
       // Create a matrix as specified by parameter list options
       template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
       RCP<typename TpetraTestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::Matrix> TpetraTestFactory<Scalar,LocalOrdinal,GlobalOrdinal,Node>::BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib) {
@@ -528,7 +525,7 @@ namespace MueLuTests {
 #endif
          return Op;
       } // BuildBlockMatrix()
-*/
+
    } // namespace TestHelpers
 } // namespace MueLuTests
 

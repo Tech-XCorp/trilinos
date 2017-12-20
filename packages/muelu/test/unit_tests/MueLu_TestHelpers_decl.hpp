@@ -207,8 +207,9 @@ namespace MueLuTests {
     public:
 
       // Create a matrix as specified by parameter list options
-      static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib) {
-        RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
+      static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib);
+
+/*        RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
         RCP<Matrix> Op;
 
          if (lib == Xpetra::NotSpecified)
@@ -254,7 +255,7 @@ namespace MueLuTests {
 #endif
          return Op;
       } // BuildBlockMatrix()
-
+*/
     private:
       TpetraTestFactory() {} // static class
 
