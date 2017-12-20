@@ -45,8 +45,6 @@
 // @HEADER
 #include <Teuchos_UnitTestRepository.hpp>
 
-#include "MueLu_TestHelpers.hpp"
-
 namespace MueLuTests {
 // Prototype ETI
 // TODO: Move this to ETI in Utils - determine best include pathing

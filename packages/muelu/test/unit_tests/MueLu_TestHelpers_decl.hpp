@@ -207,7 +207,53 @@ namespace MueLuTests {
     public:
 
       // Create a matrix as specified by parameter list options
-      static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib);
+      static RCP<Matrix> BuildBlockMatrix(Teuchos::ParameterList &matrixList, Xpetra::UnderlyingLib lib) {
+        RCP<const Teuchos::Comm<int> > comm = TestHelpers::Parameters::getDefaultComm();
+        RCP<Matrix> Op;
+
+         if (lib == Xpetra::NotSpecified)
+           lib = TestHelpers::Parameters::getLib();
+
+         // This only works for Tpetra
+         if (lib!=Xpetra::UseTpetra) return Op;
+
+#if defined(HAVE_MUELU_TPETRA)
+         // Thanks for the code, Travis!
+
+         // Make the graph
+         RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > FirstMatrix = TestHelpers::TestFactory<Scalar, LocalOrdinal, GlobalOrdinal, Node>::BuildMatrix(matrixList,lib);
+         RCP<const Xpetra::CrsGraph<LocalOrdinal, GlobalOrdinal, Node> > Graph = FirstMatrix->getCrsGraph();
+
+         int blocksize = 3;
+         RCP<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> > TGraph = rcp_dynamic_cast<const Xpetra::TpetraCrsGraph<LocalOrdinal, GlobalOrdinal, Node> >(Graph);
+         RCP<const Tpetra::CrsGraph<LocalOrdinal,GlobalOrdinal,Node> > TTGraph = TGraph->getTpetra_CrsGraph();
+
+         RCP<Tpetra::Experimental::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > bcrsmatrix = rcp(new Tpetra::Experimental::BlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> (*TTGraph, blocksize));
+
+         const Tpetra::Map<LocalOrdinal, GlobalOrdinal, Node>& meshRowMap = *bcrsmatrix->getRowMap();
+         const Scalar zero   = Teuchos::ScalarTraits<Scalar>::zero();
+         const Scalar one   = Teuchos::ScalarTraits<Scalar>::one();
+         const Scalar two   = one+one;
+         const Scalar three = two+one;
+
+         Teuchos::Array<Scalar> basematrix(blocksize*blocksize, zero);
+         basematrix[0] = two;
+         basematrix[2] = three;
+         basematrix[3] = three;
+         basematrix[4] = two;
+         basematrix[7] = three;
+         basematrix[8] = two;
+         Teuchos::Array<LocalOrdinal> lclColInds(1);
+         for (LocalOrdinal lclRowInd = meshRowMap.getMinLocalIndex (); lclRowInd <= meshRowMap.getMaxLocalIndex(); ++lclRowInd) {
+           lclColInds[0] = lclRowInd;
+           bcrsmatrix->replaceLocalValues(lclRowInd, lclColInds.getRawPtr(), &basematrix[0], 1);
+         }
+
+         RCP<Xpetra::CrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > temp = rcp(new Xpetra::TpetraBlockCrsMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>(bcrsmatrix));
+         Op = rcp(new Xpetra::CrsMatrixWrap<Scalar, LocalOrdinal, GlobalOrdinal, Node>(temp));
+#endif
+         return Op;
+      } // BuildBlockMatrix()
 
     private:
       TpetraTestFactory() {} // static class
@@ -261,14 +307,7 @@ namespace MueLuTests {
 
     //! Return the list of files in the directory. Only files that are matching '*filter*' are returned.
     ArrayRCP<std::string> GetFileList(const std::string & dirPath, const std::string & filter);
-
-
-
-
   } // namespace TestHelpers
-
-
-
 } // namespace MueLuTests
 
 
@@ -296,11 +335,10 @@ namespace MueLuTests {
 
 //
 
-
 //! Namespace for MueLu test classes
-namespace MueLuTests {
-
-  using namespace TestHelpers;
-}
+//namespace MueLuTests {
+//
+//  using namespace TestHelpers;
+//}
 
 #endif // ifndef MUELU_TEST_HELPERS_DECL_H
