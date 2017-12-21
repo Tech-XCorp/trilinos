@@ -45,6 +45,22 @@
 // @HEADER
 #include <Teuchos_UnitTestRepository.hpp>
 
+// TODO: Move this to ETI in Utils - determine best include pathing
+// TODO: Add Tpetra Epetra versions
+#include "MueLu_TestHelpers_decl.hpp"
+#include "MueLu_TestHelpers_def.hpp"
+namespace MueLuTests {
+  namespace TestHelpers {
+// Prototype ETI
+#define MUELU_ETI_GROUP(SC,LO,GO,NO) \
+  template class TestFactory<SC,LO,GO,NO>; \
+  template class TpetraTestFactory<SC,LO,GO,NO>;
+
+#include "MueLu_ETI_4arg.hpp"
+}
+}
+
+
 #include "MueLu_TestHelpers.hpp"
 
 namespace MueLuTests {
