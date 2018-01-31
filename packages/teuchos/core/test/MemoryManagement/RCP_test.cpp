@@ -39,20 +39,38 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_oblackholestream.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
+#include <stddef.h>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <type_traits>
+#include <typeinfo>
+
 #include "Teuchos_Assert.hpp"
-#include "Teuchos_getConst.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_Version.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_oblackholestream.hpp"
+#include "boost/smart_ptr/shared_ptr.hpp"
 
 #ifdef HAVE_TEUCHOS_BOOST
 #  include "Teuchos_RCPBoostSharedPtrConversions.hpp"
 #endif
 
 #include "TestClasses.hpp"
+
+struct UndefinedType2;
+struct UndefinedType;
 
 
 //

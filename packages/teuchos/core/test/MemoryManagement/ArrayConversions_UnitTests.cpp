@@ -41,12 +41,31 @@
 // @HEADER
 */
 
-
 #include "Teuchos_ArrayConversions.hpp"
 #include "Teuchos_implicit_cast.hpp"
 #include "Array_UnitTest_helpers.hpp"
+
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
+
 #include "ArrayConversions_UnitTest_helpers.hpp"
 #include "TestClasses.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
 
 namespace {
 

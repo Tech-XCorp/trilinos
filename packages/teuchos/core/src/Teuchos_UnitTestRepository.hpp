@@ -55,6 +55,7 @@
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_PtrDecl.hpp"
 #include "Teuchos_StandardMemberCompositionMacros.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 namespace Teuchos {

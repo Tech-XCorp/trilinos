@@ -39,9 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stddef.h>
+#include <iostream>
+#include <string>
+
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_Version.hpp"
+#include "Teuchos_config.h"
 
 int main( int argc, char* argv[] )
 {

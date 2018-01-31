@@ -41,8 +41,8 @@
 // @HEADER
 */
 
-#include "Teuchos_stacktrace.hpp"
 
+#include <stddef.h>
 
 void g()
 {

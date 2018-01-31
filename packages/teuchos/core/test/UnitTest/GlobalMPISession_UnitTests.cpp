@@ -39,14 +39,23 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_GlobalMPISession.hpp"
+#include <ostream>
+#include <stdexcept>
+#include <vector>
+
+#include "TeuchosCore_config.h"
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 #ifdef HAVE_MPI
 #  include "mpi.h"
 #endif
-
-#include "Teuchos_UnitTestHarness.hpp"
 
 #ifdef HAVE_TEUCHOSCORE_KOKKOSCORE
 #  include <string>

@@ -39,10 +39,15 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_dyn_cast.hpp"
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <typeinfo>
+
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
 #include "Teuchos_Version.hpp"
+#include "Teuchos_dyn_cast.hpp"
 
 class A { public: virtual ~A(){} };
 class B : public A { public: void f(bool verbose) { if(verbose) std::cout << "\nB::f() called!\n"; } };

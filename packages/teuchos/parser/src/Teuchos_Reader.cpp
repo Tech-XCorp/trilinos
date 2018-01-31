@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <fstream>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <string>

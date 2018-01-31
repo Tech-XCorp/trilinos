@@ -1,7 +1,20 @@
-#include "Common.hpp"
 #include <cstdlib>
+#include <exception>
 #include <iostream>
+#include <stdexcept>
+#include <utility>
 #include <vector>
+
+#include "Common.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Trilinos_Details_LinearSolverFactory.hpp"
+
+namespace Trilinos {
+namespace Details {
+template <class MV, class OP, class NormType> class LinearSolver;
+}  // namespace Details
+}  // namespace Trilinos
 
 using std::cout;
 using std::endl;

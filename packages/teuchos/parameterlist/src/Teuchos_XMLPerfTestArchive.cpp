@@ -43,7 +43,7 @@
 #include <Teuchos_FileInputSource.hpp>
 #include <Teuchos_XMLObject.hpp>
 #include <Teuchos_XMLPerfTestArchive.hpp>
-#include <fstream>
+#include <fstream> // IWYU pragma: keep
 #include <cstdlib>
 #include <cstring>
 #include <iostream>

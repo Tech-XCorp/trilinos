@@ -47,13 +47,14 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <cstring>
 #include <deque>
 #include <iomanip>
 #include <iostream>
-#include <fstream>
+#include <fstream> // IWYU pragma: keep
 #include <iterator>
-#include <set>
+#include <map>
 #include <sstream>
 #include <stdexcept>
 #include <string>

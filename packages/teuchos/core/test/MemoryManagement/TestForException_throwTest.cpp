@@ -41,12 +41,13 @@
 // @HEADER
 */
 
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <iostream>
 
 #include "SimpleThrowFunctions.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 int main(int argc, char* argv[])

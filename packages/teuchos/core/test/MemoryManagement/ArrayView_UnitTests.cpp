@@ -41,9 +41,32 @@
 // @HEADER
 */
 
-#include "Array_UnitTest_helpers.hpp"
+#include <algorithm>
+#include <ostream>
+#include <vector>
 
+#include "Array_UnitTest_helpers.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
 #include "Teuchos_implicit_cast.hpp"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+class DanglingReferenceError;
+}  // namespace Teuchos
 
 
 namespace {
@@ -338,12 +361,6 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( ArrayView, danglingView_rcp_std_vector, T )
   // Above, because we wrapped the initial std::vector in an RCP object, we
   // can sucessfully detect when the object goes away in debug mode!
 }
-
-
-#ifdef HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
-
-
-#endif // HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
 
 
 //

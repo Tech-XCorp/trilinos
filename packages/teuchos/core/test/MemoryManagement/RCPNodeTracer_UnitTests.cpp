@@ -1,6 +1,9 @@
-#include "Teuchos_RCPNode.hpp"
+#include <iosfwd>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 
 namespace {

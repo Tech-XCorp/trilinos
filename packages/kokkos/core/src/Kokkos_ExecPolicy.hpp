@@ -44,14 +44,20 @@
 #ifndef KOKKOS_EXECPOLICY_HPP
 #define KOKKOS_EXECPOLICY_HPP
 
-#include <Kokkos_Core_fwd.hpp>
-#include <impl/Kokkos_Traits.hpp>
-#include <impl/Kokkos_StaticAssert.hpp>
-#include <impl/Kokkos_Error.hpp>
-#include <impl/Kokkos_Tags.hpp>
-#include <impl/Kokkos_AnalyzePolicy.hpp>
 #include <Kokkos_Concepts.hpp>
+#include <Kokkos_Core_fwd.hpp>
+#include <Kokkos_Macros.hpp>
+#include <impl/Kokkos_AnalyzePolicy.hpp>
+#include <impl/Kokkos_Error.hpp>
+#include <impl/Kokkos_StaticAssert.hpp>
+#include <impl/Kokkos_Tags.hpp>
+#include <impl/Kokkos_Traits.hpp>
 #include <iostream>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
+
+#include "Kokkos_Macros.hpp"
 
 //----------------------------------------------------------------------------
 

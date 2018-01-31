@@ -41,13 +41,16 @@
 // @HEADER
 */
 
+#include <iostream>
+#include <memory>
+
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_oblackholestream.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_Version.hpp"
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_oblackholestream.hpp"
 
 // Enum for the speed option
 enum ESpeed { SPEED_SLOW=-1, SPEED_MEDIUM=0, SPEED_FAST=+1 };

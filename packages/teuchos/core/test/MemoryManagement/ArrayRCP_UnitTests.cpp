@@ -41,14 +41,38 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include <assert.h>
+#include <stddef.h>
+#include <algorithm>
+#include <exception>
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
+
 #include "Array_UnitTest_helpers.hpp"
 #include "TestClasses.hpp"
+#include "Teuchos_Array.hpp"
 #include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Exceptions.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_NullIteratorTraits.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_implicit_cast.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
 #include "Teuchos_getRawPtr.hpp"
+#include "Teuchos_implicit_cast.hpp"
+#include "Teuchos_toString.hpp"
 
 namespace {
 
@@ -903,9 +927,6 @@ TEUCHOS_UNIT_TEST_TEMPLATE_1_DECL( ArrayRCP, weakDelete, T )
   TEST_EQUALITY_CONST( arcp_weak1.shares_resource(arcp_weak2), false );
 
   TEST_THROW( arcp_weak2.assert_valid_ptr(), DanglingReferenceError );
-#ifdef TEUCHOS_DEBUG
-  // ToDo: Fill in
-#endif // TEUCHOS_DEBUG
 
 }
 

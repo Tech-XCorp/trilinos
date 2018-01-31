@@ -41,10 +41,26 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_TabularOutputter.hpp"
+#include <cmath>
+#include <ostream>
+#include <vector>
 
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TabularOutputter.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 
 namespace {

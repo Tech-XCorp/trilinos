@@ -42,12 +42,20 @@
 */
 
 
-// The client just includes the basic *.hpp forms without having the worry
-// about implicit or explicit instantiation!
-#include "EvilBase.hpp"
-#include "AEvil.hpp"
-#include "BEvil.hpp"
+#include <ostream>
+#include <string>
 
+#include "AEvil_def.hpp"
+#include "BEvil_def.hpp"
+#include "EvilBase_decl.hpp"
+#include "EvilBase_def.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace EvilPack {
+template <class T> class AEvil;
+template <class T> class BEvil;
+}  // namespace EvilPack
 
 template<class T>
 void testEvil(const T& obj)

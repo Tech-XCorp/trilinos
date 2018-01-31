@@ -1,9 +1,7 @@
 #include <iostream>
-#include <map>
 #include <set>
 #include <stdexcept>
 #include <type_traits>
-
 
 #include "Teuchos_set.hpp"
 //#include "Teuchos_regex.hpp"
@@ -23,7 +21,6 @@
 #include "Teuchos_any.hpp"
 #include "Teuchos_chartab.hpp"
 #include "Teuchos_regex.hpp"
-#include "Teuchos_set.hpp"
 #include "Teuchos_string.hpp"
 #include "Teuchos_vector.hpp"
 

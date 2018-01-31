@@ -41,9 +41,24 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include <cmath>
+#include <ostream>
+#include <vector>
+
+#include "TeuchosCore_config.h"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
 #include "Teuchos_TabularOutputter.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 #ifdef HAVE_TEUCHOSCORE_CXX11
 #  include <memory>
 #endif // HAVE_TEUCHOSCORE_CXX11

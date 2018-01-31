@@ -39,7 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include <cstring>
 #include <map>
 #include <ostream>
 #include <stdexcept>
@@ -47,7 +46,6 @@
 #include <utility>
 
 #include "Teuchos_Array.hpp"
-#include "Teuchos_RCP.hpp"
 #include "Teuchos_StrUtils.hpp"
 #include "Teuchos_TestForException.hpp"
 #include "Teuchos_Utils.hpp"

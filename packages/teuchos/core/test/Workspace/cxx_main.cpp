@@ -39,13 +39,19 @@
 // ***********************************************************************
 // @HEADER
 
+#include <algorithm>
+#include <exception>
+#include <iostream>
 #include <valarray>
+#include <vector>
 
-#include "Teuchos_Workspace.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Time.hpp"
 #include "Teuchos_Version.hpp"
+#include "Teuchos_Workspace.hpp"
 
 /** \brief This class implements a simple (useless) transformation that requires
  * workspace.

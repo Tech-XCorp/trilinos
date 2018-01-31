@@ -41,6 +41,7 @@
 
 
 #include <string>
+#include <vector>
 
 #include "Teuchos_Array.hpp"
 #include "Teuchos_ArrayView.hpp"

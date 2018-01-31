@@ -41,8 +41,13 @@
 // @HEADER
 */
 
+#include <iosfwd>
+
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_getBaseObjVoidPtr.hpp"
 
 
 /*

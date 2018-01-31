@@ -40,16 +40,23 @@
 // @HEADER
 
 
-#include "Teuchos_OrdinalTraits.hpp"
-#include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_TypeTraits.hpp"
-#include "Teuchos_Version.hpp"
+#include <stddef.h>
+#include <iostream>
+#include <memory>
 
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_TypeTraits.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_config.h"
 
 namespace {
 

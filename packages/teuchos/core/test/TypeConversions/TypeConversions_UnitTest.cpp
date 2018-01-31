@@ -39,9 +39,23 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_as.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include <exception>
+#include <iomanip>
+#include <iostream>
 #include <limits>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_toString.hpp"
 
 // Like TEST_NOTHROW, but showing the exception message if the code does throw.
 // The exception must be a subclass of std::exception.

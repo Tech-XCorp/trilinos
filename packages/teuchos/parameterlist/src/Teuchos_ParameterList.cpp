@@ -43,6 +43,7 @@
 
 #include <deque>
 #include <iostream>
+#include <type_traits>
 
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_ParameterList.hpp"

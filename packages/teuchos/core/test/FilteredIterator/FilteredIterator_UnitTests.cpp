@@ -40,10 +40,17 @@
 // @HEADER
 
 
-#include "Teuchos_FilteredIterator.hpp"
+#include <iosfwd>
+#include <utility>
+
 #include "Teuchos_Array.hpp"
-#include "Teuchos_TypeNameTraits.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 namespace {

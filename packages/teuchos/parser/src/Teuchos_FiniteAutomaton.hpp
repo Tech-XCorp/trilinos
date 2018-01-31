@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "TeuchosCore_config.h"
 #include "Teuchos_Table.hpp"
 
 namespace Teuchos {

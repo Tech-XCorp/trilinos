@@ -41,9 +41,35 @@
 // @HEADER
 */
 
+#include <exception>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "Array_UnitTest_helpers.hpp"
-#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Array.hpp"
 #include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_NullIteratorTraits.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+class DanglingReferenceError;
+}  // namespace Teuchos
 
 
 namespace {

@@ -44,6 +44,7 @@
 
 #include <iosfwd>
 
+#include "Teuchos_Utils.hpp"
 #include "Teuchos_VerbosityLevel.hpp"
 
 

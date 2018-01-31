@@ -1,11 +1,19 @@
+#include <Teuchos_MathExpr.hpp>
+#include <Teuchos_Reader.hpp>
+#include <__functional_base>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include <sstream>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include <Teuchos_Language.hpp>
-#include <Teuchos_Reader.hpp>
-#include <Teuchos_MathExpr.hpp>
+#include "Teuchos_Parser.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_any.hpp"
 
 namespace {
 

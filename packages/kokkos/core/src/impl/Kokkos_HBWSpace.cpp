@@ -42,7 +42,6 @@
 */
 
 
-#include <Kokkos_Macros.hpp>
 #ifdef KOKKOS_ENABLE_HBWSPACE
 #include <memkind.h>
 #endif

@@ -39,7 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include <iosfwd>
 #include <string>
 
 #include "Teuchos_TestingHelpers.hpp"

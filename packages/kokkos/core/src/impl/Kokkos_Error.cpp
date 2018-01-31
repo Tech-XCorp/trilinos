@@ -44,10 +44,9 @@
 #include <impl/Kokkos_Error.hpp>
 #include <cstdio>
 #include <cstdlib>
-#include <sstream> // IWYU pragma: keep
 #include <cstring>
 #include <iomanip>
-#include <ostream>
+#include <sstream> // IWYU pragma: keep
 #include <stdexcept>
 
 //----------------------------------------------------------------------------

@@ -39,11 +39,21 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ConstNonconstObjectContainer.hpp"
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ConstNonconstObjectContainer.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 namespace Teuchos {
+
+class NonconstAccessError;
 
 TEUCHOS_UNIT_TEST( ConstNonconstObjectContainer, create ) {
   ConstNonconstObjectContainer<std::vector<double> > vectorObj;

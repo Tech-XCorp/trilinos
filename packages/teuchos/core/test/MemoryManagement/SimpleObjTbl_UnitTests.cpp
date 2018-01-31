@@ -41,11 +41,27 @@
 // @HEADER
 */
 
-#include "Teuchos_SimpleObjectTable.hpp"
-#include "Teuchos_RCP.hpp"
+#include <stddef.h>
+#include <exception>
+#include <iomanip>
+#include <sstream>
 
 #include "TestClasses.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SimpleObjectTable.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+class NullReferenceError;
+class RangeError;
+}  // namespace Teuchos
 
 
 namespace {

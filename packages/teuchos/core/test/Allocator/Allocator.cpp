@@ -41,9 +41,15 @@
 
 #include <Teuchos_Details_Allocator.hpp>
 #include <Teuchos_TypeNameTraits.hpp>
-#include "Teuchos_UnitTestHarness.hpp"
-#include <string>
+#include <iomanip>
+#include <sstream>
 #include <vector>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_toString.hpp"
 
 namespace { // (anonymous)
 

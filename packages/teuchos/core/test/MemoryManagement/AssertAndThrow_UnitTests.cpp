@@ -41,9 +41,18 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_Assert.hpp"
 
+#include <exception>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 namespace {
 

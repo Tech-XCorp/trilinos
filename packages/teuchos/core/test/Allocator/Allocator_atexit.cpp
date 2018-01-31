@@ -39,9 +39,10 @@
 // ***********************************************************************
 // @HEADER
 
-#include <Teuchos_ConfigDefs.hpp>
 #include <Teuchos_Details_Allocator.hpp>
-#include <sstream>
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
 #include <vector>
 
 #ifdef HAVE_TEUCHOS_MPI

@@ -41,20 +41,38 @@
 // @HEADER
 */
 
-#include "TeuchosCore_ConfigDefs.hpp"
+#include <exception>
+#include <iomanip>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+
+#include "TeuchosCore_config.h"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Exceptions.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_getConst.hpp"
+#include "Teuchos_RCPBoostSharedPtrConversionsDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_RCPStdSharedPtrConversionsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
-#ifdef HAVE_TEUCHOS_BOOST
-#  include "Teuchos_RCPBoostSharedPtrConversions.hpp"
-#endif
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
+#include "boost/smart_ptr/shared_ptr.hpp"
 #ifdef HAVE_TEUCHOSCORE_CXX11
 #  include "Teuchos_RCPStdSharedPtrConversions.hpp"
 #endif
 
 #include "TestClasses.hpp"
-
-#include "Teuchos_UnitTestHarness.hpp"
 
 
 namespace {
@@ -817,35 +835,6 @@ TEUCHOS_UNIT_TEST( RCP, danglingPtr4 )
   TEST_EQUALITY( a_ptr.getRawPtr(), badPtr );
 #endif
 }
-
-
-#ifdef TEUCHOS_DEBUG
-
-/* ToDo: Comment this back in once I have everything working
-
-// Test that the RCPNode tracing machinary can detect if an owning RCPNode is
-// being created that would result in a double delete.
-TEUCHOS_UNIT_TEST( RCP, multiRcpCreateError )
-{
-  C *c_ptr = new C;
-#if !defined(HAVE_TEUCHOS_DEBUG_RCP_NODE_TRACING)
-  Teuchos::setTracingActiveRCPNodes(true);
-#endif
-  RCP<C> c_rcp = rcp(c_ptr); // Okay
-  RCP<C> c_rcp2;
-  TEST_THROW(c_rcp2 = rcp(c_ptr), DuplicateOwningRCPError);
-#if !defined(HAVE_TEUCHOS_DEBUG_RCP_NODE_TRACING)
-  Teuchos::setTracingActiveRCPNodes(false);
-#endif
-  // Clean up memory so no leaks and not double deletes no matter what.
-  c_rcp.release();
-  c_rcp2.release();
-  delete c_ptr;
-}
-
-*/
-
-#endif // TEUCHOS_DEBUG
 
 
 //

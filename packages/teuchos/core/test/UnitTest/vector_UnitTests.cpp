@@ -41,10 +41,19 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_getConst.hpp"
+#include <ostream>
+#include <vector>
+
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
 
 
 namespace {

@@ -43,10 +43,8 @@
 #include <stdexcept>
 #include <utility>
 
-#include "Teuchos_RCP.hpp"
 #include "Teuchos_StrUtils.hpp"
 #include "Teuchos_TreeBuildingXMLHandler.hpp"
-#include "Teuchos_toString.hpp"
 
 using namespace Teuchos;
 

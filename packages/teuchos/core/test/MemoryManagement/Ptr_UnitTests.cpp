@@ -41,10 +41,23 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_Ptr.hpp"
-#include "Teuchos_getConst.hpp"
+#include <iosfwd>
+
 #include "TestClasses.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+
+namespace Teuchos {
+class DanglingReferenceError;
+class NullReferenceError;
+}  // namespace Teuchos
 
 
 namespace {

@@ -39,10 +39,10 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_Array.hpp"
-#include "Teuchos_ScalarTraits.hpp" // operator<< and operator>> overloads
-#include "Teuchos_Tuple.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include <ostream>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 namespace { // (anonymous)
 

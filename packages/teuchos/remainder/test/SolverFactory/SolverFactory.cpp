@@ -1,5 +1,8 @@
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+
+#include <ostream>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 namespace { // (anonymous)
 

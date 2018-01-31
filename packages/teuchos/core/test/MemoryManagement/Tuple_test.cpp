@@ -39,15 +39,32 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_Tuple.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <complex>
+#include <iostream>
+#include <memory>
+#include <sstream>
+
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
 #include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+template <typename Iter> class NullIteratorTraits;
+}  // namespace Teuchos
 
 
 // Uncomment to show compile errors from invalid usage

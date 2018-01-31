@@ -41,10 +41,10 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
 #include "Teuchos_Array.hpp"
-#include "Teuchos_getConst.hpp"
+#include "Teuchos_UnitTestHarness.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
 
 
 namespace ArrayUnitTestHelpers {

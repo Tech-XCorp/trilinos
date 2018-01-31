@@ -70,6 +70,10 @@
 #include "Teuchos_map.hpp"
 #include "Teuchos_toString.hpp"
 
+namespace Teuchos {
+template <typename T> class ToStringTraits;
+}  // namespace Teuchos
+
 #if defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_THREAD_SAFE) && !defined(DISABLE_ATOMIC_COUNTERS)
 #include <atomic>
 

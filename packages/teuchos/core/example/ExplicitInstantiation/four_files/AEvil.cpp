@@ -41,8 +41,6 @@
 // @HEADER
 */
 
-#include "AEvil_decl.hpp"
-
 #ifdef DO_EXPLICIT_INSTANTIATION
 
 #include "AEvil_def.hpp"

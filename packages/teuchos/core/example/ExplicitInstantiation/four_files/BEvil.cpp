@@ -41,8 +41,6 @@
 // @HEADER
 */
 
-#include "BEvil_decl.hpp"
-
 #ifdef DO_EXPLICIT_INSTANTIATION
 
 #include "BEvil_def.hpp"

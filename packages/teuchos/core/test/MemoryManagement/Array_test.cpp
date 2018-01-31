@@ -39,17 +39,33 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_Array.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_LocalTestingHelpers.hpp"
+#include <exception>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "TestClasses.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_NullIteratorTraits.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
 
 
 //
@@ -466,27 +482,6 @@ bool testArray( const int n, Teuchos::FancyOStream &out )
     TEST_EQUALITY_CONST( a2.empty(), true );
     TEST_EQUALITY_CONST( a2.size(), 0 );
   }
-
-#ifdef HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
-  // mfh 28 Aug 2012: This test no longer passes, because we've
-  // specialized ArrayView<T>::toString() for T = (const) float,
-  // (const) double.  We've done the specialization to print float and
-  // double in scientific notation.  That was a hack to fix a bug; it
-  // would make more sense to provide a standard toString() for float
-  // and double, and have the test (or even the
-  // ArrayView<T>::toString() specialization) use that.
-  //
-  // {
-  //   out << "\nTest to string ...\n";
-  //   std::ostringstream o;
-  //   o << "{";
-  //   for ( int i = 0; i < n; ++i ) {
-  //     o << as<T>(i) << ( i < n-1 ? ", " : "" );
-  //   }
-  //   o << "}";
-  //   TEST_EQUALITY( o.str(), a.toString() );
-  // }
-#endif // HAVE_TEUCHOS_ARRAY_BOUNDSCHECK
 
   {
     out << "\nTest hasArrayBoundsChecking() ... \n";

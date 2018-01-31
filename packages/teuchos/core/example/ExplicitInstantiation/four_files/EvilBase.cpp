@@ -41,8 +41,6 @@
 // @HEADER
 */
 
-#include "EvilBase_decl.hpp"
-
 #ifdef DO_EXPLICIT_INSTANTIATION
 
 #include "EvilBase_def.hpp"

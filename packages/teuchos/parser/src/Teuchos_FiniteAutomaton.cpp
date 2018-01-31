@@ -14,11 +14,12 @@
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Table.hpp"
-#include "Teuchos_TableDecl.hpp"
 #include "Teuchos_chartab.hpp"
 #include "Teuchos_vector.hpp"
 
 namespace Teuchos {
+
+template <typename T> struct Table;
 
 template struct Table<int>;
 

@@ -1,4 +1,8 @@
+#include <memory>
+
 #include "PackageC.hpp"
+#include "TeuchosCore_config.h"
+#include "Teuchos_RCP.hpp"
 
 namespace C {
 

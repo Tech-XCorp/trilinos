@@ -6,8 +6,7 @@
 #include <map>
 #include <memory>
 #include <queue>
-#include <fstream>
-#include <stack>
+#include <fstream> // IWYU pragma: keep
 #include <string>
 #include <type_traits>
 #include <utility>

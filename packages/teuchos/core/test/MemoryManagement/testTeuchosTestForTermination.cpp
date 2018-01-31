@@ -41,6 +41,8 @@
 // @HEADER
 */
 
+#include <ostream>
+
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
 #include "Teuchos_TestForException.hpp"

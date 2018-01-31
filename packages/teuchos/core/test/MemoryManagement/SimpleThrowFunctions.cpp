@@ -42,7 +42,7 @@
 */
 
 #include "SimpleThrowFunctions.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 void func_a()

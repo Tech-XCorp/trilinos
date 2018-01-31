@@ -41,10 +41,15 @@
 // @HEADER
 */
 
-#include "Teuchos_CWrapperSupport_Cpp.hpp"
-#include "someCFunc.h"
+#include <iosfwd>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_CWrapperSupport_Cpp.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "someCFunc.h"
 
 
 namespace {

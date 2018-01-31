@@ -44,8 +44,8 @@
 #include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
 
-#include <impl/Kokkos_Spinwait.hpp>
 #include <impl/Kokkos_BitOps.hpp>
+#include <impl/Kokkos_Spinwait.hpp>
 
 #if defined( KOKKOS_ENABLE_STDTHREAD) || defined( _WIN32 )
   #include <thread>
@@ -54,8 +54,8 @@
   #include <time.h>
 #else
   #include <process.h>
-  #include <winsock2.h>
   #include <windows.h>
+  #include <winsock2.h>
 #endif
 
 /*--------------------------------------------------------------------------*/

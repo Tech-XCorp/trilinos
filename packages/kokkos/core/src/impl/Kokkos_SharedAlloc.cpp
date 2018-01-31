@@ -42,6 +42,7 @@
 */
 
 #include <Kokkos_Atomic.hpp>
+#include <impl/Kokkos_SharedAlloc.hpp>
 #include <stdio.h>
 #include <sys/_types/_uintptr_t.h>
 #include <ostream>

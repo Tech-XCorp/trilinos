@@ -1,5 +1,10 @@
-#include "Teuchos_CWrapperSupport_Cpp.hpp"
+#include <ostream>
+#include <stdexcept>
+
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_CWrapperSupport_Cpp.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 extern "C" {

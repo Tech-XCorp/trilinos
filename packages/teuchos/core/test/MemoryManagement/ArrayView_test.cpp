@@ -39,15 +39,29 @@
 // ***********************************************************************
 // @HEADER
 
+#include <complex>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
 #include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_NullIteratorTraits.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
 #include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Teuchos_toString.hpp"
 
 
 // Uncomment to show compile errors from invalid usage

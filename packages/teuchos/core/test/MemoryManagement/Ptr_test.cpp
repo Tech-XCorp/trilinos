@@ -39,16 +39,24 @@
 // ***********************************************************************
 // @HEADER
 
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
 #include "TestClasses.hpp"
-#include "Teuchos_Ptr.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_Version.hpp"
 #include "Teuchos_Assert.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_dyn_cast.hpp"
 
 
 int main( int argc, char* argv[] ) {

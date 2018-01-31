@@ -5,7 +5,14 @@
 // Header file for Package C.
 //
 
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
 #include "Common.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Trilinos_Details_LinearSolver.hpp"
+#include "Trilinos_Details_LinearSolverFactory.hpp"
 
 namespace C {
 

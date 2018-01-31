@@ -43,9 +43,8 @@
 
 #define DEBUG_PRINT 0
 
-#include <impl/Kokkos_Error.hpp>
 #include <Kokkos_hwloc.hpp>  // IWYU pragma: keep
-#include <iostream>
+#include <impl/Kokkos_Error.hpp>
 #include <sstream>  // IWYU pragma: keep
 #include <utility>
 

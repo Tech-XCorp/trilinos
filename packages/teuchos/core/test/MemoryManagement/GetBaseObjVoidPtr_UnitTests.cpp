@@ -41,12 +41,15 @@
 // @HEADER
 */
 
-#include "Teuchos_getBaseObjVoidPtr.hpp"
-#include "Teuchos_RCP.hpp"
+#include <iosfwd>
 
 #include "TestClasses.hpp"
-
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_getBaseObjVoidPtr.hpp"
 
 
 namespace Teuchos {

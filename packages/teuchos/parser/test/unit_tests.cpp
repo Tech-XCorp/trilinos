@@ -1,18 +1,26 @@
 #include <Teuchos_Assert.hpp>
 #include <Teuchos_FiniteAutomaton.hpp>
-#include <Teuchos_string.hpp>
 #include <Teuchos_Language.hpp>
+#include <Teuchos_MathExpr.hpp>
 #include <Teuchos_Parser.hpp>
-#include <Teuchos_regex.hpp>
 #include <Teuchos_Reader.hpp>
 #include <Teuchos_XML.hpp>
 #include <Teuchos_YAML.hpp>
-#include <Teuchos_MathExpr.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
-
-#include <iostream>
-#include <sstream>
+#include <Teuchos_regex.hpp>
+#include <Teuchos_string.hpp>
+#include <stddef.h>
 #include <cstdarg>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "Teuchos_Grammar.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ReaderTables.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_any.hpp"
 
 namespace {
 

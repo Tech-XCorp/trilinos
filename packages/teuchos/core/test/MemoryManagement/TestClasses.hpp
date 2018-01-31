@@ -43,7 +43,16 @@
 #define TEUCHOS_TEST_CLASSES_HPP
 
 
+#include <iosfwd>
+#include <type_traits>
+
+#include "TeuchosCore_ConfigDefs.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace Teuchos {
+template <typename T> class TypeNameTraits;
+}  // namespace Teuchos
 
 
 // Return constants from class functions
@@ -225,6 +234,7 @@ This simulates what happens with a lot of MPI implementations.
 */
 
 struct UndefinedType; // Forward declared but never defined!
+
 typedef UndefinedType* Opaque_handle;
 const Opaque_handle OPAQUE_HANDLE_NULL = 0;
 Opaque_handle createOpaque();
@@ -243,6 +253,7 @@ This allows it to be stored in an RCP object itself.
 */
 
 struct UndefinedType2; // Forward declared but never defined!
+
 typedef UndefinedType2* Opaque2_handle;
 const Opaque2_handle OPAQUE2_HANDLE_NULL = 0;
 Opaque2_handle createOpaque2();
@@ -281,6 +292,7 @@ This simulates what can happen with MPI implementations.
 */
 
 struct UndefinedType3; // Forward declared but never defined!
+
 typedef UndefinedType3* Opaque3_handle;
 const Opaque3_handle OPAQUE3_HANDLE_NULL = 0;
 

@@ -41,9 +41,14 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_as.hpp"
+#include <iosfwd>
+
 #include "Teuchos_Hashtable.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
 
 
 namespace {

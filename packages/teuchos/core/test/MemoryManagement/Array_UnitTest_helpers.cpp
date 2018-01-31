@@ -42,6 +42,9 @@
 */
 
 #include "Array_UnitTest_helpers.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 
 int ArrayUnitTestHelpers::n = 4;

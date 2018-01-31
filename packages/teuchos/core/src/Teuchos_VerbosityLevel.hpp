@@ -52,6 +52,7 @@
 
 #include "Teuchos_Assert.hpp"
 #include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_Utils.hpp"
 #include "Teuchos_iostream_helpers.hpp"
 
 

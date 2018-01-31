@@ -41,7 +41,14 @@
 // @HEADER
 */
 
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Teuchos_Assert.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Version.hpp"
 
 class A {

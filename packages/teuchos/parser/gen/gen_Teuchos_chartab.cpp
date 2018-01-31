@@ -1,8 +1,7 @@
+#include <cassert>
 #include <cctype>
 #include <climits>
-#include <iostream>
 #include <fstream>
-#include <cassert>
 
 int main() {
   int chartab[SCHAR_MAX + 1];
