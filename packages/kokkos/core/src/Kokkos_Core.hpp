@@ -48,6 +48,7 @@
 // Include the execution space header files for the enabled execution spaces.
 
 #include <Kokkos_Core_fwd.hpp>
+#include <stddef.h>
 
 #if defined( KOKKOS_ENABLE_SERIAL )
 #include <Kokkos_Serial.hpp>
@@ -78,19 +79,20 @@
 #include <Kokkos_ROCm.hpp>
 #endif
 
-#include <Kokkos_Pair.hpp>
-#include <Kokkos_MemoryPool.hpp>
 #include <Kokkos_Array.hpp>
-#include <Kokkos_View.hpp>
-#include <Kokkos_Vectorization.hpp>
 #include <Kokkos_Atomic.hpp>
-#include <Kokkos_hwloc.hpp>
-#include <Kokkos_Timer.hpp>
-
 #include <Kokkos_Complex.hpp>
-
+#include <Kokkos_MemoryPool.hpp>
+#include <Kokkos_Pair.hpp>
+#include <Kokkos_Timer.hpp>
+#include <Kokkos_Vectorization.hpp>
+#include <Kokkos_View.hpp>
+#include <Kokkos_hwloc.hpp>
 #include <functional>
 #include <iosfwd>
+
+#include "impl/Kokkos_OldMacros.hpp"
+#include "impl/Kokkos_SharedAlloc.hpp"
 
 //----------------------------------------------------------------------------
 

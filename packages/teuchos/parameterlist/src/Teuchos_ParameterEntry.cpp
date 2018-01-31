@@ -40,6 +40,10 @@
 // @HEADER
 
 
+#include <stddef.h>
+#include <ostream>
+
+#include "Teuchos_Array.hpp"
 #include "Teuchos_ParameterEntry.hpp" // class definition
 #include "Teuchos_ParameterList.hpp"	 // for sublists
 #include "Teuchos_TwoDArray.hpp"
@@ -47,6 +51,8 @@
 
 namespace Teuchos {
 
+
+class ParameterEntryValidator;
 
 ParameterEntry::ParameterEntry() :
   isUsed_(false),

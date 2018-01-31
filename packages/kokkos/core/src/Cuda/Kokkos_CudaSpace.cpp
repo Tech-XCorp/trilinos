@@ -41,22 +41,19 @@
 //@HEADER
 */
 
-#include <Kokkos_Macros.hpp>
 #ifdef KOKKOS_ENABLE_CUDA
 
+#include <Cuda/Kokkos_Cuda_Internal.hpp>
+#include <Kokkos_Core.hpp>
+#include <Kokkos_Cuda.hpp>
+#include <Kokkos_CudaSpace.hpp>
+#include <impl/Kokkos_Error.hpp>
+#include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
-#include <algorithm>
-#include <atomic>
-
-#include <Kokkos_Core.hpp>
-#include <Kokkos_Cuda.hpp>
-#include <Kokkos_CudaSpace.hpp>
-
-#include <Cuda/Kokkos_Cuda_Internal.hpp>
-#include <impl/Kokkos_Error.hpp>
 
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>

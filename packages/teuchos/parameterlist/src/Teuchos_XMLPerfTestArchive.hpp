@@ -48,7 +48,14 @@
 #include <Teuchos_ConfigDefs.hpp>
 #include <Teuchos_FileInputSource.hpp>
 #include <Teuchos_XMLObject.hpp>
+#include <stddef.h>
 #include <sstream>
+
+#include "Teuchos_Utils.hpp"
+
+namespace Teuchos {
+class XMLObjectImplem;
+}  // namespace Teuchos
 
 //----------------------------------------------------------------------------
 //-------- Identify Compiler Version -----------------------------------------

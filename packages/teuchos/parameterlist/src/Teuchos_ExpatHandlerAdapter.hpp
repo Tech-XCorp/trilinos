@@ -50,9 +50,8 @@
 
 #ifdef HAVE_TEUCHOS_EXPAT
 
-#include "Teuchos_TreeBuildingXMLHandler.hpp"
 #include "Teuchos_RCP.hpp"
-
+#include "Teuchos_TreeBuildingXMLHandler.hpp"
 #include "expat.h"
 
 extern "C"

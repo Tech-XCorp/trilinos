@@ -39,7 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+#include <utility>
+
 #include "Teuchos_StringToIntMap.hpp"
+#include "Teuchos_TestForException.hpp"
 
 namespace Teuchos {
 

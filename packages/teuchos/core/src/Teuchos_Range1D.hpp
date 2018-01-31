@@ -51,8 +51,13 @@
     \brief .
 */
 
-#include "Teuchos_ScalarTraits.hpp"
+#include <iosfwd>
+#include <limits>
+
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ScalarTraits.hpp"
 
 
 namespace Teuchos {

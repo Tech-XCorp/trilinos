@@ -44,7 +44,6 @@
 #include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ACTIVE_EXECUTION_MEMORY_SPACE_HOST )
 
-#include <Kokkos_Atomic.hpp>
 #include <impl/Kokkos_Spinwait.hpp>
 #include <impl/Kokkos_BitOps.hpp>
 

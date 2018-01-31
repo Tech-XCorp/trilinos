@@ -39,7 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+
 #include "Teuchos_Dependency.hpp"
+#include "Teuchos_InvalidDependencyException.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 namespace Teuchos{

@@ -39,8 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_XMLObject.hpp"
+#include <ostream>
+#include <string>
+
 #include "Teuchos_StrUtils.hpp"
+#include "Teuchos_XMLObject.hpp"
 
 
 namespace Teuchos {

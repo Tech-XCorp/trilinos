@@ -41,7 +41,8 @@
 //@HEADER
 */
 
-#include <Kokkos_Core.hpp>
+#include "Kokkos_ExecPolicy.hpp"
+
 namespace Kokkos {
 namespace Impl {
     PerTeamValue::PerTeamValue(int arg):value(arg) {}

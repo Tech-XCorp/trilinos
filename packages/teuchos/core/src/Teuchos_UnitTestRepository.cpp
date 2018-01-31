@@ -40,17 +40,31 @@
 // @HEADER
 
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_UnitTestBase.hpp"
-#include "Teuchos_TestingHelpers.hpp"
+#include <stddef.h>
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_Assert.hpp"
-#include "Teuchos_VerboseObject.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_Time.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Time.hpp"
+#include "Teuchos_UnitTestBase.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_as.hpp"
 
 
 namespace Teuchos {

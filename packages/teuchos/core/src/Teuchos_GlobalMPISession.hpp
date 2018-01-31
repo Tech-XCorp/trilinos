@@ -47,9 +47,14 @@
         finalizing, and querying the global MPI session
 */
 
-#include "TeuchosCore_ConfigDefs.hpp"
+#include <iostream>
+#include <vector>
 
+#include "TeuchosCore_ConfigDefs.hpp"
+#include "TeuchosCore_config.h"
 #include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_DLLExportMacro.h"
 
 
 namespace Teuchos {

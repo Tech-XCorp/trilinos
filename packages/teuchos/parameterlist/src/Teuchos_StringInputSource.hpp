@@ -47,8 +47,17 @@
 	a std::string
 */
 
+#include <iosfwd>
+
 #include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
 #include "Teuchos_XMLInputSource.hpp"
+
+namespace Teuchos {
+class XMLInputStream;
+}  // namespace Teuchos
 
 
 namespace Teuchos

@@ -42,9 +42,12 @@
 #ifndef TEUCHOS_STRING_TO_INT_MAP_HPP
 #define TEUCHOS_STRING_TO_INT_MAP_HPP
 
-#include "Teuchos_Assert.hpp"
+#include <iosfwd>
 #include <map>
+#include <stdexcept>
 #include <string>
+
+#include "Teuchos_Assert.hpp"
 
 namespace Teuchos {
 

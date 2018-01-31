@@ -42,20 +42,17 @@
 */
 
 
-#include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ENABLE_THREADS )
 
-#include <cstdint>
-#include <limits>
-#include <utility>
-#include <iostream>
-#include <sstream>
-
 #include <Kokkos_Core.hpp>
-
-#include <impl/Kokkos_Error.hpp>
 #include <impl/Kokkos_CPUDiscovery.hpp>
+#include <impl/Kokkos_Error.hpp>
 #include <impl/Kokkos_Profiling_Interface.hpp>
+#include <cstdint>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <utility>
 
 
 //----------------------------------------------------------------------------

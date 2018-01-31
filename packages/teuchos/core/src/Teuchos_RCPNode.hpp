@@ -49,18 +49,30 @@
  */
 
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_any.hpp"
-#include "Teuchos_map.hpp"
-#include "Teuchos_ENull.hpp"
+#include <stddef.h>
+#include <__functional_base>
+#include <map>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "TeuchosCore_config.h"
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_Exceptions.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_TypeNameTraits.hpp"
-#include "Teuchos_toString.hpp"
+#include "Teuchos_any.hpp"
 #include "Teuchos_getBaseObjVoidPtr.hpp"
+#include "Teuchos_map.hpp"
+#include "Teuchos_toString.hpp"
 
 #if defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_THREAD_SAFE) && !defined(DISABLE_ATOMIC_COUNTERS)
 #include <atomic>
+
 #define USING_ATOMICS
 #endif
 

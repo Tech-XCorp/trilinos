@@ -39,9 +39,20 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
 #include <fstream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+
+namespace Teuchos {
+class ParameterEntryValidator;
+}  // namespace Teuchos
 
 namespace {
 

@@ -1,17 +1,31 @@
-#include "Teuchos_set.hpp"
-
-#include "Teuchos_regex.hpp"
-
 #include <iostream>
-#include <sstream>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include <type_traits>
+
+
+#include "Teuchos_set.hpp"
+//#include "Teuchos_regex.hpp"
+//#include <sstream>
+
 
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_FiniteAutomaton.hpp"
+#include "Teuchos_Grammar.hpp"
+#include "Teuchos_Language.hpp"
 #include "Teuchos_Parser.hpp"
-#include "Teuchos_vector.hpp"
-#include "Teuchos_string.hpp"
-#include "Teuchos_chartab.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Reader.hpp"
+#include "Teuchos_ReaderTables.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_any.hpp"
 #include "Teuchos_chartab.hpp"
+#include "Teuchos_regex.hpp"
+#include "Teuchos_set.hpp"
+#include "Teuchos_string.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
 namespace regex {

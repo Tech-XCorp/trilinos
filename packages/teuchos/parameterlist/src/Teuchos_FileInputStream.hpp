@@ -46,6 +46,9 @@
     \brief Definition of XMLInputStream derived class for reading XML from a file
 */
 
+#include <cstdio>
+#include <iosfwd>
+
 #include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_XMLInputStream.hpp"
 

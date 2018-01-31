@@ -47,8 +47,14 @@
 */
 
 #include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_XMLInputStream.hpp"
+#include "Teuchos_XMLObject.hpp"
+
+namespace Teuchos {
+class XMLInputStream;
+}  // namespace Teuchos
 
 namespace Teuchos
 {

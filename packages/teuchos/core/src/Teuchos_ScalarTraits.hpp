@@ -53,7 +53,20 @@
     \brief Defines basic traits for the scalar field type.
 */
 
+#include <sys/errno.h>
+#include <cmath>
+#include <cstdlib>
+#include <iosfwd>
+#include <limits>
+
+#include "TeuchosCore_config.h"
 #include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_config.h"
+
+namespace Teuchos {
+template <typename T> struct ScalarTraits;
+}  // namespace Teuchos
 
 #ifdef HAVE_TEUCHOS_ARPREC
 #include <arprec/mp_real.h>
@@ -96,8 +109,8 @@ operator>> (std::istream& in, __float128& x);
 #endif // HAVE_TEUCHOSCORE_QUADMATH
 
 #ifdef HAVE_TEUCHOS_QD
-#include <qd/qd_real.h>
 #include <qd/dd_real.h>
+#include <qd/qd_real.h>
 #endif
 
 #ifdef HAVE_TEUCHOS_GNU_MP

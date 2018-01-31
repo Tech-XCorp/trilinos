@@ -39,8 +39,10 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdexcept>
+
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_XMLInputStream.hpp"
-#include "Teuchos_Assert.hpp"
 
 using namespace Teuchos;
 

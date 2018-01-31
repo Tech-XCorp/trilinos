@@ -5,6 +5,9 @@
 #include <iosfwd>
 #include <set>
 #include <stdexcept>
+#include <vector>
+
+#include "Teuchos_Table.hpp"
 
 namespace Teuchos {
 

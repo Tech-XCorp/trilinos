@@ -39,8 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stddef.h>
+#include <iostream>
+#include <type_traits>
+
 #include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
 
 
 namespace Teuchos {

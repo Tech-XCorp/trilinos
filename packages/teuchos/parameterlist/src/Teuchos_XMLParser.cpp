@@ -47,10 +47,16 @@
 // either they have to be matched appropriately or (easier) all quot and apos must
 // be replaced by &quot; and &apos;
 
-#include "Teuchos_XMLParser.hpp"
-#include "Teuchos_TreeBuildingXMLHandler.hpp"
-#include "Teuchos_Assert.hpp"
+#include <__functional_base>
+#include <ostream>
 #include <stack>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TreeBuildingXMLHandler.hpp"
+#include "Teuchos_XMLInputStream.hpp"
+#include "Teuchos_XMLParser.hpp"
 
 using namespace Teuchos;
 

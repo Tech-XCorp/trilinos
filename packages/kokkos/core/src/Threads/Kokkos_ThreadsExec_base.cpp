@@ -42,24 +42,22 @@
 */
 
 
-#include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ENABLE_PTHREAD )
 
 #include <Kokkos_Core_fwd.hpp>
 /* Standard 'C' Linux libraries */
 
+#include <errno.h>
 #include <pthread.h>
 #include <sched.h>
-#include <errno.h>
 
 /* Standard C++ libaries */
 
+#include <Kokkos_Threads.hpp>
 #include <cstdlib>
-#include <string>
 #include <iostream>
 #include <stdexcept>
-
-#include <Kokkos_Threads.hpp>
+#include <string>
 
 //----------------------------------------------------------------------------
 
@@ -153,20 +151,18 @@ void ThreadsExec::wait_yield( volatile int & flag , const int value )
 #elif defined( KOKKOS_ENABLE_WINTHREAD )
 
 #include <Kokkos_Core_fwd.hpp>
-
+#include <process.h>
+#include <windows.h>
 /* Windows libraries */
 #include <winsock2.h>
-#include <windows.h>
-#include <process.h>
 
 /* Standard C++ libaries */
 
+#include <Kokkos_Threads.hpp>
 #include <cstdlib>
-#include <string>
 #include <iostream>
 #include <stdexcept>
-
-#include <Kokkos_Threads.hpp>
+#include <string>
 
 //----------------------------------------------------------------------------
 // Driver for each created pthread

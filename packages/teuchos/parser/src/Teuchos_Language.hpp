@@ -46,14 +46,15 @@
   \brief Declares Teuchos::Language.
 */
 
+#include <Teuchos_FiniteAutomaton.hpp>
+#include <Teuchos_Grammar.hpp>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_ReaderTables.hpp>
+#include <iosfwd>
 #include <string>
 #include <vector>
-#include <iosfwd>
 
-#include <Teuchos_Grammar.hpp>
-#include <Teuchos_FiniteAutomaton.hpp>
-#include <Teuchos_ReaderTables.hpp>
-#include <Teuchos_RCP.hpp>
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Teuchos {
 
@@ -149,6 +150,8 @@ namespace Teuchos {
  * Please see Teuchos_XML.cpp, Teuchos_YAML.cpp, and Calc.cpp for examples
  * of 
  */
+struct FiniteAutomaton;
+
 struct Language {
   struct Token {
     std::string name;
@@ -160,6 +163,7 @@ struct Language {
   Tokens tokens;
   typedef std::vector<std::string> RHS;
   struct Production;
+
   struct RHSBuilder {
     Production& prod;
     RHSBuilder(Production& prod_in);

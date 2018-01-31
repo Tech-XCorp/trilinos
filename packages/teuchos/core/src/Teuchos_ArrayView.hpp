@@ -43,8 +43,19 @@
 #define TEUCHOS_ARRAY_VIEW_HPP
 
 
-#include "Teuchos_ArrayViewDecl.hpp"
+#include <ostream>
+#include <vector>
+
 #include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ConstTypeTraits.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Exceptions.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
 #include "Teuchos_as.hpp"
 
 

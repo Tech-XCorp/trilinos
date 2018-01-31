@@ -39,11 +39,19 @@
 // ***********************************************************************
 // @HEADER
 
+#include <sstream>
+
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
 #include "Teuchos_ValidatorFactory.hpp"
+#include "Teuchos_any.hpp"
 
 
 namespace Teuchos {
 
+
+class ParameterEntryValidator;
 
 RCP<ParameterEntryValidator>
 ValidatorFactory::createValidator(ValidatorType valiType)

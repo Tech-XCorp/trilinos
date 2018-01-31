@@ -46,10 +46,16 @@
     \brief Defines a class for assembling an XMLObject from XML input
 */
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_XMLObject.hpp"
+#include <iosfwd>
 #include <list>
+#include <map>
 #include <stack>
+#include <string>
+
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObject.hpp"
 
 
 namespace Teuchos

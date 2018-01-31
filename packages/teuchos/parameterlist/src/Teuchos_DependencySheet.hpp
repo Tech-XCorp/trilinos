@@ -48,7 +48,16 @@
     \brief DataStructure keeping track of dependencies.
 */
 
+#include <iosfwd>
+#include <map>
+#include <set>
+#include <utility>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_Dependency.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 namespace Teuchos{
@@ -58,6 +67,9 @@ namespace Teuchos{
  * \brief A Dependency sheet keeps track of dependencies between various
  * ParameterEntries
  */
+class Dependency;
+class ParameterEntry;
+
 class TEUCHOSPARAMETERLIST_LIB_DLL_EXPORT DependencySheet{
 
 public:

@@ -47,9 +47,20 @@
            to exploit external XML parsing libraries.
 */
 
+#include <iosfwd>
+#include <map>
+
 #include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
 #include "Teuchos_XMLInputStream.hpp"
+#include "Teuchos_XMLObject.hpp"
+
+namespace Teuchos {
+class XMLInputStream;
+}  // namespace Teuchos
 
 namespace Teuchos
 {

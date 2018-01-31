@@ -39,8 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ParameterListNonAcceptor.hpp"
+#include <stdexcept>
+#include <type_traits>
+
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListNonAcceptor.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
 
 namespace Teuchos {
 

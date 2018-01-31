@@ -42,6 +42,12 @@
  */
 
 #include <Kokkos_Macros.hpp>
+#include <dlfcn.h>
+#include <stdio.h>
+#include <cstdlib>
+#include <string>
+
+#include "Kokkos_Core_fwd.hpp"
 #if defined(KOKKOS_ENABLE_PROFILING)
 
 #include <impl/Kokkos_Profiling_Interface.hpp>

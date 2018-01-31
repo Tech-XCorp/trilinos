@@ -46,7 +46,14 @@
  */
 
 
+#include <stddef.h>
+#include <map>
+#include <utility>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_ValidatorMaps.hpp"
 
 

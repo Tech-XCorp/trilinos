@@ -39,8 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_Utils.hpp"
+#include <cmath>
+#include <cstdio>
+#include <iomanip>
+#include <ostream>
+
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos {
 

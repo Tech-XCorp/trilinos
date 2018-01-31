@@ -41,7 +41,15 @@
 
 
 
+#include <__tree>
+#include <algorithm>
+#include <ostream>
+#include <string>
+
+#include "Teuchos_InvalidConditionException.hpp"
 #include "Teuchos_StandardConditions.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Teuchos{
 

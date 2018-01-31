@@ -1,3 +1,9 @@
+#include <type_traits>
+#include <vector>
+
+#include "Teuchos_Language.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_XML.hpp"
 
 namespace Teuchos {

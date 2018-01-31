@@ -1,14 +1,22 @@
-#include "Teuchos_Language.hpp"
-
-#include <set>
+#include <__functional_base>
+#include <__tree>
 #include <iostream>
-#include <sstream>
-#include <cstdlib>
-#include <cstdarg>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
-#include "Teuchos_vector.hpp"
-#include "Teuchos_regex.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_FiniteAutomaton.hpp"
+#include "Teuchos_Grammar.hpp"
+#include "Teuchos_Language.hpp"
 #include "Teuchos_Parser.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_ReaderTables.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_regex.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
 

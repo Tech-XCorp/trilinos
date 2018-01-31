@@ -46,10 +46,12 @@
     \brief A std::string utilities class for Teuchos
 */
 
-#include "Teuchos_ConfigDefs.hpp"
+#include <iosfwd>
 
-#include "Teuchos_Utils.hpp"
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos {
 

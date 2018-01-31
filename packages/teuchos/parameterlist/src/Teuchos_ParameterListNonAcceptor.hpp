@@ -43,6 +43,7 @@
 #define TEUCHOS_PARAMETER_LIST_NON_ACCEPTOR_HPP
 
 #include "Teuchos_ParameterListAcceptorDefaultBase.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Teuchos {
 
@@ -53,6 +54,8 @@ namespace Teuchos {
  *
  * ToDo: Finish documention.
  */
+class ParameterList;
+
 class ParameterListNonAcceptor
   : virtual public ParameterListAcceptorDefaultBase
 {

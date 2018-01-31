@@ -44,8 +44,13 @@
 #ifndef KOKKOS_SHARED_ALLOC_HPP
 #define KOKKOS_SHARED_ALLOC_HPP
 
+#include <stddef.h>
+#include <sys/_types/_uintptr_t.h>
 #include <cstdint>
+#include <iosfwd>
 #include <string>
+
+#include "Kokkos_Macros.hpp"
 
 namespace Kokkos {
 namespace Impl {

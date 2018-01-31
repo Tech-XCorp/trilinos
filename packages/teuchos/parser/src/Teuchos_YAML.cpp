@@ -1,6 +1,11 @@
-#include "Teuchos_YAML.hpp"
+#include <type_traits>
+#include <vector>
 
-#include <iostream>
+#include "Teuchos_Language.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ReaderTables.hpp"
+#include "Teuchos_YAML.hpp"
 
 namespace Teuchos {
 namespace YAML {

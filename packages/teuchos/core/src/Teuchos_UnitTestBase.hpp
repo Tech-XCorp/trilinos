@@ -48,6 +48,9 @@
 */
 
 
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_Describable.hpp"
 #include "Teuchos_FancyOStream.hpp"
 

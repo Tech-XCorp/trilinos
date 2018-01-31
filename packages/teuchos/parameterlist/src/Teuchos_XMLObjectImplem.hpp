@@ -46,9 +46,18 @@
   \brief Low level implementation of XMLObject
 */
 
-#include "Teuchos_map.hpp"
+#include <stddef.h>
+#include <__functional_base>
+#include <iosfwd>
+#include <map>
+#include <string>
+#include <utility>
+
 #include "Teuchos_Array.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_map.hpp"
 
 namespace Teuchos
 {

@@ -41,20 +41,17 @@
 //@HEADER
 */
 
-#include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ENABLE_QTHREADS )
 
+#include <Kokkos_Atomic.hpp>
 #include <Kokkos_Core_fwd.hpp>
-
+#include <Kokkos_Qthreads.hpp>
+#include <impl/Kokkos_Error.hpp>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
 #include <utility>
-
-#include <Kokkos_Qthreads.hpp>
-#include <Kokkos_Atomic.hpp>
-#include <impl/Kokkos_Error.hpp>
 
 // Defines to enable experimental Qthreads functionality.
 //#define QTHREAD_LOCAL_PRIORITY

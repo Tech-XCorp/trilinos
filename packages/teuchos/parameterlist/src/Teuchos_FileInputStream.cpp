@@ -39,8 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+#include <stdexcept>
+
 #include "Teuchos_FileInputStream.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_TestForException.hpp"
 
 using namespace Teuchos;
 

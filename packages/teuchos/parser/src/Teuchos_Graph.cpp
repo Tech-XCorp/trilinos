@@ -1,7 +1,7 @@
-#include "Teuchos_Graph.hpp"
-
+#include <stddef.h>
 #include <iostream>
 
+#include "Teuchos_Graph.hpp"
 #include "Teuchos_vector.hpp"
 
 namespace Teuchos {

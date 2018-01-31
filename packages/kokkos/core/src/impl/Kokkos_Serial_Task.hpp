@@ -45,6 +45,17 @@
 #define KOKKOS_IMPL_SERIAL_TASK_HPP
 
 #include <Kokkos_Macros.hpp>
+
+#include "Kokkos_HostSpace.hpp"
+#include "impl/Kokkos_Error.hpp"
+#include "impl/Kokkos_HostThreadTeam.hpp"
+
+namespace Kokkos {
+class Serial;
+namespace Impl {
+template <typename Space> class TaskQueueSpecialization;
+}  // namespace Impl
+}  // namespace Kokkos
 #if defined( KOKKOS_ENABLE_TASKDAG )
 
 #include <impl/Kokkos_TaskQueue.hpp>

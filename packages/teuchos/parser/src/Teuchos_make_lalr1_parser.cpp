@@ -1,16 +1,25 @@
-#include "Teuchos_make_lalr1_parser.hpp"
-
-#include <map>
-#include <iostream>
-#include <cstdlib>
-#include <queue>
+#include <__bit_reference>
+#include <__tree>
 #include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <queue>
 #include <fstream>
+#include <stack>
+#include <string>
+#include <type_traits>
+#include <utility>
 
-#include "Teuchos_vector.hpp"
+#include "Teuchos_Assert.hpp"
 #include "Teuchos_Graph.hpp"
-#include "Teuchos_stack.hpp"
+#include "Teuchos_Parser.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_make_lalr1_parser.hpp"
 #include "Teuchos_set.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
 

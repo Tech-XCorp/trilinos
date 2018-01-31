@@ -43,6 +43,10 @@
 #define TEUCHOS_DYN_CAST_HPP
 
 
+#include <iosfwd>
+#include <typeinfo>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_TypeNameTraits.hpp"
 
 

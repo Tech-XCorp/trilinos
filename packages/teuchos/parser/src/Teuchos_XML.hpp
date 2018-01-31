@@ -3,6 +3,8 @@
 
 #include <Teuchos_Language.hpp>
 
+#include "Teuchos_ReaderTables.hpp"
+
 namespace Teuchos {
 namespace XML {
 

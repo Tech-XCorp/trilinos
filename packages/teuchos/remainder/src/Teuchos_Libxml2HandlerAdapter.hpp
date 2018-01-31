@@ -49,10 +49,10 @@
 #include "Teuchos_ConfigDefs.hpp"
 
 #ifdef HAVE_TEUCHOS_LIBXML2
-#include "Teuchos_TreeBuildingXMLHandler.hpp"
-#include "Teuchos_RCP.hpp"
-
 #include <libxml/parser.h>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TreeBuildingXMLHandler.hpp"
 
 extern "C"
 {

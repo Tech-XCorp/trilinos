@@ -41,7 +41,13 @@
 //@HEADER
 */
 
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Atomic.hpp>
+#include <stdio.h>
+#include <sys/_types/_uintptr_t.h>
+#include <ostream>
+
+#include "impl/Kokkos_Error.hpp"
+#include "impl/Kokkos_SharedAlloc.hpp"
 
 namespace Kokkos {
 namespace Impl {

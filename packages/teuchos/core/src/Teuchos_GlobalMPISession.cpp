@@ -39,8 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_GlobalMPISession.hpp"
+#include <cstdlib>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
 
 // The header file does not at all depend on MPI routines or types,
 // so we can defer inclusion of mpi.h to here.  This also fixes Bug

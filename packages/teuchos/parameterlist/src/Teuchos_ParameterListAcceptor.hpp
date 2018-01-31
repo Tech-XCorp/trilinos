@@ -43,11 +43,12 @@
 #define TEUCHOS_PARAMETER_LIST_ACCEPTOR_HPP
 
 #include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
 
 namespace Teuchos {
 
-class ParameterList;
 class DependencySheet;
+class ParameterList;
 template<class T> class RCP;
 
 /**

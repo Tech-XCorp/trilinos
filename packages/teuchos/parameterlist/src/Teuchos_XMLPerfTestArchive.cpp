@@ -40,15 +40,23 @@
 // @HEADER
 
 
-#include <iostream>
-#include <fstream>
-#include <cstring>
-#include <cstdlib>
-#include <Teuchos_XMLObject.hpp>
 #include <Teuchos_FileInputSource.hpp>
+#include <Teuchos_XMLObject.hpp>
 #include <Teuchos_XMLPerfTestArchive.hpp>
+#include <fstream>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_XMLObjectImplem.hpp"
 #if defined(_WIN32) || defined(__WIN32__) || defined(WIN32)
 #include <Winsock2.h>
+
 #pragma comment(lib, "ws2_32.lib")
 #else
 #include <unistd.h>

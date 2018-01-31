@@ -1,10 +1,17 @@
 #ifndef TEUCHOS_REGEX_HPP
 #define TEUCHOS_REGEX_HPP
 
-#include <Teuchos_Language.hpp>
 #include <Teuchos_FiniteAutomaton.hpp>
-#include <Teuchos_ReaderTables.hpp>
+#include <Teuchos_Language.hpp>
 #include <Teuchos_Reader.hpp>
+#include <Teuchos_ReaderTables.hpp>
+#include <iosfwd>
+#include <vector>
+
+namespace Teuchos {
+class any;
+struct FiniteAutomaton;
+}  // namespace Teuchos
 
 namespace Teuchos {
 namespace regex {

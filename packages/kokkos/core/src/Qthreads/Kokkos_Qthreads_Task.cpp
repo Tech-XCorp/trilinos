@@ -41,7 +41,6 @@
 //@HEADER
 */
 
-#include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ENABLE_QTHREADS ) && defined( KOKKOS_ENABLE_TASKPOLICY )
 
 #include <Kokkos_Core.hpp>

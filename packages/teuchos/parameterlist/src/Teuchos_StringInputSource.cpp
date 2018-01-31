@@ -39,8 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_StringInputSource.hpp"
 #include "Teuchos_StringInputStream.hpp"
+
+namespace Teuchos {
+class XMLInputStream;
+}  // namespace Teuchos
 
 using namespace Teuchos;
 

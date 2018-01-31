@@ -1,15 +1,22 @@
-#include "Teuchos_FiniteAutomaton.hpp"
-
-#include <set>
+#include <stddef.h>
+#include <__tree>
+#include <limits>
 #include <map>
 #include <queue>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
 #include <utility>
-#include <memory>
-#include <limits>
 
-#include "Teuchos_chartab.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_FiniteAutomaton.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Table.hpp"
+#include "Teuchos_TableDecl.hpp"
+#include "Teuchos_chartab.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
 

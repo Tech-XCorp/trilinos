@@ -40,9 +40,11 @@
 // @HEADER
 
 
-#include "Teuchos_Ptr.hpp"
-#include "Teuchos_Assert.hpp"
+#include <ostream>
+
 #include "Teuchos_Exceptions.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 void Teuchos::PtrPrivateUtilityPack::throw_null( const std::string &type_name )

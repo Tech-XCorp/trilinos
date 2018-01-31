@@ -39,6 +39,12 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_Workspace.hpp"
 
 namespace {

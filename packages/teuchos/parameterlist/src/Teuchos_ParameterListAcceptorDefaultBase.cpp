@@ -39,6 +39,7 @@
 // ***********************************************************************
 // @HEADER
 
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterListAcceptorDefaultBase.hpp"
 
 
@@ -47,6 +48,8 @@ namespace Teuchos {
 
 // Overridden from ParameterListAcceptor
 
+
+class ParameterList;
 
 RCP<ParameterList>
 ParameterListAcceptorDefaultBase::getNonconstParameterList()

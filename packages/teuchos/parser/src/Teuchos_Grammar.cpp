@@ -1,11 +1,12 @@
-#include "Teuchos_Grammar.hpp"
-
 #include <Teuchos_Assert.hpp>
-#include <set>
 #include <iostream>
+#include <set>
+#include <string>
 
-#include "Teuchos_vector.hpp"
+#include "Teuchos_Grammar.hpp"
 #include "Teuchos_Parser.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
 

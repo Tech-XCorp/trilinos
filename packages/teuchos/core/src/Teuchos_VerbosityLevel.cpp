@@ -39,8 +39,15 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerbosityLevel.hpp"
+#include <ostream>
+#include <stdexcept>
+
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 #include "Teuchos_as.hpp"
 
 

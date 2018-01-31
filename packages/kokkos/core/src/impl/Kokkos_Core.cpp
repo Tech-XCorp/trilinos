@@ -42,13 +42,23 @@
 */
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_Macros.hpp>
 #include <impl/Kokkos_Error.hpp>
 #include <cctype>
-#include <cstring>
-#include <iostream>
-#include <sstream>
 #include <cstdlib>
+#include <cstring>
+#include <exception>
+#include <iostream>
+#include <memory>
 #include <stack>
+#include <type_traits>
+
+#include "Kokkos_Atomic.hpp"
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_HostSpace.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_Serial.hpp"
+#include "impl/Kokkos_Profiling_Interface.hpp"
 
 //----------------------------------------------------------------------------
 

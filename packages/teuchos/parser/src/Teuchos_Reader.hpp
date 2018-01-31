@@ -46,11 +46,14 @@
   \brief Declares Teuchos::Reader.
 */
 
-#include <iosfwd>
-#include <functional>
-
 #include <Teuchos_ReaderTables.hpp>
 #include <Teuchos_any.hpp>
+#include <stddef.h>
+#include <functional>
+#include <iosfwd>
+#include <vector>
+
+#include "Teuchos_Grammar.hpp"
 
 namespace Teuchos {
 
@@ -82,6 +85,9 @@ namespace Teuchos {
  * indicate that the text stream being read is invalid, usually due to constraints
  * that can't be expressed in the Teuchos::Language.
  */
+struct FiniteAutomaton;
+struct Parser;
+
 class Reader {
  public:
 

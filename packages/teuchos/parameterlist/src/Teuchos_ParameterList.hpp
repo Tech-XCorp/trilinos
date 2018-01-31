@@ -47,12 +47,31 @@
     \brief Templated Parameter List class
 */  
 
-#include "Teuchos_ParameterListExceptions.hpp"
-#include "Teuchos_ParameterEntry.hpp"
-#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_RCP.hpp"
+#include <stddef.h>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
+
 #include "Teuchos_Array.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 #include "Teuchos_map.hpp"
 
 

@@ -39,6 +39,8 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+
 #include "Teuchos_Range1D.hpp"
 
 namespace Teuchos {

@@ -39,8 +39,12 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Details_LinearSolverFactory.hpp"
+#include <__tree>
 #include <set>
+#include <string>
+
+#include "TeuchosRemainder_config.h"
+#include "Trilinos_Details_LinearSolverFactory.hpp"
 
 namespace Trilinos {
 namespace Details {

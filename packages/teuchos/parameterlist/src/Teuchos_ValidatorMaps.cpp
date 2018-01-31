@@ -39,6 +39,8 @@
 // ***********************************************************************
 // @HEADER
 
+#include <__tree>
+
 #include "Teuchos_ValidatorMaps.hpp"
 
 namespace Teuchos{

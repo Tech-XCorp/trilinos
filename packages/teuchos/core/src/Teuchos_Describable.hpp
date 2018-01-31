@@ -42,9 +42,14 @@
 #ifndef TEUCHOS_DESCRIBABLE_HPP
 #define TEUCHOS_DESCRIBABLE_HPP
 
-#include "Teuchos_VerbosityLevel.hpp"
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_LabeledObject.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 
 
 namespace Teuchos {

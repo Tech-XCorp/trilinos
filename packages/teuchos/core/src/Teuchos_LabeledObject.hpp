@@ -42,7 +42,10 @@
 #ifndef TEUCHOS_LABELED_OBJECT_HPP
 #define TEUCHOS_LABELED_OBJECT_HPP
 
+#include <iosfwd>
+
 #include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
 
 
 namespace Teuchos {

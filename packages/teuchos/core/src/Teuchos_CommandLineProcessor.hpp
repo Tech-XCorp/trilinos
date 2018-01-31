@@ -50,11 +50,24 @@
     This is an example of how to use the Teuchos::CommandLineProcessor class.
 */
 
-#include "Teuchos_map.hpp"
-#include "Teuchos_any.hpp"
-#include "Teuchos_CompileTimeAssert.hpp"
-#include "Teuchos_Ptr.hpp"
+#include <assert.h>
+#include <stddef.h>
+#include <__functional_base>
+#include <iostream>
+#include <map>
+#include <stdexcept>
+#include <string>
 #include <vector>
+
+#include "Teuchos_CompileTimeAssert.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_map.hpp"
 
 /*! \class Teuchos::CommandLineProcessor
  * \brief Class that helps parse command line input arguments from <tt>(argc,argv[])</tt> and set options.

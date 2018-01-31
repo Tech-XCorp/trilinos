@@ -39,6 +39,9 @@
 // ***********************************************************************
 // @HEADER
 
+#include <memory>
+#include <ostream>
+
 #include "Teuchos_Describable.hpp"
 #include "Teuchos_TypeNameTraits.hpp"
 

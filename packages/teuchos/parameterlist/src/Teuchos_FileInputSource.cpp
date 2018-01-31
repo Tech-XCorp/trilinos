@@ -41,6 +41,11 @@
 
 #include "Teuchos_FileInputSource.hpp"
 #include "Teuchos_FileInputStream.hpp"
+#include "Teuchos_RCP.hpp"
+
+namespace Teuchos {
+class XMLInputStream;
+}  // namespace Teuchos
 
 using namespace Teuchos;
 

@@ -49,9 +49,11 @@
     \brief Basic wall-clock timer class
 */
 
-#include "Teuchos_ConfigDefs.hpp"
-
 #include <ctime>
+#include <iosfwd>
+
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #ifdef HAVE_MPI
 #include <mpi.h>
 #else

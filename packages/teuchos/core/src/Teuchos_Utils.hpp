@@ -46,6 +46,10 @@
     \brief A utilities class for Teuchos
 */
 
+#include <math.h>
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_toString.hpp"
 
 /*! \class Teuchos::Utils

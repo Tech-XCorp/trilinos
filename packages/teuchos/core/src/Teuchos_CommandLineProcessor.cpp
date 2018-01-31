@@ -43,11 +43,20 @@
 // Teuchos_CommandLineProcessor.cpp
 
 
+#include <__tree>
+#include <algorithm>
+#include <cstring>
+#include <iomanip>
+#include <type_traits>
+#include <utility>
+
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_VerboseObject.hpp"
-//#include "Teuchos_TimeMonitor.hpp"
-#include "Teuchos_Assert.hpp"
 #include "Teuchos_as.hpp"
 
 

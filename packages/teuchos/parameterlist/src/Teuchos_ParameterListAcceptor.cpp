@@ -39,10 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_ParameterListAcceptor.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 namespace Teuchos {

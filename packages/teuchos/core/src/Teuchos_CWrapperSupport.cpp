@@ -39,7 +39,12 @@
 // ***********************************************************************
 // @HEADER
 
+#include <type_traits>
+
 #include "Teuchos_CWrapperSupport_Cpp.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_VerboseObject.hpp"
 
 

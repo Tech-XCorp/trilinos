@@ -48,10 +48,18 @@
 */
 
 
+#include <algorithm>
+#include <ostream>
+
 #include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_as.hpp"
 
 
 namespace Teuchos {

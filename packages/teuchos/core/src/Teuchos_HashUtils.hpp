@@ -46,7 +46,12 @@
     \brief Utilities for generating hashcodes
 */
 
+#include <stddef.h>
+#include <iosfwd>
+#include <limits>
+
 #include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DLLExportMacro.h"
 
 namespace Teuchos
 {

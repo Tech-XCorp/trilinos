@@ -40,9 +40,11 @@
 // @HEADER
 
 
-#include "Teuchos_ParameterListAcceptorHelpers.hpp"
-#include "Teuchos_ParameterListAcceptor.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListAcceptor.hpp"
+#include "Teuchos_ParameterListAcceptorHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 void Teuchos::printValidParameters( const ParameterListAcceptor &paramListAccpetor,

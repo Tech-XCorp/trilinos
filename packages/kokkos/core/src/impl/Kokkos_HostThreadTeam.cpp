@@ -41,11 +41,10 @@
 //@HEADER
 */
 
-#include <limits>
-#include <Kokkos_Macros.hpp>
-#include <impl/Kokkos_HostThreadTeam.hpp>
 #include <impl/Kokkos_Error.hpp>
-#include <impl/Kokkos_Spinwait.hpp>
+#include <impl/Kokkos_HostThreadTeam.hpp>
+
+#include "Kokkos_Pair.hpp"
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------

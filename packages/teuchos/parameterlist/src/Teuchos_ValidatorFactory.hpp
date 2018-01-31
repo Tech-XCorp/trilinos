@@ -43,6 +43,7 @@
 #define TEUCHOS_VALIDATORFACTORY_HPP_
 
 
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
 
 
@@ -51,6 +52,12 @@ namespace Teuchos {
 
 /** \brief Factory for ParameterEntryValidator objects.
  */
+class ArrayFileNameValidator;
+class FileNameValidator;
+class ParameterEntryValidator;
+template <class T> class ArrayNumberValidator;
+template <class T> class EnhancedNumberValidator;
+
 class ValidatorFactory {
 public:
 

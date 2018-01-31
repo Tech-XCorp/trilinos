@@ -41,11 +41,18 @@
 
 
 
+#include <__tree>
+#include <ostream>
+
+#include "Teuchos_Dependency.hpp"
 #include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_ENull.hpp"
 
 
 namespace Teuchos{
 
+
+class ParameterEntry;
 
 DependencySheet::DependencySheet():
   name_("DEP_ANONYMOUS")

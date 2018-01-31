@@ -39,8 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdlib.h>
+#include <string>
+
 #include "Teuchos_TypeNameTraits.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_config.h"
 
 // Define this if you want to force name demangling if supported
 //#define HAVE_TEUCHOS_DEMANGLE

@@ -40,7 +40,6 @@
 // @HEADER
 
 #include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_Assert.hpp"
 
 // Define this to throw exceptions when any Teuchos::ScalarTraits function
 // encounters a NaN or an Inf.

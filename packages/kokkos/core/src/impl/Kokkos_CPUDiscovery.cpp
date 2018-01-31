@@ -47,10 +47,7 @@
 #else
 #include <unistd.h>
 #endif
-#include <cstdio>
 #include <cstdlib>
-#include <cstring>
-#include <cerrno>
 
 namespace Kokkos {
 namespace Impl {

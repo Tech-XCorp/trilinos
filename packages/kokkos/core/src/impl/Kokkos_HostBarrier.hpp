@@ -44,6 +44,7 @@
 #ifndef KOKKOS_HOST_BARRIER_HPP
 #define KOKKOS_HOST_BARRIER_HPP
 
+#include <_types/_uint64_t.h>
 #include <cstddef>
 #include <cstdint>
 

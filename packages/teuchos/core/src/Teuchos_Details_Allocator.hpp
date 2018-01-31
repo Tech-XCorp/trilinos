@@ -51,10 +51,13 @@
 #define TEUCHOS_DETAILS_ALLOCATOR
 
 #include <Teuchos_ConfigDefs.hpp>
+#include <stddef.h>
 #include <iostream>
 #include <limits>
 #include <type_traits>
 #include <typeinfo>
+
+#include "TeuchosCore_config.h"
 
 namespace Teuchos {
 namespace Details {

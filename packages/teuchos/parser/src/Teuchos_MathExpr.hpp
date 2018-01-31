@@ -1,10 +1,17 @@
 #ifndef TEUCHOS_MATHEXPR_HPP
 #define TEUCHOS_MATHEXPR_HPP
 
-#include <set>
-
 #include <Teuchos_Language.hpp>
 #include <Teuchos_Reader.hpp>
+#include <iosfwd>
+#include <set>
+#include <vector>
+
+#include "Teuchos_ReaderTables.hpp"
+
+namespace Teuchos {
+class any;
+}  // namespace Teuchos
 
 namespace Teuchos {
 

@@ -45,20 +45,42 @@
 #ifndef TEUCHOS_YAMLPARSER_DEF_H_
 #define TEUCHOS_YAMLPARSER_DEF_H_
 
-#include <iostream>
-#include <iomanip>
-#include <ios>
-#include <sstream>
+#include <algorithm>
 #include <cctype>
+#include <cstring>
+#include <deque>
+#include <iomanip>
+#include <iostream>
 #include <fstream>
+#include <iterator>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
+#include <vector>
 
-#include "Teuchos_YamlParser_decl.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_YamlParameterListCoreHelpers.hpp"
-#include "Teuchos_TwoDArray.hpp"
-
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Parser.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Reader.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
 #include "Teuchos_YAML.hpp"
+#include "Teuchos_YamlParser_decl.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Teuchos {
 

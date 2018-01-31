@@ -42,10 +42,18 @@
 
 #ifndef TEUCHOS_DEPENDENCY_HPP_
 #define TEUCHOS_DEPENDENCY_HPP_
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_InvalidDependencyException.hpp"
+#include <__tree>
+#include <iosfwd>
 #include <set>
+
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_InvalidDependencyException.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
 /*! \file Dependency.hpp
     \brief DataStructure for expressing dependencies between elements
     in ParameterLists.

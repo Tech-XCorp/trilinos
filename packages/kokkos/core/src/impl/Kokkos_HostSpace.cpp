@@ -41,8 +41,10 @@
 //@HEADER
 */
 
-#include <algorithm>
 #include <Kokkos_Macros.hpp>
+#include <sys/_types/_uintptr_t.h>
+#include <algorithm>
+#include <memory>
 #if defined(KOKKOS_ENABLE_PROFILING)
 #include <impl/Kokkos_Profiling_Interface.hpp>
 #endif
@@ -61,8 +63,8 @@
 
 #if defined(KOKKOS_ENABLE_POSIX_MEMALIGN)
 
-#include <unistd.h>
 #include <sys/mman.h>
+#include <unistd.h>
 
 /* mmap flags for private anonymous memory allocation */
 
@@ -86,18 +88,18 @@
 
 /*--------------------------------------------------------------------------*/
 
-#include <cstddef>
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-
-#include <iostream>
-#include <sstream>
-#include <cstring>
-
+#include <Kokkos_Atomic.hpp>
 #include <Kokkos_HostSpace.hpp>
 #include <impl/Kokkos_Error.hpp>
-#include <Kokkos_Atomic.hpp>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <iostream>
+#include <sstream>  // IWYU pragma: keep
+
+#include "Kokkos_MemoryTraits.hpp"
+#include "impl/Kokkos_SharedAlloc.hpp"
+#include "impl/Kokkos_Traits.hpp"
 
 #if ( defined( KOKKOS_ENABLE_ASM ) || defined ( KOKKOS_ENABLE_TM ) ) && defined ( KOKKOS_ENABLE_ISA_X86_64 )
 #include <immintrin.h>

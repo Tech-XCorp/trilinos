@@ -41,15 +41,14 @@
 //@HEADER
 */
 
-#include <cstdio>
-#include <cstring>
-#include <cstdlib>
-
-#include <ostream>
-#include <sstream>
-#include <iomanip>
-#include <stdexcept>
 #include <impl/Kokkos_Error.hpp>
+#include <cstdio>
+#include <cstdlib>
+#include <sstream> // IWYU pragma: keep
+#include <cstring>
+#include <iomanip>
+#include <ostream>
+#include <stdexcept>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
@@ -109,6 +108,9 @@ std::string human_memory_size(size_t arg_bytes)
  *  Must be linked with   '-ldl'
  */
 
+#include <cxxabi.h>
+#include <dlfcn.h>
+#include <execinfo.h>
 /* Print call stack into an error stream,
  * so one knows in which function the error occured.
  *
@@ -124,10 +126,6 @@ std::string human_memory_size(size_t arg_bytes)
  * Modified to output to std::ostream.
  */
 #include <signal.h>
-#include <execinfo.h>
-#include <cxxabi.h>
-#include <dlfcn.h>
-
 #include <cstdlib>
 
 namespace Kokkos {

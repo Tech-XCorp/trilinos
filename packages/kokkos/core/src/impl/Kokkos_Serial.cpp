@@ -42,15 +42,16 @@
 */
 
 #include <Kokkos_Macros.hpp>
+
+#include "Kokkos_HostSpace.hpp"
+#include "impl/Kokkos_HostThreadTeam.hpp"
+#include "impl/Kokkos_OldMacros.hpp"
+#include "impl/Kokkos_Profiling_Interface.hpp"
 #if defined( KOKKOS_ENABLE_SERIAL )
 
-#include <cstdlib>
-#include <sstream>
 #include <Kokkos_Serial.hpp>
-#include <impl/Kokkos_Traits.hpp>
-#include <impl/Kokkos_Error.hpp>
-
 #include <impl/Kokkos_SharedAlloc.hpp>
+#include <cstdlib>
 
 /*--------------------------------------------------------------------------*/
 

@@ -46,6 +46,9 @@
 \brief Standard test and throw macros.
 */
 
+#include <ostream>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_TypeNameTraits.hpp"
 #include "Teuchos_stacktrace.hpp"
 

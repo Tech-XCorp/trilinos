@@ -42,7 +42,12 @@
 // Kris
 // 07.08.03 -- Move into Teuchos package/namespace
 
+#include <sys/time.h>
+#include <ctime>
+
+#include "TeuchosCore_config.h"
 #include "Teuchos_Time.hpp"
+#include "Teuchos_config.h"
 
 #if defined(__INTEL_COMPILER) && defined(_WIN32)
 
@@ -73,9 +78,9 @@ inline void seconds_initialize() {
 #endif // defined(__INTEL_COMPILER) && defined(_WIN32)
 
 #ifdef HAVE_TEUCHOS_TIME_MASSIF_SNAPSHOTS
+#include <unistd.h>
 #include <valgrind.h>
 #include <algorithm>
-#include <unistd.h>
 #endif
 
 #if defined(HAVE_TEUCHOS_KOKKOS_PROFILING) && defined(HAVE_TEUCHOSCORE_KOKKOSCORE) && defined(KOKKOS_ENABLE_PROFILING)

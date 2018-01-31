@@ -44,8 +44,18 @@
 #define TEUCHOS_PTR_HPP
 
 
+#include <stddef.h>
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_PtrDecl.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+
+namespace Teuchos {
+template <class T> class RCP;
+}  // namespace Teuchos
 
 
 namespace Teuchos {

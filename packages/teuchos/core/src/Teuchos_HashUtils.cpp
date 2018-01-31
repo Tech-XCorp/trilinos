@@ -39,9 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_HashUtils.hpp"
-#include "Teuchos_Assert.hpp"
+#include <stdexcept>
+
 #include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_HashUtils.hpp"
+#include "Teuchos_TestForException.hpp"
 
 using namespace Teuchos;
 

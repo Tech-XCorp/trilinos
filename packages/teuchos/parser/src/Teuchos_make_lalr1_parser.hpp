@@ -1,12 +1,17 @@
 #ifndef TEUCHOS_BUILD_PARSER_HPP
 #define TEUCHOS_BUILD_PARSER_HPP
 
-#include <set>
-#include <memory>
-
-#include <Teuchos_Parser.hpp>
 #include <Teuchos_Graph.hpp>
+#include <Teuchos_Parser.hpp>
 #include <Teuchos_RCP.hpp>
+#include <iosfwd>
+#include <memory>
+#include <set>
+#include <stdexcept>
+#include <vector>
+
+#include "Teuchos_Grammar.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Teuchos {
 

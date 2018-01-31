@@ -1,10 +1,12 @@
 #ifndef TEUCHOS_GRAMMAR_HPP
 #define TEUCHOS_GRAMMAR_HPP
 
+#include <Teuchos_RCP.hpp>
+#include <iosfwd>
 #include <string>
 #include <vector>
 
-#include <Teuchos_RCP.hpp>
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Teuchos {
 

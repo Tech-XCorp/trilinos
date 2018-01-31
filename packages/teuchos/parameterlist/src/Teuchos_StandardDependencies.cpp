@@ -41,6 +41,11 @@
 
 
 
+#include <algorithm>
+
+#include "Teuchos_Condition.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_StandardConditions.hpp"
 #include "Teuchos_StandardDependencies.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
 

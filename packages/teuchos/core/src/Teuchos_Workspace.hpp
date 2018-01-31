@@ -42,14 +42,23 @@
 #ifndef TEUCHOS_WORKSPACE_HPP
 #define TEUCHOS_WORKSPACE_HPP
 
-#include "Teuchos_RCP.hpp"
+#include <assert.h>
+#include <stddef.h>
+#include <iosfwd>
+#include <new>
+
 #include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Teuchos {
 
-class WorkspaceStore;
 class RawWorkspace;
+class WorkspaceStore;
 
 /** \brief \defgroup Teuchos_Workspace_grp Set of utilities for allocating temporary workspace.
  *

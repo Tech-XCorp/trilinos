@@ -39,10 +39,12 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-
+#include <stddef.h>
+#include <exception>
 #include <iostream>
+
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_TestForException.hpp"
 
 //
 // ToDo: Make these functions thread-safe!

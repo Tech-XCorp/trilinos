@@ -48,6 +48,7 @@
 */
 
 #include "Teuchos_ConstTypeTraits.hpp"
+#include "Teuchos_DLLExportMacro.h"
 
 // mfh 30 Jan 2013: Thanks to Jim Willenbring for reporting this, and
 // to Mike Glass and Paul Lin for updating the fix for dealing with a
@@ -62,6 +63,7 @@
 # define TEUCHOS_TYPE_NAME_TRAITS_OLD_IBM
 #endif
 
+#include <iosfwd>
 #include <typeinfo>
 
 namespace  Teuchos {

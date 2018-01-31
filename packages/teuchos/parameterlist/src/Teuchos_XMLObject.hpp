@@ -46,8 +46,17 @@
     \brief An object representation of a subset of XML data
 */
 
-#include "Teuchos_XMLObjectImplem.hpp"
+#include <cstdlib>
+#include <iosfwd>
+#include <stdexcept>
+
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObjectImplem.hpp"
+#include "Teuchos_toString.hpp"
 
 namespace Teuchos{
 

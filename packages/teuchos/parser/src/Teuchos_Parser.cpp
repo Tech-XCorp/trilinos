@@ -1,9 +1,15 @@
-#include "Teuchos_Parser.hpp"
+#include <sstream>
 
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_Grammar.hpp"
+#include "Teuchos_Parser.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Table.hpp"
-#include "Teuchos_make_lalr1_parser.hpp"
+#include "Teuchos_vector.hpp"
 
 namespace Teuchos {
+
+template <typename T> struct Table;
 
 template struct Table<Action>;
 

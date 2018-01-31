@@ -39,8 +39,10 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_dyn_cast.hpp"
-#include "Teuchos_Assert.hpp"
 
 /** We throw a m_bad_cast, which is a subclass of bad_cast.
 	This is necessary, since bad_cast lacks the appropriate

@@ -39,12 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_XMLInputSource.hpp"
-#include "Teuchos_TreeBuildingXMLHandler.hpp"
 
 
 #ifdef HAVE_TEUCHOS_EXPAT
 #  include "Teuchos_ExpatHandlerAdapter.hpp"
+
 #  define EXPAT_BUFSIZE 8192
 #else
 #  include "Teuchos_XMLParser.hpp"

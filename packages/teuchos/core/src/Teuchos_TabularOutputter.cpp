@@ -40,6 +40,13 @@
 // @HEADER
 
 
+#include <algorithm>
+#include <memory>
+#include <type_traits>
+
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_TabularOutputter.hpp"
 #include "Teuchos_as.hpp"
 

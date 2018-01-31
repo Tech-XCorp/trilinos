@@ -42,9 +42,12 @@
 #ifndef TEUCHOS_PARAMETER_LIST_ACCEPTOR_DEFAULT_BASE_HPP
 #define TEUCHOS_PARAMETER_LIST_ACCEPTOR_DEFAULT_BASE_HPP
 
+#include <type_traits>
+
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_ParameterListAcceptor.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 namespace Teuchos {
@@ -58,6 +61,8 @@ namespace Teuchos {
  * using the non-virtual protected members <tt>setMyParamList()</tt> and
  * <tt>getMyParamList()</tt>.
  */
+class ParameterList;
+
 class ParameterListAcceptorDefaultBase : virtual public ParameterListAcceptor {
 public:
 

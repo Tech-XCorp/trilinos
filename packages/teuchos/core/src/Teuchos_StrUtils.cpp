@@ -39,8 +39,16 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ctype.h>
+#include <cstdlib>
+#include <cstring>
+#include <istream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
 #include "Teuchos_StrUtils.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 namespace Teuchos {

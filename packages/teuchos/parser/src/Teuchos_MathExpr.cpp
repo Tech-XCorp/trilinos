@@ -1,4 +1,13 @@
 #include <Teuchos_MathExpr.hpp>
+#include <ostream>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_Language.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Reader.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Teuchos {
 

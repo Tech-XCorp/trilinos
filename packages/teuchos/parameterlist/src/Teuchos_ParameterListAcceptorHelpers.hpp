@@ -43,6 +43,9 @@
 #define TEUCHOS_PARAMETER_LIST_ACCEPTOR_HELPERS_HPP
 
 
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_ParameterListAcceptor.hpp"
 
 

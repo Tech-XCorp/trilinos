@@ -39,10 +39,17 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_Exceptions.hpp"
+#include <__tree>
+#include <algorithm>
+#include <iomanip>
+#include <iostream>
+#include <utility>
 #include <vector>
+
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_Exceptions.hpp"
+#include "Teuchos_RCPNode.hpp"
 
 #ifdef TEUCHOS_DEBUG
 #include "Teuchos_StandardCatchMacros.hpp"
@@ -58,6 +65,7 @@
 
 #if defined(TEUCHOS_DEBUG) && defined(HAVE_TEUCHOSCORE_CXX11) && defined(HAVE_TEUCHOS_THREAD_SAFE)
 #include <mutex>
+
 #define USE_MUTEX_TO_PROTECT_NODE_TRACING
 #endif
 

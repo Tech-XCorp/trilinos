@@ -47,13 +47,22 @@
     \brief Object held as the "value" in the Teuchos::ParameterList std::map.
 */
 
+#include <iosfwd>
+#include <type_traits>
+#include <typeinfo>
+
 #include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_any.hpp"
-#include "Teuchos_RCP.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Teuchos {
 
+class ParameterEntryValidator;
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 class ParameterList; // another parameter type (forward declaration)
 #endif

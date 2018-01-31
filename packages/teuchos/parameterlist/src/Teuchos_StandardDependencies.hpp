@@ -48,12 +48,36 @@
     \brief A collection of standard dependencies.
 */
 
+#include <__functional_base>
+#include <__tree>
+#include <map>
+#include <ostream>
+#include <set>
+#include <string>
+#include <typeinfo>
+#include <utility>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_Dependency.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_DummyObjectGetter.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_InvalidDependencyException.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_StandardConditions.hpp"
 #include "Teuchos_StandardFunctionObjects.hpp"
-#include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 
 namespace Teuchos{
@@ -69,6 +93,10 @@ namespace Teuchos{
  * sure that you program code takes
  * this into account.
  */
+class Condition;
+class ParameterEntryValidator;
+template <class OperandType> class SimpleFunctionObject;
+
 class TEUCHOSPARAMETERLIST_LIB_DLL_EXPORT VisualDependency : public Dependency{
 
 public:

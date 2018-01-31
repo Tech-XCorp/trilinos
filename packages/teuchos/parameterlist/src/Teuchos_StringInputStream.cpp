@@ -39,6 +39,9 @@
 // ***********************************************************************
 // @HEADER
 
+#include <cstring>
+#include <string>
+
 #include "Teuchos_StringInputStream.hpp"
 
 using namespace Teuchos;

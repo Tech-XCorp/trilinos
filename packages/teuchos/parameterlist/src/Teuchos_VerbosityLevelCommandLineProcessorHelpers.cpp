@@ -40,10 +40,14 @@
 // @HEADER
 
 
-#include "Teuchos_VerbosityLevelCommandLineProcessorHelpers.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
+#include <string>
+
 #include "Teuchos_Array.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevelCommandLineProcessorHelpers.hpp"
 #include "Teuchos_implicit_cast.hpp"
 
 

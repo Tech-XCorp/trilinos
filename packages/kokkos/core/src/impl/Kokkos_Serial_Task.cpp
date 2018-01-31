@@ -41,10 +41,13 @@
 //@HEADER
 */
 
+#include <Kokkos_Atomic.hpp>
 #include <Kokkos_Macros.hpp>
-#if defined( KOKKOS_ENABLE_SERIAL ) && defined( KOKKOS_ENABLE_TASKDAG )
 
-#include <Kokkos_Core.hpp>
+#include "Kokkos_Serial.hpp"
+#include "impl/Kokkos_OldMacros.hpp"
+#include "impl/Kokkos_TaskQueue.hpp"
+#if defined( KOKKOS_ENABLE_SERIAL ) && defined( KOKKOS_ENABLE_TASKDAG )
 
 #include <impl/Kokkos_Serial_Task.hpp>
 #include <impl/Kokkos_TaskQueue_impl.hpp>

@@ -45,18 +45,25 @@
 #define KOKKOSP_INTERFACE_HPP
 
 #include <Kokkos_Macros.hpp>
+#include <_types/_uint32_t.h>
+#include <_types/_uint64_t.h>
+
+namespace Kokkos {
+namespace Profiling {
+struct KokkosPDeviceInfo;
+}  // namespace Profiling
+}  // namespace Kokkos
 
 #if defined(KOKKOS_ENABLE_PROFILING)
 
-#include <cstddef>
 #include <Kokkos_Core_fwd.hpp>
-#include <string>
-#include <cinttypes>
-
-#include <impl/Kokkos_Profiling_DeviceInfo.hpp>
 #include <dlfcn.h>
-#include <iostream>
+#include <impl/Kokkos_Profiling_DeviceInfo.hpp>
+#include <cinttypes>
+#include <cstddef>
 #include <cstdlib>
+#include <iostream>
+#include <string>
 
 #define KOKKOSP_INTERFACE_VERSION 20171029
 

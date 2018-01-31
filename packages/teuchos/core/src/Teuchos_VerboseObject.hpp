@@ -42,8 +42,13 @@
 #ifndef TEUCHOS_VERBOSE_OBJECT_HPP
 #define TEUCHOS_VERBOSE_OBJECT_HPP
 
-#include "Teuchos_RCP.hpp"
+#include <iosfwd>
+
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_VerbosityLevel.hpp"
 
 

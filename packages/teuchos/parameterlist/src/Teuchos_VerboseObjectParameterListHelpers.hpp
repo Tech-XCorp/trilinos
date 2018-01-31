@@ -42,8 +42,17 @@
 #ifndef TEUCHOS_VERBOSE_OBJECT_PARAMETER_LIST_HELPERS_HPP
 #define TEUCHOS_VERBOSE_OBJECT_PARAMETER_LIST_HELPERS_HPP
 
-#include "Teuchos_VerboseObject.hpp"
+#include <stdexcept>
+
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 
 
 namespace Teuchos {
@@ -57,6 +66,9 @@ namespace Teuchos {
  *
  * \relates VerboseObject
  */
+class ParameterList;
+template <class ObjectType> class VerboseObject;
+
 TEUCHOSPARAMETERLIST_LIB_DLL_EXPORT RCP<const ParameterList> getValidVerboseObjectSublist();
 
 

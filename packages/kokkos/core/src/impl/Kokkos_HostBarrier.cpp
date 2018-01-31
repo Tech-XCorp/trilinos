@@ -41,9 +41,8 @@
 //@HEADER
 */
 
-#include <Kokkos_Macros.hpp>
 #include <Kokkos_Atomic.hpp>
-
+#include <_types/_uint8_t.h>
 #include <impl/Kokkos_HostBarrier.hpp>
 #include <impl/Kokkos_Spinwait.hpp>
 

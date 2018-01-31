@@ -45,11 +45,10 @@
 #ifndef KOKKOS_SPINWAIT_HPP
 #define KOKKOS_SPINWAIT_HPP
 
-#include <Kokkos_Macros.hpp>
 #include <Kokkos_Atomic.hpp>
-
+#include <Kokkos_Macros.hpp>
+#include <_types/_uint32_t.h>
 #include <cstdint>
-
 #include <type_traits>
 
 namespace Kokkos {

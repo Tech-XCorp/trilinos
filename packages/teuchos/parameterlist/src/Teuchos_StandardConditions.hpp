@@ -47,12 +47,24 @@
     \brief Standard Conditions to be used.
 */
 
+#include <iosfwd>
+
+#include "Teuchos_Array.hpp"
 #include "Teuchos_Condition.hpp"
-#include "Teuchos_InvalidConditionException.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_DLLExportMacro.h"
+#include "Teuchos_Dependency.hpp"
 #include "Teuchos_DummyObjectGetter.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_InvalidConditionException.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 namespace Teuchos{
@@ -65,6 +77,9 @@ namespace Teuchos{
  * parameter and returns a bool based on the condition of
  * that value.
  */
+template <class OperandType> class SimpleFunctionObject;
+template <class T> class DummyObjectGetter;
+
 class TEUCHOSPARAMETERLIST_LIB_DLL_EXPORT ParameterCondition : public Condition{
 
 public:

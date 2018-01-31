@@ -43,26 +43,8 @@
 
 
 #include <Kokkos_Macros.hpp>
-
-#include <cstddef>
-#include <cstdlib>
-#include <cstdint>
-#include <cstring>
-
-#include <iostream>
-#include <sstream>
-#include <cstring>
-#include <algorithm>
-
-#include <Kokkos_HBWSpace.hpp>
-#include <impl/Kokkos_Error.hpp>
-#include <Kokkos_Atomic.hpp>
 #ifdef KOKKOS_ENABLE_HBWSPACE
 #include <memkind.h>
-#endif
-
-#if defined(KOKKOS_ENABLE_PROFILING)
-#include <impl/Kokkos_Profiling_Interface.hpp>
 #endif
 
 //----------------------------------------------------------------------------

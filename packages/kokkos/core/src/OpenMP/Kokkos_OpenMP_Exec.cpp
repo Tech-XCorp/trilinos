@@ -41,21 +41,17 @@
 //@HEADER
 */
 
-#include <Kokkos_Macros.hpp>
 #if defined( KOKKOS_ENABLE_OPENMP )
 
+#include <Kokkos_Core.hpp>
+#include <impl/Kokkos_CPUDiscovery.hpp>
+#include <impl/Kokkos_Error.hpp>
+#include <impl/Kokkos_Profiling_Interface.hpp>
 #include <cstdio>
 #include <cstdlib>
-
-#include <limits>
 #include <iostream>
+#include <limits>
 #include <vector>
-
-#include <Kokkos_Core.hpp>
-
-#include <impl/Kokkos_Error.hpp>
-#include <impl/Kokkos_CPUDiscovery.hpp>
-#include <impl/Kokkos_Profiling_Interface.hpp>
 
 
 namespace Kokkos {

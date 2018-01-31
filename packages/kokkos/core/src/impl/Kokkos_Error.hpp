@@ -44,9 +44,10 @@
 #ifndef KOKKOS_IMPL_ERROR_HPP
 #define KOKKOS_IMPL_ERROR_HPP
 
-#include <string>
-#include <iosfwd>
 #include <Kokkos_Macros.hpp>
+#include <stddef.h>
+#include <iosfwd>
+#include <string>
 #ifdef KOKKOS_ENABLE_CUDA
 #include <Cuda/Kokkos_Cuda_abort.hpp>
 #endif

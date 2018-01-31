@@ -28,35 +28,29 @@
 
 
 #include "Teuchos_stacktrace.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_VerboseObject.hpp"
 
 
 #ifdef HAVE_TEUCHOS_STACKTRACE
 
 
-#include <string>
-#include <iostream>
-#include <fstream>
-
-// free() and abort() functions
-#include <cstdlib>
-
-// For handling variable number of arguments using va_start/va_end functions
-#include <cstdarg>
-
 // For registering SIGSEGV callbacks
 #include <csignal>
+// For handling variable number of arguments using va_start/va_end functions
+#include <cstdarg>
+// free() and abort() functions
+#include <cstdlib>
+#include <fstream>
+#include <iostream>
+#include <string>
 
 
 // The following C headers are needed for some specific C functionality (see
 // the comments), which is not available in C++:
 
-// backtrace() function for retrieving the stacktrace
-#include <execinfo.h>
-
 // For demangling function names
 #include <cxxabi.h>
+// backtrace() function for retrieving the stacktrace
+#include <execinfo.h>
 
 #ifdef HAVE_TEUCHOS_LINK
 // For dl_iterate_phdr() functionality

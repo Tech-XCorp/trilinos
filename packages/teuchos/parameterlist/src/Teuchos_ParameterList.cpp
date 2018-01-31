@@ -41,8 +41,11 @@
 
 //#define TEUCHOS_PARAMETER_LIST_SHOW_TRACE
 
-#include "Teuchos_ParameterList.hpp"
+#include <deque>
+#include <iostream>
+
 #include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_StrUtils.hpp"
 #include "Teuchos_VerboseObject.hpp"
 

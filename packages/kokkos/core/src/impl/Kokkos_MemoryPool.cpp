@@ -41,9 +41,9 @@
 //@HEADER
 */
 
-#include <ostream>
-#include <sstream>
 #include <impl/Kokkos_Error.hpp>
+#include <stddef.h>
+#include <sstream>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------

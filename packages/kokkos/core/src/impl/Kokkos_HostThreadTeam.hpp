@@ -44,13 +44,24 @@
 #ifndef KOKKOS_IMPL_HOSTTHREADTEAM_HPP
 #define KOKKOS_IMPL_HOSTTHREADTEAM_HPP
 
-#include <Kokkos_Core_fwd.hpp>
-#include <Kokkos_Pair.hpp>
 #include <Kokkos_Atomic.hpp>
+#include <Kokkos_Core_fwd.hpp>
 #include <Kokkos_ExecPolicy.hpp>
+#include <Kokkos_Pair.hpp>
+#include <_types/_uint64_t.h>
 #include <impl/Kokkos_FunctorAdapter.hpp>
 #include <impl/Kokkos_FunctorAnalysis.hpp>
 #include <impl/Kokkos_HostBarrier.hpp>
+#include <stddef.h>
+#include <sys/_types/_int64_t.h>
+#include <algorithm>
+#include <cstdint>
+#include <limits>
+#include <type_traits>
+#include <utility>
+
+#include "Kokkos_Concepts.hpp"
+#include "Kokkos_Macros.hpp"
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------

@@ -43,12 +43,20 @@
 #define TEUCHOS_TABULAR_OUTPUTTER_HPP
 
 
-#include "Teuchos_FancyOStream.hpp"
+#include <iomanip>
+#include <ostream>
+#include <stdexcept>
+
 #include "Teuchos_Array.hpp"
-#include "Teuchos_Tuple.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_Time.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_Exceptions.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Time.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 namespace Teuchos {
