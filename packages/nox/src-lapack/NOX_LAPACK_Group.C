@@ -48,23 +48,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <algorithm>
-#include <iostream>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
 #include "NOX_LAPACK_Group.H"    // class definition
-#include "NOX_LAPACK_Interface.H"
-#include "NOX_LAPACK_LinearSolver.H"
-#include "NOX_LAPACK_Matrix.H"
-#include "NOX_LAPACK_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "NOX_Abstract_MultiVector.H"
+#include "Teuchos_BLAS_wrappers.hpp"
+#include "Teuchos_LAPACK_wrappers.hpp"
 
 NOX::LAPACK::Group::Group(NOX::LAPACK::Interface& interface):
   xVector(interface.getInitialGuess()),    // deep copy

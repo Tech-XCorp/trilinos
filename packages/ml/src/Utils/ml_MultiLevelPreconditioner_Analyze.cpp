@@ -13,32 +13,26 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <iostream>
-#include <vector>
-
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "ml_1level.h"
-#include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_smoother.h"
-#include "ml_struct.h"
+#include "ml_common.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "ml_RowMatrix.h"
 #include "ml_operator.h"
+#include "ml_op_utils.h"
 #include "ml_utils.h"
+#include "ml_RowMatrix.h"
+
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+#include "Epetra_Time.h"
+#include "Epetra_RowMatrix.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
+#include "Epetra_SerialComm.h"
 #endif
-#include "ml_MultiLevelPreconditioner.h"
 #include "ml_epetra.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include <iomanip>
 #ifdef HAVE_ML_IFPACK
 #include "Ifpack_Utils.h"
 #endif

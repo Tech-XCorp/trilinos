@@ -48,27 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_SaveEigenData_DefaultStrategy.H"
-#include "LOCA_SaveEigenData_Factory.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-namespace SaveEigenData {
-class AbstractStrategy;
-}  // namespace SaveEigenData
-}  // namespace LOCA
+#include "LOCA_SaveEigenData_Factory.H"
+#include "LOCA_SaveEigenData_AbstractStrategy.H"
+#include "LOCA_SaveEigenData_DefaultStrategy.H"
 
 LOCA::SaveEigenData::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

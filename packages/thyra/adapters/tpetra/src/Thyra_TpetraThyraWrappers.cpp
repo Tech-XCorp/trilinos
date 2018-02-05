@@ -55,7 +55,7 @@
 #ifdef HAVE_MPI
 #  include "Teuchos_DefaultMpiComm.hpp"
 #endif
-
+#include "Thyra_TpetraThyraWrappers_decl.hpp"
 
 Teuchos::RCP<const Teuchos::Comm<Thyra::Ordinal> >
 Thyra::convertTpetraToThyraComm(const RCP<const Teuchos::Comm<int> > &tpetraComm)

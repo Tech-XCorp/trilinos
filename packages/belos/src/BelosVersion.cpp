@@ -43,6 +43,8 @@
     \brief Simple function for returning the current version number [necessary for portability]
 */
 
+#include "BelosConfigDefs.hpp"
+
 #include <iosfwd>
 
 namespace Belos {

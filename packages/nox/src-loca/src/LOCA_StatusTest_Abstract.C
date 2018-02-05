@@ -48,10 +48,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <iomanip>
-#include <ostream>
-
 #include "LOCA_StatusTest_Abstract.H"
+#include <iomanip>
 
 std::ostream&
 LOCA::StatusTest::operator<<(std::ostream& os, LOCA::StatusTest::StatusType status)

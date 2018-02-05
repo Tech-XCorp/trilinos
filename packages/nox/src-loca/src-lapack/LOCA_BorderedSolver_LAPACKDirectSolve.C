@@ -48,43 +48,15 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <algorithm>
-#include <iosfwd>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-
-#include "LOCA_BorderedSolver_AbstractOperator.H"
-#include "LOCA_BorderedSolver_ComplexOperator.H"
-#include "LOCA_BorderedSolver_JacobianOperator.H"
 #include "LOCA_BorderedSolver_LAPACKDirectSolve.H"
-#include "LOCA_ErrorCheck.H"
 #include "LOCA_GlobalData.H"
-#include "LOCA_LAPACK_Group.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "LOCA_ErrorCheck.H"
 #include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_LAPACK_LinearSolver.H"
-#include "NOX_LAPACK_Matrix.H"
-#include "NOX_LAPACK_Vector.H"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_LAPACK.H"
+#include "Teuchos_LAPACK.hpp"
+#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "LOCA_BorderedSolver_ComplexOperator.H"
+#include "LOCA_Hopf_ComplexMultiVector.H"
 
 LOCA::BorderedSolver::LAPACKDirectSolve::LAPACKDirectSolve(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

@@ -48,23 +48,18 @@
 //@HEADER
 
 
-#include <math.h>
-#include <stddef.h>
-#include <iosfwd>
-#include <vector>
-
 // Class Header
 #include "LOCA_DerivUtils.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
+
 #include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
+#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
+#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
 #include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "NOX_Abstract_MultiVector.H"
+#include "LOCA_Parameter_Vector.H"
+#include "NOX_Common.H"  // For fabs function
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 LOCA::DerivUtils::DerivUtils(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

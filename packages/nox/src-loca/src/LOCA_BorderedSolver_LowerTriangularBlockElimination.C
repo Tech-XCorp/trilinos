@@ -48,25 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <iosfwd>
-
-#include "LOCA_BorderedSolver_AbstractOperator.H"
 #include "LOCA_BorderedSolver_LowerTriangularBlockElimination.H"
-#include "LOCA_ErrorCheck.H"
+#include "LOCA_BorderedSolver_AbstractOperator.H"
 #include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 #include "LOCA_MultiContinuation_ConstraintInterface.H"
 #include "LOCA_MultiContinuation_MultiVecConstraint.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "Teuchos_DataAccess.hpp"
 #include "Teuchos_LAPACK.hpp"    // for LAPACK solve
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
 
 LOCA::BorderedSolver::LowerTriangularBlockElimination::
 LowerTriangularBlockElimination(

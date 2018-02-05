@@ -48,31 +48,15 @@
 // ************************************************************************
 //@HEADER
 
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_Pitchfork_MinimallyAugmented_AbstractGroup.H"
 #include "LOCA_Pitchfork_MinimallyAugmented_Constraint.H"
-#include "LOCA_TurningPoint_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_TurningPoint_MinimallyAugmented_Constraint.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_DataAccess.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-class GlobalData;
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_Pitchfork_MinimallyAugmented_AbstractGroup.H"
+#include "LOCA_BorderedSolver_AbstractStrategy.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Factory.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
 
 LOCA::Pitchfork::MinimallyAugmented::Constraint::
 Constraint(

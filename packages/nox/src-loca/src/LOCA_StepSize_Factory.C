@@ -48,28 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_StepSize_Adaptive.H"
-#include "LOCA_StepSize_Constant.H"
-#include "LOCA_StepSize_Factory.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-namespace StepSize {
-class AbstractStrategy;
-}  // namespace StepSize
-}  // namespace LOCA
+#include "LOCA_StepSize_Factory.H"
+#include "LOCA_StepSize_AbstractStrategy.H"
+#include "LOCA_StepSize_Constant.H"
+#include "LOCA_StepSize_Adaptive.H"
 
 LOCA::StepSize::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

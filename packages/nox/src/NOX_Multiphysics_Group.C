@@ -45,25 +45,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <iostream>
-#include <vector>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Multiphysics_Group.H"
-#include "NOX_Solver_Generic.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace NOX {
-namespace StatusTest {
-class Generic;
-}  // namespace StatusTest
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include <iostream>
 
 NOX::Multiphysics::Group::Group(
           const Teuchos::RCP<std::vector<Teuchos::RCP<NOX::Solver::Generic> > >& solvers,

@@ -13,43 +13,44 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <assert.h>
-#include <stddef.h>
-#include <cmath>
-#include <sstream>
-#include <string>
-#include <vector>
+#include "ml_common.h"
+#include "ml_include.h"
 
-#include "Epetra_CombineMode.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_DataAccess.h"
-#include "Teuchos_ParameterList.hpp"
-#include "ml_aggregate.h"
-#include "ml_comminfoop.h"
-#include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_grid.h"
-#include "ml_operator.h"
-#include "ml_struct.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
-#include <iostream>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_Import.h"
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Vector.h"
 #include "ml_memory.h"
+#include "ml_DD_prec.h"
+#include <iostream>
+#include <iomanip>
+
+#include "Epetra_Map.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Vector.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseVector.h"
+#include "Epetra_SerialDenseSolver.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_Import.h"
+#include "Epetra_Time.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
+#include "Epetra_SerialComm.h"
 #endif
 
-#include "ml_MultiLevelPreconditioner.h"
+//#include <cstring>
+#include "ml_amesos_wrap.h"
+#include "ml_agg_METIS.h"
+#include "ml_epetra_utils.h"
+
 #include "ml_epetra.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_agg_ParMETIS.h"
+
+#include "ml_anasazi.h"
 #include "ml_viz_stats.h"
 
 #ifdef OLD_AUX

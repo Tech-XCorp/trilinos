@@ -16,10 +16,7 @@
 /* ******************************************************************** */
 
 #include <iostream>
-#include <string>
-
 #include "MLAPI_Workspace.h"
-#include "ml_common.h"
 
 namespace MLAPI {
 

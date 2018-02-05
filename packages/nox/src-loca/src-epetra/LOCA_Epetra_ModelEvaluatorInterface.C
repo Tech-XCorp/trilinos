@@ -48,43 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <iosfwd>
-#include <type_traits>
-#include <vector>
+#include "LOCA_Epetra_ModelEvaluatorInterface.H"
+#include "LOCA_Parameter_Vector.H"
+#include "NOX_Epetra_MultiVector.H"
+#include "LOCA_MultiContinuation_AbstractGroup.H"
 
 #include "EpetraExt_ModelEvaluator.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
-#include "Epetra_Vector.h"
-#include "LOCA_Abstract_Iterator.H"
-#include "LOCA_DerivUtils.H"
-#include "LOCA_Epetra_Group.H"
-#include "LOCA_Epetra_ModelEvaluatorInterface.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "LOCA_Parameter_Vector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Epetra_Interface_Required.H"
-#include "NOX_Epetra_ModelEvaluatorInterface.H"
-#include "NOX_Epetra_MultiVector.H"
-#include "NOX_Epetra_Observer.H"
-#include "NOX_Epetra_Vector.H"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_Utils.hpp"
 #include "Teuchos_as.hpp"
-
-namespace LOCA {
-class GlobalData;
-}  // namespace LOCA
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
 
 // *****************************************************************
 // *****************************************************************

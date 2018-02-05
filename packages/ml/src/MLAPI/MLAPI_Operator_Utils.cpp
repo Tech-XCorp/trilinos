@@ -2,40 +2,33 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <stdio.h>
-#include <stdlib.h>
-#include <string>
-#include <vector>
-
-#include "Epetra_ConfigDefs.h"
-#include "MLAPI_Workspace.h"
-#include "Teuchos_RCP.hpp"
-#include "ml_agg_genP.h"
-#include "ml_comminfoop.h"
 #include "ml_common.h"
-#include "ml_defs.h"
-#include "ml_mat_formats.h"
-#include "ml_memory.h"
-#include "ml_op_utils.h"
-#include "ml_rap.h"
-#include "ml_utils.h"
 #if defined(HAVE_ML_MLAPI)
 
+#include "ml_include.h"
 #include <iostream>
-
-#include "ml_epetra_utils.h"
 #include "ml_operator.h"
+#include "ml_epetra.h"
+#include "ml_amesos.h"
+#include "ml_epetra_utils.h"
+#include "ml_amesos_wrap.h"
 #ifdef HAVE_ML_ANASAxI
 #include "ml_anasazi.h"
 #endif
-#include "Ifpack_Utils.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RefCountPtr.hpp"
 #include "MLAPI_Error.h"
+#include "MLAPI_Space.h"
 #include "MLAPI_MultiVector.h"
 #include "MLAPI_Operator.h"
-#include "MLAPI_Space.h"
+#include "Ifpack_Utils.h"
 #ifdef MB_MODIF_QR
 #include "ml_qr_fix.h"
 #endif
+
+namespace Teuchos {
+  class ParameterList;
+}
 
 namespace MLAPI {
 
@@ -63,6 +56,8 @@ Operator GetRAP(const Operator& R, const Operator& A,
   return(op);
 }
 
+#include "ml_aggregate.h"
+#include "ml_agg_METIS.h"
 
 // ======================================================================
 Operator GetTranspose(const Operator& A, const bool byrow = true)

@@ -48,23 +48,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <vector>
-
-#include "LOCA_Extended_MultiVector.H"
 #include "LOCA_MultiContinuation_ExtendedMultiVector.H" // Class definition
 #include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-
-namespace LOCA {
-class GlobalData;
-namespace Extended {
-class Vector;
-}  // namespace Extended
-}  // namespace LOCA
 
 LOCA::MultiContinuation::ExtendedMultiVector::ExtendedMultiVector(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

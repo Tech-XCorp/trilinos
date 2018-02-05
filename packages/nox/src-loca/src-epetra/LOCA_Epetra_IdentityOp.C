@@ -48,15 +48,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-
+#include "Epetra_config.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_Comm.h"
 #include "LOCA_Epetra_IdentityOp.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-class Epetra_Comm;
-class Epetra_Map;
 
 LOCA::Epetra::IdentityOp::IdentityOp(
              const Teuchos::RCP<const Epetra_Comm>& comm_,

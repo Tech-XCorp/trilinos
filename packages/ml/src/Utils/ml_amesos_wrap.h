@@ -44,9 +44,7 @@
 #ifndef _MLAMESOSWRAP_
 #define _MLAMESOSWRAP_
 
-#include "ml_amesos.h"
 #include "ml_include.h"
-#include "ml_struct.h"
 
 #ifndef ML_CPP
 #ifdef __cplusplus

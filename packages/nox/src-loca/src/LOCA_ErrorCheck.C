@@ -48,17 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <stdexcept>
-#include <string>
-
 #include "LOCA_ErrorCheck.H"     // class definition
 #include "LOCA_GlobalData.H"
-#include "NOX_Abstract_Group.H"
 #include "NOX_Utils.H"          // for printing utilities
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Assert.hpp"
 
 LOCA::ErrorCheck::ErrorCheck(
           const Teuchos::RCP<LOCA::GlobalData>& global_data) :

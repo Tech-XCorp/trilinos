@@ -15,22 +15,14 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <iosfwd>
-
+#include "ml_common.h"
+#include "ml_MultiLevelPreconditioner.h"
 #include "MLAPI_BaseOperator.h"
 #include "MLAPI_CompObject.h"
+#include "MLAPI_TimeObject.h"
 #include "MLAPI_InverseOperator.h"
 #include "MLAPI_LoadBalanceOperator.h"
-#include "MLAPI_MultiVector.h"
-#include "MLAPI_Space.h"
-#include "MLAPI_TimeObject.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
-#include "ml_MultiLevelPreconditioner.h"
-#include "ml_common.h"
-
-class Epetra_RowMatrix;
 
 namespace Teuchos {
   class List;

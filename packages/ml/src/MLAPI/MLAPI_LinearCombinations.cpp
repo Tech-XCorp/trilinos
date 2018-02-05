@@ -2,17 +2,15 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include "MLAPI_Error.h"
 #include "ml_common.h"
-#include "ml_config.h"
 #ifdef HAVE_ML_MLAPI
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
-#include "MLAPI_BaseLinearCombination.h"
-#include "MLAPI_BaseOperator.h"
-#include "MLAPI_LinearCombinations.h"
 #include "MLAPI_MultiVector.h"
 #include "MLAPI_MultiVector_Utils.h"
+#include "MLAPI_BaseOperator.h"
+#include "MLAPI_BaseLinearCombination.h"
+#include "MLAPI_LinearCombinations.h"
 
 namespace MLAPI {
 

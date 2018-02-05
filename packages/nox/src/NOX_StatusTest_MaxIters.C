@@ -48,13 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <ostream>
-
-#include "NOX_Solver_Generic.H"
-#include "NOX_StatusTest_Generic.H"
 #include "NOX_StatusTest_MaxIters.H" // class definition
-#include "NOX_Utils.H"
+#include "NOX_Common.H"
+#include "NOX_Solver_Generic.H"
 
 NOX::StatusTest::MaxIters::
 MaxIters(int maxIterations, const NOX::Utils* u) :

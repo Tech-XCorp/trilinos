@@ -44,26 +44,23 @@
 //
 // @HEADER
 
-#include <__tree>
-#include <iostream>                     // for basic_ostream, etc
 #include <map>
-#include <string>
+#include <iostream>                     // for basic_ostream, etc
 #include <utility>                      // for pair
-
-#include "MueLu_ConfigDefs.hpp"
-#include "MueLu_Exceptions.hpp"
-#include "MueLu_MutuallyExclusiveTime.hpp"
-#include "MueLu_VerbosityLevel.hpp"     // for MsgType::Debug, etc
 #include "Teuchos_FancyOStream.hpp"     // for basic_FancyOStream, etc
 #include "Teuchos_RCP.hpp"              // for RCP::operator->, etc
 #include "Teuchos_TestForException.hpp"  // for TEUCHOS_TEST_FOR_EXCEPTION
 #include "Teuchos_Time.hpp"
 #include "Teuchos_TimeMonitor.hpp"
+#include "MueLu_ConfigDefs.hpp"
+#include "MueLu_Exceptions.hpp"
+#include "MueLu_BaseClass.hpp"
+#include "MueLu_VerbosityLevel.hpp"     // for MsgType::Debug, etc
+#include "MueLu_MutuallyExclusiveTime.hpp"
+#include "MueLu_FactoryBase.hpp"
+#include "MueLu_Level.hpp"
 
 namespace MueLu {
-
-class FactoryBase;
-class Level;
 
   std::map<std::string,std::string> myParent_;
 

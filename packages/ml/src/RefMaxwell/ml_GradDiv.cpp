@@ -2,34 +2,18 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <stdio.h>
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
-#include "Teuchos_ArrayRCP.hpp"
-#include "Teuchos_ArrayRCPDecl.hpp"
-#include "Teuchos_ENull.hpp"
 #include "ml_config.h"
-#include "ml_struct.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRAEXT)
 #include <string.h>
-
-#include "ml_EdgeMatrixFreePreconditioner.h"
-#include "ml_FaceMatrixFreePreconditioner.h"
 #include "ml_GradDiv.h"
-#include "ml_MultiLevelPreconditioner.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_RefMaxwell_Utils.h"
+#include "ml_EdgeMatrixFreePreconditioner.h"
+#include "ml_FaceMatrixFreePreconditioner.h"
+#include "ml_ValidateParameters.h"
+#include "EpetraExt_RowMatrixOut.h"
 #include "ml_ifpack_epetra_wrap.h"
 
 using Teuchos::rcp;

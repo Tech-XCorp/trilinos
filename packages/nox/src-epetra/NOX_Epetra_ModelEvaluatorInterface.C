@@ -48,24 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <type_traits>
-
-#include "NOX_Config.h"
-#include "NOX_Epetra_Interface_Required.H"
 #include "NOX_Epetra_ModelEvaluatorInterface.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
 
 #ifdef HAVE_NOX_EPETRAEXT
 
 #include "EpetraExt_ModelEvaluator.h"
-#include "Epetra_Operator.h"
 #include "Epetra_Vector.h"
+#include "Epetra_Operator.h"
 
 // *****************************************************************
 // *****************************************************************

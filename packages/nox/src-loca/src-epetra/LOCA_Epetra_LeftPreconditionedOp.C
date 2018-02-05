@@ -48,16 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-
+#include "Epetra_config.h"
 #include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
 #include "LOCA_Epetra_LeftPreconditionedOp.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-class Epetra_Comm;
-class Epetra_Map;
 
 LOCA::Epetra::LeftPreconditionedOp::LeftPreconditionedOp(
     const Teuchos::RCP<Epetra_Operator>& jacOperator,

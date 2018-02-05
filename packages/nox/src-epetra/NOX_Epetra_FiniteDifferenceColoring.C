@@ -45,41 +45,21 @@
 // ************************************************************************
 //@HEADER
 
-#include <__functional_base>
-#include <iostream>
-#include <list>
-#include <map>
-#include <type_traits>
-#include <utility>
-#include <vector>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_CombineMode.h"
 #include "Epetra_Comm.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Import.h"
-#include "Epetra_IntVector.h"
 #include "Epetra_Map.h"
 #include "Epetra_MapColoring.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Time.h" // For timing performance
+#include "Epetra_Import.h"
 #include "Epetra_Vector.h"
-#include "NOX_Epetra_FiniteDifference.H"
-#include "NOX_Epetra_FiniteDifferenceColoring.H"
+#include "Epetra_IntVector.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+
+#include "Epetra_Time.h" // For timing performance
+
 #include "NOX_Epetra_Interface_Required.H"
 #include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
-namespace NOX {
-namespace Epetra {
-class Vector;
-}  // namespace Epetra
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "NOX_Epetra_FiniteDifferenceColoring.H"
 
 using namespace NOX;
 using namespace NOX::Epetra;

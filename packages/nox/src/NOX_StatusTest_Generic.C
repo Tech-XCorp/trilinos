@@ -48,10 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <iomanip>
-#include <ostream>
-
 #include "NOX_StatusTest_Generic.H"
+#include "NOX_Common.H"
+#include <iomanip>
 
 std::ostream&
 NOX::StatusTest::operator<<(std::ostream& os, NOX::StatusTest::StatusType type)

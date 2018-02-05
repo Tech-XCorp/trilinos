@@ -13,24 +13,17 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <stdio.h>
-#include <deque>
-#include <iostream>
-#include <sstream>
-#include <string>
+#include "ml_common.h"
+#include "ml_include.h"
 
-#include "Epetra_ConfigDefs.h"
-#include "Teuchos_FilteredIterator.hpp"
-#include "Teuchos_ParameterEntry.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_Utils.hpp"
-#include "ml_config.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
+#include "ml_epetra.h"
 #include "Epetra_Comm.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_FileInputSource.hpp"
 #include "Teuchos_XMLObject.hpp"
 #include "Teuchos_XMLParameterListReader.hpp"
-#include "ml_MultiLevelPreconditioner.h"
 
 using namespace Teuchos;
 

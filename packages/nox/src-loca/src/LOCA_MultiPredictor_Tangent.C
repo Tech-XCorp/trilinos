@@ -48,30 +48,15 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_Extended_MultiVector.H"
+#include "LOCA_MultiPredictor_Tangent.H"
 #include "LOCA_GlobalData.H"
+#include "NOX_Utils.H"
+#include "LOCA_ErrorCheck.H"
 #include "LOCA_MultiContinuation_AbstractGroup.H"
 #include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
 #include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "LOCA_MultiPredictor_AbstractStrategy.H"
-#include "LOCA_MultiPredictor_Tangent.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "Teuchos_ParameterList.hpp"
 
 LOCA::MultiPredictor::Tangent::Tangent(
           const Teuchos::RCP<LOCA::GlobalData>& global_data,

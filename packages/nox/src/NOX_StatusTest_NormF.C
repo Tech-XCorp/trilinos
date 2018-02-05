@@ -48,17 +48,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <stddef.h>
-#include <iomanip>
-#include <ostream>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Common.H"
-#include "NOX_Solver_Generic.H"
-#include "NOX_StatusTest_Generic.H"
 #include "NOX_StatusTest_NormF.H"
+#include "NOX_Common.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_Utils.H"
 
 NOX::StatusTest::NormF::

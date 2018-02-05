@@ -48,74 +48,20 @@
 */
 
 #include "ContinuationManager.H"
-#include "EpetraExt_BlockCrsMatrix.h"
-#include "EpetraExt_BlockVector.h"
-#include "EpetraExt_MultiComm.h"
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Time.h"
-#include "Epetra_Vector.h"
+
+// Trilinos headers
+#include "LOCA_GlobalData.H"
+
+// DefCont headers
+#include "LOCAInterface.H"
 //#include "PhaseConstraint.h"
 //#include "IOVtkUtils.h"
 #include "IOContFileUtils.H"
-// DefCont headers
-#include "LOCAInterface.H"
-#include "LOCA_Abstract_Iterator.H"
-#include "LOCA_Epetra_Factory.H"
-#include "LOCA_Epetra_Group.H"
-#include "LOCA_Epetra_Interface_Required.H"
-#include "LOCA_Epetra_Interface_xyzt.H"
-// Trilinos headers
-#include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_Parameter_Vector.H"
-#include "LOCA_Stepper.H"
-#include "NOX_Config.h"
-#include "NOX_Epetra_LinearSystem_AztecOO.H"
-#include "NOX_Epetra_Vector.H"
-#include "NOX_StatusTest_Combo.H"
-#include "NOX_StatusTest_MaxIters.H"
-#include "NOX_StatusTest_NormF.H"
-#include "NOX_Utils.H"
-#include "ProblemLOCAPrototype.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_FilteredIterator.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_Utils.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-
-namespace LOCA {
-namespace Abstract {
-class Factory;
-}  // namespace Abstract
-}  // namespace LOCA
-namespace NOX {
-namespace Epetra {
-class LinearSystem;
-namespace Interface {
-class Jacobian;
-}  // namespace Interface
-}  // namespace Epetra
-}  // namespace NOX
 #ifdef HAVE_NOX_AMESOS
 #include "NOX_Epetra_LinearSystem_Amesos.H"
 #endif
 
-#include <cmath>
-#include <deque>
-#include <iostream>
 #include <sstream>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <vector>
 
 ContinuationManager::
 ContinuationManager(

@@ -48,27 +48,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <type_traits>
-
-#include "Epetra_Operator.h"
 #include "LOCA_Epetra_TransposeLinearSystem_TransposePreconditioner.H"
+#include "Teuchos_ParameterList.hpp"
 #include "NOX_Epetra_LinearSystem.H"
 #include "NOX_Epetra_Scaling.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
-
-namespace LOCA {
-class GlobalData;
-}  // namespace LOCA
-namespace NOX {
-namespace Epetra {
-class Vector;
-}  // namespace Epetra
-}  // namespace NOX
+#include "Epetra_Operator.h"
 
 LOCA::Epetra::TransposeLinearSystem::TransposePreconditioner::
 TransposePreconditioner(

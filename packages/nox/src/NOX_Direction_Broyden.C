@@ -48,27 +48,15 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <sstream>
-#include <type_traits>
-#include <vector>
+#include "NOX_Common.H"
 
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Direction_Broyden.H"
-#include "NOX_Direction_Utils_InexactNewton.H"
-#include "NOX_GlobalData.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_Solver_LineSearchBased.H"
 #include "NOX_Utils.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace NOX {
-namespace Solver {
-class Generic;
-}  // namespace Solver
-}  // namespace NOX
+#include "NOX_GlobalData.H"
 
 //------------------------------------------------------------
 

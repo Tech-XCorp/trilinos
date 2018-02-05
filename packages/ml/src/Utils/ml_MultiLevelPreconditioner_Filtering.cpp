@@ -9,37 +9,19 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <assert.h>
-#include <stdlib.h>
-#include <cmath>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <vector>
-
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_MultiVector.h"
-#include "Teuchos_ParameterList.hpp"
-#include "az_aztec.h"
-#include "ml_agg_genP.h"
-#include "ml_aggregate.h"
-#include "ml_amesos.h"
-#include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_operator.h"
-#include "ml_struct.h"
-
-class Epetra_RowMatrix;
+#include "ml_common.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
 #include "Epetra_Map.h"
-#include "Epetra_Time.h"
 #include "Epetra_Vector.h"
-#include "ml_MultiLevelPreconditioner.h"
+#include "Epetra_Time.h"
+#include "ml_amesos_wrap.h"
 #include "ml_agg_METIS.h"
+#include "ml_agg_ParMETIS.h"
 #include "ml_epetra.h"
+#include "ml_epetra_utils.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_anasazi.h"
 
 using namespace Teuchos;
 using namespace ML_Epetra;

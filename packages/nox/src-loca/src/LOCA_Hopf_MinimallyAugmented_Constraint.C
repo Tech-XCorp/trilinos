@@ -48,32 +48,17 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <cmath>
-#include <sstream>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_Abstract_Iterator.H"
+#include "LOCA_Hopf_MinimallyAugmented_Constraint.H"
+#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
 #include "LOCA_BorderedSolver_AbstractStrategy.H"
-#include "LOCA_BorderedSolver_ComplexOperator.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_ErrorCheck.H"
 #include "LOCA_Factory.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Hopf_ComplexMultiVector.H"
-#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_Hopf_MinimallyAugmented_Constraint.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_Parameter_SublistParser.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Utils.H"
-#include "Teuchos_DataAccess.hpp"
-#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_Hopf_ComplexMultiVector.H"
+#include "LOCA_BorderedSolver_ComplexOperator.H"
 
 LOCA::Hopf::MinimallyAugmented::Constraint::
 Constraint(

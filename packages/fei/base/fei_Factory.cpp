@@ -16,6 +16,7 @@
 #include <iosfwd>
 
 #include "FEI.hpp"
+#include <FEI_Implementation.hpp>
 #include "fei_LibraryWrapper.hpp"
 #include "fei_Param.hpp"
 #include "fei_fwd.hpp"

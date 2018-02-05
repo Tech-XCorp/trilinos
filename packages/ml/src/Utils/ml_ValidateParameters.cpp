@@ -3,33 +3,15 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <deque>
-#include <iostream>
-#include <map>
-#include <string>
-#include <vector>
-
-#include "Epetra_ConfigDefs.h"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_ArrayView.hpp"
-#include "Teuchos_FilteredIterator.hpp"
-#include "Teuchos_ParameterListExceptions.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_Tuple.hpp"
-#include "Teuchos_Utils.hpp"
-#include "Teuchos_any.hpp"
-#include "az_aztec.h"
-#include "ml_smoother.h"
-
-class Epetra_CrsMatrix;
+#include "ml_common.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
-#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Epetra_CrsMatrix.h"
 #include "ml_ValidateParameters.h"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#ifdef HAVE_ML_IFPACK
+#include "Ifpack_config.h"
+#endif
 
 # ifdef HAVE_ML_TekoSmoothers
 namespace Teko {

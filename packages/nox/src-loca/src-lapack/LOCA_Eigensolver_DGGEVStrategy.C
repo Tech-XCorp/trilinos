@@ -48,32 +48,19 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <sstream>
-#include <type_traits>
-#include <vector>
+#include "Teuchos_ParameterList.hpp"
+
+#include "LOCA_GlobalData.H"
+#include "LOCA_Factory.H"
+#include "LOCA_ErrorCheck.H"
+#include "NOX_Utils.H"
+#include "LOCA_Parameter_SublistParser.H"
 
 #include "LOCA_Eigensolver_DGGEVStrategy.H"
 #include "LOCA_EigenvalueSort_Strategies.H"
-#include "LOCA_Factory.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_LAPACK_Group.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_LAPACK_Matrix.H"
-#include "NOX_LAPACK_Vector.H"
-#include "NOX_Utils.H"
-#include "Teuchos_LAPACK_wrappers.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
+#include "Teuchos_LAPACK_wrappers.hpp"
+#include "LOCA_LAPACK_Group.H"
 
 
 LOCA::Eigensolver::DGGEVStrategy::DGGEVStrategy(

@@ -3,36 +3,26 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <assert.h>
-#include <stdio.h>
-#include <iostream>
-#include <stdexcept>
-
-#include "Epetra_Comm.h"
-#include "Epetra_DataAccess.h"
-#include "Epetra_Operator.h"
-#include "Teuchos_TestForException.hpp"
-#include "ml_comm.h"
 #include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_memory.h"
-#include "ml_operator.h"
-
-class Epetra_BlockMap;
+#include "ml_utils.h"
 
 #if defined(HAVE_ML_AMESOS) && defined(HAVE_ML_TEUCHOS)
 
-#include "Amesos.h"
-#include "Amesos_BaseSolver.h"
-#include "Epetra_LinearProblem.h"
+#include "ml_epetra_utils.h"
+#include "ml_xyt.h"
+
 #include "Epetra_Map.h"
-#include "Epetra_Time.h"
 #include "Epetra_Vector.h"
-#include "Teuchos_ParameterList.hpp"
-#include "ml_RowMatrix.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Time.h"
 #include "ml_amesos.h"
 #include "ml_amesos_wrap.h"
 #include "ml_mat_formats.h"
+#include "ml_RowMatrix.h"
+#include "Amesos_BaseSolver.h"
+#include "Amesos.h"
+#include "ml_amesos_wrap.h"
+#include "Teuchos_ParameterList.hpp"
 
 
 #ifdef HAVE_ML_EPETRAEXT
@@ -415,10 +405,9 @@ void ML_Amesos_Destroy(void *data)
 
 #else
 
-#include <stdio.h>
-
-#include "ml_amesos_wrap.h"
 #include "ml_include.h"
+#include "ml_amesos_wrap.h"
+#include <stdio.h>
 
 int ML_isKLUAvailable()
 {

@@ -5,8 +5,8 @@
 #ifndef MLAPI_ERROR_H
 #define MLAPI_ERROR_H
 
-#include <iostream>
 #include <string>
+#include <iostream>
 
 namespace MLAPI {
 

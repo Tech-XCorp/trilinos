@@ -48,31 +48,20 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-
-#include "NOX_LineSearch_Backtrack.H"
+#include "NOX_Common.H"
 #include "NOX_LineSearch_Factory.H" // class definition
+
+#include "Teuchos_ParameterList.hpp"
+#include "NOX_GlobalData.H"
+
 // All the different line searches
 #include "NOX_LineSearch_FullStep.H"
+#include "NOX_LineSearch_Backtrack.H"
+#include "NOX_LineSearch_Polynomial.H"
 #include "NOX_LineSearch_MoreThuente.H"
 #include "NOX_LineSearch_NonlinearCG.H"
-#include "NOX_LineSearch_Polynomial.H"
 #include "NOX_LineSearch_SafeguardedStep.H"
 #include "NOX_LineSearch_UserDefinedFactory.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_TestForException.hpp"
-
-namespace NOX {
-class GlobalData;
-namespace LineSearch {
-class Generic;
-}  // namespace LineSearch
-}  // namespace NOX
 #ifdef HAVE_NOX_THYRA
 #include "NOX_LineSearch_SafeguardedDirection.hpp"
 #endif

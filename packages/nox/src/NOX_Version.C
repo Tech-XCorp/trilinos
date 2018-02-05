@@ -45,8 +45,7 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-
+#include "NOX_Version.H"
 #include "Trilinos_version.h"
 
 std::string NOX::version() {

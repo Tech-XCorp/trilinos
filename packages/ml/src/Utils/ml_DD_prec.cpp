@@ -2,13 +2,9 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include "ml_common.h"
+#include "ml_include.h"
 
-#include "ml_1level.h"
-#include "ml_comm.h"
-#include "ml_defs.h"
-#include "ml_operator.h"
-#include "ml_smoother.h"
-#include "ml_struct.h"
 #ifndef ML_CPP
 #ifdef __cplusplus
 extern "C" {

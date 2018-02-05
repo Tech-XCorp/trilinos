@@ -21,28 +21,7 @@
 #ifndef ML_MULTILEVELPRECONDITIONER_H
 #define ML_MULTILEVELPRECONDITIONER_H
 
-#include <stddef.h>
-#include <iostream>
-#include <stdexcept>
-#include <vector>
-
-#include "Epetra_CrsMatrix.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "az_aztec.h"
-#include "ml_aggregate.h"
-#include "ml_comm.h"
-#include "ml_comminfoop.h"
-#include "ml_config.h"
-#include "ml_defs.h"
 #include "ml_include.h"
-#include "ml_memory.h"
-#include "ml_operator.h"
-#include "ml_struct.h"
-
-class Epetra_MsrMatrix;
-class Epetra_Vector;
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 // define the following to allow compilation without AztecOO
@@ -61,17 +40,17 @@ class Epetra_Vector;
 #endif
 #endif
 
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseSolver.h"
-#include "Epetra_SerialDenseVector.h"
-
+class Epetra_Map;
 class Epetra_BlockMap;
+class Epetra_MultiVector;
 class Epetra_Comm;
 class Epetra_CrsMatrix;
 class Epetra_FECrsMatrix;
-class Epetra_Map;
-class Epetra_MultiVector;
 class Epetra_VbrMatrix;
+
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseVector.h"
+#include "Epetra_SerialDenseSolver.h"
 
 #define ML_MEM_SIZE      20
 #define ML_MEM_INITIAL    0
@@ -96,8 +75,8 @@ class Epetra_VbrMatrix;
 #include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
 #ifdef HAVE_ML_AZTECOO
-#include "Epetra_MsrMatrix.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_MsrMatrix.h"
 #endif
 #include "Teuchos_ParameterList.hpp"
 

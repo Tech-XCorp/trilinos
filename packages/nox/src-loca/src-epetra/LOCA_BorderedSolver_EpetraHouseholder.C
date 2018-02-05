@@ -48,60 +48,32 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <cmath>
-#include <sstream>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
-#include "LOCA_Abstract_TransposeSolveGroup.H"
-#include "LOCA_BorderedSolver_AbstractOperator.H"
-#include "LOCA_BorderedSolver_ComplexOperator.H"
 #include "LOCA_BorderedSolver_EpetraHouseholder.H"
-#include "LOCA_BorderedSolver_HouseholderQR.H"
-#include "LOCA_BorderedSolver_JacobianOperator.H"
-#include "LOCA_BorderedSolver_LowerTriangularBlockElimination.H"
-#include "LOCA_BorderedSolver_UpperTriangularBlockElimination.H"
+#include "Epetra_Vector.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_CrsMatrix.h"
+#include "NOX_Epetra_MultiVector.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
 #include "LOCA_Epetra_Group.H"
+#include "LOCA_Epetra_CompactWYOp.H"
 #include "LOCA_Epetra_LowRankUpdateOp.H"
 #include "LOCA_Epetra_LowRankUpdateRowMatrix.H"
 #include "LOCA_Epetra_TransposeLinearSystem_AbstractStrategy.H"
 #include "LOCA_Epetra_TransposeLinearSystem_Factory.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Hopf_ComplexMultiVector.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Config.h"
-#include "NOX_Epetra_LinearSystem.H"
-#include "NOX_Epetra_MultiVector.H"
-#include "NOX_Epetra_Vector.H"
-#include "Teuchos_BLAS.hpp"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
+#include "LOCA_BorderedSolver_LowerTriangularBlockElimination.H"
+#include "LOCA_BorderedSolver_UpperTriangularBlockElimination.H"
+#include "LOCA_Abstract_TransposeSolveGroup.H"
+#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "LOCA_BorderedSolver_ComplexOperator.H"
+#include "LOCA_Hopf_ComplexMultiVector.H"
 
 #ifdef HAVE_NOX_EPETRAEXT
+#include "EpetraExt_BlockCrsMatrix.h"
+#include "EpetraExt_BlockVector.h"
 #include "EpetraExt_BlockMultiVector.h"
 #endif
 

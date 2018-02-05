@@ -48,22 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-
-#include "NOX_Abstract_Group.H"
 #include "NOX_LineSearch_FullStep.H" // class definition
+
+#include "NOX_Common.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
 #include "NOX_Solver_Generic.H"
 #include "Teuchos_ParameterList.hpp"
-
-namespace NOX {
-class GlobalData;
-namespace Abstract {
-class Vector;
-}  // namespace Abstract
-}  // namespace NOX
-namespace Teuchos {
-template <class T> class RCP;
-}  // namespace Teuchos
+#include "NOX_GlobalData.H"
 
 using namespace NOX;
 using namespace NOX::LineSearch;

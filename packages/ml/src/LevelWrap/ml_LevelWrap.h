@@ -15,30 +15,16 @@
 
 #ifndef ML_LEVELWRAP_H
 #define ML_LEVELWRAP_H
-#include <type_traits>
-
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCPDecl.hpp"
 #include "ml_common.h"
-#include "ml_config.h"
-#include "ml_struct.h"
-
-class Epetra_Comm;
-class Epetra_Map;
-class Epetra_MultiVector;
-class Epetra_Operator;
-namespace ML_Epetra {
-class MultiLevelPreconditioner;
-}  // namespace ML_Epetra
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_IFPACK)
 #include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Teuchos_RCP.hpp"
-#include "ml_MultiLevelPreconditioner.h"
+#include "Epetra_CrsMatrix.h"
 #include "ml_Preconditioner.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "Teuchos_RCP.hpp"
 
 namespace ML_Epetra
 {

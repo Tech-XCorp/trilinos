@@ -48,29 +48,18 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "LOCA_ErrorCheck.H"
+#include "Teuchos_ParameterList.hpp"
 #include "LOCA_GlobalData.H"
-#include "LOCA_MultiPredictor_Constant.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Parameter_SublistParser.H"
+
 #include "LOCA_MultiPredictor_Factory.H"
+#include "LOCA_MultiPredictor_AbstractStrategy.H"
+#include "LOCA_MultiPredictor_Constant.H"
+#include "LOCA_MultiPredictor_Tangent.H"
+#include "LOCA_MultiPredictor_Secant.H"
 #include "LOCA_MultiPredictor_Random.H"
 #include "LOCA_MultiPredictor_Restart.H"
-#include "LOCA_MultiPredictor_Secant.H"
-#include "LOCA_MultiPredictor_Tangent.H"
-#include "LOCA_Parameter_SublistParser.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
-
-namespace LOCA {
-namespace MultiPredictor {
-class AbstractStrategy;
-}  // namespace MultiPredictor
-}  // namespace LOCA
 
 LOCA::MultiPredictor::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

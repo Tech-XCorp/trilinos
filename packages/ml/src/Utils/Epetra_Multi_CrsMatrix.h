@@ -17,22 +17,14 @@
 
 #ifndef ML_EPETRA_MULTI_CRS_MATRIX_H
 #define ML_EPETRA_MULTI_CRS_MATRIX_H
-#include "ml_comm.h"
-#include "ml_config.h"
-#include "ml_operator.h"
-
-class Epetra_Comm;
-class Epetra_CrsMatrix;
-class Epetra_Map;
-class Epetra_MultiVector;
 #if defined(HAVE_ML_EPETRA)
 #include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Operator.h"
-#include "Epetra_Operator_With_MatMat.h"
 #include "Epetra_Vector.h"
+#include "Epetra_CrsMatrix.h"
 #include "ml_Preconditioner.h"
+#include "Epetra_Operator_With_MatMat.h"
 #include "ml_include.h"
 
 namespace ML_Epetra{

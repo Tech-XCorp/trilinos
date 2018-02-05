@@ -48,14 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <vector>
-
-#include "LOCA_Extended_MultiVector.H"
-#include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
 #include "LOCA_MultiPredictor_AbstractStrategy.H"
-#include "NOX_Abstract_Vector.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
+#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "LOCA_MultiContinuation_ExtendedGroup.H"
 
 void
 LOCA::MultiPredictor::AbstractStrategy::setPredictorOrientation(

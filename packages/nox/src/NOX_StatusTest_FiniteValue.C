@@ -48,16 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <cmath>
-#include <memory>
-#include <ostream>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Config.h"
-#include "NOX_Solver_Generic.H"
 #include "NOX_StatusTest_FiniteValue.H" // class definition
-#include "NOX_StatusTest_Generic.H"
+#include "NOX_Common.H"  // for std::string class
+#include "NOX_Solver_Generic.H"
+#include "NOX_Abstract_Group.H"
 
 NOX::StatusTest::FiniteValue::
 FiniteValue(VectorType v, NOX::Abstract::Vector::NormType n) :

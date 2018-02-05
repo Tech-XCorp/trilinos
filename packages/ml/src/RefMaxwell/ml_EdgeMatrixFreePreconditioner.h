@@ -15,40 +15,24 @@
 
 #ifndef ML_EDGE_MATRIX_FREE_PRECONDITIONER_H
 #define ML_EDGE_MATRIX_FREE_PRECONDITIONER_H
-#include "Teuchos_ArrayRCPDecl.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "ml_comm.h"
-#include "ml_config.h"
-#include "ml_operator.h"
-
-class Epetra_Comm;
-class Epetra_CrsMatrix;
-class Epetra_Map;
-class Epetra_MultiVector;
-class Epetra_Operator;
-class Epetra_Vector;
-namespace ML_Epetra {
-class MultiLevelPreconditioner;
-}  // namespace ML_Epetra
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 #include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_IntVector.h"
 #include "Epetra_Map.h"
 #include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
-#include "Teuchos_ArrayRCP.hpp"
-#include "Teuchos_RCP.hpp"
+#include "Epetra_IntVector.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_RowMatrix.h"
 #include "ml_Preconditioner.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_ArrayRCP.hpp"
 
 #ifdef HAVE_ML_IFPACK
 #include "Ifpack_Chebyshev.h"
 #endif
 
-#include "ml_MultiLevelPreconditioner.h"
 #include "ml_include.h"
+#include "ml_MultiLevelPreconditioner.h"
 #ifdef HAVE_ML_EPETRAEXT
 #include "EpetraExt_SolverMap_CrsMatrix.h"
 #endif

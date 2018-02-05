@@ -45,20 +45,12 @@
 // ************************************************************************
 //@HEADER
 
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "LOCA_Epetra_Group.H"
 #include "LOCA_Epetra_ShiftInvertOperator.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
+#include "LOCA_Epetra_Group.H"
 #include "NOX_Epetra_MultiVector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-class Epetra_Comm;
-class Epetra_Map;
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
+#include "Epetra_MultiVector.h"
 
 //=============================================================================
 LOCA::Epetra::ShiftInvertOperator::ShiftInvertOperator(

@@ -48,26 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <iostream>
-#include <type_traits>
-
-#include "AztecOO_ConditionNumber.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Vector.h"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Epetra_Group.H"    // class definition
-#include "NOX_Epetra_Interface_Required.H"
-#include "NOX_Epetra_LinearSystem.H"
-#include "NOX_Epetra_Vector.H"
-#include "NOX_SharedObjectTemplate.H"
-#include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "Teuchos_ParameterList.hpp"
+#include "NOX_Utils.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "Epetra_Vector.h"
+#include "Epetra_Operator.h"
+#include "AztecOO_ConditionNumber.h"
 
 using namespace NOX;
 using namespace NOX::Epetra;

@@ -49,18 +49,9 @@
 //@HEADER
 
 #include "LOCA_BorderedSolver_ComplexOperator.H"
+#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
 #include "LOCA_Hopf_ComplexMultiVector.H"
 #include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
 
 LOCA::BorderedSolver::ComplexOperator::
 ComplexOperator(const Teuchos::RCP<const LOCA::Hopf::MooreSpence::AbstractGroup>& grp,

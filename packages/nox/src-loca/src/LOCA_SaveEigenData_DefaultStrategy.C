@@ -48,27 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <vector>
-
 #include "LOCA_SaveEigenData_DefaultStrategy.H"
-#include "NOX_Abstract_Group.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-class GlobalData;
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace NOX {
-namespace Abstract {
-class MultiVector;
-}  // namespace Abstract
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 
 LOCA::SaveEigenData::DefaultStrategy::DefaultStrategy(

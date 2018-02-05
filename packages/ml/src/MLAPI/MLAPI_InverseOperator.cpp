@@ -2,37 +2,28 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <iomanip>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "Epetra_DataAccess.h"
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_Utils.hpp"
-#include "Teuchos_any.hpp"
-#include "ml_MultiLevelPreconditioner.h"
 #include "ml_common.h"
 #ifdef HAVE_ML_MLAPI
+#include "ml_RowMatrix.h"
+#include "Teuchos_RefCountPtr.hpp"
 #include "Epetra_Vector.h"
-#include "Ifpack_AdditiveSchwarz.h"
-#include "Ifpack_Amesos.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_PointRelaxation.h"
 #include "Ifpack_IC.h"
 #include "Ifpack_ICT.h"
 #include "Ifpack_ILU.h"
 #include "Ifpack_ILUT.h"
-#include "Ifpack_PointRelaxation.h"
-#include "Ifpack_Preconditioner.h"
+#include "Ifpack_AdditiveSchwarz.h"
+#include "Ifpack_Amesos.h"
 #include "MLAPI_Error.h"
-#include "MLAPI_InverseOperator.h"
+#include "MLAPI_Space.h"
+#include "MLAPI_BaseOperator.h"
+#include "MLAPI_CompObject.h"
+#include "MLAPI_TimeObject.h"
 #include "MLAPI_MultiVector.h"
 #include "MLAPI_MultiVector_Utils.h"
-#include "MLAPI_Space.h"
 #include "MLAPI_Workspace.h"
+#include "MLAPI_InverseOperator.h"
 
 namespace MLAPI
 {

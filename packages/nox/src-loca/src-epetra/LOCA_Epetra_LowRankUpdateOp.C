@@ -48,23 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <type_traits>
-#include <vector>
-
-#include "Epetra_LocalMap.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
+#include "Epetra_config.h"
 #include "LOCA_Epetra_LowRankUpdateOp.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_LAPACK.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
-class Epetra_Comm;
-class Epetra_Map;
+#include "Epetra_Map.h"
+#include "Epetra_Comm.h"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 LOCA::Epetra::LowRankUpdateOp::LowRankUpdateOp(
         const Teuchos::RCP<LOCA::GlobalData>& global_data,

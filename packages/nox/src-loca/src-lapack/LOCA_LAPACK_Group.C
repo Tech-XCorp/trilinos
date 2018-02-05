@@ -48,33 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <stddef.h>
-#include <algorithm>
-#include <iostream>
-#include <stdexcept>
-#include <type_traits>
-
-#include "LOCA_Abstract_Group.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_LAPACK_Group.H"    // class definition
-#include "LOCA_LAPACK_Interface.H"
-#include "LOCA_Parameter_Vector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_LAPACK_Group.H"
-#include "NOX_LAPACK_LinearSolver.H"
-#include "NOX_LAPACK_Matrix.H"
-#include "NOX_LAPACK_Vector.H"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
+#include "Teuchos_LAPACK.hpp"
 
 LOCA::LAPACK::Group::Group(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

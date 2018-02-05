@@ -48,24 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <algorithm>
-#include <iosfwd>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_Extended_MultiVector.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_MultiContinuation_ArcLengthConstraint.H"
 #include "LOCA_MultiContinuation_ArcLengthGroup.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 LOCA::MultiContinuation::ArcLengthConstraint::ArcLengthConstraint(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

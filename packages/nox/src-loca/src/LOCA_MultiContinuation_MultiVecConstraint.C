@@ -48,16 +48,7 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <vector>
-
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
 #include "LOCA_MultiContinuation_MultiVecConstraint.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
 LOCA::MultiContinuation::MultiVecConstraint::MultiVecConstraint(
     const Teuchos::RCP<const NOX::Abstract::MultiVector>& dx_) :

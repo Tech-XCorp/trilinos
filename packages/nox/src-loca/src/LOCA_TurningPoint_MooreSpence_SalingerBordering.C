@@ -48,33 +48,12 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_Abstract_TransposeSolveGroup.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
-#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
-#include "LOCA_TurningPoint_MooreSpence_ExtendedMultiVector.H"
 #include "LOCA_TurningPoint_MooreSpence_SalingerBordering.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Abstract_TransposeSolveGroup.H"
 
 LOCA::TurningPoint::MooreSpence::SalingerBordering::SalingerBordering(
      const Teuchos::RCP<LOCA::GlobalData>& global_data,

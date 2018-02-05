@@ -2,15 +2,22 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <ostream>
-
 #include "ml_common.h"
 #ifdef HAVE_ML_MLAPI
 
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_Map.h"
-#include "MLAPI_DistributedMatrix.h"
+#include "ml_include.h"
+//#include "ml_lapack.h"
+#include "ml_comm.h"
+#include "ml_epetra.h"
+#include "MLAPI_Error.h"
+#include "MLAPI_BaseObject.h"
 #include "MLAPI_Space.h"
+#include "MLAPI_DistributedMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_FECrsMatrix.h"
+#include <iomanip>
 
 std::ostream& MLAPI::DistributedMatrix::
 Print(std::ostream& os, const bool verbose) const

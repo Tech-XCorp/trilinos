@@ -48,26 +48,12 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <iosfwd>
-#include <type_traits>
-
-#include "LOCA_BorderedSolver_AbstractOperator.H"
 #include "LOCA_BorderedSolver_UpperTriangularBlockElimination.H"
-#include "LOCA_ErrorCheck.H"
+#include "LOCA_BorderedSolver_AbstractOperator.H"
 #include "LOCA_GlobalData.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_DataAccess.hpp"
+#include "LOCA_ErrorCheck.H"
 #include "Teuchos_LAPACK.hpp"    // for LAPACK solve
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_Abstract_TransposeSolveGroup.H"
 
 LOCA::BorderedSolver::UpperTriangularBlockElimination::
 UpperTriangularBlockElimination(

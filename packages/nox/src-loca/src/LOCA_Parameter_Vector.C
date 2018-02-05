@@ -48,14 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <ostream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
 #include "LOCA_Parameter_Vector.H" // class definition
-#include "Teuchos_TestForException.hpp"
+
+#include "Teuchos_Assert.hpp" // for errors
 
 LOCA::ParameterVector::ParameterVector() :
   x(),

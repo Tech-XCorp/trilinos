@@ -48,39 +48,25 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <sstream>
-#include <string>
-#include <type_traits>
+#include "Teuchos_ParameterList.hpp"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 #include "LOCA_Bifurcation_Factory.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_Hopf_MinimallyAugmented_ExtendedGroup.H"
-#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
+#include "LOCA_TurningPoint_MinimallyAugmented_ExtendedGroup.H"
+#include "LOCA_TurningPoint_MinimallyAugmented_AbstractGroup.H"
+#include "LOCA_Pitchfork_MooreSpence_ExtendedGroup.H"
+#include "LOCA_Pitchfork_MooreSpence_AbstractGroup.H"
+#include "LOCA_Pitchfork_MinimallyAugmented_ExtendedGroup.H"
+#include "LOCA_Pitchfork_MinimallyAugmented_AbstractGroup.H"
 #include "LOCA_Hopf_MooreSpence_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "LOCA_Hopf_MooreSpence_AbstractGroup.H"
+#include "LOCA_Hopf_MinimallyAugmented_ExtendedGroup.H"
+#include "LOCA_Hopf_MinimallyAugmented_AbstractGroup.H"
 #include "LOCA_PhaseTransition_AbstractGroup.H"
 #include "LOCA_PhaseTransition_ExtendedGroup.H"
-#include "LOCA_Pitchfork_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_Pitchfork_MinimallyAugmented_ExtendedGroup.H"
-#include "LOCA_Pitchfork_MooreSpence_AbstractGroup.H"
-#include "LOCA_Pitchfork_MooreSpence_ExtendedGroup.H"
-#include "LOCA_TurningPoint_MinimallyAugmented_AbstractGroup.H"
-#include "LOCA_TurningPoint_MinimallyAugmented_ExtendedGroup.H"
-#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
-#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
 
 LOCA::Bifurcation::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

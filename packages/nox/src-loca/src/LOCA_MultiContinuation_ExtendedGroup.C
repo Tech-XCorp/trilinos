@@ -48,38 +48,17 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_Abstract_Iterator.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_Extended_MultiVector.H"
+#include "Teuchos_ParameterList.hpp"
 #include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "LOCA_MultiContinuation_ConstrainedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "LOCA_MultiPredictor_AbstractStrategy.H"
+#include "LOCA_ErrorCheck.H"
 #include "LOCA_Parameter_Vector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-namespace MultiContinuation {
-class ConstraintInterface;
-}  // namespace MultiContinuation
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "LOCA_MultiContinuation_ExtendedGroup.H"
+#include "LOCA_MultiContinuation_ConstrainedGroup.H"
+#include "LOCA_MultiPredictor_AbstractStrategy.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_MultiContinuation_CompositeConstraint.H"
+#include "LOCA_MultiContinuation_CompositeConstraintMVDX.H"
 
 LOCA::MultiContinuation::ExtendedGroup::ExtendedGroup(
              const LOCA::MultiContinuation::ExtendedGroup& source,

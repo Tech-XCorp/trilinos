@@ -48,15 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <type_traits>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
 #include "NOX_MeritFunction_SumOfSquares.H"
-#include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
 
 NOX::MeritFunction::SumOfSquares::
 SumOfSquares(const Teuchos::RCP<NOX::Utils>& u) :

@@ -47,88 +47,7 @@
 #ifndef XPETRA_THYRAUTILS_HPP
 #define XPETRA_THYRAUTILS_HPP
 
-#include <algorithm>
-#include <cstdlib>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
-#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
-#include "Kokkos_DefaultNode.hpp"
-#include "RTOpPack_Types.hpp"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_ArrayRCP.hpp"
-#include "Teuchos_ArrayRCPDecl.hpp"
-#include "Teuchos_ArrayView.hpp"
-#include "Teuchos_ArrayViewDecl.hpp"
-#include "Teuchos_CompilerCodeTweakMacros.hpp"
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_ConstNonconstObjectContainer.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_Ptr.hpp"
-#include "Teuchos_PtrDecl.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_Range1D.hpp"
-#include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_Utils.hpp"
-#include "Teuchos_as.hpp"
-#include "Thyra_BlockedLinearOpBase.hpp"
-#include "Thyra_DefaultBlockedLinearOp_decl.hpp"
-#include "Thyra_DefaultProductVectorSpace_decl.hpp"
-#include "Thyra_LinearOpBase_decl.hpp"
-#include "Thyra_MultiVectorBase_decl.hpp"
-#include "Thyra_MultiVectorStdOps_decl.hpp"
-#include "Thyra_SpmdMultiVectorBase.hpp"
-#include "Thyra_SpmdVectorSpaceBase_decl.hpp"
-#include "Thyra_TpetraLinearOp_decl.hpp"
-#include "Thyra_TpetraLinearOp_def.hpp"
-#include "Thyra_TpetraMultiVector_decl.hpp"
-#include "Thyra_TpetraMultiVector_def.hpp"
-#include "Thyra_TpetraThyraWrappers_decl.hpp"
-#include "Thyra_TpetraThyraWrappers_def.hpp"
-#include "Thyra_TpetraVectorSpace_decl.hpp"
-#include "Thyra_TpetraVectorSpace_def.hpp"
-#include "Thyra_TpetraVector_def.hpp"
-#include "Thyra_VectorBase.hpp"
-#include "Thyra_VectorSpaceBase_decl.hpp"
-#include "TpetraCore_config.h"
-#include "Tpetra_CrsMatrix_decl.hpp"
-#include "Tpetra_Details_Transfer_decl.hpp"
-#include "Tpetra_Map_decl.hpp"
-#include "Tpetra_MultiVector_decl.hpp"
-#include "Tpetra_Operator.hpp"
-#include "Tpetra_RowMatrix_decl.hpp"
-#include "Tpetra_Vector_decl.hpp"
-#include "Xpetra_BlockedMultiVector.hpp"
-#include "Xpetra_BlockedVector.hpp"
 #include "Xpetra_ConfigDefs.hpp"
-#include "Xpetra_CrsMatrix.hpp"
-#include "Xpetra_EpetraMultiVector.hpp"
-#include "Xpetra_Exceptions.hpp"
-#include "Xpetra_MultiVector.hpp"
-#include "Xpetra_MultiVectorFactory.hpp"
-#include "Xpetra_TpetraExport.hpp"
-#include "Xpetra_TpetraImport.hpp"
-#include "Xpetra_TpetraMultiVector.hpp"
-#include "Xpetra_UseShortNamesScalar.hpp"
-#include "Xpetra_Vector.hpp"
-#include "Xpetra_config.hpp"
-
-namespace Teuchos {
-template <typename Ordinal> class Comm;
-}  // namespace Teuchos
-namespace Thyra {
-template <class Scalar> class PhysicallyBlockedLinearOpBase;
-}  // namespace Thyra
 #ifdef HAVE_XPETRA_THYRA
 
 #include <typeinfo>
@@ -138,50 +57,50 @@ template <class Scalar> class PhysicallyBlockedLinearOpBase;
 #endif
 
 #ifdef HAVE_XPETRA_EPETRA
-#include "Epetra_CombineMode.h"
 #include "Epetra_config.h"
+#include "Epetra_CombineMode.h"
 #endif
 
-#include <Thyra_DefaultBlockedLinearOp.hpp>
-#include <Thyra_DefaultProductVectorSpace.hpp>
-#include <Thyra_DetachedMultiVectorView.hpp>
-#include <Thyra_LinearOpBase.hpp>
-#include <Thyra_MultiVectorStdOps.hpp>
-#include <Thyra_ProductMultiVectorBase.hpp>
-#include <Thyra_ProductVectorSpaceBase.hpp>
-#include <Thyra_SpmdVectorSpaceBase.hpp>
-#include <Thyra_VectorSpaceBase.hpp>
-#include <Thyra_VectorSpaceBase.hpp>
-
-#include "Xpetra_BlockedMap.hpp"
-#include "Xpetra_CrsMatrixWrap.hpp"
 #include "Xpetra_Map.hpp"
-#include "Xpetra_MapExtractor.hpp"
+#include "Xpetra_BlockedMap.hpp"
 #include "Xpetra_MapUtils.hpp"
-#include "Xpetra_Matrix.hpp"
 #include "Xpetra_StridedMap.hpp"
 #include "Xpetra_StridedMapFactory.hpp"
+#include "Xpetra_MapExtractor.hpp"
+#include "Xpetra_Matrix.hpp"
+#include "Xpetra_CrsMatrixWrap.hpp"
+
+#include <Thyra_VectorSpaceBase.hpp>
+#include <Thyra_SpmdVectorSpaceBase.hpp>
+#include <Thyra_ProductVectorSpaceBase.hpp>
+#include <Thyra_ProductMultiVectorBase.hpp>
+#include <Thyra_VectorSpaceBase.hpp>
+#include <Thyra_DefaultProductVectorSpace.hpp>
+#include <Thyra_DefaultBlockedLinearOp.hpp>
+#include <Thyra_LinearOpBase.hpp>
+#include <Thyra_DetachedMultiVectorView.hpp>
+#include <Thyra_MultiVectorStdOps.hpp>
 
 #ifdef HAVE_XPETRA_TPETRA
 #include <Thyra_TpetraThyraWrappers.hpp>
 #include <Thyra_TpetraVector.hpp>
 #include <Thyra_TpetraVectorSpace.hpp>
-#include <Tpetra_CrsMatrix.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_Vector.hpp>
-#include <Xpetra_TpetraCrsMatrix.hpp>
+#include <Tpetra_CrsMatrix.hpp>
 #include <Xpetra_TpetraMap.hpp>
+#include <Xpetra_TpetraCrsMatrix.hpp>
 #endif
 #ifdef HAVE_XPETRA_EPETRA
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
-#include <Epetra_Vector.h>
 #include <Thyra_EpetraLinearOp.hpp>
 #include <Thyra_EpetraThyraWrappers.hpp>
 #include <Thyra_SpmdVectorBase.hpp>
 #include <Thyra_get_Epetra_Operator.hpp>
-#include <Xpetra_EpetraCrsMatrix.hpp>
+#include <Epetra_Map.h>
+#include <Epetra_Vector.h>
+#include <Epetra_CrsMatrix.h>
 #include <Xpetra_EpetraMap.hpp>
+#include <Xpetra_EpetraCrsMatrix.hpp>
 #endif
 
 namespace Xpetra {

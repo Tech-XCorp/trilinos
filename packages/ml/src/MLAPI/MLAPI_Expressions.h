@@ -2,8 +2,6 @@
 #define ML_EXPRESSIONS_H
 
 #include "MLAPI_LinearCombinations.h"
-#include "MLAPI_MultiVector.h"
-#include "MLAPI_Operator.h"
 
 namespace MLAPI {
 
@@ -28,8 +26,6 @@ namespace MLAPI {
 // ======================================================================
 //! Creates a new MultiVector, defined as x + y
 // ======================================================================
-class BaseLinearCombination;
-class BaseOperator;
 #ifndef MLAPI_LC
 MultiVectorCombination operator+(const MultiVector& x, const MultiVector& y);
 

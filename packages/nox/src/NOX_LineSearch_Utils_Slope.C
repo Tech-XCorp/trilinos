@@ -48,16 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <type_traits>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_GlobalData.H"
 #include "NOX_LineSearch_Utils_Slope.H"
-#include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_GlobalData.H"
 
 NOX::LineSearch::Utils::Slope::Slope() {}
 

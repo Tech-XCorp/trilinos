@@ -48,34 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <sstream>
-#include <vector>
-
-#include "LOCA_Extended_MultiVector.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "LOCA_MultiContinuation_ArcLengthConstraint.H"
 #include "LOCA_MultiContinuation_ArcLengthGroup.H"
+#include "LOCA_MultiContinuation_ArcLengthConstraint.H"
+#include "LOCA_MultiContinuation_AbstractGroup.H"
 #include "LOCA_MultiContinuation_ConstrainedGroup.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
 #include "LOCA_MultiPredictor_AbstractStrategy.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Utils.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
+#include "LOCA_GlobalData.H"
+#include "NOX_Utils.H"
 
 LOCA::MultiContinuation::ArcLengthGroup::ArcLengthGroup(
       const Teuchos::RCP<LOCA::GlobalData>& global_data,

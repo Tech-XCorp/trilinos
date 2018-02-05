@@ -48,28 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
-
-#include "LOCA_Eigensolver_DefaultStrategy.H"
-#include "LOCA_Eigensolver_Factory.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "NOX_Config.h"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
-namespace LOCA {
-namespace Eigensolver {
-class AbstractStrategy;
-}  // namespace Eigensolver
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
+#include "LOCA_Eigensolver_Factory.H"
+#include "LOCA_Eigensolver_AbstractStrategy.H"
+#include "LOCA_Eigensolver_DefaultStrategy.H"
 #ifdef HAVE_LOCA_ANASAZI
 #include "LOCA_Eigensolver_AnasaziStrategy.H"
 #endif

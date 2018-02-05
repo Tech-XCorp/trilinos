@@ -48,23 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <type_traits>
-#include <vector>
-
 #include "LOCA_Abstract_Group.H"
-#include "LOCA_DerivUtils.H"
-#include "LOCA_ErrorCheck.H"
+#include "Teuchos_ParameterList.hpp"
 #include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_FiniteDifferenceGroup.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_ErrorCheck.H"
 
 LOCA::Abstract::Group::Group(
            const Teuchos::RCP<LOCA::GlobalData>& global_data) :

@@ -16,38 +16,22 @@
 #ifndef ML_REFMAXWELL_H
 #define ML_REFMAXWELL_H
 
-#include <iosfwd>
-
-#include "Teuchos_RCPDecl.hpp"
-#include "ml_config.h"
-
-class Epetra_Comm;
-class Epetra_CrsMatrix;
-class Epetra_Map;
-class Epetra_MultiVector;
-class Epetra_Operator;
-class Epetra_Vector;
-namespace ML_Epetra {
-class ML_RMP;
-class MultiLevelPreconditioner;
-}  // namespace ML_Epetra
-
 // Some compilers think this name is too long...
 #define RefMaxwellPreconditioner ML_RMP
 
 #define ENABLE_MS_MATRIX
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
+#include "ml_common.h"
 #include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "ml_MultiLevelPreconditioner.h"
-#include "ml_Preconditioner.h"
+#include "Epetra_CrsMatrix.h"
 #include "ml_RefMaxwell_11_Operator.h"
-#include "ml_common.h"
+#include "ml_Preconditioner.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_ParameterList.hpp"
 
 #ifdef HAVE_ML_EPETRAEXT
 #include "EpetraExt_SolverMap_CrsMatrix.h"

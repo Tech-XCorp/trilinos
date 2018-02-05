@@ -48,19 +48,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <ostream>
-#include <type_traits>
-#include <vector>
+#include "LOCA_StatusTest_Combo.H"
 
-#include "LOCA_Abstract_Iterator.H"
 // FIXME Really necessary?
 #include "LOCA_GlobalData.H"
-#include "LOCA_StatusTest_Abstract.H"
-#include "LOCA_StatusTest_Combo.H"
 #include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
 LOCA::StatusTest::Combo::
 Combo(ComboType t, const Teuchos::RCP<const LOCA::GlobalData> globalDataPtr ) :

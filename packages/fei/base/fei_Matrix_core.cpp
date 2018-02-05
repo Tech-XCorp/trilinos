@@ -5,28 +5,29 @@
 /*    of the U.S. Government.  Export of this program may require     */
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
-#include <fei_CommUtils.hpp>
-#include <fei_LogManager.hpp>
-#include <fei_MatrixGraph.hpp>
-#include <fei_MatrixTraits_FillableMat.hpp>
-#include <fei_Matrix_core.hpp>
-#include <fei_ParameterSet.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_Vector_Impl.hpp>
 #include <fei_macros.hpp>
+
 #include <fei_utils.hpp>
+
+#include <fei_ParameterSet.hpp>
+#include <fei_LogManager.hpp>
+#include <fei_Matrix_core.hpp>
+#include <fei_CSRMat.hpp>
+#include <fei_TemplateUtils.hpp>
+#include <fei_CommUtils.hpp>
+#include <fei_impl_utils.hpp>
+
+#include <fei_VectorSpace.hpp>
 #include <snl_fei_PointBlockMap.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <snl_fei_Utils.hpp>
+
+#include <fei_MatrixTraits.hpp>
+#include <fei_MatrixTraits_FillableMat.hpp>
 
 #undef fei_file
 #define fei_file "fei_Matrix_core.cpp"
 #include <fei_ErrMacros.hpp>
-#include <stdexcept>
-#include <string>
-
-#include "fei_EqnComm.hpp"
-#include "fei_FillableMat.hpp"
-#include "fei_Param.hpp"
-#include "fei_Vector.hpp"
 
 fei::Matrix_core::Matrix_core(fei::SharedPtr<fei::MatrixGraph> matrixGraph,
                               int numLocalEqns)

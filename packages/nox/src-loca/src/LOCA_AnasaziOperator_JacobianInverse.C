@@ -48,31 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <type_traits>
-
 #include "LOCA_AnasaziOperator_JacobianInverse.H"
-#include "LOCA_ErrorCheck.H"
 #include "LOCA_GlobalData.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace NOX {
-namespace Abstract {
-class MultiVector;
-}  // namespace Abstract
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_ErrorCheck.H"
+#include "Teuchos_ParameterList.hpp"
 
 LOCA::AnasaziOperator::JacobianInverse::JacobianInverse(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

@@ -45,12 +45,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Solver_Generic.H"
 #include "NOX_StatusTest_Divergence.H" // class definition
-#include "NOX_StatusTest_Generic.H"
+#include "NOX_Common.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_Abstract_Group.H"
 
 NOX::StatusTest::Divergence::Divergence(double threshold_, int maxSteps_) :
   maxSteps(maxSteps_),

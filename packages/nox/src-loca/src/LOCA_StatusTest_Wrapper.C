@@ -48,14 +48,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-
-#include "LOCA_Solver_Wrapper.H"
 #include "LOCA_StatusTest_Wrapper.H"
-#include "NOX_Solver_Generic.H"
-#include "NOX_StatusTest_Generic.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_Solver_Wrapper.H"
 
 LOCA::StatusTest::Wrapper::Wrapper(
             const Teuchos::RCP<NOX::StatusTest::Generic>& s) :

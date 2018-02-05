@@ -2,22 +2,15 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include "ml_include.h"
 
-#include <math.h>
-#include <stdio.h>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_Comm.h"
-#include "Epetra_SerialComm.h"
-#include "ml_comminfoop.h"
-#include "ml_defs.h"
-#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA)
 
-#include "Epetra_Import.h"
 #include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
+#include "Epetra_Import.h"
+#include "Epetra_MultiVector.h"
 #include "ml_RowMatrix.h"
 #include "ml_lapack.h"
 

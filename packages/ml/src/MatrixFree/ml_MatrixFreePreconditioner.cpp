@@ -2,51 +2,32 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <assert.h>
-#include <string.h>
-#include <algorithm>
-#include <cmath>
-#include <exception>
-#include <sstream>
-#include <type_traits>
-#include <utility>
-
-#include "Epetra_CombineMode.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_DataAccess.h"
-#include "Teuchos_ENull.hpp"
-#include "ml_agg_METIS.h"
-#include "ml_agg_ParMETIS.h"
 #include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_epetra.h"
-#include "ml_memory.h"
-#include "ml_op_utils.h"
-#include "ml_rap.h"
-#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRAEXT) && defined(HAVE_ML_IFPACK)
-#include "EpetraExt_MapColoring.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_Import.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_Map.h"
-#include "Epetra_MapColoring.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseSVD.h"
-#include "Epetra_Time.h"
-#include "Epetra_Vector.h"
-#include "Ifpack_Chebyshev.h"
-#include "Teuchos_ParameterList.hpp"
 #include "ml_MatrixFreePreconditioner.h"
-#include "ml_MultiLevelPreconditioner.h"
-#include "ml_RowMatrix.h"
 #include "ml_aggregate.h"
 #include "ml_epetra_utils.h"
+#include "Epetra_Map.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Import.h"
+#include "Epetra_Time.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseSVD.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RefCountPtr.hpp"
+#include "EpetraExt_MapColoring.h"
+#include "EpetraExt_MapColoringIndex.h"
+#include "Ifpack_Chebyshev.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_MapColoring.h"
+#include "Epetra_Vector.h"
+#include "ml_RowMatrix.h"
+#include "ml_MultiLevelPreconditioner.h"
 #include "ml_lapack.h"
 
 using namespace Teuchos;

@@ -48,13 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <ostream>
-
-#include "NOX_Solver_Generic.H"
-#include "NOX_StatusTest_Generic.H"
+#include "NOX_Common.H"
 #include "NOX_StatusTest_NStep.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_Utils.H"
+#include "Teuchos_Assert.hpp"
 
 NOX::StatusTest::NStep::
 NStep(int numberOfStepsForConvergence,

@@ -45,39 +45,11 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <iostream>
-#include <sstream>
-#include <type_traits>
-#include <vector>
-
-#include "EpetraExt_BlockCrsMatrix.h"
-#include "EpetraExt_BlockVector.h"
-#include "EpetraExt_MultiComm.h"
-#include "Epetra_CombineMode.h"
-#include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Import.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Vector.h"
-#include "LOCA_Epetra_Interface_TimeDependent.H"
 #include "LOCA_Epetra_Interface_xyzt.H"
-#include "LOCA_Epetra_xyztPrec.H"
-#include "NOX_Config.h"
-#include "NOX_Epetra_Interface_Required.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-class Epetra_Operator;
-namespace LOCA {
-class ParameterVector;
-}  // namespace LOCA
 
 #ifdef HAVE_NOX_EPETRAEXT
 
+#include "EpetraExt_MatrixMatrix.h"
 #include "Epetra_VbrMatrix.h"
 
 LOCA::Epetra::Interface::xyzt::

@@ -48,22 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_Abstract_Iterator.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_MultiContinuation_CompositeConstraint.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_DataAccess.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
 LOCA::MultiContinuation::CompositeConstraint::CompositeConstraint() :
   globalData(),

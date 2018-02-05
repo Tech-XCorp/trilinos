@@ -49,16 +49,9 @@
 //@HEADER
 
 #include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
 
-namespace NOX {
-namespace Abstract {
-class Vector;
-}  // namespace Abstract
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "NOX_Abstract_MultiVector.H"
+#include "Teuchos_ParameterList.hpp"
 
 NOX::Abstract::Group::ReturnType
 NOX::Abstract::Group::computeJacobian()

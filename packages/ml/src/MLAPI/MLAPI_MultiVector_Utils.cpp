@@ -2,11 +2,6 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <string>
-
-#include "MLAPI_Space.h"
-#include "MLAPI_Workspace.h"
-#include "Teuchos_RCP.hpp"
 #include "ml_common.h"
 #if defined(HAVE_ML_MLAPI)
 #include "MLAPI_Error.h"

@@ -2,24 +2,18 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include <sstream>
-#include <string>
-
-#include "Epetra_DataAccess.h"
-#include "Epetra_Map.h"
-#include "MLAPI_Workspace.h"
-#include "az_aztec.h"
 #include "ml_common.h"
-#include "ml_config.h"
 #ifdef HAVE_ML_MLAPI
+#include "MLAPI_Error.h"
+#include "MLAPI_MultiVector.h"
+#include "MLAPI_BaseOperator.h"
+#include "MLAPI_Operator.h"
+#include "MLAPI_EpetraBaseOperator.h"
+#include "MLAPI_Krylov.h"
+#include "ml_RowMatrix.h"
+#include "Epetra_Vector.h"
 #include "Epetra_LinearProblem.h"
 #include "Epetra_RowMatrix.h"
-#include "Epetra_Vector.h"
-#include "MLAPI_EpetraBaseOperator.h"
-#include "MLAPI_Error.h"
-#include "MLAPI_Krylov.h"
-#include "MLAPI_MultiVector.h"
-#include "MLAPI_Operator.h"
 #ifdef HAVE_ML_AZTECOO
 #include "AztecOO.h"
 #endif

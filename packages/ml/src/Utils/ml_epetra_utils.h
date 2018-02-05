@@ -15,32 +15,25 @@
 #ifndef _ML_EPETRA_UTILS_H_
 #define _ML_EPETRA_UTILS_H_
 
-class Epetra_BlockMap;
 class Epetra_Comm;
+class Epetra_BlockMap;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_Map;
+class Epetra_Vector;
+class Epetra_IntVector;
+class Epetra_Import;
+class Epetra_Object;
 class Epetra_CrsGraph;
 class Epetra_CrsMatrix;
-class Epetra_Import;
-class Epetra_IntVector;
+class Epetra_RowMatrix;
 class Epetra_LinearProblem;
-class Epetra_Map;
-class Epetra_MultiVector;
-class Epetra_Object;
-class Epetra_RowMatrix;
-class Epetra_RowMatrix;
 class Epetra_SerialDenseMatrix;
-class Epetra_Vector;
-namespace EpetraExt {
-class CrsMatrix_SolverMap;
-}  // namespace EpetraExt
-
 namespace Teuchos {
   class ParameterList;
 }
 
 #include "ml_common.h"
-#include "ml_config.h"
-#include "ml_operator.h"
-#include "ml_struct.h"
 
 #ifdef ML_MPI
 #ifndef EPETRA_MPI
@@ -48,9 +41,8 @@ namespace Teuchos {
 #endif
 #include <mpi.h>
 #endif
-#include <iostream>
-
 #include "ml_include.h"
+#include <iostream>
 
 #ifdef HAVE_ML_EPETRAEXT
 #include "EpetraExt_SolverMap_CrsMatrix.h"

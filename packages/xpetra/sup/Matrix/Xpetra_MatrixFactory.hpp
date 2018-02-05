@@ -49,35 +49,14 @@
 #ifndef XPETRA_MATRIXFACTORY_HPP
 #define XPETRA_MATRIXFACTORY_HPP
 
-#include <stddef.h>
-#include <iosfwd>
-
-#include "Teuchos_ArrayRCPDecl.hpp"
-#include "Teuchos_ArrayViewDecl.hpp"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_ScalarTraits.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_Tuple.hpp"
-#include "Teuchos_as.hpp"
-#include "Xpetra_BlockedCrsMatrix_fwd.hpp"
-#include "Xpetra_BlockedMap.hpp"
 #include "Xpetra_ConfigDefs.hpp"
-#include "Xpetra_CrsMatrixWrap.hpp"
-#include "Xpetra_EpetraCrsMatrix.hpp"
-#include "Xpetra_EpetraUtils.hpp"
-#include "Xpetra_Exceptions.hpp"
-#include "Xpetra_Map.hpp"
 #include "Xpetra_MapExtractor_fwd.hpp"
 #include "Xpetra_Matrix.hpp"
-#include "Xpetra_UseShortNamesScalar.hpp"
+#include "Xpetra_CrsMatrixWrap.hpp"
+#include "Xpetra_BlockedCrsMatrix_fwd.hpp"
+#include "Xpetra_Map.hpp"
 #include "Xpetra_Vector.hpp"
-#include "Xpetra_config.hpp"
-
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "Xpetra_Exceptions.hpp"
 
 namespace Xpetra {
 
@@ -143,7 +122,6 @@ namespace Xpetra {
     //typedef Matrix<double, int, GlobalOrdinal>::node_type Node;
   #undef XPETRA_MATRIXFACTORY2_SHORT
   #include "Xpetra_UseShortNames.hpp"
-
   public:
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
       RCP<const CrsMatrixWrap> oldOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);
@@ -195,7 +173,6 @@ namespace Xpetra {
     //typedef Matrix<double, int, GlobalOrdinal>::node_type Node;
   #undef XPETRA_MATRIXFACTORY2_SHORT
   #include "Xpetra_UseShortNames.hpp"
-
   public:
     static RCP<Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > BuildCopy(const RCP<const Xpetra::Matrix<Scalar, LocalOrdinal, GlobalOrdinal, Node> > A) {
       RCP<const CrsMatrixWrap> oldOp = Teuchos::rcp_dynamic_cast<const CrsMatrixWrap>(A);

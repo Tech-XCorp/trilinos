@@ -15,10 +15,10 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <iostream>
-
 #include "ml_common.h"
+
 #include "ml_include.h"
+#include <iostream>
 
 namespace Teuchos {
   class ParameterList;
@@ -36,8 +36,8 @@ namespace MLAPI {
 \date Last updated on Mar-05.
 */
 
-  class Operator;
   class Space;
+  class Operator;
 
   // ======================================================================
   //! Creates a matrix using the TRIUTILS gallery.

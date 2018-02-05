@@ -45,31 +45,19 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <type_traits>
-
-#include "Epetra_BlockMap.h"
 #include "Epetra_Comm.h"
+#include "Epetra_Map.h"
+#include "Epetra_Import.h"
+#include "Epetra_Vector.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_DataAccess.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Vector.h"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Epetra_FiniteDifference.H"
-#include "NOX_Epetra_Interface_Required.H"
-#include "NOX_Epetra_Vector.H"
-#include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
 
-class Epetra_Import;
-class Epetra_Map;
-class Epetra_MultiVector;
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "NOX_Abstract_Group.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_ParameterList.hpp"
+#include "NOX_Utils.H"
+
+#include "NOX_Epetra_FiniteDifference.H"
 
 using namespace NOX;
 using namespace NOX::Epetra;

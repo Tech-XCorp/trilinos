@@ -40,16 +40,7 @@
 // @HEADER
 
 
-#include "Thyra_EpetraLinearOp.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_SpmdMultiVectorBase.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_AssertOp.hpp"
-#include "Teuchos_dyn_cast.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_TimeMonitor.hpp"
+#include "Teuchos_TimeMonitor.hpp" // TODO: Minimize this include
 
 #include <assert.h>
 #include <cmath>

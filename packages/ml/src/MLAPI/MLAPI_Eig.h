@@ -19,8 +19,8 @@
 
 namespace MLAPI {
 
-class MultiVector;
 class Operator;
+class MultiVector;
 
 //! Computes the maximum eigenvalue of \c Op using the A-norm of the operator.
 double MaxEigAnorm(const Operator& Op, const bool DiagonalScaling = false);

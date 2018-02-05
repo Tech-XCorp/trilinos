@@ -48,9 +48,7 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Abstract_Iterator.H"
 #include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "NOX_Abstract_Vector.H"
 
 void
 LOCA::MultiContinuation::AbstractGroup::preProcessContinuationStep(

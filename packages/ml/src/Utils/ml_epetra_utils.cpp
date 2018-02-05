@@ -14,53 +14,22 @@
 /*           Chris Siefert (SNL)                                        */
 /************************************************************************/
 
-#include <assert.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <deque>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-
-#include "EpetraExt_SolverMap_CrsMatrix.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_CombineMode.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_RowMatrix.h"
-#include "Teuchos_ArrayRCPDecl.hpp"
-#include "Teuchos_FilteredIterator.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_toString.hpp"
-#include "ml_comm.h"
-#include "ml_comminfoop.h"
 #include "ml_common.h"
-#include "ml_defs.h"
-#include "ml_mat_formats.h"
-#include "ml_memory.h"
-#include "ml_op_utils.h"
-#include "ml_rap.h"
-#include "ml_utils.h"
 
 #ifdef ML_WITH_EPETRA
 #include <vector>
-
-#include "Epetra_CrsGraph.h"
-#include "Epetra_Export.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_Import.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_Map.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_Time.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Vector.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
+#include "Epetra_Map.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_Vector.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_Import.h"
+#include "Epetra_Export.h"
+#include "Epetra_Time.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
@@ -909,7 +878,6 @@ void ML_Build_Epetra_Maps(ML_Operator* Amat,Epetra_Map **domainmap, Epetra_Map *
 // -Chris Siefert 11/28/2006.
 #include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
-
 int ML_Operator_WrapEpetraCrsMatrix(Epetra_CrsMatrix * A, ML_Operator *newMatrix, bool verbose)
 {
   int rv=0;
@@ -2468,6 +2436,8 @@ int ML_Epetra_matvec_WKC (ML_Operator *data, int in, double *p, int out, double 
 }
 #endif
 
+// ============================================================================
+#include "Epetra_FECrsMatrix.h"
 // FIXME: change my name?
 Epetra_FECrsMatrix* FakeMatrix = 0;
 

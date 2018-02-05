@@ -48,18 +48,15 @@
 // ************************************************************************
 //@HEADER
 
-#include <iostream>
-#include <type_traits>
+#include "LOCA_StatusTest_MaxIters.H" // class definition
+#include "LOCA_StatusTest_Abstract.H"
 
 //#include "LOCA_Stepper.H"
 #include "LOCA_Abstract_Iterator.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_StatusTest_Abstract.H"
-#include "LOCA_StatusTest_MaxIters.H" // class definition
+
 // FIXME remove these headers?
 #include "NOX_Utils.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_GlobalData.H"
 
 LOCA::StatusTest::MaxIters::
 MaxIters(int maxIterations,

@@ -1,32 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <iostream>
-#include <sstream>
-#include <string>
-#include <vector>
-
-#include "Epetra_BlockMap.h"
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_IntVector.h"
-#include "Teuchos_ParameterList.hpp"
-#include "ml_agg_METIS.h"
-#include "ml_agg_ParMETIS.h"
-#include "ml_aggregate.h"
-#include "ml_comminfoop.h"
 #include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_memory.h"
-#include "ml_qr_fix.h"
-#include "ml_rap.h"
-#include "ml_struct.h"
-#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 #include "ml_RefMaxwell_Utils.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
 #include "ml_mat_formats.h"
+#include <fstream>
 
 // ================================================ ====== ==== ==== == =
 int ML_Epetra::CSR_getrow_ones(ML_Operator *data, int N_requested_rows, int requested_rows[],

@@ -7,8 +7,6 @@
 
 #include "ml_common.h"
 #include "ml_include.h"
-#include "ml_operator.h"
-#include "ml_struct.h"
 
 #ifndef ML_CPP
 #ifdef __cplusplus

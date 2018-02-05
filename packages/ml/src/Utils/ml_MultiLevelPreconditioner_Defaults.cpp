@@ -11,22 +11,11 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <stddef.h>
-#include <deque>
-#include <iostream>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#include "Teuchos_FilteredIterator.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "az_aztec.h"
-#include "ml_config.h"
+#include "ml_common.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 #include "ml_epetra.h"
+#include "ml_MultiLevelPreconditioner.h"  // to define ML_Epetra namespace
+#include "Teuchos_RefCountPtr.hpp"
 
 using namespace Teuchos;
 using namespace ML_Epetra;

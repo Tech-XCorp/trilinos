@@ -48,31 +48,19 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <algorithm>
-#include <sstream>
-#include <stdexcept>
-#include <type_traits>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_GlobalData.H"
 #include "NOX_LineSearch_SafeguardedStep.H"
-#include "NOX_LineSearch_Utils_Counters.H"
-#include "NOX_LineSearch_Utils_Printing.H"
-#include "NOX_Utils.H"
-#include "Teuchos_ENull.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_TestForException.hpp"
 
-namespace NOX {
-namespace Solver {
-class Generic;
-}  // namespace Solver
-}  // namespace NOX
+#include "NOX_LineSearch_Utils_Printing.H"
+#include "NOX_LineSearch_Utils_Slope.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Assert.hpp"
+#include "NOX_MeritFunction_Generic.H"
+#include "NOX_StatusTest_FiniteValue.H"
+#include "NOX_GlobalData.H"
+#include <cmath>
 
 NOX::LineSearch::SafeguardedStep::
 SafeguardedStep(const Teuchos::RCP<NOX::GlobalData>& gd,

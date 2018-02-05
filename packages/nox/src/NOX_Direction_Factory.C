@@ -48,33 +48,22 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <type_traits>
-
-#include "NOX_Direction_Broyden.H"
 #include "NOX_Direction_Factory.H" // class definition
+
+#include "Teuchos_ParameterList.hpp"
+#include "NOX_GlobalData.H"
+#include "NOX_Common.H"
+
 // All the different directions
 #include "NOX_Direction_Newton.H"
-#include "NOX_Direction_NonlinearCG.H"
 #include "NOX_Direction_SteepestDescent.H"
+#include "NOX_Direction_NonlinearCG.H"
+#include "NOX_Direction_Broyden.H"
 #include "NOX_Direction_UserDefinedFactory.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_TestForException.hpp"
-
-namespace NOX {
-class GlobalData;
-namespace Direction {
-class Generic;
-}  // namespace Direction
-}  // namespace NOX
 #ifdef WITH_PRERELEASE
+#include "NOX_Direction_Tensor.H"
 #include "NOX_Direction_ModifiedNewton.H"
 #include "NOX_Direction_QuasiNewton.H"
-#include "NOX_Direction_Tensor.H"
 #endif
 
 

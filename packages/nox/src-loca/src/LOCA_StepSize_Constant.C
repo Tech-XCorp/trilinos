@@ -48,32 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <sstream>
-
-//#include "LOCA_Stepper.H"
-#include "LOCA_Abstract_Iterator.H"
+#include "LOCA_StepSize_Constant.H"
+#include "NOX_Solver_Generic.H"
 #include "LOCA_GlobalData.H"
+#include "NOX_Utils.H"
 #include "LOCA_MultiContinuation_AbstractStrategy.H"
 #include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "LOCA_StepSize_Constant.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Common.H"
-#include "NOX_Utils.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace NOX {
-namespace Solver {
-class Generic;
-}  // namespace Solver
-}  // namespace NOX
+//#include "LOCA_Stepper.H"
+#include "LOCA_Abstract_Iterator.H"
 
 LOCA::StepSize::Constant::Constant(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

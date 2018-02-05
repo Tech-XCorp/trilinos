@@ -48,15 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <vector>
-
 #include "Anasazi_LOCA_Sort.H"
 #include "LOCA_EigenvalueSort_Strategies.H"
-#include "LOCA_ErrorCheck.H"
 #include "LOCA_GlobalData.H"
-#include "NOX_Abstract_Group.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
+#include "LOCA_ErrorCheck.H"
 
 Anasazi::LOCASort::LOCASort(
  const Teuchos::RCP<LOCA::GlobalData>& global_data,

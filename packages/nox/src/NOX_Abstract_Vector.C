@@ -48,19 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <iostream>
-
 #include "NOX_Abstract_Vector.H"
+
 // Included multivector declarations
 #include "NOX_MultiVector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace NOX {
-namespace Abstract {
-class MultiVector;
-}  // namespace Abstract
-}  // namespace NOX
 
 void NOX::Abstract::Vector::print(std::ostream& stream) const
 {

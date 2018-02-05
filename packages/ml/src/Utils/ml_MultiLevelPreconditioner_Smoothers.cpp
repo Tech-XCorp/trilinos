@@ -11,51 +11,40 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "ml_common.h"
+#include "ml_include.h"
 #include <algorithm>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-#include "Epetra_Comm.h"
-#include "Epetra_ConfigDefs.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_RCPNode.hpp"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_Utils.hpp"
-#include "az_aztec.h"
-#include "ml_aggregate.h"
-#include "ml_amesos.h"
-#include "ml_aztec_utils.h"
-#include "ml_comminfoop.h"
-#include "ml_config.h"
-#include "ml_defs.h"
-#include "ml_grid.h"
-#include "ml_memory.h"
-#include "ml_mls.h"
-#include "ml_operator.h"
-#include "ml_smoother.h"
-#include "ml_struct.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseVector.h"
+#include "Epetra_SerialDenseSolver.h"
+#include "Epetra_Import.h"
 #include "Epetra_Time.h"
+#include "Epetra_RowMatrix.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
+#include "Epetra_SerialComm.h"
 #endif
-#include "Teuchos_ParameterList.hpp"
-#include "ml_MultiLevelPreconditioner.h"
-#include "ml_epetra.h"
-#include "ml_epetra_utils.h"
 #include "ml_ifpack_wrap.h"
 #include "ml_self_wrap.h"
-#include "ml_utils.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RefCountPtr.hpp"
+#include "ml_epetra.h"
+#include "ml_epetra_utils.h"
+#include "ml_MultiLevelPreconditioner.h"
 #include "ml_viz_stats.h"
+#include "ml_utils.h"
+
+#ifdef HAVE_ML_IFPACK
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_Chebyshev.h"
+#endif
+#include "ml_petsc.h"
 
 #ifdef HAVE_ML_TekoSmoothers
 #include "Teuchos_XMLParameterListHelpers.hpp"

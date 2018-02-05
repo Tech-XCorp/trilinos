@@ -48,36 +48,10 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <vector>
-
-#include "LOCA_MultiContinuation_ConstrainedGroup.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_NaturalConstraint.H"
-#include "LOCA_MultiContinuation_NaturalGroup.H"
-#include "NOX_Abstract_Vector.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-class GlobalData;
-namespace MultiContinuation {
-class AbstractGroup;
-}  // namespace MultiContinuation
-namespace MultiPredictor {
-class AbstractStrategy;
-}  // namespace MultiPredictor
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace NOX {
-namespace Abstract {
-class Group;
-}  // namespace Abstract
-}  // namespace NOX
+#include "LOCA_MultiContinuation_NaturalGroup.H"
+#include "LOCA_MultiContinuation_NaturalConstraint.H"
+#include "LOCA_MultiContinuation_ConstrainedGroup.H"
 
 LOCA::MultiContinuation::NaturalGroup::NaturalGroup(
       const Teuchos::RCP<LOCA::GlobalData>& global_data,

@@ -48,33 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
-#include <vector>
-
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_ArcLengthGroup.H"
-#include "LOCA_MultiContinuation_Factory.H"
-#include "LOCA_MultiContinuation_NaturalGroup.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
+#include "LOCA_GlobalData.H"
+#include "LOCA_ErrorCheck.H"
 
-namespace LOCA {
-namespace MultiContinuation {
-class AbstractGroup;
-class AbstractStrategy;
-}  // namespace MultiContinuation
-namespace MultiPredictor {
-class AbstractStrategy;
-}  // namespace MultiPredictor
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
+#include "LOCA_MultiContinuation_Factory.H"
+#include "LOCA_MultiContinuation_AbstractStrategy.H"
+#include "LOCA_MultiContinuation_NaturalGroup.H"
+#include "LOCA_MultiContinuation_ArcLengthGroup.H"
 
 LOCA::MultiContinuation::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

@@ -44,6 +44,7 @@
 */
 
 #include <iosfwd>
+#include <string>
 
 #include "Trilinos_version.h"
 

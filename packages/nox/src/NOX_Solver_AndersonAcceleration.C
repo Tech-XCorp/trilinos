@@ -48,30 +48,21 @@
 // ************************************************************************
 //@HEADER
 
-#include <stddef.h>
-#include <cmath>
-#include <sstream>
-#include <stdexcept>
-#include <type_traits>
-#include <vector>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_GlobalData.H"
-#include "NOX_LineSearch_Factory.H"
-#include "NOX_LineSearch_Generic.H"
 #include "NOX_Solver_AndersonAcceleration.H"    // class definition
-#include "NOX_Solver_PrePostOperator.H"
-#include "NOX_Solver_SolverUtils.H"
-#include "NOX_StatusTest_Generic.H"
-#include "NOX_Utils.H"
-#include "Teuchos_BLAS_types.hpp"
-#include "Teuchos_LAPACK.hpp"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Common.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-#include "Teuchos_TestForException.hpp"
+#include "Teuchos_SerialDenseHelpers.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_LAPACK.hpp"
+#include "Teuchos_Assert.hpp"
+#include "NOX_Utils.H"
+#include "NOX_GlobalData.H"
+#include "NOX_Solver_SolverUtils.H"
+#include "NOX_LineSearch_Generic.H"
+#include "NOX_LineSearch_Factory.H"
+#include <cmath>
 
 NOX::Solver::AndersonAcceleration::
 AndersonAcceleration(const Teuchos::RCP<NOX::Abstract::Group>& xGrp,

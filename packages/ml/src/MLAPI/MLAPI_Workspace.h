@@ -15,21 +15,15 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include <iosfwd>
-
-#include "Epetra_Comm.h"
-#include "ml_comm.h"
 #include "ml_include.h"
+#include "Epetra_Comm.h"
 #ifdef HAVE_MPI
 #include <mpi.h>
-
 #include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
 #include "MLAPI_Error.h"
-
-class Epetra_Comm;
 
 //! MLAPI: Default namespace for all MLAPI objects and functions.
 namespace MLAPI {

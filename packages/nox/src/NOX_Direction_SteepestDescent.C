@@ -48,27 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <ostream>
-#include <string>
-#include <type_traits>
-
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Direction_Generic.H"
+#include "NOX_Common.H"
 #include "NOX_Direction_SteepestDescent.H" // class definition
-#include "NOX_GlobalData.H"
-#include "NOX_MeritFunction_Generic.H"
-#include "NOX_Utils.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Abstract_Group.H"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace NOX {
-namespace Solver {
-class Generic;
-class LineSearchBased;
-}  // namespace Solver
-}  // namespace NOX
+#include "NOX_Utils.H"
+#include "NOX_MeritFunction_Generic.H"
+#include "NOX_GlobalData.H"
 
 NOX::Direction::SteepestDescent::
 SteepestDescent(const Teuchos::RCP<NOX::GlobalData>& gd,

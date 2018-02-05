@@ -45,27 +45,8 @@
 // ************************************************************************
 //@HEADER
 
-#include <math.h>
-#include <iostream>
-#include <sstream>
-#include <type_traits>
-#include <vector>
-
 #include "LOCA_ErrorCheck.H"    // class definition
-#include "LOCA_Extended_MultiAbstractGroup.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "LOCA_Parameter_Vector.H"
-#include "LOCA_PhaseTransition_AbstractGroup.H"
 #include "LOCA_PhaseTransition_ExtendedGroup.H"    // class definition
-#include "LOCA_PhaseTransition_ExtendedVector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "NOX_Abstract_Vector.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
 
 extern "C" {
 extern void post_process(double**, char*, int*, double*, int, int);

@@ -50,15 +50,6 @@
 
 #include "LOCA_BorderedSolver_AbstractStrategy.H"
 #include "LOCA_MultiContinuation_MultiVecConstraint.H"
-#include "NOX_Abstract_MultiVector.H"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-namespace BorderedSolver {
-class AbstractOperator;
-}  // namespace BorderedSolver
-}  // namespace LOCA
 
 void
 LOCA::BorderedSolver::AbstractStrategy::setMatrixBlocksMultiVecConstraint(

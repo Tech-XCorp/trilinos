@@ -48,37 +48,12 @@
 // ************************************************************************
 //@HEADER
 
-#include <iosfwd>
-#include <string>
-#include <type_traits>
+#include "Teuchos_ParameterList.hpp"
 
-#include "LOCA_BorderedSolver_EpetraAugmented.H"
-#include "LOCA_BorderedSolver_EpetraHouseholder.H"
 #include "LOCA_Epetra_Factory.H"
-#include "NOX_Config.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-
-namespace LOCA {
-class GlobalData;
-namespace AnasaziOperator {
-class AbstractStrategy;
-}  // namespace AnasaziOperator
-namespace BorderedSolver {
-class AbstractStrategy;
-}  // namespace BorderedSolver
-namespace Parameter {
-class SublistParser;
-}  // namespace Parameter
-}  // namespace LOCA
-namespace NOX {
-namespace Abstract {
-class Group;
-}  // namespace Abstract
-}  // namespace NOX
-namespace Teuchos {
-class ParameterList;
-}  // namespace Teuchos
+#include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_BorderedSolver_EpetraHouseholder.H"
+#include "LOCA_BorderedSolver_EpetraAugmented.H"
 #ifdef HAVE_NOX_EPETRAEXT
 #ifdef HAVE_MPI
 #include "LOCA_Epetra_AnasaziOperator_Floquet.H"

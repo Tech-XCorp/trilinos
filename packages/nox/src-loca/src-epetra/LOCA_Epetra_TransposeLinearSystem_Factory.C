@@ -48,36 +48,19 @@
 // ************************************************************************
 //@HEADER
 
-#include <sstream>
-#include <string>
-#include <type_traits>
+#include "Teuchos_ParameterList.hpp"
+
+#include "NOX_Common.H" // for NOX_Config.h
 
 #include "LOCA_Epetra_TransposeLinearSystem_Factory.H"
+#include "LOCA_Epetra_TransposeLinearSystem_AbstractStrategy.H"
 #include "LOCA_Epetra_TransposeLinearSystem_TransposePreconditioner.H"
-#include "NOX_Config.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "Teuchos_config.h"
 #ifdef HAVE_NOX_EPETRAEXT
 #include "LOCA_Epetra_TransposeLinearSystem_ExplicitTranspose.H"
 #endif
 #include "LOCA_Epetra_TransposeLinearSystem_LeftPreconditioning.H"
-#include "LOCA_ErrorCheck.H"
 #include "LOCA_GlobalData.H"
-
-namespace LOCA {
-namespace Epetra {
-namespace TransposeLinearSystem {
-class AbstractStrategy;
-}  // namespace TransposeLinearSystem
-}  // namespace Epetra
-}  // namespace LOCA
-namespace NOX {
-namespace Epetra {
-class LinearSystem;
-}  // namespace Epetra
-}  // namespace NOX
+#include "LOCA_ErrorCheck.H"
 
 LOCA::Epetra::TransposeLinearSystem::Factory::Factory(
           const Teuchos::RCP<LOCA::GlobalData>& global_data) :
