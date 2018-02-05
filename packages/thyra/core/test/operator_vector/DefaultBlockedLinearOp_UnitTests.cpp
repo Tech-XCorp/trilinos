@@ -41,7 +41,6 @@
 // @HEADER
 */
 
-
 #include <exception>
 #include <iomanip>
 #include <sstream>
@@ -73,6 +72,7 @@
 #include "Thyra_LinearOpTester_decl.hpp"
 #include "Thyra_MultiVectorStdOps_decl.hpp"
 #include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_TestingTools.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
 #include "Thyra_VectorSpaceBase_decl.hpp"
 #include "Thyra_VectorStdOps_decl.hpp"

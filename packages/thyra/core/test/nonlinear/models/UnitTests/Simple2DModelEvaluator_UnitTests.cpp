@@ -71,6 +71,7 @@
 #include "Thyra_Simple2DModelEvaluator_decl.hpp"
 #include "Thyra_VectorSpaceBase_decl.hpp"
 #include "Thyra_VectorStdOps_decl.hpp"
+#include "Thyra_SimpleDenseLinearOp.hpp"
 
 namespace Thyra {
 
@@ -78,7 +79,6 @@ namespace Thyra {
 template <class Scalar> class LinearOpBase;
 template <class Scalar> class MultiVectorBase;
 template <class Scalar> class PreconditionerBase;
-template <class Scalar> class SimpleDenseLinearOp;
 template <class Scalar> class VectorBase;
 
 using Teuchos::null;

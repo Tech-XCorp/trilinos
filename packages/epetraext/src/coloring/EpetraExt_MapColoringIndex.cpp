@@ -39,15 +39,14 @@
 // ***********************************************************************
 //@HEADER
 
+#include <Epetra_ConfigDefs.h>
 #include <EpetraExt_MapColoringIndex.h>
 #include <map>
 #include <vector>
 
-#include "EpetraExt_TCrsGraph_MapColoringIndex.h"
-
-class Epetra_CrsGraph;
-class Epetra_IntVector;
-class Epetra_LongLongVector;
+#include <Epetra_CrsGraph.h>
+#include <Epetra_MapColoring.h>
+//i#include "EpetraExt_TCrsGraph_MapColoringIndex.h"
 
 using std::vector;
 using std::map;

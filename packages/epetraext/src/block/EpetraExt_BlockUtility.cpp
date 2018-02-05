@@ -45,6 +45,7 @@
 #include "Epetra_CrsGraph.h"
 #include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
+#include "Epetra_Comm.h"
 #include "Epetra_RowMatrix.h"
 
 class Epetra_Comm;

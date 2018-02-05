@@ -63,17 +63,13 @@
 #include "Teuchos_Tuple.hpp"
 #include "Teuchos_UnitTestHelpers.hpp"
 #include "Teuchos_as.hpp"
+#include "Thyra_DefaultSpmdMultiVector.hpp"
 #include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
 #include "Thyra_MultiVectorStdOps_decl.hpp"
 #include "Thyra_MultiVectorTester_decl.hpp"
 #include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SpmdMultiVectorBase.hpp"
 #include "Thyra_VectorSpaceBase_decl.hpp"
-
-namespace Thyra {
-template <class Scalar> class DefaultSpmdMultiVector;
-template <class Scalar> class MultiVectorBase;
-}  // namespace Thyra
-
 
 namespace {
 
