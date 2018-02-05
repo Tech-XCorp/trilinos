@@ -39,18 +39,35 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_VerboseObject.hpp"
+#include <__tree>
+#include <iosfwd>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Condition.hpp"
+#include "Teuchos_Dependency.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardConditions.hpp"
+#include "Teuchos_StandardFunctionObjects.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "Teuchos_StandardConditions.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos{
 
 /**
  * Test all the conditions
  */
+class InvalidConditionException;
+
 TEUCHOS_UNIT_TEST(Teuchos_Conditions, testConditions){
 	//Settin up initial list
 	RCP<ParameterList> testingList = rcp(new ParameterList("Condition Testing List"));

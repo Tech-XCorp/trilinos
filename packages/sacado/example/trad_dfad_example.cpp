@@ -38,10 +38,13 @@
 //     prints the results of computing the second derivative a simple function //     with forward nested forward and reverse mode AD using the 
 //     Sacado::Fad::DFad and Sacado::Rad::ADvar classes.
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_CacheFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_trad.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

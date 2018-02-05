@@ -40,10 +40,12 @@
 // ************************************************************************
 //@HEADER
 
-#include <Epetra_matrix_data.h>
-#include <Epetra_Map.h>
 #include <Epetra_CrsMatrix.h>
+#include <Epetra_Map.h>
 #include <Epetra_Util.h>
+#include <Epetra_matrix_data.h>
+#include <assert.h>
+#include <iostream>
 
 namespace epetra_test {
 

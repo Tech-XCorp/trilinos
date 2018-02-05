@@ -40,23 +40,31 @@
 //@HEADER
 
 
-#include "Epetra_Map.h"
-#include "Epetra_Time.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_JadMatrix.h"
-#include "Epetra_Vector.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Flops.h"
+#include "Epetra_JadMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
+#include <math.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
 #include "../epetra_test_err.h"
 #include "Epetra_Version.h"
-#include <vector>
-#include <algorithm>
-#include <string>
 
 // prototypes
 

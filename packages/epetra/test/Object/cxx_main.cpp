@@ -42,10 +42,16 @@
 
 // Epetra_Object Test routine
 
+#include <string.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Object.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif

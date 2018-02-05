@@ -26,13 +26,12 @@
 // 
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <iosfwd>
 
-#include "Sacado_No_Kokkos.hpp"
 #include "Sacado_Tay_CacheTaylor.hpp"
 #include "Tay_CommTests.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 typedef int Ordinal;
 Sacado::Random<double> rnd;

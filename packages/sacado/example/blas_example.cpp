@@ -39,12 +39,18 @@
 //     mode AD using the Sacado::Fad::DFad class (uses dynamic memory
 //     allocation for number of derivative components).
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <vector>
 
-#include "Sacado_No_Kokkos.hpp"
-#include "Teuchos_BLAS.hpp"
 #include "Sacado_Fad_BLAS.hpp"
+#include "Sacado_Fad_BLASImp.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Teuchos_BLAS.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ScalarTraits.hpp"
 
 typedef Sacado::Fad::DFad<double> FadType;
 

@@ -41,19 +41,41 @@
 // @HEADER
 */
 
-#include "Thyra_ScaledModelEvaluator.hpp"
-#include "Thyra_Simple2DModelEvaluator.hpp"
-#include "Thyra_SimpleDenseLinearOp.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_ModelEvaluatorHelpers.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_DefaultComm.hpp"
 
+#include <stdlib.h>
+#include <iosfwd>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DetachedMultiVectorView.hpp"
+#include "Thyra_DetachedVectorView.hpp"
+#include "Thyra_ModelEvaluatorBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ScaledModelEvaluator_decl.hpp"
+#include "Thyra_Simple2DModelEvaluator_decl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
 
 namespace Thyra {
 
+
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class ModelEvaluator;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class SimpleDenseLinearOp;
+template <class Scalar> class VectorBase;
 
 using Teuchos::as;
 using Teuchos::null;

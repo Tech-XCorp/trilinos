@@ -40,12 +40,20 @@
 //     allocation for number of derivative components stored in a contiguous
 //     array).
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <vector>
 
-#include "Sacado_No_Kokkos.hpp"
-#include "Teuchos_BLAS.hpp"
 #include "Sacado_Fad_BLAS.hpp"
+#include "Sacado_Fad_BLASImp.hpp"
+#include "Sacado_Fad_DVFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_Vector.hpp"
+#include "Sacado_Fad_VectorImp.hpp"
+#include "Teuchos_BLAS.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ScalarTraits.hpp"
 
 typedef Sacado::Fad::DVFad<double> FadType;
 

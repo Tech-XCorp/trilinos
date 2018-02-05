@@ -41,6 +41,9 @@
 // @HEADER
 */
 
+#include <iostream>
+#include <memory>
+
 #include "Teuchos_BLAS.hpp"
 #include "Teuchos_Version.hpp"
 

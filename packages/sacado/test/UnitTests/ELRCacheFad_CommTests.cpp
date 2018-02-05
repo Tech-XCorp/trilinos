@@ -26,12 +26,16 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <iosfwd>
 
-#include "Sacado.hpp"
 #include "Fad_CommTests.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_SFad.hpp"
+#include "Sacado_Fad_SLFad.hpp"
+#include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 typedef int Ordinal;
 typedef Sacado::ELRCacheFad::DFad<double> Fad_DFadType;

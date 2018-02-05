@@ -42,19 +42,31 @@
 */
 
 
-#include "Thyra_DefaultMultiVectorLinearOpWithSolve.hpp"
-#include "Thyra_DefaultSerialDenseLinearOpWithSolveFactory.hpp"
-#include "Thyra_DefaultMultiVectorProductVectorSpace.hpp"
-#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultLinearOpSource.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_LinearOpTester.hpp"
-#include "Thyra_LinearOpWithSolveTester.hpp"
+#include <ostream>
 
 #include "OperatorSolveHelpers.hpp"
-
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultMultiVectorLinearOpWithSolve_decl.hpp"
+#include "Thyra_DefaultMultiVectorProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultSerialDenseLinearOpWithSolveFactory_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
+#include "Thyra_LinearOpWithSolveTester_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SolveSupportTypes.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
 
 
@@ -65,6 +77,11 @@ namespace Thyra {
 // Helper code and declarations
 //
 
+
+template <class Scalar> class LinearOpWithSolveBase;
+template <class Scalar> class LinearOpWithSolveFactoryBase;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorSpaceBase;
 
 using Teuchos::as;
 using Teuchos::null;

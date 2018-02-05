@@ -41,15 +41,49 @@
 // @HEADER
 */
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <iostream>
+#include <sstream>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-
-#include "Teuchos_DefaultSerialComm.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_DefaultComm.hpp"
 #include "Teuchos_DefaultSerialComm.hpp"
-#include "Teuchos_getConst.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_Utils.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+template <class OrdinalType> class CommRequest;
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #ifdef HAVE_TEUCHOS_MPI
 #  include "Teuchos_DefaultMpiComm.hpp"

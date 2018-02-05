@@ -40,18 +40,28 @@
 //@HEADER
 
 #include <limits.h>
+#include <stdlib.h>
+#include <string.h>
+#include <cmath>
+#include <iostream>
+#include <memory>
 
 // Epetra_Comm Test routine
 #include "../epetra_test_err.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Distributor.h"
+#include "Epetra_Object.h"
+#include "Epetra_SerialComm.h"
 #include "Epetra_Time.h"
 #include "Epetra_Util.h"
-#include "Epetra_Distributor.h"
-#include "Epetra_SerialComm.h"
-#include "Epetra_IntSerialDenseVector.h"
 #include "Epetra_Version.h"
+
+class Epetra_SerialCommData;
 
 #ifdef EPETRA_MPI
 #include <mpi.h>
+
 #include "Epetra_MpiComm.h"
 
 int checkMpiDataClass(bool verbose);

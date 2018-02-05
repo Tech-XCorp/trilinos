@@ -1,12 +1,12 @@
 /*--------------------------------------------------------------------*/
-#include "Epetra_FEVector.h"
 
 #ifdef HAVE_MPI
 
 #include <time.h>
-#include "mpi.h"
+
 #include "Epetra_Map.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 
 int main(int argCount, char **argValue)
 {

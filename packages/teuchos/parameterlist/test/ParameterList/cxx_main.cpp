@@ -39,19 +39,42 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_FancyOStream.hpp"
+#include <deque>
+#include <exception>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
 #include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_getConst.hpp"
 
 #ifdef HAVE_TEUCHOS_EXTENDED
 #include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include <fstream>
 #endif
 
 #ifdef HAVE_MPI

@@ -40,8 +40,11 @@
 //@HEADER
 
 
-#include "Epetra_SerialComm.h"
+#include <iostream>
+#include <memory>
+
 #include "Epetra_Map.h"
+#include "Epetra_SerialComm.h"
 #include "Epetra_Vector.h"
 #include "Epetra_Version.h"
 

@@ -42,9 +42,22 @@
 */
 
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Thyra_DirectionalFiniteDiffCalculator.hpp"
+#include <sstream>
+#include <string>
 
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DirectionalFiniteDiffCalculator_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
 
 namespace Thyra {
 

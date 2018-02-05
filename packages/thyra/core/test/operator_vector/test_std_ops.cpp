@@ -39,20 +39,43 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultProductVectorSpace.hpp"
-#include "Thyra_VectorStdOpsTester.hpp"
-#include "Thyra_MultiVectorStdOpsTester.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <cmath>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <type_traits>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
 #include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Thyra_DefaultProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_MultiVectorStdOpsTester_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorStdOpsTester_decl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace Thyra {
 
 /** \brief Main test driver that runs tests on all standard operators
  */
+template <class Scalar> class VectorSpaceBase;
+
 template <class Scalar>
 bool run_std_ops_tests(
   const int n,
@@ -192,12 +215,6 @@ int main( int argc, char* argv[] ) {
 #endif
 #if defined(HAVE_THYRA_COMPLEX)
     if( !Thyra::run_std_ops_tests<std::complex<double> >(local_dim,double(eps_scale*Teuchos::ScalarTraits<double>::eps()),dumpAll,verbose?&*out:NULL) ) success = false;
-#endif
-#ifdef HAVE_TEUCHOS_GNU_MP
-    //if( !Thyra::run_std_ops_tests<mpf_class>(local_dim,mpf_class(max_rel_err),dumpAll,verbose?&*out:NULL) ) success = false;
-    // RAB: 4/16/2005: We can not instantiate the above since rmax() is not supported by this types ScalarTraits class
-    // and it is needed by the class RTOpPack::ROpMaxIndexLessThanBound.  This can be fixed using a template
-    // conditional but I have not done this yet.
 #endif
 
   } // end try

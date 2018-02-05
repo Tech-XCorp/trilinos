@@ -39,14 +39,31 @@
 // ***********************************************************************
 // @HEADER
 
-#include "sillyPowerMethod.hpp"
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
 #include "ExampleTridiagSerialLinearOp.hpp"
-#include "Thyra_TestingTools.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_VerboseObject.hpp"
 #include "Teuchos_as.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include "Thyra_TestingTools.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+#include "sillyPowerMethod.hpp"
 
 //
 // This example function is meant to show how easy it is to create
@@ -225,19 +242,6 @@ int main(int argc, char *argv[])
     result = runPowerMethodExample<mpf_class >(
       dim, maxNumIters, tolerance, dumpAll);
     if(!result) success = false;
-
-#ifdef HAVE_THYRA_COMPLEX
-
-    // Run using std::complex<mpf_class>
-    //result = runPowerMethodExample<std::complex<mpf_class> >(
-    //  dim, maxNumIters, tolerance, dumpAll);
-    //if(!result) success = false;
-    //The above commented-out code throws a floating-point exception?
-
-#endif // HAVE_THYRA_COMPLEX
-
-
-#endif // HAVE_TEUCHOS_GNU_MP
 
   }
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true, *out, success)

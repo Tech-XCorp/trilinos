@@ -26,13 +26,30 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <iosfwd>
+#include <type_traits>
+#include <utility>
 
-#include "Sacado.hpp"
-
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_Core.hpp"
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_DynRankView.hpp"
+#include "Kokkos_DynRankView_Fad.hpp"
+#include "Kokkos_MemoryTraits.hpp"
+#include "Kokkos_View.hpp"
 #include "Kokkos_ViewFactory.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "impl/Kokkos_ViewCtor.hpp"
+
+namespace Kokkos {
+struct LayoutRight;
+struct LayoutStride;
+}  // namespace Kokkos
 
 TEUCHOS_UNIT_TEST(view_factory, dyn_rank_views)
 {

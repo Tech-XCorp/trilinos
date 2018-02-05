@@ -41,16 +41,29 @@
 //@HEADER
 */
 
+#include <iostream>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_LongLongSerialDenseVector.h"
 #include "Epetra_Map.h"
+#include "Epetra_Object.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
 #include "../epetra_test_err.h"
 #include "Epetra_Version.h"
+
+class Epetra_Comm;
+class Epetra_CrsGraphData;
 
 // Prototype
 int check(Epetra_CrsGraph& A, int NumMyRows1, long long NumGlobalRows1, int NumMyNonzeros1,

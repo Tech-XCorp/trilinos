@@ -38,10 +38,28 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_VerboseObject.hpp"
+#include <limits>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "TeuchosCore_config.h"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 
 // 2010/07/30: rabartl: Here I just added all the unit tests to the Teuchos

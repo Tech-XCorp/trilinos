@@ -44,10 +44,14 @@
 //
 // Initially written to demonstrate bug #5499 and regressions introduced by the first patch.
 
+#include <iostream>
 #include <vector>
 
-#include "Epetra_Map.h"
+#include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"

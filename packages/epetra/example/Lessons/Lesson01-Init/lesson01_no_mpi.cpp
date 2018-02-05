@@ -5,16 +5,16 @@
 \ref Epetra_Lesson01 gives a full description of this example.
 */
 
-#include <Epetra_config.h>
 // Wrapper for a "communicator" containing only one process.  This
 // header file always exists, whether or not Epetra was built with MPI
 // enabled.
 #include <Epetra_SerialComm.h>
 #include <Epetra_Version.h>
-
-#include <cstdlib>
-#include <sstream>
+#include <iostream>
+#include <memory>
 #include <stdexcept>
+
+#include "Epetra_Comm.h"
 
 //
 // ... Your other include files go here ...

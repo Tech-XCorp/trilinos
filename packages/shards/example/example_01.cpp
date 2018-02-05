@@ -42,14 +42,21 @@
 //@HEADER
  
 
+#include <stdlib.h>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+
+#include "Shards_BasicTopologies.hpp"
+#include "Shards_CellTopology.hpp"
+#include "Shards_CellTopologyData.h"
+#include "Teuchos_Assert.hpp"
 /** \file
     \brief  Examples of cell topology access using shards::CellTopology class.
     \author Created by P. Bochev, H. Carter Edwards and D. Ridzal
 */
 #include "Teuchos_Time.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Shards_CellTopology.hpp"
-#include <limits>
 
 
 using namespace std;

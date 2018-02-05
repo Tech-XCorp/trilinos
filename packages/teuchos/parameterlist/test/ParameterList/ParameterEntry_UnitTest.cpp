@@ -39,9 +39,19 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
 #include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos {
 

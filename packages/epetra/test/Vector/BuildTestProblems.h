@@ -44,6 +44,8 @@
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
 
+class Epetra_Vector;
+
 int  BuildMatrixTests (Epetra_Vector & C,
 			     const char transa, const char transb,
 			     const double alpha,

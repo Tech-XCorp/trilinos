@@ -38,6 +38,7 @@
 // ************************************************************************
 // @HEADER
 
+#include <cstddef>
 #include <iomanip>
 #include <iostream>
 #include <map>

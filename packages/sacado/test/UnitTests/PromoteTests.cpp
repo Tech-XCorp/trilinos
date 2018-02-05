@@ -27,19 +27,38 @@
 // ***********************************************************************
 // @HEADER
 
+#include <iosfwd>
 // This test requires C++11 (for static_assert), so why not use the
 // standard type traits
 #include <type_traits>
-#include <utility>
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_TestingHelpers.hpp"
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_CacheFad_Ops.hpp"
+#include "Sacado_ELRCacheFad_Ops.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_ELRFad_SFad.hpp"
+#include "Sacado_ELRFad_SLFad.hpp"
+#include "Sacado_ELRFad_ViewFad.hpp"
+#include "Sacado_Fad_DMFad.hpp"
+#include "Sacado_Fad_DVFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
 #include "Sacado_Fad_SimpleFad.hpp"
+#include "Sacado_Fad_SimpleFadOps.hpp"
+#include "Sacado_LFad_LogicalSparse.hpp"
+#include "Sacado_LFad_LogicalSparseOps.hpp"
+#include "Sacado_ScalarFlopCounter.hpp"
 #include "Sacado_Tay_CacheTaylor.hpp"
+#include "Sacado_Tay_CacheTaylorImp.hpp"
+#include "Sacado_Tay_Taylor.hpp"
+#include "Sacado_Tay_TaylorImp.hpp"
+#include "Sacado_Traits.hpp"
 #include "Sacado_mpl_apply.hpp"
+#include "Sacado_trad.hpp"
+#include "Sacado_trad2.hpp"
+#include "Sacado_tradvec.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 template <typename ad_type>
 bool testADPromote() {

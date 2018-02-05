@@ -26,14 +26,41 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_TestingHelpers.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Kokkos_Macros.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_Fad_DFadTraits.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFad.hpp"
+#include "Sacado_Fad_SFadTraits.hpp"
+#include "Sacado_Fad_SLFad.hpp"
+#include "Sacado_Fad_SLFadTraits.hpp"
+#include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
+#include "Sacado_Traits.hpp"
+#include "Sacado_config.h"
+#include "Sacado_mpl_apply.hpp"
+#include "Sacado_mpl_apply_wrap.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_CommHelpers.hpp"
 #include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_Comm.hpp"
-
-#include "Sacado_mpl_apply.hpp"
-#include "Sacado_Random.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerializationTraits.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 using Teuchos::RCP;
 using Teuchos::rcp;

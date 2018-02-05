@@ -27,18 +27,20 @@
 // ***********************************************************************
 // @HEADER
 
+#include <iosfwd>
 // This test requires C++11 (for static_assert), so why not use the
 // standard type traits
 #include <type_traits>
-#include <utility>
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_TestingHelpers.hpp"
 
-#include "Sacado_mpl_vector.hpp"
+#include "Sacado_mpl_at.hpp"
 #include "Sacado_mpl_find.hpp"
+#include "Sacado_mpl_push_back.hpp"
 #include "Sacado_mpl_size.hpp"
+#include "Sacado_mpl_vector.hpp"
+#include "Sacado_mpl_vector_at_spec.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 // These tests are all compile-time tests, so if the test compiles,
 // it passes...

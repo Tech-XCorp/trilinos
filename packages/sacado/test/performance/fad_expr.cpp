@@ -29,15 +29,41 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_Random.hpp"
-#include "Sacado_Fad_SimpleFad.hpp"
+#include <math.h>
+#include <stddef.h>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <map>
 
 #include "Fad/fad.h"
-#include "TinyFadET/tfad.h"
-
-#include "Teuchos_Time.hpp"
+#include "Fad/fadop.h"
+#include "Sacado_CacheFad_Ops.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_Fad_DMFad.hpp"
+#include "Sacado_Fad_DVFad.hpp"
+#include "Sacado_Fad_MemPoolImp.hpp"
+#include "Sacado_Fad_MemPoolManager.hpp"
+#include "Sacado_Fad_MemPoolManagerImp.hpp"
+#include "Sacado_Fad_MemPoolStorage.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFad.hpp"
+#include "Sacado_Fad_SLFad.hpp"
+#include "Sacado_Fad_SimpleFad.hpp"
+#include "Sacado_Fad_SimpleFadOps.hpp"
+#include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Time.hpp"
+#include "TinyFadET/tfad.h"
+#include "TinyFadET/tfadop.h"
+
+namespace Sacado {
+namespace Fad {
+class MemPool;
+}  // namespace Fad
+}  // namespace Sacado
 
 // A simple performance test that computes the derivative of a simple
 // expression using many variants of Fad.

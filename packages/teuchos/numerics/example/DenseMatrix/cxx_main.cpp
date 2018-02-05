@@ -41,10 +41,20 @@
 // @HEADER
 */
 
-#include "Teuchos_SerialDenseMatrix.hpp"
-#include "Teuchos_SerialDenseVector.hpp"
-#include "Teuchos_SerialDenseSolver.hpp"
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_Object.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_SerialDenseSolver.hpp"
+#include "Teuchos_SerialDenseVector.hpp"
 #include "Teuchos_Version.hpp"
 
 int main(int argc, char* argv[])

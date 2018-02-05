@@ -39,8 +39,17 @@
 // ***********************************************************************
 // @HEADER
 
+#include <sstream>
+
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
 #include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos {
 

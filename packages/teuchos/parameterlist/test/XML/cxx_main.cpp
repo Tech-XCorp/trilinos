@@ -39,13 +39,16 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_XMLObject.hpp"
+#include <exception>
+#include <iostream>
+#include <string>
+
+#include "Teuchos_FileInputSource.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
 #include "Teuchos_StringInputSource.hpp"
-#include "Teuchos_FileInputSource.hpp"
 #include "Teuchos_Version.hpp"
-#include <fstream>
+#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_toString.hpp"
 
 using std::string;
 using Teuchos::XMLObject;

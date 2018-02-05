@@ -41,8 +41,17 @@
 // @HEADER
 */
 
+#include <iostream>
+#include <memory>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_TimeMonitor.hpp"
 #include "Teuchos_Version.hpp"
+
+namespace Teuchos {
+class Time;
+}  // namespace Teuchos
 
 #ifdef HAVE_MPI
 #include <mpi.h>

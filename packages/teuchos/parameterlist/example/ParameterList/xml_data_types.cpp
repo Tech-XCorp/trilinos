@@ -41,14 +41,24 @@
 // @HEADER
 */
 
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_Array.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_ParameterEntryXMLConverterDB.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
+#include <stdlib.h>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ParameterEntryXMLConverterDB.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
+#include "Teuchos_config.h"
 
 //ignore this for now
 class CustomDataType{

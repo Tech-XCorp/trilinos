@@ -76,6 +76,7 @@
 #endif // TPETRA_DISTRIBUTOR_TIMERS
 
 #include <cstddef>
+#include <cstring>
 #include <memory>
 #include <ostream>
 #include <stdexcept>

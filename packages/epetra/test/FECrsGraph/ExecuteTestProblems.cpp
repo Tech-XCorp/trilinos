@@ -40,15 +40,21 @@
 //@HEADER
 
 
-#include "Epetra_BLAS.h"
-#include "ExecuteTestProblems.h"
+#include <stddef.h>
+#include <iostream>
+
+#include "../epetra_test_err.h"
 #include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_FECrsGraph.h"
 #include "Epetra_FECrsMatrix.h"
 #include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
 #include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_Vector.h"
+#include "ExecuteTestProblems.h"
 
 
 int Drumm1(const Epetra_Map& map, bool verbose)

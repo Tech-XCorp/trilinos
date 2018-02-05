@@ -42,12 +42,14 @@
 //@HEADER
 
 
+#include <iomanip>
 /** \file
     \brief  Example of the CellTools class.
     \author Created by P. Bochev, H. Carter Edwards and D. Ridzal
 */
 #include <iostream>
-#include <iomanip>
+#include <vector>
+
 #include "Shards_CellTopology.hpp"
 
 

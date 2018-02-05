@@ -39,12 +39,22 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_XMLParameterListWriter.hpp"
-#include "Teuchos_XMLParameterListReader.hpp"
+#include <ostream>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_StringInputSource.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_XMLParameterListReader.hpp"
 #include "Teuchos_XMLParser.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_XMLParameterListExceptions.hpp"
+
+namespace Teuchos {
+class NoNameAttributeExecption;
+}  // namespace Teuchos
 
 using std::string;
 using std::endl;

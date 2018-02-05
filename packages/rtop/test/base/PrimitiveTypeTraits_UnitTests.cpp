@@ -43,9 +43,18 @@
 */
 
 
-#include "RTOpPack_Types.hpp"
+#include <ostream>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_toString.hpp"
 
 
 namespace {

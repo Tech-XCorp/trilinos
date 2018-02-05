@@ -40,15 +40,21 @@
 //@HEADER
 
 
-#include "Epetra_BLAS.h"
-#include "ExecuteTestProblems.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Map.h"
-#include "Epetra_FEVbrMatrix.h"
 #include <Epetra_FEVector.h>
+#include <stddef.h>
+#include <iostream>
 
 #include "../epetra_test_err.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_FEVbrMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_Vector.h"
+#include "ExecuteTestProblems.h"
 
 
 int quad1(const Epetra_Map& map, bool verbose)

@@ -39,8 +39,22 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Sacado.hpp"
+#include <stddef.h>
+#include <iostream>
+#include <stdexcept>
 
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_Core.hpp"
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_DynRankView.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_CacheFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_config.h"
+#include "Teuchos_Assert.hpp"
 #if !defined(__CUDACC__)
 #include "Kokkos_DynRankView_Fad.hpp"
 #include "Kokkos_ViewFactory.hpp"

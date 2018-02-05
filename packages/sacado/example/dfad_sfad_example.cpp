@@ -37,10 +37,13 @@
 //     for a simple function with forward nested forward mode AD using the
 //     Sacado::Fad::DFad and Sacado::Fad::SFad classes.
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFad.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

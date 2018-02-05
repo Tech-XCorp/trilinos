@@ -27,12 +27,15 @@
 // ***********************************************************************
 // @HEADER
 
+#include <iomanip>
+#include <iostream>
+
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_SimpleFad.hpp"
 #include "Sacado_Random.hpp"
-
-#include "Teuchos_Time.hpp"
+#include "Sacado_RandomImp.hpp"
 #include "Teuchos_Array.hpp"
-#include <fstream>
-
+#include "Teuchos_Time.hpp"
 #include "fad_expr_funcs.hpp"
 
 // A simple performance test that computes the derivative of expressions of

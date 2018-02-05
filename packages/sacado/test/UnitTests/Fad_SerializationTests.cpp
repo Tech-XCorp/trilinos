@@ -26,16 +26,57 @@
 // 
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_TestingHelpers.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <stddef.h>
+#include <algorithm>
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 
-#include "Teuchos_Array.hpp"
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_Fad_SimpleFad.hpp"
-#include "Sacado_mpl_apply.hpp"
+#include "Sacado_CacheFad_DFadTraits.hpp"
+#include "Sacado_CacheFad_Ops.hpp"
+#include "Sacado_CacheFad_SFad.hpp"
+#include "Sacado_CacheFad_SFadTraits.hpp"
+#include "Sacado_CacheFad_SLFad.hpp"
+#include "Sacado_CacheFad_SLFadTraits.hpp"
+#include "Sacado_ELRCacheFad_DFadTraits.hpp"
+#include "Sacado_ELRCacheFad_Ops.hpp"
+#include "Sacado_ELRCacheFad_SFadTraits.hpp"
+#include "Sacado_ELRCacheFad_SLFadTraits.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_ELRFad_DFadTraits.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_ELRFad_SFadTraits.hpp"
+#include "Sacado_ELRFad_SLFadTraits.hpp"
+#include "Sacado_Fad_DFadTraits.hpp"
+#include "Sacado_Fad_DMFad.hpp"
+#include "Sacado_Fad_DMFadTraits.hpp"
+#include "Sacado_Fad_MemPoolImp.hpp"
+#include "Sacado_Fad_MemPoolManager.hpp"
+#include "Sacado_Fad_MemPoolManagerImp.hpp"
+#include "Sacado_Fad_MemPoolStorage.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFadTraits.hpp"
+#include "Sacado_Fad_SLFadTraits.hpp"
 #include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
+#include "Sacado_Traits.hpp"
+#include "Sacado_mpl_apply.hpp"
+#include "Sacado_mpl_apply_wrap.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerializationTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+
+namespace Sacado {
+namespace Fad {
+class MemPool;
+}  // namespace Fad
+}  // namespace Sacado
 
 using Teuchos::RCP;
 using Teuchos::rcp;

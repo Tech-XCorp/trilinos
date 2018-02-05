@@ -29,11 +29,20 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_tradvec.hpp"
+#include <cmath>
+#include <cstring>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <vector>
 
-#include "Teuchos_Time.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_trad.hpp"
+#include "Sacado_tradvec.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Time.hpp"
 
 // ADOL-C includes
 #ifdef HAVE_ADOLC

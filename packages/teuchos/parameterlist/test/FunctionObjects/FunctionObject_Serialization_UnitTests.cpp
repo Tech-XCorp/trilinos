@@ -39,10 +39,22 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardFunctionObjects.hpp"
+#include <stddef.h>
+#include <iosfwd>
+#include <string>
+
+#include "Teuchos_FunctionObject.hpp"
+#include "Teuchos_FunctionObjectXMLConverter.hpp"
 #include "Teuchos_FunctionObjectXMLConverterDB.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardFunctionObjectXMLConverters.hpp"
+#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObject.hpp"
 
 
 namespace Teuchos{

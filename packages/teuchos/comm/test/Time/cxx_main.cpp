@@ -39,11 +39,25 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_TimeMonitor.hpp"
+#include <cmath>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <stdexcept>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_TableFormat.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TimeMonitor.hpp"
 #include "Teuchos_Version.hpp"
 #include "Teuchos_as.hpp"
+
+namespace Teuchos {
+class Time;
+template <typename T> struct ScalarTraits;
+}  // namespace Teuchos
 
 #ifdef HAVE_MPI
 #include <mpi.h>

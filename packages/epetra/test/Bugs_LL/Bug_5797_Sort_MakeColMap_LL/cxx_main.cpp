@@ -14,26 +14,32 @@
 //                      matrix rows/columns are indexed from
 //                      OFFSET_EPETRA64 to OFFSET_EPETRA64+n-1.
 
-#include <limits.h>
 #define ITYPE long long
 //#define OFFSET_EPETRA64 ((long long)(2)*(long long)INT_MAX)
 //#define OFFSET_EPETRA64 (INT_MAX-5)
 #define OFFSET_EPETRA64 0
 
-#include <stdio.h>
 
-#include "Epetra_ConfigDefs.h"
 
 #ifdef EPETRA_MPI
 #include <mpi.h>
+
 #include "Epetra_MpiComm.h"
+
 #define FINALIZE MPI_Finalize()
 #else
 #include "Epetra_SerialComm.h"
+
 #define FINALIZE
 #endif
 
+#include <assert.h>
+#include <stdlib.h>
+#include <iostream>
+#include <vector>
+
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
 

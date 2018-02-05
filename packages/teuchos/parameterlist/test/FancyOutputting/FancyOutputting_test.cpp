@@ -41,15 +41,25 @@
 // @HEADER
 */
 
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "Teuchos_dyn_cast.hpp"
-#include "Teuchos_Version.hpp"
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
 
 #include "AlgorithmA.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_dyn_cast.hpp"
 
 
 //

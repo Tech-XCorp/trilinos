@@ -43,26 +43,33 @@
 #define EPETRA_HAVE_JADMATRIX
 #define EPETRA_VERY_SHORT_PERFTEST
 #define EPETRA_HAVE_STATICPROFILE
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
+#include <stdlib.h>
+#include <iostream>
+#include <memory>
+
 #include "Epetra_BlockMap.h"
-#include "Epetra_Time.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_SerialDenseVector.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Flops.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_SerialDenseVector.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "../epetra_test_err.h"
 #include "Epetra_Version.h"
+
+class Epetra_VbrMatrix;
 #ifdef EPETRA_HAVE_JADMATRIX
 #include "Epetra_JadMatrix.h"
 #endif

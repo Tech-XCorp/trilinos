@@ -45,16 +45,36 @@
 #define RTOPPACK_TYPES_HPP
 
 
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+
 #include "RTOp_ConfigDefs.hpp"
 #include "Teuchos_Array.hpp"
-#include "Teuchos_RCP.hpp"
 #include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_Range1D.hpp"
 #include "Teuchos_ScalarTraits.hpp"
 #include "Teuchos_TypeNameTraits.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Teuchos_as.hpp"
 #include "Teuchos_implicit_cast.hpp"
-#include "Teuchos_FancyOStream.hpp"
+
+namespace Teuchos {
+class Range1D;
+template <class T> class RCP;
+template <typename T> class Array;
+template <typename T> class TypeNameTraits;
+template <typename T> struct ScalarTraits;
+}  // namespace Teuchos
 
 
 namespace RTOpPack {

@@ -26,16 +26,26 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
+#include <ostream>
+
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_Fad_Ops.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_toString.hpp"
 
 // Disable view specializations
 #define SACADO_DISABLE_FAD_VIEW_SPEC
 
 #include "Fad_KokkosTests.hpp"
 
-#include "Kokkos_Core.hpp"
+namespace Kokkos {
+struct LayoutLeft;
+struct LayoutRight;
+}  // namespace Kokkos
 
 // Instantiate tests for Serial device
 using Kokkos::Serial;

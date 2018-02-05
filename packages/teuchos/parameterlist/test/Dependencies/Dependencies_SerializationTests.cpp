@@ -39,22 +39,66 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_StandardDependencies.hpp"
+#include <__tree>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Condition.hpp"
+#include "Teuchos_Dependency.hpp"
 #include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_DependencyXMLConverter.hpp"
+#include "Teuchos_DependencyXMLConverterDB.hpp"
+#include "Teuchos_DummyObjectGetter.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_StandardConditions.hpp"
 #include "Teuchos_StandardDependencies.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_DependencyXMLConverterDB.hpp"
 #include "Teuchos_StandardDependencyXMLConverters.hpp"
-#include "Teuchos_ParameterList.hpp"
-
+#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_ValidatorMaps.hpp"
+#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
+#include "Teuchos_XMLParameterListReader.hpp"
 #include "Teuchos_XMLParameterListTestHelpers.hpp"
+#include "Teuchos_XMLParameterListWriter.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_toString.hpp"
 
 
 namespace Teuchos{
 
+
+class MissingConditionTagException;
+class MissingDependeeException;
+class MissingDependeesException;
+class MissingDependentException;
+class MissingDependentsException;
+class MissingRangesAndValidatorsTagException;
+class MissingValidatorException;
+class MissingValuesAndValidatorsTagException;
+class TooManyDependeesException;
+class ValuesTagMissingException;
 
 typedef unsigned short int ushort;
 typedef unsigned int uint;

@@ -41,20 +41,22 @@
 //@HEADER
 */
 
-#include <stdio.h>
 #include <stdlib.h>
-#include "Epetra_config.h"
+#include <iostream>
+#include <memory>
 #ifdef HAVE_MPI
-#include "mpi.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "Epetra_Map.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Epetra_Vector.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_SerialDenseVector.h"
 #include "Epetra_Version.h"
 
 // prototype

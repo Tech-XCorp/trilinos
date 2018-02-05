@@ -42,14 +42,15 @@
 
 // Epetra_FEVector Test routine
 
-#include "Epetra_Time.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_FEVector.h"
-#include "ExecuteTestProblems.h"
-#include "../src/Epetra_test_functions.h"
-#include "Epetra_Comm.h"
+#include <iostream>
+#include <memory>
+
 #include "../epetra_test_err.h"
+#include "../src/Epetra_test_functions.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_Version.h"
+#include "ExecuteTestProblems.h"
 
 int main(int argc, char *argv[]) {
 

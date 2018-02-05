@@ -29,12 +29,20 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Sacado_Random.hpp"
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_Tay_CacheTaylor.hpp"
+#include <math.h>
+#include <exception>
+#include <iomanip>
+#include <iostream>
 
-#include "Teuchos_Time.hpp"
+#include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
+#include "Sacado_Tay_CacheTaylor.hpp"
+#include "Sacado_Tay_CacheTaylorImp.hpp"
+#include "Sacado_Tay_CacheTaylorOps.hpp"
+#include "Sacado_Tay_Taylor.hpp"
+#include "Sacado_Tay_TaylorImp.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Time.hpp"
 
 // ADOL-C includes
 #ifdef HAVE_ADOLC

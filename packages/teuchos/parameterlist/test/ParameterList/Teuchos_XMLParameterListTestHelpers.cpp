@@ -40,8 +40,16 @@
 // @HEADER
 
 
-#include "Teuchos_XMLParameterListTestHelpers.hpp"
+#include <iosfwd>
+
+#include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_XMLParameterListCoreHelpers.hpp"
+#include "Teuchos_XMLParameterListTestHelpers.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 
 Teuchos::RCP<Teuchos::ParameterList>

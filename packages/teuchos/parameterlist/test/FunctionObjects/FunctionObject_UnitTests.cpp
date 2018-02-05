@@ -39,9 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerboseObject.hpp"
+#include <iosfwd>
+#include <string>
+
+#include "Teuchos_LocalTestingHelpers.hpp"
 #include "Teuchos_StandardFunctionObjects.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 
 
 namespace Teuchos{

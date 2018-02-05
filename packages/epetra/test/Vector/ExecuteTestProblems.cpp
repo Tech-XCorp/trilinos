@@ -40,10 +40,22 @@
 //@HEADER
 
 
-#include "Epetra_BLAS.h"
-#include "ExecuteTestProblems.h"
+#include <ostream>
+
+#include "../epetra_test_err.h"
 #include "BuildTestProblems.h"
-#include "Epetra_Comm.h"
+#include "Epetra_BLAS.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Vector.h"
+#include "Epetra_config.h"
+#include "ExecuteTestProblems.h"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Comm;
 
 #ifdef HAVE_EPETRA_TEUCHOS
 #  include "Teuchos_VerboseObject.hpp"

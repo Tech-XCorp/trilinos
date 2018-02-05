@@ -39,15 +39,35 @@
 // ***********************************************************************
 // @HEADER
 
+#include <Teuchos_CommandLineProcessor.hpp>
+#include <Teuchos_DefaultSerialComm.hpp>
 #include <Teuchos_MatrixMarket_Raw_Checker.hpp>
 #include <Teuchos_MatrixMarket_Raw_Reader.hpp>
 #include <Teuchos_MatrixMarket_Raw_Writer.hpp>
-#include <Teuchos_CommandLineProcessor.hpp>
-#include <Teuchos_GlobalMPISession.hpp>
-#include <Teuchos_oblackholestream.hpp>
-#include <Teuchos_DefaultSerialComm.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
+#include <stdlib.h>
 #include <algorithm>
+#include <exception>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_MatrixMarket_Banner.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace Teuchos {
+class ParameterList;
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 using std::endl;
 

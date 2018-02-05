@@ -40,24 +40,34 @@
 //@HEADER
 
 
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Epetra_Time.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
 #include "Epetra_VbrMatrix.h"
 #include "Epetra_Vector.h"
-#include "Epetra_Flops.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "../epetra_test_err.h"
 #include "Epetra_IntVector.h"
-#include "Epetra_Version.h"
 #include "Epetra_RowMatrixTransposer.h"
-#include "Epetra_Time.h"
+#include "Epetra_Version.h"
+
+class Epetra_Comm;
 
 int checkResults(Epetra_RowMatrix * A,
                  Epetra_CrsMatrix * transA,

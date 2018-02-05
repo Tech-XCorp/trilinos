@@ -40,13 +40,11 @@
 // @HEADER
 
 #include <iostream>
+#include <string>
 
+#include "Kokkos_hwloc.hpp"
 // Tests
 #include "TestAssembly.hpp"
-
-// Devices
-#include "Kokkos_Core.hpp"
-
 // Utilities
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
@@ -54,8 +52,7 @@
 #include "cuda_runtime_api.h"
 #endif
 
-// For vtune
-#include <sys/types.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 int main(int argc, char *argv[])

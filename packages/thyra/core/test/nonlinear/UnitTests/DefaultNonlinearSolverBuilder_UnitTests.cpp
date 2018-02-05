@@ -42,8 +42,9 @@
 */
 
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include <iosfwd>
 
+#include "Teuchos_UnitTestHelpers.hpp"
 
 namespace {
 

@@ -1,7 +1,9 @@
-#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
-#include "Kokkos_Core.hpp"
-#include <iostream>
 #include <cstdlib> // EXIT_SUCCESS, EXIT_FAILURE
+#include <iostream>
+
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_Serial.hpp"
 
 // Test that Node initializes Kokkos if it is not already initialized.
 // It must also finalize Kokkos at exit, but the only portable way to

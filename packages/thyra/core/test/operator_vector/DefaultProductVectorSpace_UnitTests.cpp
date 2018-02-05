@@ -42,19 +42,41 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultProductVectorSpace.hpp"
-#include "Thyra_DefaultProductVector.hpp"
-#include "Thyra_DefaultProductMultiVector.hpp"
-#include "Thyra_DetachedSpmdVectorView.hpp"
-#include "Thyra_DetachedVectorView.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <iomanip>
+#include <sstream>
+#include <type_traits>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultProductVector_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ProductVectorSpaceBase.hpp"
+#include "Thyra_TestingTools.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
 
 
 namespace Thyra {
@@ -64,6 +86,11 @@ namespace Thyra {
 // Helper code and declarations
 //
 
+
+template <class Scalar> class DefaultProductMultiVector;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class ProductVectorBase;
+template <class Scalar> class VectorBase;
 
 using Teuchos::as;
 using Teuchos::null;

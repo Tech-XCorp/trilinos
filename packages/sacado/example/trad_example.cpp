@@ -38,10 +38,11 @@
 //     prints the results of differentiating a simple function with reverse
 //     mode AD using the Sacado::Rad::ADvar class.
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_trad.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

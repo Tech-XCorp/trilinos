@@ -4,16 +4,39 @@
 #define SACADO_KOKKOS_USE_MEMORY_POOL 1
 #define SACADO_ALIGN_SFAD 1
 
-#include "Sacado.hpp"
+#include <algorithm>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <type_traits>
 
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_Core.hpp"
+#include "Kokkos_ExecPolicy.hpp"
+#include "Kokkos_LayoutContiguous.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_MemoryTraits.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_Timer.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_DynamicArrayTraits.hpp"
+#include "Sacado_ELRCacheFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include "impl/Kokkos_HostThreadTeam.hpp"
 
-#include "Kokkos_Core.hpp"
-#include "Kokkos_MemoryPool.hpp"
-#include "impl/Kokkos_Timer.hpp"
-#include <cstdio>
-#include <algorithm>
+namespace Kokkos {
+struct LayoutRight;
+}  // namespace Kokkos
+namespace Sacado {
+namespace Fad {
+template <typename ValueT, int Num> class SFad;
+template <typename ValueT, int Num> class SLFad;
+}  // namespace Fad
+}  // namespace Sacado
 
 // Advection kernel.
 
@@ -371,6 +394,7 @@ void run_hierarchical_team(const KernelType& kernel) {
 }
 
 template <typename T> struct FadTypeName;
+
 template <typename T> struct FadTypeName< Sacado::Fad::DFad<T> > {
   static std::string eval() {
     return std::string("dfad")

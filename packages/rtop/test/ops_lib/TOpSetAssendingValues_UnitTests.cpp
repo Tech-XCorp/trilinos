@@ -43,10 +43,23 @@
 */
 
 
-#include "RTOpPack_TOpSetAssendingValues.hpp"
-#include "Teuchos_ExplicitInstantiationHelpers.hpp"
-#include "Teuchos_implicit_cast.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <iosfwd>
 
+#include "RTOpPack_TOpSetAssendingValues.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
 // Must come last!
 #include "supportUnitTestsHelpers.hpp"
 

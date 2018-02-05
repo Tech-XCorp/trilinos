@@ -42,7 +42,6 @@
 */
 
 #include "TpetraCore_config.h"
-#include "Tpetra_Import.hpp"
 
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 

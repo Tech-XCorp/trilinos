@@ -36,10 +36,12 @@
 //     prints the results of computing the second derivative a simple function //     with forward nested forward mode AD using the Sacado::Fad::DFad class
 //     (uses dynamic memory allocation for number of derivative components).
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

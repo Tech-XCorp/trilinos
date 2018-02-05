@@ -39,13 +39,33 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_toString.hpp"
 #ifdef HAVE_TEUCHOS_MPI
 #  include "Teuchos_DefaultMpiComm.hpp"
 #endif // HAVE_TEUCHOS_MPI
-#include "Teuchos_UnitTestHarness.hpp"
 
 
 template<class PacketType>

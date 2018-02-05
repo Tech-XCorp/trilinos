@@ -41,6 +41,11 @@
 
 
 #include "checkmap.h"
+
+#include "../epetra_test_err.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+
 int checkmap(Epetra_BlockMap & Map, long long NumGlobalElements, int NumMyElements,
 	     long long *MyGlobalElements, int ElementSize, int * ElementSizeList,
 	     long long NumGlobalPoints, int NumMyPoints,

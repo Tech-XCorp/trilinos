@@ -45,10 +45,19 @@
 
 #define HAVE_SHARDS_DEBUG
 
+#include <Shards_BasicTopologies.hpp>
+#include <Shards_CellTopology.hpp>
+#include <exception>
 #include <iostream>
 #include <stdexcept>
-#include <Shards_CellTopology.hpp>
-#include <Shards_BasicTopologies.hpp>
+
+#include "Shards_CellTopologyData.h"
+#include "Shards_CellTopologyTraits.hpp"
+#include "Shards_TypeList.hpp"
+
+namespace shards {
+template <unsigned int NodeCount = 4> struct Tetrahedron;
+}  // namespace shards
 
 namespace {
 

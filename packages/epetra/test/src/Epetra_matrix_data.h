@@ -45,6 +45,7 @@
 #define EPETRA_MATRIX_DATA_H
 
 #include "Epetra_ConfigDefs.h"
+#include "Epetra_DLLExportMacro.h"
 
 class Epetra_CrsMatrix;
 

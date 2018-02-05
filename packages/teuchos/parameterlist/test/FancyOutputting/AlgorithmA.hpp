@@ -41,8 +41,16 @@
 // @HEADER
 */
 
+#include <iosfwd>
+
 #include "Teuchos_ParameterListAcceptor.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_VerboseObject.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 #ifndef TEUCHOS_ALGORITHM_A_HPP
 #define TEUCHOS_ALGORITHM_A_HPP

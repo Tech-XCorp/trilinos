@@ -29,10 +29,40 @@
 // ***********************************************************************
 // @HEADER
 
-#include "fe_jac_fill_funcs.hpp"
+#include <math.h>
+#include <stddef.h>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <map>
 
 #include "Fad/fad.h"
+#include "Fad/fadop.h"
+#include "Sacado_CacheFad_DFad.hpp"
+#include "Sacado_CacheFad_Ops.hpp"
+#include "Sacado_ELRCacheFad_Ops.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_ELRFad_SFad.hpp"
+#include "Sacado_ELRFad_SLFad.hpp"
+#include "Sacado_Fad_DMFad.hpp"
+#include "Sacado_Fad_DVFad.hpp"
+#include "Sacado_Fad_MemPoolImp.hpp"
+#include "Sacado_Fad_MemPoolManager.hpp"
+#include "Sacado_Fad_MemPoolManagerImp.hpp"
+#include "Sacado_Fad_MemPoolStorage.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SimpleFad.hpp"
+#include "Sacado_Fad_SimpleFadOps.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
 #include "TinyFadET/tfad.h"
+#include "TinyFadET/tfadop.h"
+#include "fe_jac_fill_funcs.hpp"
+
+namespace Sacado {
+namespace Fad {
+class MemPool;
+}  // namespace Fad
+}  // namespace Sacado
 
 // A performance test that computes a finite-element-like Jacobian using
 // several Fad variants

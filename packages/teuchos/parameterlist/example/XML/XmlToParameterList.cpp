@@ -39,14 +39,17 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_Version.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
+#include <iostream>
+#include <memory>
 
-#include <fstream>
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_Version.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
 
 int main( int argc, char* argv[] )
 {

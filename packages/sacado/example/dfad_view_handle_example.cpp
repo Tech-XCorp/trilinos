@@ -40,10 +40,19 @@
 //     allocation for number of derivative components) and ViewFad as a
 //     handle into externally stored derivative data
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado.hpp"
+#include "Kokkos_Core.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_ViewFad.hpp"
+
+namespace Kokkos {
+struct LayoutLeft;
+}  // namespace Kokkos
 
 // The function to differentiate
 template <typename ScalarRes, typename Scalar1, typename Scalar2>

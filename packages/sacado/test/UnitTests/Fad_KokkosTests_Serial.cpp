@@ -26,13 +26,30 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <stddef.h>
+#include <ostream>
+#include <type_traits>
 
 #include "Fad_KokkosTests.hpp"
-
-#include "Kokkos_Core.hpp"
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_DynRankView.hpp"
+#include "Kokkos_DynRankView_Fad.hpp"
+#include "Kokkos_HostSpace.hpp"
+#include "Kokkos_Layout.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_Fad_GeneralFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFad.hpp"
+#include "Sacado_Fad_SLFad.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_toString.hpp"
 
 // Instantiate tests for Serial device
 using Kokkos::Serial;

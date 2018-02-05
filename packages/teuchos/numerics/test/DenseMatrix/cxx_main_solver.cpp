@@ -39,12 +39,22 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_SerialDenseMatrix.hpp"
-#include "Teuchos_SerialDenseVector.hpp"
-#include "Teuchos_SerialDenseHelpers.hpp"
-#include "Teuchos_SerialDenseSolver.hpp"
-#include "Teuchos_ScalarTraits.hpp"
+#include <stdlib.h>
+#include <complex>
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <type_traits>
+
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_DataAccess.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_SerialDenseSolver.hpp"
+#include "Teuchos_SerialDenseVector.hpp"
 #include "Teuchos_Version.hpp"
 
 using Teuchos::ScalarTraits;

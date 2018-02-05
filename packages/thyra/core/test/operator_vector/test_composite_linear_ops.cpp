@@ -39,28 +39,55 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultZeroLinearOp.hpp"
-#include "Thyra_DefaultIdentityLinearOp.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
-#include "Thyra_DefaultAddedLinearOp.hpp"
-#include "Thyra_DefaultMultipliedLinearOp.hpp"
-#include "Thyra_DefaultBlockedLinearOp.hpp"
-#include "Thyra_DefaultDiagonalLinearOp.hpp"
-#include "Thyra_ScaledAdjointLinearOpBase.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Thyra_LinearOpTester.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_dyn_cast.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
 
-// For debugging
-#include "RTOpPack_SPMD_apply_op.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Thyra_DefaultAddedLinearOp_decl.hpp"
+#include "Thyra_DefaultBlockedLinearOp_decl.hpp"
+#include "Thyra_DefaultIdentityLinearOp_decl.hpp"
+#include "Thyra_DefaultMultipliedLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_DefaultZeroLinearOp_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ScaledAdjointLinearOpBase_decl.hpp"
+#include "Thyra_TestingToolsDecl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
+namespace Thyra {
+template <class Scalar> class BlockedLinearOpBase;
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class PhysicallyBlockedLinearOpBase;
+}  // namespace Thyra
 
 
 /** \brief Main test driver function for testing various composite linear operator classes

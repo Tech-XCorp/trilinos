@@ -42,13 +42,36 @@
 // @HEADER
 */
 
-#include "RTOpPack_RTOpSubRangeDecorator.hpp"
-#include "RTOpPack_TOpSetAssendingValues.hpp"
-#include "RTOpPack_TOpAssignVectors.hpp"
-#include "RTOpPack_ROpSum.hpp"
-#include "Teuchos_as.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <ostream>
+#include <string>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "RTOpPack_ROpSum.hpp"
+#include "RTOpPack_RTOpSubRangeDecorator_decl.hpp"
+#include "RTOpPack_TOpAssignVectors.hpp"
+#include "RTOpPack_TOpSetAssendingValues.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+class Range1D;
+}  // namespace Teuchos
 
 
 namespace RTOpPack {
@@ -57,6 +80,10 @@ namespace RTOpPack {
 // ////////////////////
 // Utilities
 
+
+class ReductTarget;
+template <class ConcreteReductObj> class DefaultReductTarget;
+template <class Scalar> class RTOpT;
 
 template<class Scalar>
 SubVectorView<Scalar>

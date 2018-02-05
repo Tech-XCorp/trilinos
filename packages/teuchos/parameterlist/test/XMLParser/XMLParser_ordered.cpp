@@ -39,11 +39,21 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_XMLParameterListWriter.hpp"
-#include "Teuchos_XMLParameterListReader.hpp"
+#include <memory>
+#include <ostream>
+
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_StringInputSource.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_XMLParameterListReader.hpp"
+#include "Teuchos_XMLParameterListWriter.hpp"
 #include "Teuchos_XMLParser.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
 
 using std::string;
 using std::endl;

@@ -41,6 +41,24 @@
 
 
 
+#include <assert.h>
+#include <math.h>
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_RowMatrix.h"
 //
 //
 //      valgrind usage:
@@ -51,14 +69,10 @@
 //
 //
 #include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_Map.h"
 #include "Epetra_Time.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Flops.h"
 #include "Epetra_VbrMatrix.h"
 #include "Epetra_VbrRowMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include <vector>
+#include "Epetra_Vector.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"

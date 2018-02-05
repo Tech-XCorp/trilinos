@@ -45,17 +45,29 @@
 // @HEADER
 
 
-#include <Teuchos_UnitTestHarness.hpp>
-#include <Teuchos_ScalarTraits.hpp>
 #include <Teuchos_ParameterList.hpp>
-#include <Teuchos_YamlParser_decl.hpp>
+#include <Teuchos_RCP.hpp>
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
 #include <Teuchos_YamlParameterListCoreHelpers.hpp>
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_Exceptions.hpp>
-#include <Teuchos_TwoDArray.hpp>
+#include <Teuchos_YamlParser_decl.hpp>
+#include <stddef.h>
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <vector>
 
-#include <Teuchos_Parser.hpp>
+#include "Teuchos_Array.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+
+namespace Teuchos {
+class ParserFail;
+}  // namespace Teuchos
 
 using Teuchos::ParameterList;
 using Teuchos::RCP;

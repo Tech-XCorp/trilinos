@@ -43,8 +43,10 @@
 #define TEUCHOS_XML_PARAMETER_LIST_TEST_HELPERS_HPP
 
 
-#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_DLLExportMacro.h"
 #include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 namespace Teuchos {
@@ -59,6 +61,9 @@ namespace Teuchos {
  * \return The read in parameter list.
  * \ingroup XML
  */
+class DependencySheet;
+class ParameterList;
+
 TEUCHOSPARAMETERLIST_LIB_DLL_EXPORT
 RCP<ParameterList> writeThenReadPL(ParameterList& myList);
 

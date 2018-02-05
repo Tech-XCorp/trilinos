@@ -39,26 +39,37 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_DefaultSerialDenseLinearOpWithSolveFactory.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
-#include "Thyra_DefaultAdjointLinearOpWithSolve.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DetachedMultiVectorView.hpp"
-#include "Thyra_DefaultInverseLinearOp.hpp"
-#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
-#include "Thyra_LinearOpTester.hpp"
-#include "Thyra_LinearOpWithSolveTester.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_LocalTestingHelpers.hpp"
+#include <ostream>
 
 #include "OperatorSolveHelpers.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultAdjointLinearOpWithSolve_decl.hpp"
+#include "Thyra_DefaultInverseLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_DefaultSerialDenseLinearOpWithSolveFactory_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
+#include "Thyra_LinearOpWithSolveTester_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SolveSupportTypes.hpp"
 
 
 namespace Thyra {
@@ -67,6 +78,11 @@ namespace Thyra {
 /** \brief Main test driver that tests the LinearOpWithSolveBase interface and
  * supporting software.
  */
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class LinearOpWithSolveBase;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorSpaceBase;
+
 template <class Scalar>
 bool run_linear_op_with_solve_tests(
   const int n,

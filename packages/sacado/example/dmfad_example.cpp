@@ -40,10 +40,24 @@
 //     allocation for number of derivative components using a custom memory
 //     manager).
 
-#include <iostream>
+#include <stddef.h>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
+#include <map>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_Fad_DMFad.hpp"
+#include "Sacado_Fad_MemPoolImp.hpp"
+#include "Sacado_Fad_MemPoolManager.hpp"
+#include "Sacado_Fad_MemPoolManagerImp.hpp"
+#include "Sacado_Fad_MemPoolStorage.hpp"
+#include "Sacado_Fad_Ops.hpp"
+
+namespace Sacado {
+namespace Fad {
+class MemPool;
+}  // namespace Fad
+}  // namespace Sacado
 
 template <>
 Sacado::Fad::MemPool* Sacado::Fad::MemPoolStorage<double>::defaultPool_ = NULL;

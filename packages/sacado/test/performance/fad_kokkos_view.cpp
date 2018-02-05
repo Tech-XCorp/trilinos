@@ -27,18 +27,34 @@
 // ***********************************************************************
 // @HEADER
 
-//#define SACADO_DISABLE_FAD_VIEW_SPEC
-#include "Sacado.hpp"
+#include <stdlib.h>
+#include <unistd.h>
+#include <cmath>
+#include <iostream>
+#include <string>
 
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_Timer.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_Fad_Ops.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_Time.hpp"
 
-#include "impl/Kokkos_Timer.hpp"
-
-// For vtune
-#include <sys/types.h>
-#include <unistd.h>
+namespace Kokkos {
+struct LayoutLeft;
+struct LayoutRight;
+}  // namespace Kokkos
+namespace Sacado {
+namespace Fad {
+template <typename ValueT, int Num> class SFad;
+template <typename ValueT, int Num> class SLFad;
+template <typename ValueT> class DFad;
+}  // namespace Fad
+}  // namespace Sacado
 
 // A performance test that computes the derivative of a simple Kokkos kernel
 // using various Fad classes

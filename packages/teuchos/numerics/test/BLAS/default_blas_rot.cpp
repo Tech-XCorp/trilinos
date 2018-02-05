@@ -51,11 +51,17 @@
 /// TODO: Test for ScalarType=std::complex<double>.  This would
 /// require constructing some complex-valued tests.
 
-#include <Teuchos_as.hpp>
 #include <Teuchos_BLAS.hpp>
 #include <Teuchos_CommandLineProcessor.hpp>
 #include <Teuchos_GlobalMPISession.hpp>
+#include <Teuchos_as.hpp>
 #include <Teuchos_oblackholestream.hpp>
+#include <stdlib.h>
+#include <iostream>
+#include <stdexcept>
+
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestForException.hpp"
 
 // Anonymous namespace to avoid name collisions.
 namespace {

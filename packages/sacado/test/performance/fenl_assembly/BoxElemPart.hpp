@@ -44,9 +44,10 @@
 #ifndef KOKKOS_BOXELEMPART_HPP
 #define KOKKOS_BOXELEMPART_HPP
 
-#include <utility>
-#include <ostream>
 #include <Kokkos_Macros.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <utility>
 
 //----------------------------------------------------------------------------
 

@@ -38,15 +38,28 @@
 //
 // ***********************************************************************
 // @HEADER
+// FENL
+#include <BoxElemFixture.hpp>
+#include <fenl_functors.hpp>
+#include <stddef.h>
+#include <iomanip>
 #include <iostream>
+#include <memory>
 
+#include "BoxElemPart.hpp"
+#include "Kokkos_Timer.hpp"
+#include "Kokkos_View.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 // Utilities
 #include "Teuchos_TestingHelpers.hpp"
 #include "Teuchos_VerboseObject.hpp"
 
-// FENL
-#include <BoxElemFixture.hpp>
-#include <fenl_functors.hpp>
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 struct Perf {
   size_t global_elem_count ;

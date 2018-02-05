@@ -1,5 +1,4 @@
 #include <Tpetra_MultiVectorFiller.hpp>
-#include <ostream>
 
 #include "Teuchos_ArrayView.hpp"
 

@@ -42,18 +42,47 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultProductMultiVector.hpp"
-#include "Thyra_DefaultBlockedLinearOp.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Thyra_LinearOpTester.hpp"
-#include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_FancyOStream.hpp"
+#include <exception>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConstNonconstObjectContainer.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultBlockedLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+
+namespace Thyra {
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class PhysicallyBlockedLinearOpBase;
+template <class Scalar> class ProductVectorSpaceBase;
+template <class Scalar> class VectorBase;
+}  // namespace Thyra
 
 
 namespace {

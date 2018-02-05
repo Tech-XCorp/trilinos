@@ -43,6 +43,9 @@
 
 #include "Epetra_Map.h"
 
+class Epetra_Comm;
+class Epetra_Map;
+
 int quad1(const Epetra_Map& map, bool verbose);
 
 int quad2(const Epetra_Map& map, bool verbose);

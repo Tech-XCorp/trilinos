@@ -36,10 +36,13 @@
 //     Uses the scalar flop counter to count the flops for a derivative
 //     of a simple function using DFad
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_CacheFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_ScalarFlopCounter.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

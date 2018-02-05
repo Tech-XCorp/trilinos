@@ -42,12 +42,17 @@
 //@HEADER
  
 
+#include <stddef.h>
 /** \file
     \brief  Examples of cell topology access using shards::CellTopology class.
     \author Created by P. Bochev, H. Carter Edwards and D. Ridzal
 */
 #include <iostream>
+#include <vector>
+
+#include "Shards_BasicTopologies.hpp"
 #include "Shards_CellTopology.hpp"
+#include "Shards_CellTopologyData.h"
 #include "Shards_CellTopologyManagedData.hpp"
 
 

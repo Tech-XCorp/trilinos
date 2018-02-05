@@ -43,8 +43,21 @@
 */
 
 
-#include "RTOpPack_TOpSetSubVector.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <iosfwd>
 
+#include "RTOpPack_TOpSetSubVector.hpp"
+#include "RTOpPack_TOpSetSubVector_def.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 #include "supportUnitTestsHelpers.hpp"
 
 

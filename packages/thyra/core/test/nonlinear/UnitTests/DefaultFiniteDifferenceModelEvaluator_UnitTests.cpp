@@ -42,9 +42,18 @@
 */
 
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Thyra_DefaultFiniteDifferenceModelEvaluator.hpp"
+#include <iosfwd>
 
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultFiniteDifferenceModelEvaluator_decl.hpp"
+#include "Thyra_ModelEvaluatorBase_decl.hpp"
 
 namespace {
 

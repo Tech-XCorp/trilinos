@@ -6,15 +6,11 @@
 \ref Epetra_Lesson02 explains this example in detail.
 */
 
-// This defines useful macros like HAVE_MPI, which is defined if and
-// only if Epetra was built with MPI enabled.
-#include <Epetra_config.h>
-
 #ifdef HAVE_MPI
-#  include <mpi.h>
 // Epetra's wrapper for MPI_Comm.  This header file only exists if
 // Epetra was built with MPI enabled.
 #  include <Epetra_MpiComm.h>
+#  include <mpi.h>
 #else
 #  include <Epetra_SerialComm.h>
 #endif // HAVE_MPI
@@ -22,6 +18,10 @@
 #include <Epetra_Map.h>
 #include <Epetra_Vector.h>
 #include <Epetra_Version.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_Comm.h"
 
 void
 exampleRoutine (const Epetra_Comm& comm,

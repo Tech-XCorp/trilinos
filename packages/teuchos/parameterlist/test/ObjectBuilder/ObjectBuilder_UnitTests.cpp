@@ -39,11 +39,30 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ObjectBuilder.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_ParameterListAcceptorHelpers.hpp"
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_AbstractFactoryStd.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ObjectBuilder.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListAcceptor.hpp"
+#include "Teuchos_ParameterListAcceptorHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Teuchos {
 

@@ -41,17 +41,36 @@
 // @HEADER
 */
 
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <sstream>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommHelpers.hpp"
-#include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_Version.hpp"
-#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
 #include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_TimeMonitor.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_Version.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_dyn_cast.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 
 //

@@ -44,21 +44,31 @@
 //
 // @HEADER
 
+#include <Teuchos_DefaultComm.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_RCP.hpp>
+#include <Teuchos_UnitTestHelpers.hpp>
 #include <Teuchos_XMLParameterListHelpers.hpp>
 #include <Teuchos_YamlParameterListHelpers.hpp>
-#include <Teuchos_UnitTestHarness.hpp>
-#include <Teuchos_UnitTestHelpers.hpp>
-#include <Teuchos_ScalarTraits.hpp>
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_Exceptions.hpp>
 #include <Teuchos_YamlParser_decl.hpp>
-#include <Teuchos_Exceptions.hpp>
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_DefaultComm.hpp>
-
-#include <fstream>
+#include <stdlib.h>
+#include <algorithm>
 #include <iomanip>
 #include <sstream>
+#include <string>
+#include <vector>
+
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 using Teuchos::RCP;
 using Teuchos::rcp;

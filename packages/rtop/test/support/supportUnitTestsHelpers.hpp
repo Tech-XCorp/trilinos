@@ -43,12 +43,30 @@
 */
 
 
-#include "RTOpPack_RTOpTHelpers.hpp"
+#include <ostream>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "RTOpPack_RTOpTHelpers.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_Tuple.hpp"
-#include "Teuchos_implicit_cast.hpp"
+#include "Teuchos_UnitTestHarness.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_implicit_cast.hpp"
+
+namespace RTOpPack {
+class ReductTarget;
+template <class ConcreteReductObj> class DefaultReductTarget;
+template <class Scalar> class RTOpT;
+template <class Scalar> struct ScalarIndex;
+}  // namespace RTOpPack
+namespace Teuchos {
+template <class T> class ArrayView;
+template <class T> class RCP;
+}  // namespace Teuchos
 
 
 namespace TestingSupportHelpers {

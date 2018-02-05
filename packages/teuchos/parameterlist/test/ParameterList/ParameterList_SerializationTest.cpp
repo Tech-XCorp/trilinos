@@ -39,24 +39,37 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_StandardParameterEntryXMLConverters.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_XMLParameterListWriter.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_XMLParameterListExceptions.hpp"
-#include "Teuchos_ValidatorXMLConverterDB.hpp"
-#include "Teuchos_StandardValidatorXMLConverters.hpp"
-#include "Teuchos_StringInputStream.hpp"
-#include "Teuchos_XMLParser.hpp"
-#include "Teuchos_TwoDArray.hpp"
+#include <sstream>
+#include <string>
+#include <vector>
 
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
 #include "Teuchos_XMLParameterListTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
 
 
 namespace Teuchos {
 
+
+class BadParameterListElementException;
+class BadXMLParameterListRootElementException;
+class CantFindParameterEntryConverterException;
+class DuplicateParameterIDsException;
+class NoNameAttributeExecption;
+class NoTypeAttributeExecption;
+class NoValueAttributeExecption;
 
 #define ADD_TYPE_PARAMETER(T,VALUE) \
   myList.set( #T , as<T>(VALUE));

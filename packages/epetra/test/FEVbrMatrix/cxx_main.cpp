@@ -42,9 +42,11 @@
 
 // Epetra_FEVbrMatrix Test program
 
-#include "Epetra_ConfigDefs.h"
+#include <iostream>
+#include <memory>
 
 #include "Epetra_Map.h"
+#include "Epetra_Object.h"
 #include "ExecuteTestProblems.h"
 
 #ifdef EPETRA_MPI

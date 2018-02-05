@@ -39,8 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Sacado.hpp"
-
 //
 // A simple example showing how to use Sacado with Kokkos
 //
@@ -51,6 +49,20 @@
 
 // This code relies on the Kokkos view specializations being enabled, which
 // is the default, but can be disabled by the user
+#include <stddef.h>
+#include <cmath>
+#include <iostream>
+#include <type_traits>
+
+#include "KokkosExp_View_Fad.hpp"
+#include "Kokkos_Core.hpp"
+#include "Kokkos_ExecPolicy.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_View.hpp"
+#include "Sacado_Fad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_config.h"
 #if defined(HAVE_SACADO_VIEW_SPEC) && !defined(SACADO_DISABLE_FAD_VIEW_SPEC)
 
 // Functor to compute matrix-vector product c = A*b using Kokkos

@@ -42,13 +42,35 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_SpmdMultiVectorBase.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
 
 
 namespace Thyra {
@@ -58,6 +80,9 @@ namespace Thyra {
 // Helper code and declarations
 //
 
+
+template <class Scalar> class SpmdMultiVectorBase;
+template <class Scalar> class VectorBase;
 
 using Teuchos::as;
 using Teuchos::null;

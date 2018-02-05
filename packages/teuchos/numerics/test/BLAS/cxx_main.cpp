@@ -51,10 +51,18 @@
 
 */
 
+#include <math.h>
+#include <time.h>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+
 #include "Teuchos_BLAS.hpp"
-#include "Teuchos_Time.hpp"
-#include "Teuchos_Version.hpp"
+#include "Teuchos_BLAS_types.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_Version.hpp"
 
 using Teuchos::BLAS;
 using Teuchos::ScalarTraits;

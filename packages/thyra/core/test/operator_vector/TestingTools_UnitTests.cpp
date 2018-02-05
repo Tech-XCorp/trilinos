@@ -42,9 +42,25 @@
 */
 
 
-#include "Thyra_TestingTools.hpp"
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
 #include "Teuchos_Utils.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_TestingToolsDecl.hpp"
 
 
 namespace Thyra {

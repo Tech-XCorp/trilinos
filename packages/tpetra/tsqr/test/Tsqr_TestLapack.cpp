@@ -39,25 +39,26 @@
 // ************************************************************************
 //@HEADER
 
-#include "Tsqr_ConfigDefs.hpp"
-#include "Teuchos_ConfigDefs.hpp" // HAVE_MPI
-#include "Teuchos_Tuple.hpp"
 #ifdef HAVE_MPI
 #  include "Teuchos_GlobalMPISession.hpp"
 #  include "Teuchos_oblackholestream.hpp"
 #endif // HAVE_MPI
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_DefaultComm.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 #include "Tsqr_SeqTest.hpp"
+
+namespace Teuchos {
+template <class T> class RCP;
+template <typename T, int N> class Tuple;
+}  // namespace Teuchos
 
 #ifdef HAVE_KOKKOSTSQR_COMPLEX
 #  include <complex>
 #endif // HAVE_KOKKOSTSQR_COMPLEX
 
-#include <sstream>
+#include <stdlib.h>
+#include <iostream>
 #include <stdexcept>
-#include <vector>
 
 
 namespace TSQR {

@@ -41,10 +41,13 @@
 //@HEADER
 */
 
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_FEVector.h"
 #include "../epetra_test_err.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_FEVector.h"
+#include "Epetra_Map.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
 
 int MultiVectorTests(const Epetra_BlockMap & Map, int NumVectors, bool verbose);
 

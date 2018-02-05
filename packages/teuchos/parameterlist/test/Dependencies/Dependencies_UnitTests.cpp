@@ -39,12 +39,39 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_StandardDependencies.hpp"
+#include <__tree>
+#include <map>
+#include <set>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Condition.hpp"
 #include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardConditions.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_StandardDependencies.hpp"
+#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 
 namespace Teuchos{
@@ -52,6 +79,8 @@ namespace Teuchos{
 /**
  * Test all the validator dependencies.
  */
+class InvalidDependencyException;
+
 TEUCHOS_UNIT_TEST(Teuchos_Dependencies, testValiDeps){
 	RCP<ParameterList> My_deplist = rcp(new ParameterList);
 	RCP<DependencySheet> depSheet1 = rcp(new DependencySheet);

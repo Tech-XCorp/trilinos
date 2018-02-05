@@ -27,7 +27,24 @@
 // +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // @HEADER
 
+#include "Sacado_trad2.hpp"
 #include "fad_expr_funcs.hpp"
+
+namespace Sacado {
+namespace CacheFad {
+template <typename ValueT> class DFad;
+}  // namespace CacheFad
+namespace ELRCacheFad {
+template <typename ValueT> class DFad;
+}  // namespace ELRCacheFad
+namespace ELRFad {
+template <typename ValueT> class DFad;
+}  // namespace ELRFad
+namespace Fad {
+template <typename ValueT> class DFad;
+template <typename ValueT> class SimpleFad;
+}  // namespace Fad
+}  // namespace Sacado
 
 using std::sin;
 

@@ -54,6 +54,7 @@
 #include "TpetraCore_config.h"
 
 class Epetra_Comm;
+
 namespace Teuchos {
 template <typename Ordinal> class Comm;
 }  // namespace Teuchos

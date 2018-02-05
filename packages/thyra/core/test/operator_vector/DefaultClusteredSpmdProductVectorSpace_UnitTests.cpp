@@ -42,12 +42,37 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultClusteredSpmdProductVectorSpace.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_DefaultComm.hpp"
-#include "Thyra_VectorSpaceTester.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultClusteredSpmdProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+template <typename T> struct ScalarTraits;
+}  // namespace Teuchos
+namespace Thyra {
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorBase;
+}  // namespace Thyra
 
 
 namespace {

@@ -26,16 +26,31 @@
 // 
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_TestingHelpers.hpp"
-#include "Teuchos_UnitTestRepository.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include <algorithm>
+#include <ostream>
+#include <string>
+#include <vector>
 
-#include "Teuchos_Array.hpp"
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_Tay_CacheTaylor.hpp"
-#include "Sacado_mpl_apply.hpp"
 #include "Sacado_Random.hpp"
+#include "Sacado_RandomImp.hpp"
+#include "Sacado_Tay_CacheTaylor.hpp"
+#include "Sacado_Tay_CacheTaylorImp.hpp"
+#include "Sacado_Tay_CacheTaylorOps.hpp"
+#include "Sacado_Tay_CacheTaylorTraits.hpp"
+#include "Sacado_Tay_Taylor.hpp"
+#include "Sacado_Tay_TaylorImp.hpp"
+#include "Sacado_Tay_TaylorTraits.hpp"
+#include "Sacado_Traits.hpp"
+#include "Sacado_mpl_apply.hpp"
+#include "Sacado_mpl_apply_wrap.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerializationTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 
 using Teuchos::RCP;
 using Teuchos::rcp;

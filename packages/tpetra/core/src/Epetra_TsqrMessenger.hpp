@@ -64,6 +64,7 @@
 #include "Tsqr_MessengerBase.hpp"
 
 class Epetra_Comm;
+
 namespace Teuchos {
 template <typename Ordinal> class Comm;
 }  // namespace Teuchos

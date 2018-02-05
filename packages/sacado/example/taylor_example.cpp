@@ -42,9 +42,13 @@
 //
 //     The exact solution is x(t) = tan(t + pi/4)
 
+#include <cmath>
 #include <iostream>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_MathFunctions.hpp"
+#include "Sacado_Tay_Taylor.hpp"
+#include "Sacado_Tay_TaylorImp.hpp"
+#include "Sacado_trad2.hpp"
 
 // Function implementing RHS of ODE
 template <typename ScalarT>

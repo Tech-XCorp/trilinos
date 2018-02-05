@@ -40,15 +40,30 @@
 // ***********************************************************************
 // @HEADER
 
-#include "RTOpPack_version.hpp"
+#include <iostream>
+#include <memory>
+
 #include "RTOpPack_LapackWrappers.hpp"
+#include "RTOpPack_Types.hpp"
+#include "RTOpPack_version.hpp"
+#include "Teuchos_Array.hpp"
 #include "Teuchos_ArrayRCP.hpp"
-#include "Teuchos_FancyOStream.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
 
 
 //

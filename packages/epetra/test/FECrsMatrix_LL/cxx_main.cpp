@@ -42,13 +42,16 @@
 
 // Epetra_FECrsMatrix Test routine
 
-#include "Epetra_Time.h"
+#include <iostream>
+#include <memory>
+
 #include "Epetra_Map.h"
-#include "Epetra_FECrsMatrix.h"
+#include "Epetra_Object.h"
 #include "ExecuteTestProblems.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif

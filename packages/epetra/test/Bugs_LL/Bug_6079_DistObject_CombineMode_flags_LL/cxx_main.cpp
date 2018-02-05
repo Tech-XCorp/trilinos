@@ -19,11 +19,17 @@
 // check correct behavior of sadd of Trilinos vectors
 // if they have different Epetra maps
 
-#include <iostream>
-#include <vector>
+#include <Epetra_FEVector.h>
 #include <Epetra_Import.h>
 #include <Epetra_Map.h>
-#include <Epetra_FEVector.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_MultiVector.h"
 #ifdef HAVE_MPI
 #include <Epetra_MpiComm.h>
 #include <mpi.h>

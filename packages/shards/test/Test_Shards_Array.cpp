@@ -45,14 +45,16 @@
 
 #define SHARDS_ARRAY_BOUNDS_CHECKING
 
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-#include <cstddef>
 #include <Shards_Array.hpp>
 #include <Shards_ArrayVector.hpp>
+#include <cstddef>
+#include <exception>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
 
 template< class T1 , class T2 > struct AssertSameType ;
+
 template< class T > struct AssertSameType<T,T> {};
 
 namespace {

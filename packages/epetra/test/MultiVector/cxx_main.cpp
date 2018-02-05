@@ -42,19 +42,28 @@
 
 // Epetra_BlockMap Test routine
 
-#include "Epetra_Time.h"
+#include <iostream>
+#include <memory>
+
 #include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_Time.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "BuildTestProblems.h"
-#include "ExecuteTestProblems.h"
 #include "../epetra_test_err.h"
 #include "Epetra_Version.h"
+#include "ExecuteTestProblems.h"
 
 // Restored MultiVector tests
 int main(int argc, char *argv[]) {

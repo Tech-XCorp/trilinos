@@ -40,13 +40,23 @@
 //@HEADER
 
 
-#include "Epetra_BLAS.h"
-#include "ExecuteTestProblems.h"
+#include <cmath>
+#include <iostream>
+
+#include "../epetra_test_err.h"
 #include "BuildTestProblems.h"
+#include "Epetra_BLAS.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
 #include "Epetra_Comm.h"
-#include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Import.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+#include "ExecuteTestProblems.h"
 
   int MatrixTests(const Epetra_BlockMap & Map, const Epetra_LocalMap & LocalMap, int NumVectors,
 		      bool verbose)

@@ -30,14 +30,16 @@
 // Individually check concistency among Hv products via rad2.h, trad2.hpp,
 // Fad<Rad> and Rad<Fad> for all unary and binary ops.
 
-#include <cstdio>
 #include <float.h>	// for DBL_MAX
-#include "Sacado_DisableKokkosCuda.hpp" // Disable Cuda stuff that fails
-#include "Sacado_MathFunctions.hpp"
+#include <math.h>
+#include <string.h>
+#include <cstdio>
+
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_Fad_SFad.hpp"
+#include "Sacado_rad2.hpp"
 #include "Sacado_trad.hpp"
 #include "Sacado_trad2.hpp"
-#include "Sacado_rad2.hpp"
-#include "Sacado_Fad_SFad.hpp"
 
 typedef Sacado::Rad2d::ADvar ADVar;
 typedef Sacado::Rad2::ADvar<double> DADVar;

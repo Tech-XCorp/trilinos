@@ -42,6 +42,13 @@
 
 #include "BuildTestProblems.h"
 
+#include <cmath>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+
   int  BuildMatrixTests (Epetra_Vector & C,
 		       const char TransA, const char TransB,
 		       const double alpha,

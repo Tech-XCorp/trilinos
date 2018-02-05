@@ -41,9 +41,32 @@
 // @HEADER
 */
 
-#include "Teuchos_TimeMonitor.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_PerformanceMonitorBase.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Time.hpp"
+#include "Teuchos_TimeMonitor.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
 
 // slowLoop does not reliably make a timer nonzero (RHEL6, gcc 4.4.7, OpenMPI 1.5.4).
 // Thus, I'm introducing headers to make sleep() available.
@@ -60,6 +83,7 @@ void sleep(int sec)
 #pragma comment(lib, "Ws2_32.lib")
 # include <Winsock2.h>
 # include <process.h>
+
 void sleep(int sec)
 {
   Sleep(sec * 1000);

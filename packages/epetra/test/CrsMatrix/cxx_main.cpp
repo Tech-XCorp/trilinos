@@ -40,11 +40,21 @@
 //@HEADER
 
 
-#include "Epetra_Map.h"
-#include "Epetra_Time.h"
+#include <math.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_Vector.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Flops.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"

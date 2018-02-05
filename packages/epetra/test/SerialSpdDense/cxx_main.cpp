@@ -40,15 +40,24 @@
 //@HEADER
 
 
-#include "Epetra_Map.h"
-#include "Epetra_Time.h"
-#include "Epetra_SerialSymDenseMatrix.h"
+#include <assert.h>
+#include <cmath>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_BLAS.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_Object.h"
 #include "Epetra_SerialDenseMatrix.h"
 #include "Epetra_SerialDenseVector.h"
 #include "Epetra_SerialSpdDenseSolver.h"
+#include "Epetra_SerialSymDenseMatrix.h"
+#include "Epetra_Time.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #endif
 #include "Epetra_SerialComm.h"
 #include "Epetra_Version.h"

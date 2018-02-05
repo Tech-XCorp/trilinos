@@ -41,9 +41,12 @@
 //@HEADER
 */
 
-#include "Epetra_Map.h"
-#include "Epetra_FECrsMatrix.h"
 #include "../epetra_test_err.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_Map.h"
+
+class Epetra_Comm;
+class Epetra_Map;
 
 int Drumm1(const Epetra_Map& map, bool verbose);
 

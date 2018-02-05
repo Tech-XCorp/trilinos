@@ -42,17 +42,31 @@
 
 // Epetra_Vector Test routine
 
-#include "Epetra_Time.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Vector.h"
-#include "BuildTestProblems.h"
-#include "ExecuteTestProblems.h"
+#include <string.h>
+#include <memory>
+#include <ostream>
+
 #include "../epetra_test_err.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #include "Epetra_Version.h"
+#include "Epetra_config.h"
+#include "ExecuteTestProblems.h"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 #ifdef EPETRA_MPI
-#  include "Epetra_MpiComm.h"
 #  include <mpi.h>
+
+#  include "Epetra_MpiComm.h"
 #else
 #  include "Epetra_SerialComm.h"
 #endif

@@ -29,8 +29,14 @@
 
 // Brief demo of Fad and Rad for computing first derivatives
 
-#include <Sacado_No_Kokkos.hpp>		// for FAD and RAD
+#include <math.h>
 #include <cstdio>		// nicer than streams in some respects
+
+#include "Sacado_CacheFad_SFad.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_trad.hpp"
+
 using std::printf;
 
 using namespace std;

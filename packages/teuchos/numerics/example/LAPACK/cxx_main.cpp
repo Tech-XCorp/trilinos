@@ -41,7 +41,11 @@
 // @HEADER
 */
 
+#include <iostream>
+#include <memory>
+
 #include "Teuchos_LAPACK.hpp"
+#include "Teuchos_Object.hpp"
 #include "Teuchos_SerialDenseMatrix.hpp"
 #include "Teuchos_SerialDenseVector.hpp"
 #include "Teuchos_Version.hpp"

@@ -43,9 +43,29 @@
 //@HEADER
 */
 
-#include <Teuchos_UnitTestHarness.hpp>
-#include <KokkosCompat_TMM.hpp>
 #include <Teuchos_Array.hpp>
+#include <algorithm>
+#include <cstdlib>
+#include <iosfwd>
+#include <utility>
+
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_MemoryTraits.hpp"
+#include "Kokkos_Parallel.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Kokkos_View.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+
+namespace Kokkos {
+struct LayoutLeft;
+}  // namespace Kokkos
 
 // CMakeList.txt is not set up for compiling Cuda
 // so choose an appropriate non-cuda device:

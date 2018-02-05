@@ -30,12 +30,15 @@
 // An example that demonstrates usage of Sacado::TemplateContainer<> for storing
 // objects templated on the scalar type
 
-#include "Sacado_TemplateContainer.hpp"
-
 #include <iostream>
-#include "Sacado_mpl_vector.hpp"
+
+#include "Sacado_ELRCacheFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_TemplateContainer.hpp"
+#include "Sacado_mpl_apply_wrap.hpp"
+#include "Sacado_mpl_for_each.hpp"
 #include "Sacado_mpl_placeholders.hpp"
-#include "Sacado.hpp"
+#include "Sacado_mpl_vector.hpp"
 
 // A templated class that will be instantiated for several types T
 template <class T>

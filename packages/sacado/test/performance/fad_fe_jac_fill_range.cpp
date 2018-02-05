@@ -27,6 +27,20 @@
 // ***********************************************************************
 // @HEADER
 
+#include <math.h>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <vector>
+
+#include "Sacado_CacheFad_Ops.hpp"
+#include "Sacado_ELRCacheFad_Ops.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_ELRFad_Ops.hpp"
+#include "Sacado_ELRFad_SFad.hpp"
+#include "Sacado_ELRFad_SLFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
 #include "fe_jac_fill_funcs.hpp"
 
 std::vector<double>

@@ -41,9 +41,27 @@
 // @HEADER
 */
 
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 #include "AlgorithmA.hpp"
-#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCPNode.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_any.hpp"
 
 
 // This is a typical function that would be present in Trilinos right now what

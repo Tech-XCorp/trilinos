@@ -42,13 +42,37 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultSpmdMultiVector.hpp"
-#include "Thyra_MultiVectorTester.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Range1D.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_MultiVectorTester_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+
+namespace Thyra {
+template <class Scalar> class DefaultSpmdMultiVector;
+template <class Scalar> class MultiVectorBase;
+}  // namespace Thyra
 
 
 namespace {

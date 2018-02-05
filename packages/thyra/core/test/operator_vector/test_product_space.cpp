@@ -39,17 +39,38 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_DefaultProductVectorSpace.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_VectorSpaceTester.hpp"
-#include "Thyra_VectorStdOpsTester.hpp"
-#include "Thyra_TestingTools.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
+#include <type_traits>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_CommHelpers.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_DefaultComm.hpp"
-#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestingHelpers.hpp"
 #include "Teuchos_VerboseObject.hpp"
+#include "Thyra_DefaultProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_TestingToolsDecl.hpp"
+#include "Thyra_VectorSpaceTester_decl.hpp"
+#include "Thyra_VectorStdOpsTester_decl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
+namespace Thyra {
+template <class Scalar> class VectorSpaceBase;
+}  // namespace Thyra
 
 /** \brief Main test driver function for composite product spaces
  */
@@ -201,10 +222,6 @@ int main( int argc, char* argv[] ) {
 #endif // HAVE_THYRA_TEUCHOS_BLASFLOAT
     if( !run_product_space_tests<std::complex<double> >(n,numBlocks,double(1e-12),showAllTests,dumpAll,verbose?&*out:NULL) ) success = false;
 #endif // defined(HAVE_THYRA_COMPLEX)
-#ifdef HAVE_TEUCHOS_GNU_MP
-    //if( !run_product_space_tests<mpf_class>(n,numBlocks,mpf_class(1e-13),showAllTests,dumpAll,verbose?&*out:NULL) ) success = false;
-    // Above commented out code will not compile because its ScalarTraits specialization does not support eps()
-#endif // HAVE_TEUCHOS_GNU_MP
 
   } // end try
   TEUCHOS_STANDARD_CATCH_STATEMENTS(true,*out,success)

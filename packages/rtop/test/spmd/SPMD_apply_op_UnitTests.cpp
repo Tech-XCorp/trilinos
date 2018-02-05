@@ -43,16 +43,38 @@
 */
 
 
-#include "RTOpPack_Types.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <exception>
+#include <sstream>
+#include <type_traits>
 
-#include "Teuchos_UnitTestHarness.hpp"
-
-#include "RTOpPack_SPMD_apply_op.hpp"
 #include "RTOpPack_ROpSum.hpp"
+#include "RTOpPack_SPMD_apply_op_decl.hpp"
 #include "RTOpPack_TOpAssignScalar.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
 
 
 namespace RTOpPack {
@@ -62,6 +84,8 @@ namespace RTOpPack {
 // Helpers
 //
 
+
+class ReductTarget;
 
 int g_localDim = 2;
 bool g_dumpRTOps = false;

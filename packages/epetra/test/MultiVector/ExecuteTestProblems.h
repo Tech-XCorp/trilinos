@@ -41,12 +41,15 @@
 //@HEADER
 */
 
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Epetra_MultiVector.h"
-#include "BuildTestProblems.h"
 #include "../epetra_test_err.h"
+#include "BuildTestProblems.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+
+class Epetra_BlockMap;
+class Epetra_LocalMap;
 
 int MatrixTests(const Epetra_BlockMap & map, const Epetra_LocalMap & LocalMap, int NumVectors,
 		    bool verbose);

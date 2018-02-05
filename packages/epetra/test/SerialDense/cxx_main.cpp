@@ -40,17 +40,28 @@
 //@HEADER
 
 
-#include "Epetra_Map.h"
-#include "Epetra_Time.h"
+#include <assert.h>
+#include <math.h>
+#include <stdlib.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_BLAS.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_Object.h"
 #include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseVector.h"
 #include "Epetra_SerialDenseSolver.h"
+#include "Epetra_SerialDenseVector.h"
+#include "Epetra_Time.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #endif
-#include "Epetra_SerialComm.h"
 #include "../epetra_test_err.h"
+#include "Epetra_SerialComm.h"
 #include "Epetra_Version.h"
 
 // prototypes

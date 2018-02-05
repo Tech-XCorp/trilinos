@@ -40,13 +40,23 @@
 //@HEADER
 
 
-#include "Epetra_BLAS.h"
-#include "ExecuteTestProblems.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Vector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_SerialDenseVector.h"
+#include <cmath>
+#include <iostream>
 #include <vector>
+
+#include "../epetra_test_err.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_FEVector.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_SerialDenseVector.h"
+#include "ExecuteTestProblems.h"
 
 int MultiVectorTests(const Epetra_BlockMap & Map, int NumVectors, bool verbose)
 {

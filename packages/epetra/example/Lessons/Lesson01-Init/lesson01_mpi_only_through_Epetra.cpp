@@ -11,21 +11,21 @@
 // information.
 //
 
-// This defines useful macros like HAVE_MPI, which is defined if and
-// only if Epetra was built with MPI enabled.
-#include <Epetra_config.h>
-
 #ifdef HAVE_MPI
-// Your code is an existing MPI code, so it presumably includes mpi.h directly.
-#  include <mpi.h>
 // Epetra's wrapper for MPI_Comm.  This header file only exists if
 // Epetra was built with MPI enabled.
 #  include <Epetra_MpiComm.h>
+// Your code is an existing MPI code, so it presumably includes mpi.h directly.
+#  include <mpi.h>
 #else
 #  include <Epetra_SerialComm.h>
 #endif // HAVE_MPI
 
 #include <Epetra_Version.h>
+#include <iostream>
+#include <memory>
+
+#include "Epetra_Comm.h"
 
 
 //

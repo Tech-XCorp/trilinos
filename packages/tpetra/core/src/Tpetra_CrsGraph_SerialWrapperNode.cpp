@@ -41,9 +41,6 @@
 // @HEADER
 */
 
-// Don't bother compiling anything, or even including anything else,
-// unless KokkosSerialWrapperNode is enabled.
-#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "TpetraCore_config.h"
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_SERIAL)
 

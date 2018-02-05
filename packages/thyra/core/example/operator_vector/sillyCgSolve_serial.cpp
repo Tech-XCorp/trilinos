@@ -39,18 +39,40 @@
 // ***********************************************************************
 // @HEADER
 
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
 #include "ExampleTridiagSerialLinearOp.hpp"
-#include "sillyCgSolve.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
-#include "Thyra_DefaultMultipliedLinearOp.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Thyra_LinearOpTester.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_Time.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Time.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DefaultMultipliedLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+#include "sillyCgSolve.hpp"
+
+namespace Thyra {
+template <class Scalar> class VectorBase;
+}  // namespace Thyra
 
 
 //

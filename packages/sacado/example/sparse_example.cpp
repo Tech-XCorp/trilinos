@@ -39,10 +39,11 @@
 //     mode AD using the Sacado::Fad::DFad class (uses dynamic memory
 //     allocation for number of derivative components).
 
+#include <cmath>
 #include <iostream>
-#include <iomanip>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_LFad_LogicalSparse.hpp"
+#include "Sacado_LFad_LogicalSparseOps.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

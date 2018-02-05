@@ -42,14 +42,35 @@
 */
 
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Thyra_ModelEvaluatorBase.hpp"
-//#include "Thyra_Simple2DModelEvaluator.hpp"
-#include "Thyra_DummyTestModelEvaluator.hpp"
+#include <exception>
+#include <iomanip>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DummyTestModelEvaluator_decl.hpp"
+#include "Thyra_ModelEvaluatorBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
 
 namespace Thyra {
 
+
+template <class Scalar> class ModelEvaluator;
+template <class Scalar> class VectorBase;
 
 using Teuchos::null;
 using Teuchos::tuple;

@@ -40,20 +40,28 @@
 //@HEADER
 
 
+#include <iostream>
+#include <memory>
+
+#include "Epetra_BlockMap.h"
 // Epetra_Map (and Epetra_LocalMap) Test routine
 #include "Epetra_ConfigDefs.h"
-#include "Epetra_Time.h"
-#include "Epetra_Map.h"
 #include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "checkmap.h"
 #include "../epetra_test_err.h"
 #include "Epetra_Version.h"
+#include "checkmap.h"
+
+class Epetra_BlockMapData;
+class Epetra_Comm;
 
 int checkMapDataClass(Epetra_Comm& Comm, int verbose);
 int checkLocalMapDataClass(Epetra_Comm& Comm, int verbose);

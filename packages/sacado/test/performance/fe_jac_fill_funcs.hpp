@@ -30,11 +30,13 @@
 #ifndef FE_JAC_FILL_FUNCS_HPP
 #define FE_JAC_FILL_FUNCS_HPP
 
-#include "Sacado_No_Kokkos.hpp"
-#include "Sacado_Fad_SimpleFad.hpp"
+#include <cmath>
+#include <vector>
 
-#include "Teuchos_Time.hpp"
+#include "Sacado_Fad_SimpleFad.hpp"
+#include "Sacado_No_Kokkos.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Time.hpp"
 
 // ADOL-C includes
 #ifdef HAVE_ADOLC

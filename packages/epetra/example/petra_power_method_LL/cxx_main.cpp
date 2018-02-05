@@ -40,25 +40,26 @@
 //@HEADER
 
 
-#include <cstdio>
-#include <cstdlib>
 #include <cassert>
-#include <string>
-#include <cmath>
+#include <cstdlib>
+#include <iostream>
 #include <vector>
-#include "Epetra_Map.h"
-#include "Epetra_Time.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
+
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Flops.h"
+#include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef EPETRA_MPI
-#include "mpi.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 #endif
 #ifndef __cplusplus
 #define __cplusplus
 #endif
-#include "Epetra_Comm.h"
 #include "Epetra_SerialComm.h"
 #include "Epetra_Version.h"
 

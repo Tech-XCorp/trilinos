@@ -40,10 +40,14 @@
 // ************************************************************************
 //@HEADER
 
-#include <Epetra_Map.h>
 #include <Epetra_CrsMatrix.h>
+#include <Epetra_Map.h>
 #include <Epetra_SerialComm.h>
 #include <Epetra_Util.h>
+#include <string.h>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 
 #ifdef EPETRA_MPI
 #include <Epetra_MpiComm.h>

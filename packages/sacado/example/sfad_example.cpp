@@ -40,10 +40,12 @@
 //     for the number of derivative components, meaning this must be known
 //     at compile time.
 
-#include <iostream>
+#include <cmath>
 #include <iomanip>
+#include <iostream>
 
-#include "Sacado.hpp"
+#include "Sacado_ELRFad_SFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
 
 // The function to differentiate
 template <typename ScalarT>

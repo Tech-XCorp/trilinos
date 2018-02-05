@@ -58,6 +58,7 @@
 #include "Teuchos_Ptr.hpp"
 #include "Teuchos_RCP.hpp"
 #include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Teuchos {
 template <typename Ordinal> class Comm;

@@ -41,9 +41,13 @@
 //@HEADER
 */
 
+#include "../epetra_test_err.h"
 #include "Epetra_Comm.h"
 #include "Epetra_Map.h"
-#include "../epetra_test_err.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+
 int checkmap(Epetra_BlockMap & Map, int NumGlobalElements, int NumMyElements,
 	     int * MyGlobalElements, int ElementSize, int * ElementSizeList,
 	     int NumGlobalEquations, int NumMyEquations,

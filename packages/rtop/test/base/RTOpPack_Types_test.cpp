@@ -40,16 +40,25 @@
 // ***********************************************************************
 // @HEADER
 
+#include <algorithm>
+#include <cstdlib>
+#include <iostream>
+#include <memory>
+
 #include "RTOpPack_Types.hpp"
-#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Array.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_TestingHelpers.hpp"
 #include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerboseObject.hpp"
 #include "Teuchos_Version.hpp"
-#include "Teuchos_getConst.hpp"
 #include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
 
 
 //

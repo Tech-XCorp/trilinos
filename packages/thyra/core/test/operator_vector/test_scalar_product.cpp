@@ -39,24 +39,47 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stddef.h>
+#include <cmath>
+#include <exception>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+
+#include "Teuchos_ArrayRCP.hpp"
 #include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
 #include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DefaultDiagonalLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_DefaultSpmdMultiVector_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_EuclideanScalarProd_decl.hpp"
+#include "Thyra_LinearOpScalarProd_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_TestingToolsDecl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+
+namespace Thyra {
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorBase;
+template <class ScalarFrom, class ScalarTo> class VectorSpaceConverterBase;
+}  // namespace Thyra
 
 #ifndef SUN_CXX
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultSpmdMultiVector.hpp"
-#include "Thyra_LinearOpScalarProd.hpp"
-#include "Thyra_EuclideanScalarProd.hpp"
-#include "Thyra_VectorBase.hpp"
-#include "Thyra_MultiVectorBase.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_DefaultDiagonalLinearOp.hpp"
 #include "Thyra_DefaultSerialVectorSpaceConverter.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
 #include "Thyra_TestingTools.hpp"
-#include "Thyra_LinearOpTester.hpp"
 
 /** \brief Main test driver function for scalar products
  */

@@ -42,22 +42,52 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DetachedSpmdVectorView.hpp"
-#include "Thyra_SpmdLocalDataAccess.hpp"
-#include "Thyra_DetachedVectorView.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_TestingTools.hpp"
-#include "Thyra_VectorSpaceTester.hpp"
-#include "Thyra_VectorStdOpsTester.hpp"
-#include "Thyra_MultiVectorStdOpsTester.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
+
 #include "RTOpPack_SPMD_apply_op_decl.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ConfigDefs.hpp"
 #include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Range1D.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StaticSetupMacro.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_UnitTestRepository.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_MultiVectorStdOpsTester_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SpmdLocalDataAccess_decl.hpp"
+#include "Thyra_TestingTools.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorSpaceTester_decl.hpp"
+#include "Thyra_VectorStdOpsTester_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
 
 
 namespace Thyra {
 
+
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorBase;
 
 int g_localDim = 4;
 int g_numCols1 = 2;

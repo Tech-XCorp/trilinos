@@ -39,9 +39,12 @@
 // ***********************************************************************
 // @HEADER
 
+#include <math.h>
 #include <iostream>
 #include <vector>
+
 #include "Teuchos_LAPACK.hpp"
+#include "Teuchos_ScalarTraits.hpp"
 #include "Teuchos_Version.hpp"
 
 int main(int argc, char* argv[])

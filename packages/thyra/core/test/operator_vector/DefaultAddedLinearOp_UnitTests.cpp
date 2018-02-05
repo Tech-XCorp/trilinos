@@ -42,15 +42,20 @@
 */
 
 
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultAddedLinearOp.hpp"
-#include "Thyra_DefaultScaledAdjointLinearOp.hpp"
-#include "Thyra_MultiVectorBase.hpp"
-#include "Teuchos_FancyOStream.hpp"
-#include "Teuchos_TestForException.hpp"
+#include <sstream>
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Thyra_UnitTestHelpers.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_config.h"
+#include "Thyra_DefaultAddedLinearOp_decl.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
 
 
 namespace Thyra {

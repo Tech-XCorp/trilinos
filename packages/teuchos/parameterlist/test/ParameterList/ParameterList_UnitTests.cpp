@@ -39,11 +39,37 @@
 // ***********************************************************************
 // @HEADER
 
+#include <map>
+#include <sstream>
+#include <string>
+
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+
+namespace Teuchos {
+namespace Exceptions {
+class InvalidParameterName;
+class InvalidParameterType;
+class InvalidParameterValue;
+}  // namespace Exceptions
+}  // namespace Teuchos
 
 
 //

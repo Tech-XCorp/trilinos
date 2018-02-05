@@ -42,20 +42,39 @@
 */
 
 
-// Bring in all of the operator/vector ANA client support software
-#include "Thyra_OperatorVectorClientSupport.hpp"
-
-// Just use a default SPMD space for this example
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
+#include <ostream>
 
 // Some utilities from Teuchos
 #include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_VerbosityLevelCommandLineProcessorHelpers.hpp"
-#include "Teuchos_Time.hpp"
-#include "Teuchos_StandardCatchMacros.hpp"
-#include "Teuchos_as.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardCatchMacros.hpp"
+#include "Teuchos_VerboseObject.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_VerbosityLevelCommandLineProcessorHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DefaultAddedLinearOp_decl.hpp"
+#include "Thyra_DefaultBlockedLinearOp_decl.hpp"
+#include "Thyra_DefaultDiagonalLinearOp_decl.hpp"
+#include "Thyra_DefaultIdentityLinearOp_decl.hpp"
+#include "Thyra_DefaultMultipliedLinearOp_decl.hpp"
+#include "Thyra_DefaultScaledAdjointLinearOp_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_LinearOpTester_decl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+
+namespace Thyra {
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorBase;
+}  // namespace Thyra
 
 
 /** This is an example of how to use the implicitly composed linear operator

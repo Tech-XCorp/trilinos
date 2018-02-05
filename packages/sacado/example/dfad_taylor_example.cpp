@@ -45,9 +45,16 @@
 //     respect to x0.  The exact series derivative is 
 //     dx/dx0(t) = 1/2 * sec^2(t + atan(x0))
 
+#include <cmath>
 #include <iostream>
 
-#include "Sacado_No_Kokkos.hpp"
+#include "Sacado_Base.hpp"
+#include "Sacado_ELRFad_DFad.hpp"
+#include "Sacado_Fad_Ops.hpp"
+#include "Sacado_MathFunctions.hpp"
+#include "Sacado_Tay_Taylor.hpp"
+#include "Sacado_Tay_TaylorImp.hpp"
+#include "Sacado_trad2.hpp"
 
 // Function implementing RHS of ODE
 template <typename ScalarT>

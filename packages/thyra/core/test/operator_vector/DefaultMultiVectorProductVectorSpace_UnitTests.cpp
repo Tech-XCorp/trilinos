@@ -42,13 +42,29 @@
 */
 
 
-#include "Thyra_DefaultMultiVectorProductVectorSpace.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_VectorSpaceTester.hpp"
-#include "Teuchos_DefaultComm.hpp"
+#include <stdlib.h>
+#include <algorithm>
+#include <sstream>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ConfigDefs.hpp"
+#include "Teuchos_DefaultComm.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultMultiVectorProductVectorSpace_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
+#include "Thyra_VectorSpaceTester_decl.hpp"
 
 
 namespace Thyra {
@@ -58,6 +74,8 @@ namespace Thyra {
 // Helper code and declarations
 //
 
+
+template <class Scalar> class VectorSpaceBase;
 
 using Teuchos::as;
 using Teuchos::null;

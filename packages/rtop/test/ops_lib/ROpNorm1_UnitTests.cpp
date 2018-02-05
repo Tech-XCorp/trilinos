@@ -43,8 +43,31 @@
 */
 
 
+#include <algorithm>
+#include <ostream>
+
 #include "RTOpPack_ROpNorm1.hpp"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_dyn_cast.hpp"
 #include "supportUnitTestsHelpers.hpp"
+
+namespace RTOpPack {
+class ReductTarget;
+template <class ConcreteReductObj> class DefaultReductTarget;
+}  // namespace RTOpPack
 
 
 namespace {

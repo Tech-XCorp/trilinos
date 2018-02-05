@@ -42,16 +42,24 @@
 
 // Epetra_BlockMap Test routine
 
-#include "Epetra_Time.h"
+#include <iostream>
+#include <memory>
+
 #include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Object.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #endif
-#include "Epetra_SerialComm.h"
-#include "checkmap.h"
 #include "../epetra_test_err.h"
+#include "Epetra_SerialComm.h"
 #include "Epetra_Version.h"
+#include "checkmap.h"
+
+class Epetra_BlockMapData;
+class Epetra_Comm;
 
 int main(int argc, char *argv[]) {
   bool verbose = false;

@@ -26,6 +26,8 @@
 // 
 // ***********************************************************************
 // @HEADER
+#include <math.h>
+
 #include "fe_jac_fill_funcs.hpp"
 
 void analytic_init_fill(const ElemData& e,

@@ -39,10 +39,19 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include <math.h>
+#include <iosfwd>
+#include <type_traits>
 
-#include "Teuchos_Polynomial.hpp"
 #include "Teuchos_Array.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_Polynomial.hpp"
+#include "Teuchos_PolynomialDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
 
 using Teuchos::Polynomial;
 using Teuchos::as;

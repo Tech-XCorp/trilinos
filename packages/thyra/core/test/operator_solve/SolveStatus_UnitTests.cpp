@@ -41,13 +41,29 @@
 // @HEADER
 */
 
-#include "Thyra_SolveSupportTypes.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_VectorBase.hpp"
-#include "Thyra_VectorStdOps.hpp"
+#include <ostream>
 
-#include "Teuchos_UnitTestHarness.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SolveSupportTypes.hpp"
 #include "Thyra_UnitTestHelpers.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
 
 
 namespace Thyra {
@@ -57,6 +73,8 @@ namespace Thyra {
 // Helper code
 //
 
+
+template <class Scalar> class VectorBase;
 
 using Teuchos::as;
 

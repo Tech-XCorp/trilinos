@@ -71,11 +71,15 @@
 // Timing analysis still remains to be done for this example, which should be
 // easily accomplished with the timing mechanisms native to Teuchos.
 
-#include "Teuchos_CommandLineProcessor.hpp"
-#include "Teuchos_ConfigDefs.hpp"
-#include "Teuchos_BLAS.hpp"
-#include "Teuchos_Version.hpp"
+#include <iostream>
+#include <memory>
 #include <typeinfo>
+
+#include "Teuchos_BLAS.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_CommandLineProcessor.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_Version.hpp"
 
 #ifdef HAVE_TEUCHOS_ARPREC
 #include <arprec/mp_real.h>

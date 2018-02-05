@@ -39,18 +39,39 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_StandardConditions.hpp"
-#include "Teuchos_ConditionXMLConverterDB.hpp"
-#include "Teuchos_StandardDependencies.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_XMLParameterListExceptions.hpp"
-#include "Teuchos_StandardConditionXMLConverters.hpp"
-#include "Teuchos_XMLConditionExceptions.hpp"
+#include <__tree>
+#include <ostream>
+#include <set>
+#include <string>
+#include <type_traits>
 
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Condition.hpp"
+#include "Teuchos_ConditionXMLConverterDB.hpp"
+#include "Teuchos_DependencySheet.hpp"
+#include "Teuchos_DummyObjectGetter.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_StandardConditionXMLConverters.hpp"
+#include "Teuchos_StandardConditions.hpp"
+#include "Teuchos_StandardDependencies.hpp"
+#include "Teuchos_StandardFunctionObjects.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLObject.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
 #include "Teuchos_XMLParameterListTestHelpers.hpp"
+#include "Teuchos_XMLParameterListWriter.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_toString.hpp"
 
 
 namespace Teuchos{
@@ -59,6 +80,9 @@ namespace Teuchos{
 /**
  * Test all the conditions
  */
+class MissingParameterEntryDefinitionException;
+class MissingValuesTagException;
+
 TEUCHOS_UNIT_TEST(Teuchos_Conditions, StringConditionSerialization){
   ConditionXMLConverterDB::printKnownConverters(out);
   std::string paramName1 = "string param";

@@ -38,17 +38,42 @@
 //
 // ***********************************************************************
 // @HEADER
-#include "Teuchos_UnitTestHarness.hpp"
-#include "Teuchos_VerboseObject.hpp"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "Teuchos_XMLParameterListExceptions.hpp"
-#include "Teuchos_XMLParameterListCoreHelpers.hpp"
-#include "Teuchos_XMLParameterListWriter.hpp"
-#include "Teuchos_ValidatorXMLConverterDB.hpp"
-#include "Teuchos_StandardValidatorXMLConverters.hpp"
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_LocalTestingHelpers.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestingHelpers.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TwoDArray.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_UnitTestHelpers.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_ValidatorXMLConverterDB.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
 #include "Teuchos_XMLParameterListTestHelpers.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_toString.hpp"
+
+namespace Teuchos {
+class BadTagException;
+class CantFindValidatorConverterException;
+class DuplicateValidatorIDsException;
+class MissingValidatorDefinitionException;
+}  // namespace Teuchos
 
 using Teuchos::writeThenReadPL;
 

@@ -42,15 +42,22 @@
 
 // Epetra_IntSerialDense Test routine
 
-#include "Epetra_IntSerialDenseMatrix.h"
-#include "Epetra_IntSerialDenseVector.h"
+#include <math.h>
+#include <stdlib.h>
+#include <iostream>
+#include <memory>
+
 #include "../epetra_test_err.h"
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_DataAccess.h"
+#include "Epetra_IntSerialDenseMatrix.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_Object.h"
 #include "Epetra_Version.h"
 #ifdef EPETRA_MPI
-#include "Epetra_MpiComm.h"
 #include <mpi.h>
+
+#include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
