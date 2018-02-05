@@ -32,6 +32,8 @@
 #include <map>
 #include <type_traits>
 
+#include "Sacado_No_Kokkos.hpp" // TODO: Strip to essential includes
+
 #include "Sacado_CacheFad_DFad.hpp"
 #include "Sacado_CacheFad_Ops.hpp"
 #include "Sacado_ELRCacheFad_Ops.hpp"

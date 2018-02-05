@@ -58,7 +58,7 @@
 #include "Teuchos_XMLParameterListTestHelpers.hpp"
 #include "Teuchos_as.hpp"
 #include "Teuchos_config.h"
-
+#include "Teuchos_XMLParameterListExceptions.hpp"
 
 namespace Teuchos {
 

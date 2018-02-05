@@ -57,6 +57,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <fstream>
 
 #include "Teuchos_ArrayView.hpp"
 #include "Teuchos_LocalTestingHelpers.hpp"

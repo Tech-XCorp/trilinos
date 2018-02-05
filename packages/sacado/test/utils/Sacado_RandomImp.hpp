@@ -29,6 +29,9 @@
 // ***********************************************************************
 // @HEADER
 
+#ifndef SACADO_RANDOMIMP_H
+#define SACADO_RANDOMIMP_H
+
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -157,3 +160,5 @@ number() {
 }
 
 #endif // HAVE_SACADO_COMPLEX
+
+#endif // #define SACADO_RANDOMIMP_H

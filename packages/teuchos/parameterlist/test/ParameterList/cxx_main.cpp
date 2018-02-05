@@ -43,6 +43,7 @@
 #include <exception>
 #include <iostream>
 #include <map>
+#include <fstream>
 #include <sstream>
 #include <stdexcept>
 #include <string>

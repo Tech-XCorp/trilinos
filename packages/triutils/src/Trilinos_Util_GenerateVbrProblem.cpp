@@ -49,6 +49,8 @@
 #include "Epetra_VbrMatrix.h"
 #include "Epetra_Vector.h"
 
+#include "Trilinos_Util.h"
+
 class Epetra_Comm;
 
 // CJ TODO FIXME: Trilinos_Util_GenerateVbrProblem available only if 32 bit GIDs available.

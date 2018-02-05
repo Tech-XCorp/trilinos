@@ -27,6 +27,9 @@
 // ***********************************************************************
 // @HEADER
 
+#ifndef SACADO_TAY_CACHETAYLORIMP_H
+#define SACADO_TAY_CACHETAYLORIMP_H
+
 template <typename T>
 template <typename S>
 inline Sacado::Tay::CacheTaylor<T>::CacheTaylor(const Expr<S>& x) :
@@ -280,3 +283,4 @@ Sacado::Tay::CacheTaylor<T>::operator /= (const S& x)
   return *this;
 }
 
+#endif // SACADO_TAY_CACHETAYLORIMP_H

@@ -41,6 +41,8 @@
 // @HEADER
 */
 
+#include "Tpetra_Details_getGraphDiagOffsets_decl.hpp"
+#include "Tpetra_Details_getGraphDiagOffsets_def.hpp"
 #include "TpetraCore_config.h"
 
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION)

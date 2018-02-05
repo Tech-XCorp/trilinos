@@ -47,6 +47,7 @@
 #include <assert.h>
 #include <stddef.h>
 #include <cmath>
+#include <fstream>
 #include <stdexcept>
 #include <string>
 

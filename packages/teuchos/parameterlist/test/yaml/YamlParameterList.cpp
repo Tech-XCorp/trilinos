@@ -64,6 +64,7 @@
 #include "Teuchos_TestingHelpers.hpp"
 #include "Teuchos_UnitTestHelpers.hpp"
 #include "Teuchos_Utils.hpp"
+#include "Teuchos_Parser.hpp"
 
 namespace Teuchos {
 class ParserFail;

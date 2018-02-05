@@ -72,7 +72,7 @@
 #include "Teuchos_XMLParameterListWriter.hpp"
 #include "Teuchos_config.h"
 #include "Teuchos_toString.hpp"
-
+#include "Teuchos_XMLConditionExceptions.hpp"
 
 namespace Teuchos{
 

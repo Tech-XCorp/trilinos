@@ -40,6 +40,7 @@
 // @HEADER
 
 #include <exception>
+#include <fstream>
 #include <iostream>
 #include <string>
 

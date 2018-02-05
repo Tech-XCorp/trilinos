@@ -41,6 +41,7 @@
 
 #include <iostream>
 #include <memory>
+#include <fstream>
 
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_GlobalMPISession.hpp"

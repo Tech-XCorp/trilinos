@@ -29,6 +29,9 @@
 // ***********************************************************************
 // @HEADER
 
+#ifndef SACADA_FAD_MEMPOOLIMP_H
+#define SACADA_FAD_MEMPOOLIMP_H
+
 #include <new>
 
 inline
@@ -99,3 +102,5 @@ Sacado::Fad::MemPool::grow()
   reinterpret_cast<Link*>(last)->next = NULL;
   head = reinterpret_cast<Link*>(start);
 }
+
+#endif // SACADA_FAD_MEMPOOLIMP_H

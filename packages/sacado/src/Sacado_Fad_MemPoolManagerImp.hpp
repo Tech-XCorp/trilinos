@@ -29,6 +29,9 @@
 // ***********************************************************************
 // @HEADER
 
+#ifndef SACADO_FAD_MEMPOOLMANAGERIMP_H
+#define SACADO_FAD_MEMPOOLMANAGERIMP_H
+
 template <typename T>
 inline
 Sacado::Fad::MemPoolManager<T>::MemPoolManager(unsigned int nfad) : 
@@ -64,3 +67,5 @@ Sacado::Fad::MemPoolManager<T>::getMemoryPool(unsigned int dim) {
 
   return pool;
 }
+
+#endif // SACADO_FAD_MEMPOOLMANAGERIMP_H

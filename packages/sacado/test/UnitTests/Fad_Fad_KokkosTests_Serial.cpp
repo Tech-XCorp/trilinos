@@ -28,6 +28,11 @@
 // @HEADER
 #include <iosfwd>
 
+#include <sstream>
+//#include <ostream>
+//#include <fstream>
+#include "Kokkos_Core.hpp" // TODO: Strip to essential includes
+
 #include "Fad_Fad_KokkosTests.hpp"
 #include "KokkosExp_View_Fad.hpp"
 #include "Kokkos_DynRankView.hpp"

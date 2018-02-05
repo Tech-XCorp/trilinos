@@ -51,6 +51,7 @@
 #include "Teuchos_XMLObject.hpp"
 #include "Teuchos_XMLParameterListReader.hpp"
 #include "Teuchos_XMLParser.hpp"
+#include "Teuchos_XMLParameterListExceptions.hpp"
 
 namespace Teuchos {
 class NoNameAttributeExecption;

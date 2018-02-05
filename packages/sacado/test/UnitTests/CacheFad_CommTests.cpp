@@ -28,6 +28,8 @@
 // @HEADER
 #include <iosfwd>
 
+#include "Sacado.hpp" // TODO: Strip this down to essential includes
+
 #include "Fad_CommTests.hpp"
 #include "Sacado_ELRFad_DFad.hpp"
 #include "Sacado_Fad_SFad.hpp"

@@ -44,6 +44,7 @@
 #include "TpetraCore_config.h"
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_SERIAL)
 
+#include "Tpetra_CrsGraph_decl.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 #include "Tpetra_CrsGraph_def.hpp"
 
