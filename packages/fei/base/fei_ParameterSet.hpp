@@ -9,10 +9,13 @@
 #ifndef _fei_ParameterSet_hpp_
 #define _fei_ParameterSet_hpp_
 
-#include "fei_macros.hpp"
-#include "fei_Param.hpp"
-
+#include <stddef.h>
+#include <iosfwd>
+#include <string>
 #include <vector>
+
+#include "fei_Param.hpp"
+#include "fei_macros.hpp"
 
 namespace fei {
 

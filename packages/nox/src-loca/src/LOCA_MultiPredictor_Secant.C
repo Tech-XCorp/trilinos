@@ -48,15 +48,32 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+#include <vector>
 
-#include "LOCA_MultiPredictor_Secant.H"
-#include "LOCA_GlobalData.H"
-#include "NOX_Utils.H"
+#include "LOCA_Extended_MultiVector.H"
 #include "LOCA_Factory.H"
-#include "LOCA_Parameter_SublistParser.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
+#include "LOCA_MultiPredictor_AbstractStrategy.H"
+#include "LOCA_MultiPredictor_Secant.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace MultiContinuation {
+class ExtendedGroup;
+}  // namespace MultiContinuation
+}  // namespace LOCA
 
 LOCA::MultiPredictor::Secant::Secant(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

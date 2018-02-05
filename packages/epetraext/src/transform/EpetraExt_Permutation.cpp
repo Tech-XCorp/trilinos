@@ -40,9 +40,12 @@
 //@HEADER
 
 #include <EpetraExt_Permutation_impl.h>
-#include <Epetra_Vector.h>
-#include <Epetra_MultiVector.h>
-#include <Epetra_CrsGraph.h>
+
+#include "EpetraExt_Permutation.h"
+
+class Epetra_CrsGraph;
+class Epetra_CrsMatrix;
+class Epetra_MultiVector;
 
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
 

@@ -43,11 +43,22 @@
 #define THYRA_EPETRA_THYRA_WRAPPERS_HPP
 
 
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Thyra_EpetraTypes.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Vector;
 
 /// @file
 
-namespace Teuchos { template<class Ordinal> class Comm; }
+namespace Teuchos {
+template<class Ordinal> class Comm;
+}  // namespace Teuchos
 
 
 namespace Thyra {
@@ -61,6 +72,10 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class VectorBase;
+template <class Scalar> class VectorSpaceBase;
+
 RCP<const Teuchos::Comm<Ordinal> >
 create_Comm( const RCP<const Epetra_Comm> &epetraComm );
 

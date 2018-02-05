@@ -48,18 +48,28 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
-#include "NOX_Solver_InexactTrustRegionBased.H"    // class definition
-#include "NOX_Abstract_Vector.H"
+#include <math.h>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
 #include "NOX_Abstract_Group.H"
-#include "Teuchos_ParameterList.hpp"
-#include "NOX_Utils.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "NOX_Direction_Factory.H"
+#include "NOX_Direction_Generic.H"
+#include "NOX_Direction_Utils_InexactNewton.H"
 #include "NOX_GlobalData.H"
 #include "NOX_MeritFunction_Generic.H"
+#include "NOX_Solver_InexactTrustRegionBased.H"    // class definition
 #include "NOX_Solver_PrePostOperator.H"
 #include "NOX_Solver_SolverUtils.H"
-#include "NOX_Direction_Generic.H"
-#include "NOX_Direction_Factory.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 using namespace NOX;
 using namespace NOX::Solver;

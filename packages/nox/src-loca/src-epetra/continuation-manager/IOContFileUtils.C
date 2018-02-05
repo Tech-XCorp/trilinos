@@ -47,11 +47,17 @@
 //@HEADER
 */
 
-#include "IOContFileUtils.H"
-
-#include <fstream>
-#include <iostream>
+#include <stdlib.h>
+#include <deque>
+#include <iomanip>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
 
 using namespace std;
 

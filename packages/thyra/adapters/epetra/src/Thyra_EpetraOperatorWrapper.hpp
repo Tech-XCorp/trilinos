@@ -42,11 +42,20 @@
 #ifndef THYRA_EPETRA_OPERATOR_WRAPPER_HPP
 #define THYRA_EPETRA_OPERATOR_WRAPPER_HPP
 
-#include "Thyra_LinearOpBase.hpp"
-#include "Epetra_Map.h"
+#include <iosfwd>
+
 #include "Epetra_Comm.h"
+#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Thyra_LinearOpBase.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 
 namespace Thyra {
@@ -60,6 +69,10 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class VectorBase;
+template <class Scalar> class VectorSpaceBase;
+
 class EpetraOperatorWrapper : public Epetra_Operator
 {
 public:

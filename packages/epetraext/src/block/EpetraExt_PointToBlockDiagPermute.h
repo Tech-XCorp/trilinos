@@ -42,20 +42,29 @@
 #ifndef EPETRAEXT_POINTTOBLOCKDIAGPERMUTE_H
 #define EPETRAEXT_POINTTOBLOCKDIAGPERMUTE_H
 
+#include <iosfwd>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
 #include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
 #include "Epetra_DistObject.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_BlockMap.h"
+#include "Epetra_FECrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Operator.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_FECrsMatrix.h"
 #include "Teuchos_ParameterList.hpp"
 
-class Epetra_Comm;
-class Epetra_Import;
-class Epetra_Export;
 class EpetraExt_BlockDiagMatrix;
+class Epetra_Comm;
+class Epetra_Distributor;
+class Epetra_Export;
+class Epetra_FECrsMatrix;
+class Epetra_Import;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_OffsetIndex;
+class Epetra_SrcDistObject;
 
 //! EpetraExt_PointToBlockDiagPermute: A class for managing point-to-block-diagonal permutations
 

@@ -41,6 +41,12 @@
 //@HEADER
 
 #include "Ifpack_SerialTriDiMatrix.h"
+
+#include <cmath>
+#include <cstring>
+#include <ostream>
+
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Util.h"
 
 //=============================================================================

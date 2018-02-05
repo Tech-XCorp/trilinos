@@ -9,9 +9,9 @@
 #ifndef _fei_Pattern_hpp_
 #define _fei_Pattern_hpp_
 
-#include "fei_macros.hpp"
-
 #include <vector>
+
+#include "fei_macros.hpp"
 
 namespace snl_fei {
   class RecordCollection;

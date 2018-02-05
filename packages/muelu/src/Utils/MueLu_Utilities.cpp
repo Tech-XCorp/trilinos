@@ -43,13 +43,19 @@
 // ***********************************************************************
 //
 // @HEADER
-#include "MueLu_Utilities_def.hpp"
-
+#include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
+#include <deque>
+#include <iosfwd>
 #include <string>
+#include <vector>
 
-#ifdef HAVE_MUELU_EPETRAEXT
-#include "EpetraExt_Transpose_RowMatrix.h"
-#endif
+#include "Epetra_ConfigDefs.h"
+#include "MueLu_config.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
 
 namespace MueLu {
 

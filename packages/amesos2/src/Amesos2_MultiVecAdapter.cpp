@@ -44,8 +44,6 @@
 #ifndef AMESOS2_MULTIVECADAPTER_CPP
 #define AMESOS2_MULTIVECADAPTER_CPP
 
-#include "Amesos2_MultiVecAdapter_decl.hpp"
-
 #ifdef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
 #include "Amesos2_MultiVecAdapter_def.hpp"
 #endif

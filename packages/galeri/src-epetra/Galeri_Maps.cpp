@@ -40,18 +40,24 @@
 // @HEADER
 
 #include "Galeri_Maps.h"
-#include "Galeri_Exception.h"
-#include "Galeri_Utils.h"
-#include "Epetra_ConfigDefs.h"
+
+#include <math.h>
+#include <sstream>
+#include <string>
+
 #include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Galeri_Linear.h"
-#include "Galeri_NodeCartesian2D.h"
+#include "Epetra_ConfigDefs.h"
 #include "Galeri_Cartesian2D.h"
 #include "Galeri_Cartesian3D.h"
-#include "Galeri_Random.h"
+#include "Galeri_Exception.h"
 #include "Galeri_Interlaced.h"
+#include "Galeri_Linear.h"
+#include "Galeri_NodeCartesian2D.h"
+#include "Galeri_Random.h"
+#include "Galeri_Utils.h"
+#include "Teuchos_ParameterList.hpp"
+
+class Epetra_Map;
 
 namespace Galeri {
 

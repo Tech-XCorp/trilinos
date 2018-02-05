@@ -9,9 +9,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
+#include <fei_fwd.hpp>
 #include <fei_macros.hpp>
 #include <fei_mpi.h>
-#include <fei_fwd.hpp>
+
+#include "snl_fei_RecordCollection.hpp"
 
 namespace fei {
 
@@ -19,6 +21,8 @@ namespace fei {
   to find out which IDs are shared among multiple processors, and
   fill the SharedIDs object with those mappings.
 */
+template <typename T> class SharedIDs;
+
 void set_shared_ids(MPI_Comm comm,
                     const snl_fei::RecordCollection& records,
                     fei::SharedIDs<int>& sharedIDs,

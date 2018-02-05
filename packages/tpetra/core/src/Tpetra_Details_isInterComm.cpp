@@ -40,11 +40,13 @@
 // @HEADER
 
 #include "Tpetra_Details_isInterComm.hpp"
-#include "Teuchos_Comm.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 #ifdef HAVE_TPETRACORE_MPI
 #  include "Tpetra_Details_extractMpiCommFromTeuchos.hpp"
 #endif // HAVE_TPETRACORE_MPI
-#include <stdexcept> // std::logic_error
 
 namespace Tpetra {
 namespace Details {

@@ -2,39 +2,36 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include "ml_common.h"
-#include "ml_include.h"
-#include "ml_smoother.h"
 
+#include "ml_config.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_ANASAxI) && defined(HAVE_ML_TEUCHOS)
 
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
 #include "Epetra_Import.h"
-#include "Epetra_Time.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
 
-#include "AnasaziEpetraAdapter.hpp"
-#include "AnasaziBlockKrylovSchur.hpp"
 #include "AnasaziBasicEigenproblem.hpp"
 #include "AnasaziBasicSort.hpp"
-#include "AnasaziOutputManager.hpp"
+#include "AnasaziBlockKrylovSchur.hpp"
 #include "AnasaziConfigDefs.hpp"
-#include "AnasaziTypes.hpp"
+#include "AnasaziEpetraAdapter.hpp"
 #include "AnasaziMultiVec.hpp"
 #include "AnasaziOperator.hpp"
-
-#include "ml_epetra_utils.h"
+#include "AnasaziOutputManager.hpp"
+#include "AnasaziTypes.hpp"
 #include "Epetra_CrsMatrix.h"
-#include "ml_anasazi.h"
 #include "Teuchos_ParameterList.hpp"
+#include "ml_anasazi.h"
+#include "ml_epetra_utils.h"
 
 void Orthogonalize(Anasazi::EpetraMultiVec & vec)
 {

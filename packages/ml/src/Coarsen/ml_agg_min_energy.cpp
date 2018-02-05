@@ -3,14 +3,27 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
-#include "ml_include.h"
-#include "ml_agg_min_energy.h"
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <iostream>
 #include <vector>
-#include <map>
-#include <algorithm>
+
 #include "float.h"
+#include "ml_1level.h"
+#include "ml_agg_genP.h"
+#include "ml_agg_min_energy.h"
+#include "ml_aggregate.h"
+#include "ml_amg_genP.h"
+#include "ml_comm.h"
+#include "ml_comminfoop.h"
+#include "ml_defs.h"
+#include "ml_mat_formats.h"
+#include "ml_memory.h"
+#include "ml_op_utils.h"
+#include "ml_rap.h"
+#include "ml_utils.h"
 
 // ============ //
 // private data //
@@ -851,6 +864,9 @@ int ML_AGG_Gen_Restriction_MinEnergy(ML *ml,int level, int clevel, void *data)
 }
 
 #include "ml_lapack.h"
+
+struct MLSthing;
+
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //		Begin Routines Written by JBS

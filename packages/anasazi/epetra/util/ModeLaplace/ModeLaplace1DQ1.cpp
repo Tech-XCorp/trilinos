@@ -49,7 +49,19 @@
 // framework ( http://trilinos.org/ ).
 
 #include "ModeLaplace1DQ1.h"
-#include "Teuchos_Assert.hpp"
+
+#include <iostream>
+#include <new>
+#include <stdexcept>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Teuchos_TestForException.hpp"
 
 
 const int ModeLaplace1DQ1::dofEle = 2;

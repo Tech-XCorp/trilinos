@@ -7,7 +7,8 @@
 /*--------------------------------------------------------------------*/
 
 #include "fei_EqnComm.hpp"
-#include "fei_sstream.hpp"
+#include "fei_macros.hpp"
+#include "fei_mpi.h"
 
 namespace fei {
 

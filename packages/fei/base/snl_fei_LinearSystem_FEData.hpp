@@ -9,16 +9,28 @@
 #ifndef _snl_fei_LinearSystem_FEData_hpp_
 #define _snl_fei_LinearSystem_FEData_hpp_
 
+#include <fei_LinearSystem.hpp>
+#include <fei_Matrix.hpp>
+#include <fei_Vector.hpp>
+#include <fei_fwd.hpp>
 #include <fei_macros.hpp>
 #include <fei_mpi.h>
 #include <fei_utils.hpp>
-#include <fei_LinearSystem.hpp>
-#include <fei_Vector.hpp>
-#include <fei_Matrix.hpp>
-#include <fei_fwd.hpp>
+#include <stddef.h>
+#include <iosfwd>
+#include <vector>
+
+#include "fei_FiniteElementData.hpp"
+#include "fei_SharedPtr.hpp"
+
+class Lookup;
 
 namespace fei {
   class DirichletBCManager;
+class Matrix;
+class MatrixGraph;
+class ParameterSet;
+class Vector;
 }
 
 namespace snl_fei {

@@ -45,15 +45,30 @@
 // ************************************************************************
 //@HEADER
 
-#include "Epetra_config.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Import.h"
+#include <assert.h>
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
 
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
 #include "LOCA_Epetra_AugmentedOp.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_LAPACK.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_TestForException.hpp"
 
 LOCA::Epetra::AugmentedOp::AugmentedOp(
  const Teuchos::RCP<LOCA::GlobalData>& global_data,

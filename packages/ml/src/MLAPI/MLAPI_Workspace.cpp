@@ -2,16 +2,24 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <iostream>
+
+#include "Epetra_ConfigDefs.h"
 #include "ml_common.h"
+#include "ml_defs.h"
+#include "ml_struct.h"
+#include "ml_utils.h"
 #if defined(HAVE_ML_MLAPI)
 #include "Epetra_Comm.h"
 #ifdef HAVE_MPI
-#include "mpi.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "MLAPI_Error.h"
 #include "MLAPI_Workspace.h"
 #ifdef _MSC_VER
 #include "winprocess.h"

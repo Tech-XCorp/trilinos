@@ -39,13 +39,16 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-#include "Trilinos_Util_iohb.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Comm.h"
+#include <stdlib.h>
+#include <iostream>
+
 #include "Epetra_BlockMap.h"
-#include "Epetra_Vector.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "Trilinos_Util.h"
 
 // CJ TODO FIXME: Trilinos_Util_ReadHb2EpetraVbr available only if 32 bit GIDs available.
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES

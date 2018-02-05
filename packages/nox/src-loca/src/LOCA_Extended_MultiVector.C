@@ -48,10 +48,24 @@
 // ************************************************************************
 //@HEADER
 
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+#include <vector>
+
+#include "LOCA_ErrorCheck.H"
 #include "LOCA_Extended_MultiVector.H"
 #include "LOCA_Extended_Vector.H"
 #include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
 
 LOCA::Extended::MultiVector::MultiVector(
                    const LOCA::Extended::MultiVector& source,

@@ -39,15 +39,20 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-#include "Trilinos_Util_iohb.h"
-#include "Epetra_ConfigDefs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include <vector>
-#include <algorithm>
+#include "Trilinos_Util.h"
+#include "Trilinos_Util_iohb.h"
 
 void Trilinos_Util_ReadHb2Epetra_internal(const char *data_file,
 				 const Epetra_Comm  &comm,

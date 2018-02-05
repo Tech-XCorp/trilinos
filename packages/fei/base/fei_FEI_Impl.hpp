@@ -9,14 +9,21 @@
 #ifndef _fei_FEI_Impl_hpp_
 #define _fei_FEI_Impl_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_mpi.h>
 #include <FEI.hpp>
 #include <fei_Factory.hpp>
-
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
+#include <stddef.h>
+#include <map>
 #include <set>
 #include <vector>
-#include <map>
+
+#include "fei_Logger.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_defs.h"
+
+class Data;
+class LibraryWrapper;
 
 namespace fei {
 
@@ -30,6 +37,13 @@ namespace fei {
       class, thereby greatly reducing the total body of code that constitutes
       the fei code-distribution.
   */
+class Factory;
+class LinearSystem;
+class Matrix;
+class MatrixGraph;
+class Vector;
+class VectorSpace;
+
   class FEI_Impl : public FEI, private fei::Logger {
   public:
     /** Constructor

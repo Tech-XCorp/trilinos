@@ -45,8 +45,41 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
+#include <__bit_reference>
+#include <__functional_base>
+#include <iostream>
+#include <list>
+#include <map>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Object.h"
+#include "Epetra_Vector.h"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
 #include "NOX_Epetra_BroydenOperator.H"
+#include "NOX_Epetra_Vector.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_Solver_PrePostOperator.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+
+class Epetra_Comm;
+class Epetra_Import;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Operator;
+namespace NOX {
+class Utils;
+namespace Abstract {
+class PrePostOperator;
+}  // namespace Abstract
+}  // namespace NOX
 
 // EpetraExt includes for dumping Epetra objects
 #ifdef HAVE_NOX_DEBUG
@@ -56,8 +89,6 @@
 #include "EpetraExt_RowMatrixOut.h"
 #endif
 #endif
-
-#include "Epetra_Map.h"
 
 using namespace NOX;
 using namespace NOX::Epetra;

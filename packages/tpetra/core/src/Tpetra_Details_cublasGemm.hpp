@@ -60,6 +60,7 @@
 ///
 /// It also generally improves encapsulation.
 
+#include "Kokkos_Complex.hpp"
 #include "TpetraCore_config.h"
 #include "Tpetra_Details_Blas.hpp"
 #include "Tpetra_Details_libGemm.hpp"

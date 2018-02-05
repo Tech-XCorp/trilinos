@@ -6,11 +6,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <string>
-#include <fei_macros.hpp>
-#include <fei_defs.h>
-
 #include <fei_NodeDescriptor.hpp>
+#include <fei_defs.h>
+#include <stdexcept>
+
+#include "fei_ArrayUtils.hpp"
 
 //======Constructor=============================================================
 NodeDescriptor::NodeDescriptor()

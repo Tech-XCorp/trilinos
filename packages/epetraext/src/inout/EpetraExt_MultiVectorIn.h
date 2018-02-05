@@ -41,8 +41,10 @@
 #ifndef EPETRAEXT_MULTIVECTORIN_H
 #define EPETRAEXT_MULTIVECTORIN_H
 #include <EpetraExt_ConfigDefs.h>
-class Epetra_MultiVector;
+
 class Epetra_BlockMap;
+class Epetra_MultiVector;
+
 namespace EpetraExt {
  
   //! Constructs an Epetra_MultiVector object from a Matrix Market format file.

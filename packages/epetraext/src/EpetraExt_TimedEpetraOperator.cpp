@@ -39,8 +39,14 @@
 // ***********************************************************************
 //@HEADER
 
-#include "Epetra_config.h"
+#include <type_traits>
+
 #include "EpetraExt_TimedEpetraOperator.hpp"
+#include "Teuchos_Time.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 EpetraExt::Epetra_Timed_Operator::Epetra_Timed_Operator(const Teuchos::RCP<Epetra_Operator>& A_) 
   : A(A_)

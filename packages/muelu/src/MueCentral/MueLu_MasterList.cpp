@@ -44,9 +44,17 @@
 //
 // @HEADER
 #include <Teuchos_XMLParameterListCoreHelpers.hpp>
+#include <__functional_base>
+#include <iostream>
+#include <type_traits>
 
+#include "MueLu_ConfigDefs.hpp"
 #include "MueLu_Exceptions.hpp"
 #include "MueLu_MasterList.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_TestForException.hpp"
 
 namespace MueLu {
 

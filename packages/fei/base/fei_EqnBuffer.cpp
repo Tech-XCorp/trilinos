@@ -6,12 +6,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_EqnBuffer.hpp>
 #include <fei_CSVec.hpp>
+#include <fei_EqnBuffer.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
 
-#include <fei_TemplateUtils.hpp>
+#include "fei_ArrayUtils.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
 
 //==============================================================================
 EqnBuffer::EqnBuffer()

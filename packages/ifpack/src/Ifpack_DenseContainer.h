@@ -43,12 +43,18 @@
 #ifndef IFPACK_DENSECONTAINER_H
 #define IFPACK_DENSECONTAINER_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Container.h"
+#include <iosfwd>
+
+#include "Epetra_IntSerialDenseVector.h"
 #include "Epetra_SerialDenseMatrix.h"
 #include "Epetra_SerialDenseSolver.h"
-#include "Epetra_IntSerialDenseVector.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Container.h"
+
 class Epetra_RowMatrix;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 //! Ifpack_DenseContainer: a class to define containers for dense matrices.
 /*!

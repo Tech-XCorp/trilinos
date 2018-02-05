@@ -45,8 +45,12 @@
 #ifndef AZTECOO_STATUSTESTCOMBO_H
 #define AZTECOO_STATUSTESTCOMBO_H
 
-#include "AztecOO_StatusTest.h"
+#include <iosfwd>
 #include <vector>
+
+#include "AztecOO_StatusTest.h"
+#include "AztecOO_StatusType.h"
+
 class Epetra_MultiVector;
 
 //! AztecOO_StatusTestCombo: A  class for extending the status testing capabilities of AztecOO via logical combinations.

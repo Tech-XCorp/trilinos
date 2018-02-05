@@ -40,14 +40,18 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
+#include <algorithm>
+#include <sstream>
+#include <string>
+
 #include "Epetra_MultiVector.h"
-#include "Ifpack_Graph.h"
 #include "Epetra_RowMatrix.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
 #include "Ifpack_Graph_Epetra_RowMatrix.h"
 #include "Ifpack_RCMReordering.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
 
 //==============================================================================
 Ifpack_RCMReordering::

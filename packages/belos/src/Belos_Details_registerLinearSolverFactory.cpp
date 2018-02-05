@@ -40,8 +40,7 @@
 //@HEADER
 
 #include "Belos_Details_registerLinearSolverFactory.hpp"
-#include "Belos_Details_LinearSolverFactory.hpp"
-#include "Teuchos_ConfigDefs.hpp" // for __attribute__((weak)) check
+#include "Belos_config.h"
 
 // FIXME (mfh 23 Aug 2015) Belos' main library is upstream from
 // libraries where Belos' Epetra and Tpetra specializations live.

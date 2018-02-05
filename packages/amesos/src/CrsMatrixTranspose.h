@@ -31,6 +31,9 @@
 #ifndef CRSMATRIXTRANSPOSE
 #define CRSMATRIXTRANSPOSE
 #include "Epetra_CrsMatrix.h" 
+
+class Epetra_CrsMatrix;
+
 int CrsMatrixTranspose( Epetra_CrsMatrix *In,  Epetra_CrsMatrix *Out ) ;
 #endif
 

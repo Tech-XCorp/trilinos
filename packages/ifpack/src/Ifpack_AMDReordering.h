@@ -43,15 +43,18 @@
 #ifndef IFPACK_AMDREORDERING_H
 #define IFPACK_AMDREORDERING_H
 
+#include <iosfwd>
+#include <vector>
+
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Reordering.h"
 
 namespace Teuchos {
   class ParameterList;
 }
-class Ifpack_Graph;
 class Epetra_MultiVector;
 class Epetra_RowMatrix;
+class Ifpack_Graph;
 
 //! Ifpack_AMDReordering: approximate minimum degree reordering.
 

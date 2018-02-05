@@ -47,6 +47,14 @@
 #define XPETRA_DEFAULTPLATFORM_HPP
 
 #include <Kokkos_DefaultNode.hpp>
+#include <algorithm>
+#include <sstream>
+#include <type_traits>
+
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Xpetra_ConfigDefs.hpp"
 #include "Xpetra_SerialPlatform.hpp"
 #ifdef HAVE_MPI

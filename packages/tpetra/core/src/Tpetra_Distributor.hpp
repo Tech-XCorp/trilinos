@@ -42,12 +42,25 @@
 #ifndef TPETRA_DISTRIBUTOR_HPP
 #define TPETRA_DISTRIBUTOR_HPP
 
-#include "Tpetra_Util.hpp"
-#include <Teuchos_as.hpp>
 #include <Teuchos_Describable.hpp>
 #include <Teuchos_ParameterListAcceptorDefaultBase.hpp>
 #include <Teuchos_VerboseObject.hpp>
+#include <Teuchos_as.hpp>
 #include <Tpetra_Details_Behavior.hpp>
+
+#include "Kokkos_View.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Tpetra_Util.hpp"
 
 // If TPETRA_DISTRIBUTOR_TIMERS is defined, Distributor will time
 // doPosts (both versions) and doWaits, and register those timers with
@@ -62,10 +75,19 @@
 #  undef TPETRA_DISTRIBUTOR_TIMERS
 #endif // TPETRA_DISTRIBUTOR_TIMERS
 
+#include <cstddef>
+#include <memory>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
 #include "KokkosCompat_View.hpp"
 #include "Kokkos_Core.hpp"
 #include "Kokkos_TeuchosCommAdapters.hpp"
-#include <type_traits>
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 namespace Tpetra {
 

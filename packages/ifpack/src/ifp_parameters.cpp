@@ -42,6 +42,17 @@
 
 #include <Epetra_CombineMode.h>
 #include <ifp_parameters.h>
+#include <__functional_base>
+#include <deque>
+#include <iostream>
+#include <string>
+#include <utility>
+
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
+#include "Teuchos_config.h"
 
 #ifdef HAVE_TEUCHOS_EXTENDED
 #include <Teuchos_StrUtils.hpp>

@@ -42,22 +42,29 @@
 #ifndef EPETRAEXT_MMHELPERS_H
 #define EPETRAEXT_MMHELPERS_H
 
+#include <Teuchos_TimeMonitor.hpp>
+#include <stddef.h>
+#include <iostream>
+#include <map>
+#include <set>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
 #include "EpetraExt_ConfigDefs.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Data.h"
 #include "Epetra_DistObject.h"
+#include "Epetra_Import.h"
 #include "Epetra_Map.h"
 #include "Teuchos_RCP.hpp"
-#include "Epetra_Comm.h"
-#include "Epetra_Import.h"
-#include "Epetra_CrsMatrix.h"
-#include <Teuchos_TimeMonitor.hpp>
-
-#include <vector>
-#include <set>
-#include <map>
-
 
 class Epetra_Distributor;
+class Epetra_Export;
+template <typename value_type> class Epetra_HashTable;
 
 namespace EpetraExt {
 class LightweightCrsMatrix;

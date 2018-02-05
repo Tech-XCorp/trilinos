@@ -48,14 +48,28 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "NOX_Abstract_PrePostOperator.H"
-#include "NOX_MeritFunction_Generic.H"
-#include "NOX_StatusTest_Generic.H"
+#include <map>
+#include <sstream>
 
-#include "NOX_Solver_SolverUtils.H"
+#include "NOX_StatusTest_Generic.H"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
+
+namespace NOX {
+namespace Abstract {
+class PrePostOperator;
+}  // namespace Abstract
+namespace MeritFunction {
+class Generic;
+}  // namespace MeritFunction
+}  // namespace NOX
 
 // ************************************************************************
 // ************************************************************************

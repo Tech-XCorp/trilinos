@@ -45,9 +45,8 @@
 #ifndef _AZTECOO_SCALING_H_
 #define _AZTECOO_SCALING_H_
 
-#include <Epetra_Object.h>
 #include <Epetra_CrsMatrix.h>
-
+#include <Epetra_Object.h>
 #include <az_aztec.h>
 
 /** A scaling function that can be assigned to the AZ_SCALING.scale

@@ -9,9 +9,10 @@
 #ifndef _fei_EqnComm_hpp_
 #define _fei_EqnComm_hpp_
 
-#include <fei_macros.hpp>
 #include <fei_fwd.hpp>
+#include <fei_macros.hpp>
 #include <fei_mpi.h>
+#include <vector>
 
 namespace fei {
 class EqnComm {

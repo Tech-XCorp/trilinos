@@ -79,21 +79,48 @@
 /// type different than that of the Tpetra::MultiVector or
 /// Tpetra::Operator.
 
-#include <Tpetra_MultiVector.hpp>
-#include <Tpetra_Operator.hpp>
-
-#include <Teuchos_Array.hpp>
-#include <Teuchos_Assert.hpp>
-#include <Teuchos_DefaultSerialComm.hpp>
-#include <Teuchos_CommHelpers.hpp>
-#include <Teuchos_ScalarTraits.hpp>
-#include <Teuchos_FancyOStream.hpp>
-
 #include <AnasaziConfigDefs.hpp>
-#include <AnasaziTypes.hpp>
 #include <AnasaziMultiVecTraits.hpp>
 #include <AnasaziOperatorTraits.hpp>
 #include <AnasaziOutputStreamTraits.hpp>
+#include <AnasaziTypes.hpp>
+#include <Teuchos_Array.hpp>
+#include <Teuchos_Assert.hpp>
+#include <Teuchos_CommHelpers.hpp>
+#include <Teuchos_DefaultSerialComm.hpp>
+#include <Teuchos_FancyOStream.hpp>
+#include <Teuchos_ScalarTraits.hpp>
+#include <Tpetra_MultiVector.hpp>
+#include <Tpetra_Operator.hpp>
+#include <stddef.h>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
+
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Range1D.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Tpetra_ConfigDefs.hpp"
+#include "Tpetra_Map_decl.hpp"
+#include "Tpetra_MultiVector_decl.hpp"
+
+namespace Anasazi {
+template <class OperatorType> struct OutputStreamTraits;
+template <class ScalarType, class MV, class OP> class OperatorTraits;
+template <class ScalarType, class MV> class MultiVecTraits;
+}  // namespace Anasazi
+namespace Teuchos {
+class TimeMonitor;
+template <typename OrdinalType, typename ScalarType> class SerialDenseMatrix;
+}  // namespace Teuchos
 
 #ifdef HAVE_ANASAZI_TSQR
 #  include <Tpetra_TsqrAdaptor.hpp>

@@ -43,6 +43,8 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "Kokkos_DefaultNode.hpp"
+#include "Teuchos_ENull.hpp"
 #include "Xpetra_ConfigDefs.hpp"
 #include "Xpetra_DefaultPlatform.hpp"
 

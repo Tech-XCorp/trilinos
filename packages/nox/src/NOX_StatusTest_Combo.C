@@ -48,8 +48,21 @@
 // ************************************************************************
 //@HEADER
 
+#include <stddef.h>
+#include <ostream>
+#include <vector>
+
 #include "NOX_StatusTest_Combo.H"
+#include "NOX_StatusTest_Generic.H"
 #include "NOX_Utils.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Solver {
+class Generic;
+}  // namespace Solver
+}  // namespace NOX
 
 NOX::StatusTest::Combo::
 Combo(ComboType t, const NOX::Utils* u) :

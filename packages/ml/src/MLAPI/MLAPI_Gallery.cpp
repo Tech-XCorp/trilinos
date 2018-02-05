@@ -2,21 +2,30 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <math.h>
+#include <stdlib.h>
+#include <string>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "MLAPI_MultiVector.h"
+#include "Teuchos_Utils.hpp"
 #include "ml_common.h"
+#include "ml_config.h"
 #ifdef HAVE_ML_MLAPI
-#include <fstream>
 #include <iostream>
-#include "ml_include.h"
-#include "Teuchos_ParameterList.hpp"
+
+#include "MLAPI_DistributedMatrix.h"
 #include "MLAPI_Error.h"
-#include "MLAPI_Space.h"
-#include "MLAPI_Workspace.h"
 #include "MLAPI_Gallery.h"
 #include "MLAPI_Operator.h"
-#include "MLAPI_DistributedMatrix.h"
+#include "MLAPI_Space.h"
+#include "MLAPI_Workspace.h"
+#include "Teuchos_ParameterList.hpp"
 #if defined(HAVE_ML_GALERI)
-#include "Galeri_Maps.h"
 #include "Galeri_CrsMatrices.h"
+#include "Galeri_Maps.h"
 #endif
 
 

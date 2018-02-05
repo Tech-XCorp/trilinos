@@ -43,7 +43,15 @@
 #define THYRA_DIAGONAL_EPETRA_LINEAR_OP_WITH_SOLVE_FACTORY_HPP
 
 
+#include "Teuchos_RCPDecl.hpp"
 #include "Thyra_LinearOpWithSolveFactoryBase.hpp"
+#include "Thyra_LinearOpWithSolveFactoryBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_SolveSupportTypes.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 
 namespace Thyra {
@@ -54,6 +62,10 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class LinearOpSourceBase;
+template <class Scalar> class LinearOpWithSolveBase;
+template <class Scalar> class PreconditionerBase;
+
 class DiagonalEpetraLinearOpWithSolveFactory : public LinearOpWithSolveFactoryBase<double> {
 public:
 

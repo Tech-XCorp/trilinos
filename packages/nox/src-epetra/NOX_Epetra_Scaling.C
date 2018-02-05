@@ -45,14 +45,17 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_Scaling.H"
+#include <iostream>
+#include <type_traits>
+#include <vector>
 
-#include "Epetra_Vector.h"
+#include "Epetra_LinearProblem.h"
 #include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
-#include "Epetra_LinearProblem.h"
-
-#include "NOX_Utils.H"
+#include "Epetra_Vector.h"
+#include "NOX_Epetra_Scaling.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::Epetra::Scaling::Scaling()
 {

@@ -2,14 +2,20 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <string.h>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "ml_config.h"
+#include "ml_defs.h"
+#include "ml_rap.h"
 #if defined(HAVE_ML_EPETRA)
 #include "Epetra_Multi_CrsMatrix.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
-#include "ml_mat_formats.h"
-
-#include "Epetra_Comm.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #endif

@@ -46,13 +46,21 @@
 #ifndef XPETRA_EPETRAEXPORT_HPP
 #define XPETRA_EPETRAEXPORT_HPP
 
-#include "Xpetra_EpetraConfigDefs.hpp"
-
-#include "Xpetra_Export.hpp"
-
-#include "Xpetra_EpetraMap.hpp"//TMP
+#include <stddef.h>
+#include <iosfwd>
 
 #include "Epetra_Export.h"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Xpetra_ConfigDefs.hpp"
+#include "Xpetra_EpetraConfigDefs.hpp"
+#include "Xpetra_EpetraMap.hpp"//TMP
+#include "Xpetra_Exceptions.hpp"
+#include "Xpetra_Export.hpp"
+#include "Xpetra_Map.hpp"
 
 // Note: 'export' is a reserved keyword in C++. Do not use 'export' as a variable name.
 

@@ -45,11 +45,13 @@
 #ifndef _AZTECOO_OPERATOR_H_
 #define _AZTECOO_OPERATOR_H_
 
-class Epetra_MultiVector;
+#include "AztecOO.h"
+#include "Epetra_Operator.h"
+
 class Epetra_BlockMap;
 class Epetra_Comm;
-#include "Epetra_Operator.h"
-#include "AztecOO.h"
+class Epetra_Map;
+class Epetra_MultiVector;
 
 //! AztecOO_Operator: An implementation of the Epetra_Operator class.
 /*! The AztecOO_Operator class implements Epetra_Operator using a pre-constructed AztecOO solver object.

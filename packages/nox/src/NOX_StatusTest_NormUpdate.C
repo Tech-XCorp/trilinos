@@ -48,12 +48,19 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_StatusTest_NormUpdate.H"
-#include "NOX_Common.H"
-#include "NOX_Abstract_Vector.H"
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+
 #include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
 #include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_StatusTest_NormUpdate.H"
 #include "NOX_Utils.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 using namespace NOX;
 using namespace NOX::StatusTest;

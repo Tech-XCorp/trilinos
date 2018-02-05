@@ -48,17 +48,26 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_LineSearch_Backtrack.H" // class definition
+#include <iomanip>
+#include <sstream>
+#include <type_traits>
 
-#include "NOX_Common.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Abstract_Group.H"
-#include "NOX_Solver_Generic.H"
-#include "Teuchos_ParameterList.hpp"
-#include "NOX_Utils.H"
-#include "NOX_MeritFunction_Generic.H"
-#include "NOX_StatusTest_FiniteValue.H"
 #include "NOX_GlobalData.H"
+#include "NOX_LineSearch_Backtrack.H" // class definition
+#include "NOX_MeritFunction_Generic.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_FiniteValue.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Vector;
+}  // namespace Abstract
+}  // namespace NOX
 
 NOX::LineSearch::Backtrack::
 Backtrack(const Teuchos::RCP<NOX::GlobalData>& gd,

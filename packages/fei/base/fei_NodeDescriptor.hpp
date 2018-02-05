@@ -9,10 +9,13 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
 #include <fei_ArrayUtils.hpp>
+#include <fei_macros.hpp>
+#include <stddef.h>
 #include <iostream>
+#include <vector>
+
+#include "fei_defs.h"
 /**
   The NodeDescriptor class holds the information that the FEI implementation
   needs to know about the nodes in the finite element problem:

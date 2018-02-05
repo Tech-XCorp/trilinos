@@ -41,8 +41,15 @@
 // @HEADER
 */
 
-#include "Tpetra_Details_FixedHashTable_decl.hpp"
+#include <Kokkos_Macros.hpp>
 
+#include "Kokkos_Concepts.hpp"
+#include "TpetraCore_config.h"
+
+namespace Kokkos {
+class HostSpace;
+class Serial;
+}  // namespace Kokkos
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(KOKKOS_HAVE_SERIAL)
 
 #include "TpetraCore_ETIHelperMacros.h"

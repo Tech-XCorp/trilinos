@@ -48,10 +48,27 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_Vector.H"
-#include "NOX_Epetra_MultiVector.H"
+#include <iostream>
+#include <type_traits>
+
+#include "Epetra_DataAccess.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "NOX_Epetra_MultiVector.H"
+#include "NOX_Epetra_Vector.H"
+#include "NOX_Epetra_VectorSpace.H"
 #include "NOX_Epetra_VectorSpace_L2.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_BlockMap;
+namespace NOX {
+namespace Abstract {
+class MultiVector;
+}  // namespace Abstract
+}  // namespace NOX
 
 NOX::Epetra::Vector::
 Vector(const Teuchos::RCP<Epetra_Vector>& source,

@@ -48,7 +48,22 @@
 // ************************************************************************
 //@HEADER
 
+#include <vector>
+
+#include "LOCA_DerivUtils.H"
 #include "LOCA_Hopf_MooreSpence_FiniteDifferenceGroup.H"
+#include "LOCA_MultiContinuation_FiniteDifferenceGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_FiniteDifferenceGroup.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class MultiVector;
+}  // namespace Abstract
+}  // namespace NOX
 
 LOCA::Hopf::MooreSpence::FiniteDifferenceGroup::FiniteDifferenceGroup()
 {

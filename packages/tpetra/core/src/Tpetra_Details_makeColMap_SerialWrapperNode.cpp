@@ -47,10 +47,8 @@
 // unless KokkosSerialWrapperNode is enabled.
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_SERIAL)
 
-#include "Tpetra_Details_makeColMap_decl.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 #include "Tpetra_Details_makeColMap_def.hpp"
-#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 
 // Macro for instantiating Tpetra::Details::makeColMap for this Node type.
 

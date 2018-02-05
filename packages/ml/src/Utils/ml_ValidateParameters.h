@@ -19,7 +19,14 @@
 #ifndef ML_VALIDATEPARAMETERS_H
 #define ML_VALIDATEPARAMETERS_H
 
+#include <iosfwd>
+
+#include "ml_config.h"
 #include "ml_include.h"
+
+namespace Teuchos {
+template <typename T> class Array;
+}  // namespace Teuchos
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 #include "Teuchos_ParameterList.hpp"

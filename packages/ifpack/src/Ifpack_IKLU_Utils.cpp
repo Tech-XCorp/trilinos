@@ -40,7 +40,9 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
+#include <math.h>
+#include <stdlib.h>
+
 #include "Ifpack_IKLU_Utils.h"
 
 //-----------------------------------------------------------------

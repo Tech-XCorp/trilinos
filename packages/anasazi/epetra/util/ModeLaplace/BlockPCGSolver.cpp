@@ -50,6 +50,21 @@
 
 #include "BlockPCGSolver.h"
 
+#include <string.h>
+#include <cmath>
+#include <cstdio>
+#include <iostream>
+#include <new>
+#include <stdexcept>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_TestForException.hpp"
+
 
 BlockPCGSolver::BlockPCGSolver(const Epetra_Comm &_Comm, const Epetra_Operator *KK,
                                double _tol, int _iMax, int _verb)

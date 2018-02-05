@@ -48,19 +48,46 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
+#include <ostream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "LOCA_Abstract_Group.H"
+#include "LOCA_Abstract_Iterator.H"
+#include "LOCA_BorderedSolver_AbstractStrategy.H"
+#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "LOCA_BorderedSystem_AbstractGroup.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Extended_Vector.H"
+#include "LOCA_Factory.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "LOCA_MultiContinuation_ConstrainedGroup.H"
 #include "LOCA_MultiContinuation_ConstraintInterface.H"
 #include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
-#include "LOCA_MultiContinuation_ConstrainedGroup.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Factory.H"
-#include "LOCA_Parameter_SublistParser.H"
-#include "LOCA_BorderedSolver_AbstractStrategy.H"
-#include "LOCA_ErrorCheck.H"
-#include "NOX_Utils.H"
+#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
 #include "LOCA_Parameter_Vector.H"
-#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Utils.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::MultiContinuation::ConstrainedGroup::ConstrainedGroup(
        const Teuchos::RCP<LOCA::GlobalData>& global_data,

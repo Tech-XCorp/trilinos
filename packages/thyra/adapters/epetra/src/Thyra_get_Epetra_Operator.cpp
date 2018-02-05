@@ -39,9 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_get_Epetra_Operator.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
+#include "Teuchos_RCP.hpp"
 #include "Teuchos_dyn_cast.hpp"
+#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_get_Epetra_Operator.hpp"
+
+class Epetra_Operator;
 
 namespace Thyra {
 

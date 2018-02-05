@@ -9,14 +9,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <fei_fwd.hpp>
-#include <fei_version.h>
-
 #include <Teuchos_ParameterList.hpp>
-
+#include <fei_fwd.hpp>
+#include <fei_macros.hpp>
+#include <fei_version.h>
+#include <iosfwd>
 #include <string>
 #include <vector>
+
+class LinearSystemCore;
+namespace fei {
+class Matrix;
+class MatrixGraph;
+class ParameterSet;
+}  // namespace fei
 
 
 

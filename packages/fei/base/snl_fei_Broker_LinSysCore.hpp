@@ -9,25 +9,39 @@
 #ifndef _snl_fei_Broker_LinSysCore_hpp_
 #define _snl_fei_Broker_LinSysCore_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_mpi.h>
 #include <fei_CommUtils.hpp>
-#include <snl_fei_Broker.hpp>
 #include <fei_LinearSystemCore.hpp>
-#include <fei_VectorSpace.hpp>
 #include <fei_Lookup_Impl.hpp>
 #include <fei_MatrixGraph.hpp>
-#include <fei_SparseRowGraph.hpp>
-#include <fei_Vector_Impl.hpp>
-#include <fei_Matrix_Impl.hpp>
 #include <fei_MatrixReducer.hpp>
-#include <fei_VectorReducer.hpp>
+#include <fei_Matrix_Impl.hpp>
 #include <fei_Reducer.hpp>
+#include <fei_SparseRowGraph.hpp>
+#include <fei_VectorReducer.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_Vector_Impl.hpp>
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
+#include <snl_fei_Broker.hpp>
 #include <snl_fei_LinearSystem_General.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "snl_fei_Broker_LinSysCore.hpp"
 #include <fei_ErrMacros.hpp>
+#include <algorithm>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <vector>
+
+#include "fei_CSVec.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_Lookup.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_Vector.hpp"
+#include "fei_console_ostream.hpp"
 
 namespace snl_fei {
 

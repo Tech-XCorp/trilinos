@@ -46,7 +46,11 @@
 #ifndef XPETRA_LOOKUPSTATUS_HPP
 #define XPETRA_LOOKUPSTATUS_HPP
 
+#include <iosfwd>
+
+#include "Tpetra_CombineMode.hpp"
 #include "Xpetra_ConfigDefs.hpp"
+#include "Xpetra_config.hpp"
 
 #ifdef HAVE_XPETRA_TPETRA
 #include "Tpetra_ConfigDefs.hpp"

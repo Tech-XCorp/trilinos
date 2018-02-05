@@ -40,6 +40,7 @@
 // @HEADER
 
 #include "AnasaziEpetraAdapter.hpp"
+#include "Epetra_Map.h"
 
 /*! \file AnasaziEpetraAdapter.cpp
  *   \brief Implementations of Anasazi multi-vector and operator classes using Epetra_MultiVector and Epetra_Operator classes

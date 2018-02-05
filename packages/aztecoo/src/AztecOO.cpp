@@ -42,24 +42,45 @@
 */
 
 #include <climits>
+#include <deque>
+#include <iostream>
+#include <map>
+#include <string>
+#include <utility>
+
 #include "AztecOO.h"
+#include "AztecOO_StatusTest.h"
+#include "AztecOO_StatusType.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
 #include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_StringIndexedOrderedValueObjectContainer.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_config.h"
 #ifdef AZTEC_MPI
 #include "Epetra_MpiComm.h"
 #else
 #include "Epetra_Comm.h"
 #endif
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Import.h"
-
-#include <AztecOO_string_maps.h>
-#include <AztecOO_Scaling.h>
 #include <AZOO_printf.h>
+#include <AztecOO_Scaling.h>
+#include <AztecOO_string_maps.h>
+#include <assert.h>
+#include <math.h>
+#include <string.h>
+
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
 
 #ifdef HAVE_AZTECOO_TEUCHOS
 #include <Teuchos_ParameterList.hpp>

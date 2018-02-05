@@ -27,6 +27,12 @@
 // @HEADER
 
 #include "Amesos_Control.h"
+
+#include <sstream>
+#include <string>
+
+#include "Teuchos_Utils.hpp"
+
 void Amesos_Control::SetControlParameters( const Teuchos::ParameterList &ParameterList) {
 
   // add zero to diagonal if diagonal element is not present

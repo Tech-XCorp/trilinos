@@ -9,24 +9,44 @@
 #ifndef _snl_fei_Factory_hpp_
 #define _snl_fei_Factory_hpp_
 
-#include <fei_macros.hpp>
 #include <fei_Factory.hpp>
+#include <fei_LibraryWrapper.hpp>
+#include <fei_LinearSystemCore.hpp>
+#include <fei_MatrixGraph_Impl2.hpp>
+#include <fei_MatrixReducer.hpp>
+#include <fei_ParameterSet.hpp>
+#include <fei_Reducer.hpp>
+#include <fei_Solver.hpp>
+#include <fei_VectorReducer.hpp>
 #include <fei_VectorSpace.hpp>
+#include <fei_macros.hpp>
+#include <fei_utils.hpp>
 #include <snl_fei_Broker_FEData.hpp>
 #include <snl_fei_Broker_LinSysCore.hpp>
-#include <fei_Solver.hpp>
-#include <fei_LinearSystemCore.hpp>
-#include <fei_LibraryWrapper.hpp>
-#include <fei_utils.hpp>
-#include <fei_Reducer.hpp>
-#include <fei_MatrixReducer.hpp>
-#include <fei_VectorReducer.hpp>
-#include <fei_ParameterSet.hpp>
-#include <fei_MatrixGraph_Impl2.hpp>
 
 #undef fei_file
 #define fei_file "snl_fei_Factory.hpp"
 #include <fei_ErrMacros.hpp>
+
+#include "fei_SharedPtr.hpp"
+#include "fei_mpi.h"
+
+class FiniteElementData;
+class LibraryWrapper;
+class LinearSystemCore;
+namespace fei {
+class LinearSystem;
+class Matrix;
+class MatrixGraph;
+class ParameterSet;
+class Reducer;
+class Solver;
+class Vector;
+class VectorSpace;
+}  // namespace fei
+namespace snl_fei {
+class Broker;
+}  // namespace snl_fei
 
 namespace snl_fei {
 

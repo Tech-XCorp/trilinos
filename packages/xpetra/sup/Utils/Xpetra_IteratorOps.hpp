@@ -47,23 +47,43 @@
 #ifndef PACKAGES_XPETRA_SUP_UTILS_XPETRA_ITERATOROPS_HPP_
 #define PACKAGES_XPETRA_SUP_UTILS_XPETRA_ITERATOROPS_HPP_
 
+#include <ostream>
+
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "TpetraExt_MatrixMatrix_decl.hpp"
+#include "Tpetra_Vector_decl.hpp"
+#include "Xpetra_BlockedCrsMatrix.hpp"
+#include "Xpetra_BlockedVector.hpp"
 #include "Xpetra_ConfigDefs.hpp"
-
-#include "Xpetra_Matrix.hpp"
-#include "Xpetra_MatrixMatrix.hpp"
 #include "Xpetra_CrsMatrixWrap.hpp"
-
+#include "Xpetra_EpetraUtils.hpp"
+#include "Xpetra_Exceptions.hpp"
 #include "Xpetra_Map.hpp"
+#include "Xpetra_MapExtractor.hpp"
+#include "Xpetra_Matrix.hpp"
+#include "Xpetra_MatrixFactory.hpp"
+#include "Xpetra_MatrixMatrix.hpp"
 #include "Xpetra_StridedMap.hpp"
 #include "Xpetra_StridedMapFactory.hpp"
-#include "Xpetra_MapExtractor.hpp"
-#include "Xpetra_MatrixFactory.hpp"
-#include "Xpetra_BlockedCrsMatrix.hpp"
+#include "Xpetra_UseShortNamesScalar.hpp"
+#include "Xpetra_config.hpp"
+
+namespace Tpetra {
+template <class S, class LO, class GO, class N, bool isClassic> class CrsMatrix;
+}  // namespace Tpetra
 
 namespace Xpetra {
 
   // General implementation
   // Epetra variant throws
+template <class S, class LO, class GO, class N> class Vector;
+
   template <class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
   void Jacobi(
               Scalar omega,
@@ -156,6 +176,7 @@ namespace Xpetra {
   class IteratorOps {
 #undef XPETRA_ITERATOROPS_SHORT
 #include "Xpetra_UseShortNames.hpp"
+
   public:
 
     static RCP<Matrix>

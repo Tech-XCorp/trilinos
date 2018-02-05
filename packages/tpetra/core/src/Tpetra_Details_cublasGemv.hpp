@@ -60,9 +60,18 @@
 ///
 /// It also generally improves encapsulation.
 
+#include <type_traits>
+
+#include "Kokkos_Complex.hpp"
 #include "TpetraCore_config.h"
 #include "Tpetra_Details_Blas.hpp"
 #include "Tpetra_Details_libGemv.hpp"
+
+namespace Kokkos {
+struct LayoutLeft;
+struct LayoutRight;
+struct LayoutStride;
+}  // namespace Kokkos
 
 namespace Tpetra {
 namespace Details {

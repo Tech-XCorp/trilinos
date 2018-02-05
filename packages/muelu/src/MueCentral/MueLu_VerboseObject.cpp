@@ -43,17 +43,23 @@
 // ***********************************************************************
 //
 // @HEADER
+#include <stddef.h>
+#include <iostream>
+#include <type_traits>
+
 #include "MueLu_VerboseObject.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_basic_oblackholestream.hpp"
+#include "Teuchos_oblackholestream.hpp"
 
 #ifdef HAVE_MPI
 #include <mpi.h>
 #endif
 
-#include <Teuchos_VerboseObject.hpp>
-
 #include "MueLu_ConfigDefs.hpp"
-#include "MueLu_VerbosityLevel.hpp"
 #include "MueLu_Exceptions.hpp"
+#include "MueLu_VerbosityLevel.hpp"
 
 namespace MueLu {
 

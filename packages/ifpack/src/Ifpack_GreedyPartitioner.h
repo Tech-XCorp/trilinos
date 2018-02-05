@@ -43,15 +43,18 @@
 #ifndef IFPACK_GREEDYPARTITIONER_H
 #define IFPACK_GREEDYPARTITIONER_H
 
+#include <sstream>
+
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
 #include "Ifpack_OverlappingPartitioner.h"
+#include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
+class Ifpack_Graph;
 
 //! Ifpack_GreedyPartitioner: A class to decompose Ifpack_Graph's using a simple greedy algorithm.
 

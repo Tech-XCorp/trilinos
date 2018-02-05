@@ -39,15 +39,20 @@
 // ************************************************************************
 // @HEADER
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
 #include "Galeri_ConfigDefs.h"
 #include "Galeri_ReadHB.h"
 #include "Galeri_iohb.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include <vector>
-#include <algorithm>
 
 // Copied from Trilinos/packages/triutils/src, this file is here
 // only to make it easier for users to create and read matrices.

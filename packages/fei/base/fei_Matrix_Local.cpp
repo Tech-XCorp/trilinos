@@ -6,13 +6,27 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_ParameterSet.hpp>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
 #include "fei_Matrix_Local.hpp"
 #include "fei_Matrix_core.hpp"
-#include "fei_sstream.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_SparseRowGraph.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_defs.h"
 #include "fei_fstream.hpp"
+#include "fei_mpi.h"
+#include "fei_sstream.hpp"
 
 namespace fei {
+
+class ParameterSet;
+class Vector;
 
 Matrix_Local::Matrix_Local(fei::SharedPtr<fei::MatrixGraph> matrixGraph,
                fei::SharedPtr<fei::SparseRowGraph> sparseRowGraph)

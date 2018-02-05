@@ -10,21 +10,28 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
+#include <assert.h>
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Epetra_ConfigDefs.h"
+#include "Teuchos_ParameterList.hpp"
+#include "ml_config.h"
+#include "ml_operator.h"
+#include "ml_struct.h"
+#include "ml_viz_stats.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
-#include "ml_include.h"
 #include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Import.h"
-#include "Epetra_Time.h"
 #include "Epetra_RowMatrix.h"
 #include "Epetra_VbrMatrix.h"
-#include "ml_epetra.h"
+#include "Epetra_Vector.h"
 #include "ml_MultiLevelPreconditioner.h"
+#include "ml_epetra.h"
 #include "ml_viz_xyz.h"
-#include "ml_agg_info.h"
 #ifdef HAVE_ML_ANASAxI
 #include "ml_anasazi.h"
 #endif

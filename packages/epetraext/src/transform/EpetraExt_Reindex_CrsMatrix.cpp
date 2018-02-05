@@ -39,21 +39,17 @@
 // ***********************************************************************
 //@HEADER
 
-#include <Epetra_ConfigDefs.h>
 #include <EpetraExt_Reindex_CrsMatrix.h>
-
+#include <Epetra_CrsMatrix.h>
+#include <Epetra_GIDTypeVector.h>
+#include <Epetra_Import.h>
+#include <Epetra_Map.h>
+#include <assert.h>
 #include <vector>
 
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
-#include <Epetra_GIDTypeVector.h>
-
-#ifndef EPETRA_NO_64BIT_GLOBAL_INDICES
-#include <Epetra_LongLongVector.h>
-#endif
-
-#include <Epetra_Export.h>
-#include <Epetra_Import.h>
+#include "EpetraExt_Transform.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

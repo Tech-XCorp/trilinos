@@ -48,27 +48,56 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Epetra_AdaptiveStepper.H"    // class definition
-#include "NOX_StatusTest_Generic.H"
+#include <math.h>
+#include <stddef.h>
+#include <sstream>
+#include <type_traits>
+#include <vector>
 
+#include "Epetra_ConfigDefs.h"
+#include "LOCA_Abstract_Iterator.H"
+#include "LOCA_Eigensolver_AbstractStrategy.H"
+#include "LOCA_Epetra_AdaptiveSolutionManager.H"
+#include "LOCA_Epetra_AdaptiveStepper.H"    // class definition
+#include "LOCA_Epetra_Group.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Extended_MultiVector.H"
+#include "LOCA_Factory.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "LOCA_MultiContinuation_AbstractStrategy.H"
+#include "LOCA_MultiContinuation_ConstrainedGroup.H"
+#include "LOCA_MultiContinuation_ExtendedGroup.H"
+#include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_Parameter_Vector.H"
+#include "LOCA_SaveEigenData_AbstractStrategy.H"
+#include "LOCA_StepSize_AbstractStrategy.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_AdaptManager.H"
+#include "NOX_Solver_Factory.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_Generic.H"
 // LOCA Includes
 #include "NOX_Utils.H"
-#include "NOX_Solver_Factory.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Factory.H"
-#include "LOCA_Parameter_Vector.H"
-#include "LOCA_Parameter_SublistParser.H"
-#include "LOCA_MultiPredictor_AbstractStrategy.H"
-#include "LOCA_MultiContinuation_AbstractStrategy.H"
-#include "LOCA_MultiContinuation_AbstractGroup.H"
-#include "LOCA_MultiContinuation_ExtendedGroup.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
-#include "LOCA_StepSize_AbstractStrategy.H"
-#include "LOCA_Eigensolver_AbstractStrategy.H"
-#include "LOCA_SaveEigenData_AbstractStrategy.H"
-#include "LOCA_MultiContinuation_ConstrainedGroup.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_config.h"
+
+namespace LOCA {
+namespace MultiContinuation {
+class ConstraintInterface;
+}  // namespace MultiContinuation
+}  // namespace LOCA
+namespace NOX {
+namespace Abstract {
+class MultiVector;
+}  // namespace Abstract
+}  // namespace NOX
 
 LOCA::Epetra::AdaptiveStepper::AdaptiveStepper(
           const Teuchos::RCP<Teuchos::ParameterList>& pList,

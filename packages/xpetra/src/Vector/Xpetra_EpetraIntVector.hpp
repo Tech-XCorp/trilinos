@@ -46,17 +46,47 @@
 #ifndef XPETRA_EPETRAINTVECTOR_HPP
 #define XPETRA_EPETRAINTVECTOR_HPP
 
-#include "Xpetra_EpetraConfigDefs.hpp"
+#include <stddef.h>
+#include <iomanip>
+#include <memory>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
 
+#include "Epetra_BlockMap.h"
+#include "Epetra_IntVector.h"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 #include "Xpetra_ConfigDefs.hpp"
-#include "Xpetra_MultiVector.hpp"
-#include "Xpetra_Vector.hpp"
-#include "Xpetra_Exceptions.hpp"
-
+#include "Xpetra_DistObject.hpp"
+#include "Xpetra_EpetraConfigDefs.hpp"
+#include "Xpetra_EpetraExport.hpp"
+#include "Xpetra_EpetraImport.hpp"
 #include "Xpetra_EpetraMap.hpp"
 #include "Xpetra_EpetraMultiVector.hpp"
-#include "Epetra_IntVector.h"
+#include "Xpetra_Exceptions.hpp"
+#include "Xpetra_Export.hpp"
+#include "Xpetra_Import.hpp"
+#include "Xpetra_Map.hpp"
+#include "Xpetra_MultiVector.hpp"
+#include "Xpetra_Utils.hpp"
+#include "Xpetra_Vector.hpp"
+#include "Xpetra_config.hpp"
 
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 namespace Xpetra {
 
   // stub implementation for EpetraIntVectorT

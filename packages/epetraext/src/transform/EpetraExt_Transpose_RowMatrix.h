@@ -44,10 +44,10 @@
 
 #include <EpetraExt_Transform.h>
 
-class Epetra_RowMatrix;
 class Epetra_CrsMatrix;
-class Epetra_Map;
 class Epetra_Export;
+class Epetra_Map;
+class Epetra_RowMatrix;
 
 namespace EpetraExt {
 

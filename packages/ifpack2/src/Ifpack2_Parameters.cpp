@@ -40,10 +40,19 @@
 //@HEADER
 */
 
-#include "Ifpack2_Parameters.hpp"
-
 #include <Teuchos_ArrayRCP.hpp>
-#include <Tpetra_MultiVector.hpp>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Ifpack2_Parameters.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Tpetra_MultiVector_decl.hpp"
 
 namespace Ifpack2 {
 

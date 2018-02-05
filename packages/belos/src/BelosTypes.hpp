@@ -47,7 +47,11 @@
   \brief Collection of types and exceptions used within the Belos solvers.
 */
 
+#include <iosfwd>
+#include <stdexcept>
+
 #include "BelosConfigDefs.hpp"
+#include "Belos_config.h"
 #include "Teuchos_Assert.hpp"
 
 namespace Belos {

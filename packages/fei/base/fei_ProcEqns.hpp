@@ -1,6 +1,8 @@
 #ifndef _ProcEqns_hpp_
 #define _ProcEqns_hpp_
 
+#include <stddef.h>
+#include <vector>
 /*--------------------------------------------------------------------*/
 /*    Copyright 2005 Sandia Corporation.                              */
 /*    Under the terms of Contract DE-AC04-94AL85000, there is a       */

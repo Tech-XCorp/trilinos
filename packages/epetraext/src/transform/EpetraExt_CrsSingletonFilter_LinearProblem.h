@@ -42,21 +42,24 @@
 #ifndef _EpetraExt_LINEARPROBLEM_CRSSINGLETONFILTER_H_
 #define _EpetraExt_LINEARPROBLEM_CRSSINGLETONFILTER_H_
 
+#include "EpetraExt_Transform.h"
 #include "Epetra_ConfigDefs.h"
-#include "Epetra_Object.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_MapColoring.h"
+#include "Epetra_Object.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_SerialDenseVector.h"
-
-#include "EpetraExt_Transform.h"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
+class Epetra_CrsMatrix;
+class Epetra_Export;
+class Epetra_Import;
+class Epetra_IntVector;
 class Epetra_LinearProblem;
 class Epetra_Map;
+class Epetra_MapColoring;
 class Epetra_MultiVector;
-class Epetra_Import;
-class Epetra_Export;
-class Epetra_IntVector;
 
 namespace EpetraExt {
 

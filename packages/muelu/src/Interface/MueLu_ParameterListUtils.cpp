@@ -44,8 +44,22 @@
 //
 // @HEADER
 
-#include "MueLu_ParameterListUtils.hpp"
+#include <stdio.h>
+#include <deque>
+#include <string>
+
+#include "MueLu_ConfigDefs.hpp"
 #include "MueLu_Exceptions.hpp"
+#include "MueLu_ParameterListUtils.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_toString.hpp"
 
 namespace MueLu {
 

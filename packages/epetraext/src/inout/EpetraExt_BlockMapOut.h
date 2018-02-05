@@ -41,9 +41,12 @@
 #ifndef EPETRAEXT_BLOCKMAPOUT_H
 #define EPETRAEXT_BLOCKMAPOUT_H
 
-#include <Epetra_ConfigDefs.h>
 #include <EpetraExt_ConfigDefs.h>
+#include <Epetra_ConfigDefs.h>
+#include <stdio.h>
+
 class Epetra_BlockMap;
+
 namespace EpetraExt {
  
   //! Writes an Epetra_BlockMap or Epetra_Map object to a Matrix Market format file

@@ -42,10 +42,15 @@
 #ifndef THYRA_GET_EPETRA_OPERATOR_HPP
 #define THYRA_GET_EPETRA_OPERATOR_HPP
 
-#include "Thyra_EpetraTypes.hpp"
+#include <stdexcept> // std::invalid_argument
+
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_TestForException.hpp"
 #include "Teuchos_TypeNameTraits.hpp"
-#include <stdexcept> // std::invalid_argument
+#include "Thyra_EpetraTypes.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+
+class Epetra_Operator;
 
 namespace Thyra {
 
@@ -75,6 +80,8 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class LinearOpBase;
+
 template<class Scalar>
 Teuchos::RCP<Epetra_Operator>
 get_Epetra_Operator (LinearOpBase<Scalar>& /* op */)

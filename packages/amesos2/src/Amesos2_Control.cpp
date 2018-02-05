@@ -53,7 +53,14 @@
 #define AMESOS2_CONTROL_CPP
 
 #include <sstream>
+#include <stdexcept>
+#include <string>
+
 #include "Amesos2_Control.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace Amesos2 {
 

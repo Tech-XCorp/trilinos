@@ -43,23 +43,20 @@
 // ***********************************************************************
 //
 // @HEADER
-#include <algorithm>
 
-#include "MueLu_ConfigDefs.hpp"
 
+#include "MueLu_config.hpp"
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_AMESOS)
 
-#include <Epetra_LinearProblem.h>
-
-#include <Amesos_config.h>
 #include <Amesos.h>
 #include <Amesos_BaseSolver.h>
+#include <Amesos_config.h>
+#include <Epetra_LinearProblem.h>
 
 #include "MueLu_AmesosSmoother.hpp"
-
 #include "MueLu_Level.hpp"
-#include "MueLu_Utilities.hpp"
 #include "MueLu_Monitor.hpp"
+#include "MueLu_Utilities.hpp"
 
 namespace MueLu {
 

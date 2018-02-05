@@ -3,23 +3,39 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
+#include <assert.h>
+#include <stdio.h>
+#include <string.h>
+#include <__functional_base>
+#include <iostream>
+#include <map>
+#include <sstream>
 #include <stdexcept>
+#include <string>
 
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_SerialComm.h"
+#include "Ifpack_Preconditioner.h"
+#include "Teuchos_ParameterList.hpp"
 #include "ml_config.h"
-#include "ml_include.h"
+#include "ml_defs.h"
+#include "ml_mat_formats.h"
+#include "ml_memory.h"
+#include "ml_operator.h"
+
+class Epetra_Comm;
 #if defined(HAVE_ML_IFPACK) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRA)
-#include "Ifpack_config.h"
-#include "ml_utils.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Time.h"
 #include "ml_ifpack.h"
 #include "ml_ifpack_wrap.h"
+#include "ml_utils.h"
 #ifdef rst_dump
 #include "ml_Ifpack_ML.h"
 #endif
@@ -265,11 +281,11 @@ int ML_Ifpack_Gen(ML *ml, const char* Type, int Overlap, int curr_level,
 #ifdef ML_DUMP_IFPACK_FACTORS
 #include "EpetraExt_RowMatrixOut.h"
 #include "EpetraExt_VectorOut.h"
+#include "Ifpack_AdditiveSchwarz.h"
 #include "Ifpack_IC.h"
 #include "Ifpack_ICT.h"
 #include "Ifpack_ILU.h"
 #include "Ifpack_ILUT.h"
-#include "Ifpack_AdditiveSchwarz.h"
 #endif //ifdef ML_DUMP_IFPACK_FACTORS
 
 // ================================================ ====== ==== ==== == =

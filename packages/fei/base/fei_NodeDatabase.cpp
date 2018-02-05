@@ -6,18 +6,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_NodeDatabase.hpp>
-
-#include <fei_CommUtils.hpp>
-#include <fei_NodeDescriptor.hpp>
 #include <fei_NodeCommMgr.hpp>
+#include <fei_NodeDatabase.hpp>
+#include <fei_NodeDescriptor.hpp>
+#include <stddef.h>
 
-#include <fei_macros.hpp>
-#include <fei_TemplateUtils.hpp>
 #undef fei_file
 #define fei_file "fei_NodeDatabase.cpp"
 
 #include <fei_ErrMacros.hpp>
+#include <__functional_base>
+#include <__tree>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
 
 //------------------------------------------------------------------------------
 NodeDatabase::NodeDatabase(std::map<int,int>* fieldDatabase,

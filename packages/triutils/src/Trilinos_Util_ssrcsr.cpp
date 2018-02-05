@@ -39,8 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-
 int Trilinos_Util_ssrcsr ( int job, int value2, int nrow, double *a,
                           int *ja, int *ia, int nzmax, 
                           double *ao, int *jao, int *iao, int *indu, 

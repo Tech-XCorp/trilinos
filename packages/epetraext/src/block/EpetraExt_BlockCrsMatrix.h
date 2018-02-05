@@ -44,8 +44,13 @@
 
 #include <vector>
 
+#include "Epetra_BlockMap.h"
 #include "Epetra_ConfigDefs.h" 
+#include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h" 
+
+class Epetra_Comm;
+class Epetra_RowMatrix;
 
 //! EpetraExt::BlockCrsMatrix: A class for constructing a distributed block matrix.
 

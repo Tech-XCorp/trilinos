@@ -47,12 +47,15 @@
 #define MUELU_NOFACTORY_HPP
 
 #include <algorithm>                    // for swap
-#include "Teuchos_RCPDecl.hpp"          // for RCP
-#include "Teuchos_RCP.hpp"              // for RCP::RCP<T>, RCP::operator=, etc
-#include "MueLu_config.hpp"             // for HAVE_MUELU_DEBUG
+#include <type_traits>
+
+#include "MueLu_ConfigDefs.hpp"
 #include "MueLu_Exceptions.hpp"
 #include "MueLu_FactoryBase.hpp"
 #include "MueLu_Level_fwd.hpp"
+#include "MueLu_config.hpp"             // for HAVE_MUELU_DEBUG
+#include "Teuchos_RCP.hpp"              // for RCP::RCP<T>, RCP::operator=, etc
+#include "Teuchos_RCPDecl.hpp"          // for RCP
 
 namespace MueLu {
 
@@ -62,6 +65,8 @@ namespace MueLu {
 
     This should be used as the "generating" factory for user-data.  Uses Singleton pattern.
   */
+class Level;
+
   class NoFactory : public FactoryBase {
 
     //! Constructor.

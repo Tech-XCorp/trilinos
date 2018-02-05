@@ -39,13 +39,17 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
+#include <stdlib.h>
+
 #include "Epetra_ConfigDefs.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+#include "Trilinos_Util.h"
+
+class Epetra_Comm;
 
 // Constructs a 2D PDE finite difference matrix using the list of x and y offsets.
 // 

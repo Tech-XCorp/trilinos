@@ -9,9 +9,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
-#include "fei_defs.h"
+#include <stddef.h>
 #include <vector>
+
+#include "fei_defs.h"
+#include "fei_macros.hpp"
 
 /**
  The BlockDescriptor class holds the information that the FEI implementation

@@ -48,13 +48,29 @@
 // ************************************************************************
 //@HEADER
 
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+#include "EpetraExt_Transpose_RowMatrix.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
 #include "LOCA_Epetra_TransposeLinearSystem_ExplicitTranspose.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_ErrorCheck.H"
-#include "Teuchos_ParameterList.hpp"
+#include "LOCA_GlobalData.H"
 #include "NOX_Epetra_LinearSystem.H"
 #include "NOX_Epetra_Scaling.H"
-#include "Epetra_RowMatrix.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_config.h"
+
+namespace NOX {
+namespace Epetra {
+class Vector;
+}  // namespace Epetra
+}  // namespace NOX
 
 LOCA::Epetra::TransposeLinearSystem::ExplicitTranspose::
 ExplicitTranspose(

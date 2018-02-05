@@ -43,24 +43,32 @@
 #ifndef IFPACK_POINTRELAXATION_H
 #define IFPACK_POINTRELAXATION_H
 
+#include <iosfwd>
+
+#include "Epetra_Import.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_CondestType.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Preconditioner.h"
-
-#include "Epetra_Vector.h"
-#include "Epetra_Time.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Import.h"
-
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_Import;
+class Epetra_Time;
 
 namespace Teuchos {
   class ParameterList;
 }
-class Epetra_MultiVector;
-class Epetra_Vector;
-class Epetra_Map;
 class Epetra_Comm;
 class Epetra_CrsMatrix;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Vector;
 
 //! Ifpack_PointRelaxation: a class to define point relaxation preconditioners of for Epetra_RowMatrix's.
 

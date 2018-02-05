@@ -43,10 +43,10 @@
 #ifndef IFPACK_IKLU_UTILS_H
 #define IFPACK_IKLU_UTILS_H
 
-#include <stdlib.h>
 #include <limits.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 /* The code found in this file is adapted from CSparse Version 2.0.0
    written by Tim Davis, UFL

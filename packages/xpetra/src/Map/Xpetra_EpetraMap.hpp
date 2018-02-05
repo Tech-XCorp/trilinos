@@ -47,18 +47,44 @@
 #define XPETRA_EPETRAMAP_HPP
 
 
-#include "Xpetra_EpetraConfigDefs.hpp"
-
-#include "Xpetra_Map.hpp"
-
-#include <Epetra_Map.h>
 #include <Epetra_BlockMap.h>
+#include <Epetra_Map.h>
+#include <stddef.h>
+#include <algorithm>
+#include <iomanip>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
-#include "Xpetra_Utils.hpp"
-#include "Xpetra_EpetraUtils.hpp"
-#include "Xpetra_EpetraExceptions.hpp"
-
+#include "Kokkos_DefaultNode.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_as.hpp"
 #include "Xpetra_ConfigDefs.hpp"
+#include "Xpetra_EpetraConfigDefs.hpp"
+#include "Xpetra_EpetraExceptions.hpp"
+#include "Xpetra_EpetraUtils.hpp"
+#include "Xpetra_Exceptions.hpp"
+#include "Xpetra_Map.hpp"
+#include "Xpetra_Utils.hpp"
+#include "Xpetra_config.hpp"
 
 namespace Xpetra {
 

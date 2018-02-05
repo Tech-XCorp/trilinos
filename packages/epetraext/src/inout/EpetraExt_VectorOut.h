@@ -41,6 +41,8 @@
 #ifndef EPETRAEXT_VECTOROUT_H
 #define EPETRAEXT_VECTOROUT_H
 #include <EpetraExt_ConfigDefs.h>
+#include <stdio.h>
+
 class Epetra_Vector;
 
 namespace EpetraExt {

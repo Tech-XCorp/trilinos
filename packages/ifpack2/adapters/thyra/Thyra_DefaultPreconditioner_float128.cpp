@@ -1,11 +1,10 @@
-#include "Teuchos_ConfigDefs.hpp"
-#include "Thyra_ConfigDefs.hpp"
 
+#include "Thyra_Config.h"
 #if defined(HAVE_THYRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TEUCHOSCORE_QUADMATH)
 
+#include "Teuchos_ExplicitInstantiationHelpers.hpp"
 #include "Thyra_DefaultPreconditioner_decl.hpp"
 #include "Thyra_DefaultPreconditioner_def.hpp"
-#include "Teuchos_ExplicitInstantiationHelpers.hpp"
 
 namespace Thyra {
 

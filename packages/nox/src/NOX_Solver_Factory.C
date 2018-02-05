@@ -48,17 +48,35 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
-#include "NOX_Solver_Factory.H"    // class definition
-#include "NOX_Solver_Generic.H"
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
+#include "NOX_Solver_AndersonAcceleration.H"
+#include "NOX_Solver_Factory.H"    // class definition
+#include "NOX_Solver_InexactTrustRegionBased.H" // Inexact Trust region method
 // Header files for different solvers
 #include "NOX_Solver_LineSearchBased.H"     // LineSearch method
-#include "NOX_Solver_TrustRegionBased.H" // Trust region method
-#include "NOX_Solver_InexactTrustRegionBased.H" // Inexact Trust region method
-#include "NOX_Solver_TensorBased.H"      // Tensor method
-#include "NOX_Solver_AndersonAcceleration.H"
 #include "NOX_Solver_SingleStep.H"
+#include "NOX_Solver_TensorBased.H"      // Tensor method
+#include "NOX_Solver_TrustRegionBased.H" // Trust region method
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Group;
+}  // namespace Abstract
+namespace Solver {
+class Generic;
+}  // namespace Solver
+namespace StatusTest {
+class Generic;
+}  // namespace StatusTest
+}  // namespace NOX
 #ifdef HAVE_NOX_THYRA
 #include "NOX_Solver_PseudoTransient.hpp"      // Pseudo-Transient
 #endif

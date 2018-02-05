@@ -42,8 +42,11 @@
 */
 
 #include "AztecOO_Operator.h"
-#include "Epetra_MultiVector.h"
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 
 //==============================================================================
 AztecOO_Operator::AztecOO_Operator(AztecOO * solver, int numIters, double tol) 

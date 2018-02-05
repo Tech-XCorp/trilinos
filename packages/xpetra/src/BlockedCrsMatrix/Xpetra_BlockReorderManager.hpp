@@ -47,9 +47,17 @@
 #ifndef XPETRA_BLOCKREORDERMANAGER_HPP_
 #define XPETRA_BLOCKREORDERMANAGER_HPP_
 
-#include <stack>
-
 #include <Teuchos_StrUtils.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <stack>
+#include <stdexcept>
+#include <vector>
+
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace Xpetra {
 class BlockReorderManager {

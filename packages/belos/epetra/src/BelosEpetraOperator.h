@@ -47,21 +47,32 @@
 #ifndef BELOS_EPETRA_OPERATOR_H
 #define BELOS_EPETRA_OPERATOR_H
 
+#include <ostream>
+#include <vector>
+
+#include "BelosBlockCGSolMgr.hpp"
+#include "BelosBlockGmresSolMgr.hpp"
+#include "BelosEpetraAdapter.hpp"
+#include "BelosLinearProblem.hpp"
+#include "BelosOutputManager.hpp"
+#include "BelosPseudoBlockCGSolMgr.hpp"
+#include "BelosPseudoBlockGmresSolMgr.hpp"
+#include "BelosSolverManager.hpp"
+#include "BelosStatusTest.hpp"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-
-#include "BelosLinearProblem.hpp"
-#include "BelosStatusTest.hpp"
-#include "BelosOutputManager.hpp"
-#include "BelosEpetraAdapter.hpp"
-#include "BelosBlockGmresSolMgr.hpp"
-#include "BelosPseudoBlockGmresSolMgr.hpp"
-#include "BelosBlockCGSolMgr.hpp"
-#include "BelosPseudoBlockCGSolMgr.hpp"
-
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 /*! \class Belos::EpetraOperator
     \brief This class provides and interface to the Epetra_Operator class, so Belos can be 
@@ -78,6 +89,8 @@ namespace Belos {
 // also be used as the inner iteration of Anasazi :)
 //
 ///////////////////////////////////////////////////////////////
+
+template <class ScalarType, class MV, class OP> class LinearProblem;
 
 class EpetraOperator : public virtual Epetra_Operator {
 public:

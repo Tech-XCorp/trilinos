@@ -49,8 +49,19 @@
 // framework ( http://trilinos.org/ ).
 
 #include "ModeLaplace2DQ2.h"
-#include "Teuchos_Assert.hpp"
-#include "AnasaziConfigDefs.hpp"
+
+#include <iostream>
+#include <new>
+#include <stdexcept>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Teuchos_TestForException.hpp"
 
 ANASAZIEPETRA_MODELAPLACE_LIB_DLL_EXPORT const int ModeLaplace2DQ2::dofEle = 9;
 ANASAZIEPETRA_MODELAPLACE_LIB_DLL_EXPORT const int ModeLaplace2DQ2::maxConnect = 25;

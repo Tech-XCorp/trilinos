@@ -40,11 +40,14 @@
 //@HEADER
 
 #include <EpetraExt_Reindex_MultiVector.h>
-
-#include <vector>
-
 #include <Epetra_Map.h>
 #include <Epetra_MultiVector.h>
+#include <assert.h>
+#include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_DataAccess.h"
+#include "Teuchos_RCP.hpp"
 
 namespace EpetraExt {
 

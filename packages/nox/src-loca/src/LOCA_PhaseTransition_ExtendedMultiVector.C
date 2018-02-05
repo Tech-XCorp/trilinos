@@ -48,8 +48,21 @@
 // ************************************************************************
 //@HEADER
 
+#include <vector>
+
+#include "LOCA_Extended_MultiVector.H"
+#include "LOCA_Extended_Vector.H"
 #include "LOCA_PhaseTransition_ExtendedMultiVector.H"
 #include "LOCA_PhaseTransition_ExtendedVector.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+
+namespace LOCA {
+class GlobalData;
+}  // namespace LOCA
 
 LOCA::PhaseTransition::ExtendedMultiVector::ExtendedMultiVector(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

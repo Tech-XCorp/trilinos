@@ -9,15 +9,25 @@
 #ifndef _snl_fei_BlkSizeMsgHandler_hpp_
 #define _snl_fei_BlkSizeMsgHandler_hpp_
 
-#include <fei_macros.hpp>
+#include <fei_CommUtils.hpp>
+#include <fei_Graph.hpp>
 #include <fei_SharedPtr.hpp>
 #include <fei_VectorSpace.hpp>
-#include <fei_Graph.hpp>
-#include <fei_CommUtils.hpp>
+#include <fei_macros.hpp>
+#include <vector>
+
+#include "fei_mpi.h"
+
+namespace fei {
+class Graph;
+class VectorSpace;
+}  // namespace fei
 
 namespace snl_fei {
 
 /** MessageHandler implementation for block-size data. */
+class PointBlockMap;
+
 class BlkSizeMsgHandler : public fei::MessageHandler<int> {
  public:
   /** constructor */

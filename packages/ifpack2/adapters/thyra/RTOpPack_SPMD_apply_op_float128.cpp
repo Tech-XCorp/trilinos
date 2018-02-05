@@ -1,6 +1,5 @@
-#include "Teuchos_ConfigDefs.hpp"
-#include "RTOpPack_SPMD_apply_op_decl.hpp"
 
+#include "RTOp_Config.h"
 #if defined(HAVE_RTOP_EXPLICIT_INSTANTIATION) && defined(HAVE_TEUCHOSCORE_QUADMATH)
 
 #include "RTOpPack_SPMD_apply_op_def.hpp"

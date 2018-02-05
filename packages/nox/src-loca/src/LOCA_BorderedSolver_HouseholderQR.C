@@ -48,9 +48,25 @@
 // ************************************************************************
 //@HEADER
 
+#include <math.h>
+#include <stddef.h>
+#include <ostream>
+#include <type_traits>
+#include <vector>
+
 #include "LOCA_BorderedSolver_HouseholderQR.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_BLAS.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+
+namespace LOCA {
+class GlobalData;
+}  // namespace LOCA
 
 LOCA::BorderedSolver::HouseholderQR::HouseholderQR(
      const Teuchos::RCP<LOCA::GlobalData>& global_data) :

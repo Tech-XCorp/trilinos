@@ -48,16 +48,36 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_BorderedSolver_Bordering.H"
+#include <stddef.h>
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
+
 #include "LOCA_BorderedSolver_AbstractOperator.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_MultiContinuation_ConstraintInterface.H"
-#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
-#include "Teuchos_LAPACK.hpp"    // for LAPACK solve in applyInverse()
+#include "LOCA_BorderedSolver_Bordering.H"
 #include "LOCA_BorderedSolver_LowerTriangularBlockElimination.H"
 #include "LOCA_BorderedSolver_UpperTriangularBlockElimination.H"
-#include "LOCA_Abstract_TransposeSolveGroup.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LAPACK.hpp"    // for LAPACK solve in applyInverse()
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::BorderedSolver::Bordering::Bordering(
      const Teuchos::RCP<LOCA::GlobalData>& global_data,

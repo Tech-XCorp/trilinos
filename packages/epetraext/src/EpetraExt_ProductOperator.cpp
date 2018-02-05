@@ -40,8 +40,15 @@
 //@HEADER
 
 #include "EpetraExt_ProductOperator.h"
-#include "Epetra_Vector.h"
+
+#include <stddef.h>
+#include <algorithm>
+
 #include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+
+class Epetra_Comm;
+class Epetra_MultiVector;
 
 namespace EpetraExt {
 

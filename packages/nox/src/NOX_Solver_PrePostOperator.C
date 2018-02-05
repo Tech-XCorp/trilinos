@@ -48,11 +48,18 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Solver_PrePostOperator.H"
+#include <sstream>
+#include <type_traits>
 
-#include "NOX_Utils.H"
+#include "NOX_Abstract_PrePostOperator.H"
+#include "NOX_Solver_PrePostOperator.H"
 #include "Teuchos_ParameterList.hpp"
-#include "NOX_Solver_Generic.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+class Utils;
+}  // namespace NOX
 
 // Disallowed
 NOX::Solver::PrePostOperator::PrePostOperator(const PrePostOperator& p):

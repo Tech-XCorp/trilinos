@@ -42,11 +42,22 @@
 #ifndef EPETRAEXT_READ_EPETRA_LINEAR_SYSTEM_H
 #define EPETRAEXT_READ_EPETRA_LINEAR_SYSTEM_H
 
+#include <stddef.h>
+#include <iosfwd>
+
 #include "Epetra_ConfigDefs.h"
-#include "Epetra_Map.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
 #include "Epetra_Vector.h"
 #include "Teuchos_RCP.hpp"
+
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Map;
+class Epetra_Vector;
+namespace Teuchos {
+template <class T> class RCP;
+}  // namespace Teuchos
 
 namespace EpetraExt {
 

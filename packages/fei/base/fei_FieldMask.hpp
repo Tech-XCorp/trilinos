@@ -9,9 +9,10 @@
 #ifndef _fei_FieldMask_hpp_
 #define _fei_FieldMask_hpp_
 
-#include "fei_macros.hpp"
-
+#include <stddef.h>
 #include <vector>
+
+#include "fei_macros.hpp"
 
 namespace fei {
 

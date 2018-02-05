@@ -39,13 +39,18 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-#include "Trilinos_Util_iohb.h"
-#include "Epetra_ConfigDefs.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
+#include "Trilinos_Util.h"
 
 template<typename int_type>
 void Trilinos_Util_ReadHpc2Epetra_internal(

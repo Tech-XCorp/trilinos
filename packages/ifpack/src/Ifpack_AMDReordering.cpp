@@ -40,17 +40,18 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
 #include "Epetra_MultiVector.h"
-#include "Ifpack_Graph.h"
 #include "Epetra_RowMatrix.h"
-#include "Ifpack_Graph_Epetra_RowMatrix.h"
 #include "Ifpack_AMDReordering.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
+#include "Ifpack_Graph_Epetra_RowMatrix.h"
+#include "Teuchos_RCP.hpp"
 
 extern "C" {
+#include <stddef.h>
 #include <trilinos_amd.h>
+#include <iostream>
 }
 
 //==============================================================================

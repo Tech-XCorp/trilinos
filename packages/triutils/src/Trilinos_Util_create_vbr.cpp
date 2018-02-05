@@ -39,8 +39,13 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Trilinos_Util.h"
 
 void Trilinos_Util_create_vbr(
     const Epetra_Comm & Comm,

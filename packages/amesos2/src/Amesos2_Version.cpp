@@ -44,9 +44,10 @@
 #ifndef AMESOS2_VERSION_CPP
 #define AMESOS2_VERSION_CPP
 
-#include "Amesos2_config.h"
-
+#include <iosfwd>
 #include <string>
+
+#include "Amesos2_config.h"
 
 namespace Amesos2 {
 

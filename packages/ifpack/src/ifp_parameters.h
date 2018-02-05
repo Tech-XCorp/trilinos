@@ -43,13 +43,14 @@
 #ifndef _ifp_parameters_h_
 #define _ifp_parameters_h_
 
-#include "Ifpack_config.h"
-
-#include <Ifpack_ConfigDefs.h>
-
-#include <Teuchos_map.hpp>
-#include <Teuchos_ParameterList.hpp>
 #include <Epetra_CombineMode.h>
+#include <Ifpack_ConfigDefs.h>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_map.hpp>
+#include <iosfwd>
+#include <map>
+
+#include "Ifpack_config.h"
 
 namespace Ifpack {
 

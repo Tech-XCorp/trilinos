@@ -46,12 +46,16 @@
 #ifndef MUELU_MASTERLIST_HPP
 #define MUELU_MASTERLIST_HPP
 
-#include <sstream>
-#include <map>
-
-#include <Teuchos_ParameterList.hpp>
 #include <Teuchos_ParameterEntry.hpp>
+#include <Teuchos_ParameterList.hpp>
 #include <Teuchos_any.hpp>
+#include <map>
+#include <sstream>
+#include <string>
+#include <utility>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace MueLu {
 

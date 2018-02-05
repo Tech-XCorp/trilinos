@@ -41,13 +41,19 @@
 */
 
 #include "Ifpack_OverlapGraph.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
 
 #include <Teuchos_ParameterList.hpp>
 #include <ifp_parameters.h>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
 
 //==============================================================================
 Ifpack_OverlapGraph::Ifpack_OverlapGraph(const Teuchos::RefCountPtr<const Epetra_CrsGraph>& UserMatrixGraph_in, int OverlapLevel_in)

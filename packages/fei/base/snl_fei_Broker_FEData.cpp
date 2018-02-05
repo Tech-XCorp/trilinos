@@ -6,9 +6,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
 #include <snl_fei_Broker_FEData.hpp>
+
+#include "fei_FiniteElementData.hpp"
+#include "fei_Lookup_Impl.hpp"
+#include "fei_MatrixGraph.hpp"
 
 //----------------------------------------------------------------------------
 snl_fei::Broker_FEData::Broker_FEData(fei::SharedPtr<FiniteElementData> feData,

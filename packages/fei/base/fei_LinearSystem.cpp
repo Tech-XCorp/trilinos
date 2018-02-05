@@ -6,12 +6,21 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_MatrixGraph.hpp>
 #include <fei_LinearSystem.hpp>
+#include <fei_MatrixGraph.hpp>
 #include <snl_fei_LinearSystem_General.hpp>
 #include <snl_fei_Utils.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_DirichletBCManager.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_Vector.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
 
 //----------------------------------------------------------------------------
 fei::LinearSystem::LinearSystem(fei::SharedPtr<fei::MatrixGraph>& matrixGraph)

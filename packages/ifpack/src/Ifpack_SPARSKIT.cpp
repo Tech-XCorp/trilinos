@@ -40,18 +40,17 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
 #ifdef HAVE_IFPACK_SPARSKIT
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_SPARSKIT.h"
-#include "Ifpack_Condest.h"
-#include "Ifpack_Utils.h"
 #include "Epetra_Comm.h"
 #include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Vector.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_Util.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_SPARSKIT.h"
+#include "Ifpack_Utils.h"
 #include "Teuchos_ParameterList.hpp"
 
 #define F77_ILUT  F77_FUNC(ilut, ILUT)

@@ -48,11 +48,81 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
 
-#include "LOCA_GlobalData.H"
-#include "LOCA_Factory.H"
 #include "LOCA_Abstract_Factory.H"
+#include "LOCA_AnasaziOperator_Factory.H"
+#include "LOCA_Bifurcation_Factory.H"
+#include "LOCA_BorderedSolver_Factory.H"
+#include "LOCA_Eigensolver_Factory.H"
+#include "LOCA_EigenvalueSort_Factory.H"
+#include "LOCA_Factory.H"
+#include "LOCA_Hopf_MooreSpence_SolverFactory.H"
+#include "LOCA_MultiContinuation_Factory.H"
+#include "LOCA_MultiPredictor_Factory.H"
+#include "LOCA_Pitchfork_MooreSpence_SolverFactory.H"
+#include "LOCA_SaveEigenData_Factory.H"
+#include "LOCA_StepSize_Factory.H"
+#include "LOCA_TurningPoint_MooreSpence_SolverFactory.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+class GlobalData;
+namespace AnasaziOperator {
+class AbstractStrategy;
+}  // namespace AnasaziOperator
+namespace BorderedSolver {
+class AbstractStrategy;
+}  // namespace BorderedSolver
+namespace Eigensolver {
+class AbstractStrategy;
+}  // namespace Eigensolver
+namespace EigenvalueSort {
+class AbstractStrategy;
+}  // namespace EigenvalueSort
+namespace Hopf {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace Hopf
+namespace MultiContinuation {
+class AbstractGroup;
+class AbstractStrategy;
+}  // namespace MultiContinuation
+namespace MultiPredictor {
+class AbstractStrategy;
+}  // namespace MultiPredictor
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+namespace Pitchfork {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace Pitchfork
+namespace SaveEigenData {
+class AbstractStrategy;
+}  // namespace SaveEigenData
+namespace StepSize {
+class AbstractStrategy;
+}  // namespace StepSize
+namespace TurningPoint {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace TurningPoint
+}  // namespace LOCA
+namespace NOX {
+namespace Abstract {
+class Group;
+}  // namespace Abstract
+}  // namespace NOX
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::Factory::Factory(
       const Teuchos::RCP<LOCA::GlobalData>& global_data) :

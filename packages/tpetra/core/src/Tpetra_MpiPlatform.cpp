@@ -39,8 +39,6 @@
 // ************************************************************************
 // @HEADER
 
-#include <Tpetra_ConfigDefs.hpp>
-
 // mfh 29 Jun 2014: It makes life easier for Sierra developers if
 // Trilinos just builds all .cpp files unconditionally, rather than
 // making the decision whether to build them dependent on CMake

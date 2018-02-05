@@ -41,6 +41,7 @@
 // @HEADER
 */
 
+#include "TpetraCore_config.h"
 #include "TpetraExt_TripleMatrixMultiply.hpp"
 
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION

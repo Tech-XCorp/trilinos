@@ -9,10 +9,12 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
+#include <vector>
+
+#include "fei_CSVec.hpp"
 #include "fei_FillableMat.hpp"
 #include "fei_SparseRowGraph.hpp"
-#include "fei_CSVec.hpp"
+#include "fei_macros.hpp"
 
 namespace fei {
 

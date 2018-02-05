@@ -2,15 +2,42 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Operator_With_MatMat.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "ml_aggregate.h"
 #include "ml_config.h"
+#include "ml_defs.h"
+#include "ml_op_utils.h"
+#include "ml_rap.h"
+#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRAEXT)
 #include "ml_EdgeMatrixFreePreconditioner.h"
 #include "ml_MultiLevelPreconditioner.h"
+#include "ml_RefMaxwell_Utils.h"
 #include "ml_epetra.h"
 #include "ml_epetra_utils.h"
-#include "ml_mat_formats.h"
-#include "ml_RefMaxwell_11_Operator.h"
-#include "ml_RefMaxwell_Utils.h"
 #include "ml_ifpack_epetra_wrap.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
@@ -18,9 +45,9 @@
 
 #define ABS(x)((x)>0?(x):-(x))
 
+#include "EpetraExt_MultiVectorOut.h"
 //#define ENABLE_FAST_PTAP // This has a bug.  Leave it off for now -CMS
 #include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_MultiVectorOut.h"
 
 
 // ================================================ ====== ==== ==== == =

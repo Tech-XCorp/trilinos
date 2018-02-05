@@ -9,11 +9,10 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <fei_SharedPtr.hpp>
-
-#include <fei_LinearSystemCore.hpp>
 #include <fei_FiniteElementData.hpp>
+#include <fei_LinearSystemCore.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_macros.hpp>
 
 class LibraryWrapper {
  public:

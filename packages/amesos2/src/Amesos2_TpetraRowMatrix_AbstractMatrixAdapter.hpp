@@ -45,6 +45,7 @@
 #define AMESOS2_TPETRA_ROWMATRIX_ABSTRACTMATRIXADAPTER_HPP
 
 #include "Amesos2_TpetraRowMatrix_AbstractMatrixAdapter_decl.hpp"
+#include "Amesos2_config.h"
 #ifndef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
 #  include "Amesos2_TpetraRowMatrix_AbstractMatrixAdapter_def.hpp"
 #endif

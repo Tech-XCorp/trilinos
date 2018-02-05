@@ -51,10 +51,8 @@
 // long as the macros have correct definitions, they won't build
 // anything that's not enabled.
 
-#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
-#include "Tpetra_Details_getGraphDiagOffsets_decl.hpp"
-#include "Tpetra_Details_getGraphDiagOffsets_def.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
+#include "Tpetra_Details_getGraphDiagOffsets_def.hpp"
 
 namespace Tpetra {
 

@@ -48,16 +48,27 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Epetra_TransposeLinearSystem_LeftPreconditioning.H"
-#include "NOX_Epetra_LinearSystem.H"
-#include "NOX_Epetra_Vector.H"
-#include "LOCA_Epetra_LeftPreconditionedOp.H"
-#include "LOCA_Epetra_IdentityOp.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
-#include "Epetra_Vector.h"
+#include <iosfwd>
+#include <string>
+#include <type_traits>
+
 #include "Epetra_Comm.h"
 #include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
+#include "LOCA_Epetra_IdentityOp.H"
+#include "LOCA_Epetra_LeftPreconditionedOp.H"
+#include "LOCA_Epetra_TransposeLinearSystem_LeftPreconditioning.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "NOX_Epetra_LinearSystem.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::Epetra::TransposeLinearSystem::LeftPreconditioning::
 LeftPreconditioning(

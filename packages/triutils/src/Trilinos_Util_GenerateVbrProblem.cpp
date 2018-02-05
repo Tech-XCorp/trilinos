@@ -39,16 +39,17 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Comm.h"
 #include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Epetra_Vector.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_IntVector.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+
+class Epetra_Comm;
 
 // CJ TODO FIXME: Trilinos_Util_GenerateVbrProblem available only if 32 bit GIDs available.
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES

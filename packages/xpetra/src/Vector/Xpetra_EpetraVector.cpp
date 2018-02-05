@@ -43,7 +43,10 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "Xpetra_EpetraVector.hpp"
+
+class Epetra_Vector;
 
 //TODO: replace double -> Scalar etc.
 

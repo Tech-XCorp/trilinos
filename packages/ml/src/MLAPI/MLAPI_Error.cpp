@@ -5,9 +5,6 @@
 #include "ml_common.h"
 #if defined(HAVE_ML_MLAPI)
 #include "MLAPI_Error.h"
-#include <string>
-#include <iostream>
-#include <vector>
 
 namespace MLAPI {
 

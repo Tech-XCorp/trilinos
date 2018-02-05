@@ -40,23 +40,31 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_ICT.h"
-#include "Ifpack_Condest.h"
-#include "Ifpack_Utils.h"
-#include "Ifpack_HashTable.h"
-#include "Epetra_SerialComm.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Util.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
+#include <assert.h>
+#include <math.h>
+#include <algorithm>
 #include <functional>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_SerialComm.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_HashTable.h"
+#include "Ifpack_ICT.h"
+#include "Ifpack_Utils.h"
+#include "Teuchos_ParameterList.hpp"
 
 //==============================================================================
 // FIXME: allocate Comm_ and Time_ the first Initialize() call

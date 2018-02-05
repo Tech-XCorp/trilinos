@@ -10,8 +10,8 @@
 #define _snl_fei_PointBlockMap_hpp_
 
 #include <fei_macros.hpp>
-
 #include <map>
+#include <utility>
 
 namespace snl_fei {
   /** Stores mappings between point-entry equations and block-entry equations.

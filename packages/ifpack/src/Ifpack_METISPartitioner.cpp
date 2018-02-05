@@ -40,17 +40,22 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
-#include "Ifpack_METISPartitioner.h"
-#include "Ifpack_Graph.h"
-#include "Ifpack_Graph_Epetra_CrsGraph.h"
+#include <iostream>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
 #include "Epetra_Comm.h"
 #include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
+#include "Ifpack_Graph_Epetra_CrsGraph.h"
+#include "Ifpack_METISPartitioner.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
 // may need to change this for wierd installations
 typedef int idxtype;

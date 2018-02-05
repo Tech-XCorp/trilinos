@@ -39,10 +39,15 @@
 // ***********************************************************************
 //@HEADER
 #include "EpetraExt_MultiVectorIn.h"
+
+#include <stdio.h>
+#include <string.h>
+
+#include "Epetra_BlockMap.h"
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
-#include "Epetra_BlockMap.h"
 
 using namespace EpetraExt;
 namespace EpetraExt {

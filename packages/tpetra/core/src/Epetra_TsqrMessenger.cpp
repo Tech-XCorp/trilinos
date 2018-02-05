@@ -55,11 +55,21 @@
 ///
 
 #include <Epetra_TsqrMessenger.hpp>
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+
+#include "Epetra_Comm.h"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #if defined(HAVE_TPETRA_EPETRA) && defined(HAVE_TPETRA_TSQR)
-
-#include <Epetra_ConfigDefs.h> // EPETRA_MPI
-#include <Teuchos_ConfigDefs.hpp> // HAVE_TEUCHOS_MPI
 
 // Make sure that both Epetra and Teuchos agree on whether MPI exists.
 #if defined(EPETRA_MPI) && ! defined(HAVE_TEUCHOS_MPI)

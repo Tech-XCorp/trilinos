@@ -44,13 +44,13 @@
 
 #include <EpetraExt_Transform.h>
 
-class Epetra_LinearProblem;
-class Epetra_Map;
-class Epetra_MultiVector;
 class Epetra_CrsGraph;
 class Epetra_CrsMatrix;
 class Epetra_Export;
 class Epetra_Import;
+class Epetra_LinearProblem;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 namespace EpetraExt {
 

@@ -41,11 +41,50 @@
 #ifndef __Tpetra_MultiVectorFiller_hpp
 #define __Tpetra_MultiVectorFiller_hpp
 
-#include "Tpetra_MultiVector.hpp"
-#include "Tpetra_Vector.hpp"
-#include "Teuchos_CommHelpers.hpp"
+#include <stddef.h>
+#include <algorithm>
+#include <exception>
+#include <functional>
+#include <iostream>
 #include <iterator>
+#include <map>
 #include <set>
+#include <stdexcept>
+#include <utility>
+
+#include "Kokkos_View.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Range1D.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_oblackholestream.hpp"
+#include "Tpetra_CombineMode.hpp"
+#include "Tpetra_ConfigDefs.hpp"
+#include "Tpetra_Export_decl.hpp"
+#include "Tpetra_Map_decl.hpp"
+#include "Tpetra_MultiVector.hpp"
+#include "Tpetra_MultiVector_decl.hpp"
+#include "Tpetra_Vector.hpp"
+#include "impl/Kokkos_ViewMapping.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 namespace Tpetra {
 namespace Details {

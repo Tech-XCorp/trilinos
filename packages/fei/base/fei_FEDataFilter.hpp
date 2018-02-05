@@ -9,9 +9,21 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_fwd.hpp"
-#include "fei_defs.h"
+#include <vector>
+
 #include "fei_Filter.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_defs.h"
+#include "fei_fwd.hpp"
+#include "fei_mpi.h"
+#include "fei_version.h"
+
+class EqnBuffer;
+class EqnCommMgr;
+class FiniteElementData;
+class LibraryWrapper;
+class ProcEqns;
+class SNL_FEI_Structure;
 
 /**
 FEI_Implementation manages one or several instances of the Filter class in the

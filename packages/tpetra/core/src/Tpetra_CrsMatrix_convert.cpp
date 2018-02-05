@@ -41,14 +41,10 @@
 // @HEADER
 */
 
-#include "Tpetra_ConfigDefs.hpp"
-
+#include "TpetraCore_config.h"
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 
-#include "Tpetra_CrsMatrix_decl.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
-#include "Tpetra_CrsMatrix_def.hpp"
-#include "Tpetra_CrsGraph_def.hpp"
 
 namespace Tpetra {
 

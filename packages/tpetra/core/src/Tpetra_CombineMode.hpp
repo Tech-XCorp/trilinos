@@ -47,6 +47,7 @@
 ///   setting a Tpetra::CombineMode parameter in a
 ///   Teuchos::ParameterList.
 
+#include <iosfwd>
 #include <string>
 
 // Forward declaration of Teuchos::ParameterList.

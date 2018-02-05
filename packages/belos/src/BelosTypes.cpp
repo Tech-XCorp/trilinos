@@ -40,7 +40,11 @@
 //@HEADER
 
 #include <BelosTypes.hpp>
+#include <ostream>
+#include <string>
 #include <vector>
+
+#include "Teuchos_TestForException.hpp"
 
 namespace Belos {
 

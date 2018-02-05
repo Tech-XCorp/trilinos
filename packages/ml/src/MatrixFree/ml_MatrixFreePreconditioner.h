@@ -18,27 +18,42 @@
  *
  */
 
+#include <stddef.h>
+#include <__functional_base>
+#include <iostream>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+#include "ml_aggregate.h"
+#include "ml_comm.h"
+#include "ml_config.h"
 #include "ml_include.h"
+#include "ml_operator.h"
+#include "ml_struct.h"
+
+class Epetra_CrsMatrix;
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRAEXT) && defined(HAVE_ML_IFPACK)
+#include <map>
 #include <string>
-#include "ml_epetra.h"
-#include "Epetra_Time.h"
-#include "Epetra_Operator.h"
+#include <vector>
+
 #include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Time.h"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RefCountPtr.hpp"
-#include <vector>
-#include <map>
 #include "ml_MultiLevelPreconditioner.h"
+#include "ml_epetra.h"
 
-class Epetra_Map;
 class Epetra_BlockMap;
 class Epetra_CrsGraph;
-class Epetra_Vector;
+class Epetra_FECrsMatrix;
+class Epetra_Map;
 class Epetra_MultiVector;
 class Epetra_RowMatrix;
-class Epetra_FECrsMatrix;
+class Epetra_Vector;
 class Ifpack_Chebyshev;
 
 namespace ML_Epetra {

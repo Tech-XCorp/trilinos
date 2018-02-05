@@ -38,16 +38,19 @@
 //
 // ***********************************************************************
 //@HEADER
-#include "Epetra_ConfigDefs.h"
+#include <stdio.h>
+#include <string.h>
+#include <limits>
+
 #include "EpetraExt_BlockMapIn.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Util.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_Import.h"
 #include "EpetraExt_mmio.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_LongLongSerialDenseVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_Util.h"
 
 using namespace EpetraExt;
 namespace EpetraExt {

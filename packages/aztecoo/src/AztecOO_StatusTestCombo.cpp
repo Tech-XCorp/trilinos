@@ -42,6 +42,9 @@
 
 #include "AztecOO_StatusTestCombo.h"
 
+#include <stddef.h>
+#include <iostream>
+
 AztecOO_StatusTestCombo::AztecOO_StatusTestCombo(ComboType t)
   : AztecOO_StatusTest() {
   type_ = t;

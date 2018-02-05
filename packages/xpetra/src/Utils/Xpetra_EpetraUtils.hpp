@@ -48,16 +48,22 @@
 
 //! Conversion between Epetra and Teuchos objects
 
+#include "Teuchos_RCPDecl.hpp"
 #include "Xpetra_ConfigDefs.hpp"
+#include "Xpetra_config.hpp"
+
+class Epetra_Comm;
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #ifdef HAVE_XPETRA_EPETRA
 
-// header files for comm objects conversion
-#include <Teuchos_Comm.hpp>
 #include <Epetra_Comm.h>
-
 // header file for Teuchos::ETransp
 #include <Teuchos_BLAS_types.hpp>
+// header files for comm objects conversion
+#include <Teuchos_Comm.hpp>
 
 namespace Xpetra {
 

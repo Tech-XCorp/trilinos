@@ -41,16 +41,13 @@
 // @HEADER
 */
 
-// Including this is the easy way to get access to all the Node types.
-#include "Kokkos_DefaultNode.hpp"
-#include "Tpetra_ConfigDefs.hpp"
-
 // Don't bother compiling anything, or even including anything else,
 // unless KokkosOpenMPWrapperNode is enabled.
+#include "TpetraCore_config.h"
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_OPENMP)
 
-#include "Tpetra_CrsGraph_decl.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
+#include "Tpetra_CrsGraph_decl.hpp"
 #include "Tpetra_CrsGraph_def.hpp"
 
 // The first macro instantiates just the graph stuff.  The second

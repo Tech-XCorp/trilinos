@@ -48,14 +48,27 @@
 // ************************************************************************
 //@HEADER
 
-#include "Epetra_config.h"
-#include "LOCA_Epetra_LowRankUpdateRowMatrix.H"
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
 
-#include "Epetra_Vector.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_LocalMap.h"
 #include "Epetra_Map.h"
-#include "Epetra_Comm.h"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "LOCA_Epetra_LowRankUpdateOp.H"
+#include "LOCA_Epetra_LowRankUpdateRowMatrix.H"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Import;
+namespace LOCA {
+class GlobalData;
+}  // namespace LOCA
 
 LOCA::Epetra::LowRankUpdateRowMatrix::
 LowRankUpdateRowMatrix(

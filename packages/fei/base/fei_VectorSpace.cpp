@@ -6,26 +6,38 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_sstream.hpp"
-#include "fei_fstream.hpp"
-
-#include "fei_utils.hpp"
-
-#include "fei_TemplateUtils.hpp"
-#include "fei_chk_mpi.hpp"
 #include <fei_CommUtils.hpp>
 #include <fei_set_shared_ids.hpp>
-#include "snl_fei_Utils.hpp"
-#include "fei_Record.hpp"
-#include "snl_fei_RecordCollection.hpp"
-#include "fei_ParameterSet.hpp"
-#include "snl_fei_RecordMsgHandler.hpp"
-#include "fei_SharedIDs.hpp"
-#include "fei_Pattern.hpp"
-#include "fei_VectorSpace.hpp"
+#include <__functional_base>
+#include <__tree>
+#include <ostream>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_FieldDofMap.hpp"
 #include "fei_FieldMask.hpp"
-#include "snl_fei_PointBlockMap.hpp"
 #include "fei_LogManager.hpp"
+#include "fei_Param.hpp"
+#include "fei_ParameterSet.hpp"
+#include "fei_Pattern.hpp"
+#include "fei_Record.hpp"
+#include "fei_SharedIDs.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_TemplateUtils.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_chk_mpi.hpp"
+#include "fei_fstream.hpp"
+#include "fei_fwd.hpp"
+#include "fei_iostream.hpp"
+#include "fei_sstream.hpp"
+#include "fei_utils.hpp"
+#include "snl_fei_PointBlockMap.hpp"
+#include "snl_fei_RaggedTable.hpp"
+#include "snl_fei_RecordCollection.hpp"
+#include "snl_fei_RecordMsgHandler.hpp"
 
 #undef fei_file
 #define fei_file "fei_VectorSpace.cpp"

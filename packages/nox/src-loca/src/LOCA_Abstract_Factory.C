@@ -48,7 +48,65 @@
 // ************************************************************************
 //@HEADER
 
+#include <iosfwd>
+#include <vector>
+
 #include "LOCA_Abstract_Factory.H"
+
+namespace LOCA {
+namespace AnasaziOperator {
+class AbstractStrategy;
+}  // namespace AnasaziOperator
+namespace BorderedSolver {
+class AbstractStrategy;
+}  // namespace BorderedSolver
+namespace Eigensolver {
+class AbstractStrategy;
+}  // namespace Eigensolver
+namespace EigenvalueSort {
+class AbstractStrategy;
+}  // namespace EigenvalueSort
+namespace Hopf {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace Hopf
+namespace MultiContinuation {
+class AbstractGroup;
+class AbstractStrategy;
+}  // namespace MultiContinuation
+namespace MultiPredictor {
+class AbstractStrategy;
+}  // namespace MultiPredictor
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+namespace Pitchfork {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace Pitchfork
+namespace SaveEigenData {
+class AbstractStrategy;
+}  // namespace SaveEigenData
+namespace StepSize {
+class AbstractStrategy;
+}  // namespace StepSize
+namespace TurningPoint {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace TurningPoint
+}  // namespace LOCA
+namespace NOX {
+namespace Abstract {
+class Group;
+}  // namespace Abstract
+}  // namespace NOX
+namespace Teuchos {
+class ParameterList;
+template <class T> class RCP;
+}  // namespace Teuchos
 
 bool
 LOCA::Abstract::Factory::createPredictorStrategy(

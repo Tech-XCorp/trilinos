@@ -49,6 +49,9 @@
 //@HEADER
 
 #include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "Teuchos_BLAS_types.hpp"
 
 NOX::Abstract::Group::ReturnType
 LOCA::MultiContinuation::ConstraintInterfaceMVDX::multiplyDX(

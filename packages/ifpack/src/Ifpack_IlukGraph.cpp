@@ -41,12 +41,19 @@
 */
 
 #include "Ifpack_IlukGraph.h"
-#include "Epetra_Object.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Import.h"
 
 #include <Teuchos_ParameterList.hpp>
 #include <ifp_parameters.h>
+#include <iostream>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_Object.h"
 
 //==============================================================================
 Ifpack_IlukGraph::Ifpack_IlukGraph(const Epetra_CrsGraph & Graph_in, int LevelFill_in, int LevelOverlap_in)

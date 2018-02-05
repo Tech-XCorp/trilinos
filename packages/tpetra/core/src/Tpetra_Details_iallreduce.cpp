@@ -44,7 +44,6 @@
 #ifdef HAVE_TPETRACORE_MPI
 #  include "Teuchos_DefaultMpiComm.hpp" // only needs to be in .cpp file
 #endif // HAVE_TPETRACORE_MPI
-#include "Teuchos_DefaultSerialComm.hpp" // only needs to be in .cpp file
 
 #ifdef HAVE_TPETRACORE_MPI
 namespace { // (anonymous)

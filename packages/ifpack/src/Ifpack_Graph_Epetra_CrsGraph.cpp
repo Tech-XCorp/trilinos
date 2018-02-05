@@ -40,11 +40,11 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Graph.h"
-#include "Ifpack_Graph_Epetra_CrsGraph.h"
+#include <ostream>
+
 #include "Epetra_Comm.h"
 #include "Epetra_CrsGraph.h"
+#include "Ifpack_Graph_Epetra_CrsGraph.h"
 
 //==============================================================================
 Ifpack_Graph_Epetra_CrsGraph::

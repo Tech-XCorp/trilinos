@@ -51,13 +51,26 @@
   here so that they can be updated and maintained in a single spot.
 */
 
-#include "Tpetra_ConfigDefs.hpp" // for map, vector, string, and iostream
-#include "Kokkos_DualView.hpp"
-#include "Teuchos_Utils.hpp"
-#include "Teuchos_Assert.hpp"
+#include <stddef.h>
 #include <algorithm>
 #include <iterator>
 #include <sstream>
+#include <stdexcept>
+
+#include "Kokkos_DualView.hpp"
+#include "Kokkos_HostSpace.hpp"
+#include "Kokkos_MemoryTraits.hpp"
+#include "Kokkos_View.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Tpetra_ConfigDefs.hpp" // for map, vector, string, and iostream
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #if defined(HAVE_TPETRA_THROW_EFFICIENCY_WARNINGS) || defined(HAVE_TPETRA_PRINT_EFFICIENCY_WARNINGS)
 /// \brief Print or throw an efficency warning.

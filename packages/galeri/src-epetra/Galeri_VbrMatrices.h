@@ -42,10 +42,13 @@
 #ifndef GALERI_VBRMATRICES_H
 #define GALERI_VBRMATRICES_H
 
-#include "Galeri_ConfigDefs.h"
-#include "Galeri_Exception.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_VbrMatrix.h"
+#include "Galeri_ConfigDefs.h"
+#include "Galeri_Exception.h"
+
+class Epetra_CrsMatrix;
+class Epetra_VbrMatrix;
 
 namespace Galeri {
 

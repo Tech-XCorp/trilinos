@@ -41,8 +41,7 @@
 // @HEADER
 */
 
-#include "Tpetra_Details_FixedHashTable_decl.hpp"
-
+#include "TpetraCore_config.h"
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(KOKKOS_HAVE_OPENMP)
 
 #include "TpetraCore_ETIHelperMacros.h"

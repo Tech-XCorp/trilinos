@@ -49,36 +49,53 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_LinearSystem_AztecOO.H"    // class definition
+#include <stddef.h>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
-// NOX includes
-#include "NOX_Epetra_Interface_Required.H"
-#include "NOX_Epetra_Interface_Jacobian.H"
-#include "NOX_Epetra_Interface_Preconditioner.H"
-#include "NOX_Epetra_MatrixFree.H"
-#include "NOX_Epetra_FiniteDifference.H"
-#include "Teuchos_ParameterList.hpp"
-#include "NOX_Epetra_Scaling.H"
-#include "NOX_Utils.H"
-
-// External include files for Epetra, Aztec00, and Ifpack
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_LinearProblem.h"
 #include "AztecOO.h"
 #include "AztecOO_Operator.h"
-#include "AztecOO_StatusTest.h"
-#include "AztecOO_StatusTestCombo.h"
-#include "AztecOO_StatusTestMaxIters.h"
-#include "AztecOO_StatusTestResNorm.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_LinearProblem.h"
+// External include files for Epetra, Aztec00, and Ifpack
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
 #include "Ifpack.h"
-#include "Ifpack_IlukGraph.h"
 #include "Ifpack_CrsRiluk.h"
+#include "Ifpack_IlukGraph.h"
+#include "Ifpack_Preconditioner.h"
+#include "NOX_Config.h"
+#include "NOX_Epetra_FiniteDifference.H"
+#include "NOX_Epetra_Interface_Jacobian.H"
+#include "NOX_Epetra_Interface_Preconditioner.H"
+#include "NOX_Epetra_LinearSystem.H"
+#include "NOX_Epetra_LinearSystem_AztecOO.H"    // class definition
+#include "NOX_Epetra_MatrixFree.H"
+#include "NOX_Epetra_Scaling.H"
+#include "NOX_Epetra_Vector.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "az_aztec.h"
+#include "ml_MultiLevelPreconditioner.h"
+
+namespace NOX {
+namespace Epetra {
+namespace Interface {
+class Required;
+}  // namespace Interface
+}  // namespace Epetra
+}  // namespace NOX
 
 // EpetraExt includes for dumping a matrix
 // #ifdef HAVE_NOX_DEBUG
@@ -88,12 +105,6 @@
 #include "EpetraExt_RowMatrixOut.h"
 #endif
 // #endif
-
-#ifdef HAVE_NOX_ML_EPETRA
-#include "Teuchos_ParameterList.hpp"
-#endif
-
-#include <typeinfo>
 
 //***********************************************************************
 NOX::Epetra::LinearSystemAztecOO::

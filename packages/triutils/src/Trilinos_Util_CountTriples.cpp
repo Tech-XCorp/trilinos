@@ -39,13 +39,15 @@
 // ***********************************************************************
 // @HEADER
 
-#include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
 #include <vector>
+
+#include "Epetra_Comm.h"
 // #include "Trilinos_Util_Triples.h"
 #include "Epetra_ConfigDefs.h"
-#include "Epetra_Object.h"
-#include "Epetra_Comm.h"
 
 //
 //  This code reads a file which contains a sparse matrix

@@ -42,11 +42,17 @@
 #ifndef EPETRAEXT_TIMED_EPETRA_OP_HPP
 #define EPETRAEXT_TIMED_EPETRA_OP_HPP
 
-#include "Teuchos_RCP.hpp"
-#include "Epetra_Operator.h"
-#include "Epetra_MultiVector.h"
-#include <Teuchos_Time.hpp>
 #include <EpetraExt_ConfigDefs.h>
+#include <Teuchos_Time.hpp>
+
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 namespace EpetraExt {
     

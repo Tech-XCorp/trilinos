@@ -45,18 +45,33 @@
 // ************************************************************************
 //@HEADER
 
-#include "Epetra_Comm.h"
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
-#include "Epetra_RowMatrix.h"
-#include "Teuchos_CompilerCodeTweakMacros.hpp"
 #include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "NOX_Epetra_MatrixFree.H"
 #include "NOX_Epetra_Vector.H"
 #include "NOX_Epetra_VectorSpace.H"
-#include "NOX_Epetra_Interface_Required.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_Utils.H"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
-#include "NOX_Epetra_MatrixFree.H"
+class Epetra_Comm;
+class Epetra_Operator;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 using namespace NOX;
 using namespace NOX::Epetra;

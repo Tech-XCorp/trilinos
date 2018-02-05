@@ -6,10 +6,6 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
-
-#include <string>
-#include <exception>
 #include <stdexcept>
 
 #include "fei_ArrayUtils.hpp"

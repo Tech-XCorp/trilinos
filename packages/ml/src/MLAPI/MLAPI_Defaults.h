@@ -18,6 +18,10 @@
 #include "MLAPI_Error.h"
 #include "Teuchos_ParameterList.hpp"
 
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
+
 namespace MLAPI
 {
 

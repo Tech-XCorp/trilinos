@@ -5,8 +5,9 @@
 #ifndef ML_QR_FIX_HPP
 #define ML_QR_FIX_HPP
 
-#include "ml_include.h"
 #include <vector>
+
+#include "ml_include.h"
 
 struct ML_qr_fix_struct {
 

@@ -48,17 +48,31 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_LineSearch_Polynomial.H"
+#include <math.h>
+#include <stddef.h>
+#include <sstream>
+#include <string>
+#include <type_traits>
 
+#include "NOX_Abstract_Group.H"
+#include "NOX_GlobalData.H"
+#include "NOX_LineSearch_Polynomial.H"
+#include "NOX_LineSearch_Utils_Counters.H"
 #include "NOX_LineSearch_Utils_Printing.H"
 #include "NOX_LineSearch_Utils_Slope.H"
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Solver_Generic.H"
-#include "Teuchos_ParameterList.hpp"
 #include "NOX_MeritFunction_Generic.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_StatusTest_FiniteValue.H"
-#include "NOX_GlobalData.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Vector;
+}  // namespace Abstract
+}  // namespace NOX
 
 NOX::LineSearch::Polynomial::
 Polynomial(const Teuchos::RCP<NOX::GlobalData>& gd,

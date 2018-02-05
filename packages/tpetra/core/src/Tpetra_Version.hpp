@@ -42,6 +42,8 @@
 #ifndef TPETRA_VERSION_HPP
 #define TPETRA_VERSION_HPP
 
+#include <iosfwd>
+
 #include "Tpetra_ConfigDefs.hpp"
 
 namespace Tpetra {

@@ -3,22 +3,34 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
+#include <assert.h>
+#include <stdio.h>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <type_traits>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_RowMatrix.h"
+#include "Ifpack_Preconditioner.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_any.hpp"
 #include "ml_config.h"
-#include "ml_include.h"
+#include "ml_defs.h"
+#include "ml_operator.h"
 #if defined(HAVE_ML_IFPACK) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRA)
-#include "ml_utils.h"
-#include "ml_epetra.h"
-#include "ml_epetra_utils.h"
+#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Time.h"
-#include "ml_self.h"
-#include "ml_self_wrap.h"
-#include "ml_RowMatrix.h"
-#include "ml_Ifpack_ML.h"
 #include "Ifpack_AdditiveSchwarz.h"
+#include "ml_Ifpack_ML.h"
+#include "ml_RowMatrix.h"
+#include "ml_epetra.h"
+#include "ml_epetra_utils.h"
+#include "ml_self_wrap.h"
+#include "ml_utils.h"
 
 using namespace ML_Epetra;
 

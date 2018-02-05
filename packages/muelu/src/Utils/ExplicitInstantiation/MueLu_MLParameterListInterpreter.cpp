@@ -46,11 +46,10 @@
 
 
 
-#include "MueLu_MLParameterListInterpreter_def.hpp"
-
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   template class MueLu::MLParameterListInterpreter<SC,LO,GO,NO>;
 
 #include "MueLu_ETI_4arg.hpp"
+#include "MueLu_MLParameterListInterpreter_decl.hpp"
 
 

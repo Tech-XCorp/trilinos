@@ -39,9 +39,22 @@
 // ***********************************************************************
 //@HEADER
 
-#include "Epetra_ConfigDefs.h"
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 #include "EpetraExt_readEpetraLinearSystem.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Trilinos_Util.h"
+#include "Trilinos_Util_ReadMatrixMarket2Epetra.h"
+
+class Epetra_Comm;
 
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES
 void EpetraExt::readEpetraLinearSystem(

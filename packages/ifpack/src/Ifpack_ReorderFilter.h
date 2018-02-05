@@ -43,15 +43,19 @@
 #ifndef IFPACK_REORDERFILTER_H
 #define IFPACK_REORDERFILTER_H
 
-#include "Ifpack_ConfigDefs.h"
 #include "Epetra_RowMatrix.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
+class Epetra_BlockMap;
 class Epetra_Comm;
+class Epetra_Import;
 class Epetra_Map;
 class Epetra_MultiVector;
-class Epetra_Import;
-class Epetra_BlockMap;
+class Epetra_Vector;
 class Ifpack_Reordering;
 
 //! Ifpack_ReorderFilter: a class for light-weight reorder of local rows and columns of an Epetra_RowMatrix.

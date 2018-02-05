@@ -56,8 +56,17 @@
 /// so that application code is not exposed to BLAS-related \c extern
 /// declarations.
 
+#include <type_traits>
+
+#include "Kokkos_Complex.hpp"
 #include "TpetraCore_config.h"
 #include "Tpetra_Details_Blas.hpp"
+
+namespace Kokkos {
+struct LayoutLeft;
+struct LayoutRight;
+struct LayoutStride;
+}  // namespace Kokkos
 
 namespace Tpetra {
 namespace Details {

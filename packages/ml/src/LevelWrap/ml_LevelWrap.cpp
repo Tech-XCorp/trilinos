@@ -1,12 +1,22 @@
-#include "ml_config.h"
+#include <stdio.h>
+#include <sstream>
+#include <string>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Teuchos_ENull.hpp"
 #include "ml_LevelWrap.h"
-#include "ml_include.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_config.h"
+#include "ml_defs.h"
+#include "ml_operator.h"
+#include "ml_smoother.h"
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_IFPACK)
-#include "ml_utils.h"
 #include "ml_epetra_utils.h"
-#include "Ifpack.h"
-#include "ml_ValidateParameters.h"
 #include "ml_ifpack_epetra_wrap.h"
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"

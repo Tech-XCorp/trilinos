@@ -48,18 +48,28 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Solver_TensorBased.H"    // class definition
-#include "NOX_Abstract_Vector.H"
-#include "NOX_Abstract_Group.H"
-#include "NOX_Common.H"
-#include "Teuchos_ParameterList.hpp"
-#include "NOX_Utils.H"
-#include "NOX_GlobalData.H"
-#include "NOX_Solver_SolverUtils.H"
+#include <assert.h>
+#include <math.h>
+#include <sstream>
+#include <string>
+#include <type_traits>
 
-#include "NOX_LineSearch_Utils_Printing.H"  // class data member
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_GlobalData.H"
 #include "NOX_LineSearch_Utils_Counters.H"  // class data member
+#include "NOX_LineSearch_Utils_Printing.H"  // class data member
 #include "NOX_LineSearch_Utils_Slope.H"     // class data member
+#include "NOX_Solver_Generic.H"
+#include "NOX_Solver_PrePostOperator.H"
+#include "NOX_Solver_SolverUtils.H"
+#include "NOX_Solver_TensorBased.H"    // class definition
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
 
 
 #define CHECK_RESIDUALS

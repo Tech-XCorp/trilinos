@@ -48,28 +48,60 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Epetra_Group.H"              // class definition
+#include <math.h>
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
 
-#include "LOCA_Epetra_Interface_Required.H"        // class data members
-#include "Teuchos_ParameterList.hpp"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_VbrMatrix.h"
-#include "LOCA_Epetra_ShiftInvertOperator.H"
-#include "AztecOO.h"
-#include "NOX_Epetra_LinearSystem_AztecOO.H"
+#include "Epetra_Vector.h"
+#include "LOCA_Abstract_Group.H"
+#include "LOCA_Abstract_Iterator.H"
+#include "LOCA_Epetra_Group.H"              // class definition
+#include "LOCA_Epetra_Interface_FreeEnergy.H"
+#include "LOCA_Epetra_Interface_Required.H"        // class data members
+#include "LOCA_Epetra_Interface_TimeDependent.H"
+#include "LOCA_Epetra_Interface_TimeDependentMatrixFree.H"
 #include "LOCA_Epetra_TransposeLinearSystem_AbstractStrategy.H"
 #include "LOCA_Epetra_TransposeLinearSystem_Factory.H"
-#include "LOCA_GlobalData.H"
 #include "LOCA_ErrorCheck.H"
-#include "NOX_Epetra_MultiVector.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_Parameter_SublistParser.H"
+#include "LOCA_Parameter_Vector.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Config.h"
+#include "NOX_Epetra_Group.H"
+#include "NOX_Epetra_LinearSystem.H"
+#include "NOX_Epetra_LinearSystem_AztecOO.H"
+#include "NOX_Epetra_MultiVector.H"
+#include "NOX_Epetra_Vector.H"
+#include "NOX_SharedObjectTemplate.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Epetra {
+namespace Interface {
+class Jacobian;
+class Required;
+}  // namespace Interface
+}  // namespace Epetra
+}  // namespace NOX
 
 #ifdef HAVE_NOX_EPETRAEXT
 #include "EpetraExt_BlockCrsMatrix.h"
-#include "EpetraExt_BlockVector.h"
 #include "EpetraExt_BlockMultiVector.h"
+#include "EpetraExt_BlockVector.h"
 #endif
 
 LOCA::Epetra::Group::Group(

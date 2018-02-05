@@ -42,13 +42,29 @@
 #ifndef THYRA_EPETRA_LINEAR_OP_HPP
 #define THYRA_EPETRA_LINEAR_OP_HPP
 
-#include "Thyra_LinearOpBase.hpp"
-#include "Thyra_EpetraLinearOpBase.hpp"
-#include "Thyra_ScaledLinearOpBase.hpp"
-#include "Thyra_RowStatLinearOpBase.hpp"
-#include "Thyra_SpmdVectorSpaceBase.hpp"
+#include <stddef.h>
+#include <iosfwd>
 
 #include "Epetra_RowMatrix.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Thyra_EpetraLinearOpBase.hpp"
+#include "Thyra_EpetraTypes.hpp"
+#include "Thyra_LinearOpBase.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_RowStatLinearOpBase.hpp"
+#include "Thyra_ScaledLinearOpBase.hpp"
+#include "Thyra_SpmdVectorSpaceBase.hpp"
+
+class Epetra_Map;
+class Epetra_Operator;
+class Epetra_RowMatrix;
+class Epetra_Vector;
 
 
 namespace Thyra {
@@ -75,6 +91,11 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class MultiVectorBase;
+template <class Scalar> class SpmdVectorSpaceBase;
+template <class Scalar> class VectorBase;
+template <class Scalar> class VectorSpaceBase;
+
 class EpetraLinearOp
   : virtual public LinearOpBase<double>,
     virtual public ScaledLinearOpBase<double>,

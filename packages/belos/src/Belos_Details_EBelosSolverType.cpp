@@ -39,7 +39,10 @@
 // ************************************************************************
 //@HEADER
 
+#include <string>
+
 #include "Belos_Details_EBelosSolverType.hpp"
+#include "TeuchosCore_config.h"
 #include "Teuchos_ParameterList.hpp"
 
 namespace Belos {

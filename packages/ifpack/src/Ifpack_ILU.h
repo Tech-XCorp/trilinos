@@ -43,23 +43,38 @@
 #ifndef IFPACK_ILU_H
 #define IFPACK_ILU_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_Condest.h"
-#include "Ifpack_ScalingType.h"
-#include "Ifpack_IlukGraph.h"
+#include <string.h>
+#include <iosfwd>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_CompObject.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_BlockMap.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_Object.h"
-#include "Epetra_Comm.h"
 #include "Epetra_RowMatrix.h"
 #include "Epetra_Time.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_CondestType.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_IlukGraph.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_ScalingType.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_CrsGraph;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_Vector;
 
 namespace Teuchos {
   class ParameterList;

@@ -39,16 +39,20 @@
 #ifndef AMESOS_KLU_H
 #define AMESOS_KLU_H
 
-#include "Amesos_ConfigDefs.h"
+#include <vector>
+
 #include "Amesos_BaseSolver.h"
-#include "Amesos_NoCopiable.h"
-#include "Amesos_Utils.h"
-#include "Amesos_Time.h"
-#include "Amesos_Status.h"
+#include "Amesos_ConfigDefs.h"
 #include "Amesos_Control.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Time.h"
+#include "Amesos_NoCopiable.h"
+#include "Amesos_Status.h"
+#include "Amesos_Time.h"
+#include "Amesos_Utils.h"
 #include "Epetra_Import.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Time.h"
+#include "Teuchos_RCPDecl.hpp"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #else
@@ -56,6 +60,16 @@
 #endif
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
+
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Import;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 // class EpetraExt::MultiVector_Reindex ;
 // class EpetraExt::CrsMatrix_Reindex ;

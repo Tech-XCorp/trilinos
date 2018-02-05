@@ -8,7 +8,7 @@
 
 #include <fei_CSVec.hpp>
 #include <algorithm>
-#include <sstream>
+#include <stdexcept>
 
 namespace fei {
 

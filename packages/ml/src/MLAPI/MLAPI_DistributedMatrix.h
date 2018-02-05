@@ -15,16 +15,29 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
+#include <iosfwd>
+#include <vector>
 
+#include "Epetra_DataAccess.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+#include "MLAPI_BaseLinearCombination.h"
 #include "MLAPI_Error.h"
 #include "MLAPI_Operator.h"
 #include "MLAPI_Space.h"
-#include "MLAPI_BaseLinearCombination.h"
-#include "Epetra_Map.h"
-#include "Epetra_FECrsMatrix.h"
+#include "MLAPI_Workspace.h"
+#include "ml_common.h"
+#include "ml_epetra.h"
+
+class Epetra_Comm;
+class Epetra_Import;
+class Epetra_MultiVector;
+class Epetra_Vector;
 
 namespace MLAPI {
+
+class MultiVector;
 
 class DistributedMatrix : public Epetra_RowMatrix, public Operator {
 

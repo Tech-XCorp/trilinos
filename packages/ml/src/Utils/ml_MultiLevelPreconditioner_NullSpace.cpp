@@ -10,19 +10,22 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
+#include <stdlib.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Teuchos_ParameterList.hpp"
+#include "ml_aggregate.h"
+#include "ml_config.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
 #include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Time.h"
-#include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "ml_epetra.h"
-#include "ml_epetra_utils.h"
 #include "ml_MultiLevelPreconditioner.h"
-#include "ml_anasazi.h"
+#include "ml_epetra.h"
 #include "ml_rbm.h"
 
 using namespace Teuchos;

@@ -39,19 +39,42 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_DiagonalEpetraLinearOpWithSolveFactory.hpp"
-#include "Thyra_DefaultDiagonalLinearOpWithSolve.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Teuchos_dyn_cast.hpp"
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
 
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
-#include "Epetra_Map.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Thyra_DefaultDiagonalLinearOpWithSolve_decl.hpp"
+#include "Thyra_DiagonalEpetraLinearOpWithSolveFactory.hpp"
+#include "Thyra_EpetraLinearOpBase.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_EpetraTypes.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_LinearOpSourceBase.hpp"
+#include "Thyra_LinearOpWithSolveBase_decl.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 
 namespace Thyra {
 
+
+template <class Scalar> class PreconditionerBase;
+template <class Scalar> class VectorBase;
+template <class Scalar> class VectorSpaceBase;
 
 bool DiagonalEpetraLinearOpWithSolveFactory::isCompatible(
   const LinearOpSourceBase<double> &fwdOpSrc

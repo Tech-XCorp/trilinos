@@ -44,6 +44,8 @@
 #ifndef EPETRAEXT_UTILS_H
 #define EPETRAEXT_UTILS_H
 
+#include <iosfwd>
+
 namespace EpetraExt
 {
   std::string toString(const int& x);

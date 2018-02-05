@@ -9,15 +9,20 @@
 #ifndef _fei_Graph_Impl_hpp_
 #define _fei_Graph_Impl_hpp_
 
-#include <fei_iosfwd.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_Graph.hpp>
-#include <fei_mpi.h>
 #include <fei_EqnComm.hpp>
+#include <fei_Graph.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_iosfwd.hpp>
+#include <fei_mpi.h>
+#include <vector>
+
+#include "fei_iostream.hpp"
 
 namespace fei {
 
   /** Basic algebraic matrix-graph representation. */
+class EqnComm;
+
   class Graph_Impl : public fei::Graph {
   public:
     /** constructor */

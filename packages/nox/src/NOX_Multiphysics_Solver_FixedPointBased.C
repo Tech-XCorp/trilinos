@@ -45,16 +45,31 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Multiphysics_Solver_FixedPointBased.H"    // class definition
-#include "NOX_Abstract_Vector.H"
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <vector>
+
 #include "NOX_Abstract_Group.H"
-#include "NOX_Common.H"
-#include "NOX_Utils.H"
 #include "NOX_GlobalData.H"
-#include "NOX_LineSearch_Generic.H"
-#include "NOX_LineSearch_Factory.H"
-#include "NOX_Direction_Generic.H"
-#include "NOX_Direction_Factory.H"
+#include "NOX_Multiphysics_DataExchange_Interface.H"
+#include "NOX_Multiphysics_Group.H"
+#include "NOX_Multiphysics_Solver_FixedPointBased.H"    // class definition
+#include "NOX_Solver_Generic.H"
+#include "NOX_Solver_PrePostOperator.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Vector;
+}  // namespace Abstract
+}  // namespace NOX
 
 NOX::Multiphysics::Solver::FixedPointBased::
 FixedPointBased(const Teuchos::RCP<std::vector<Teuchos::RCP<NOX::Solver::Generic> > >& solvers,

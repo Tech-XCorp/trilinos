@@ -9,17 +9,26 @@
 #ifndef _snl_fei_LinearSystem_General_hpp_
 #define _snl_fei_LinearSystem_General_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_mpi.h>
 #include <fei_CSVec.hpp>
 #include <fei_LinearSystem.hpp>
+#include <fei_Logger.hpp>
 #include <fei_Matrix.hpp>
 #include <fei_Vector.hpp>
 #include <fei_fwd.hpp>
-#include <fei_Logger.hpp>
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
+#include <iosfwd>
+#include <map>
+#include <vector>
 
 namespace fei {
   class DirichletBCManager;
+class CSVec;
+class Matrix;
+class MatrixGraph;
+class ParameterSet;
+class Vector;
+template <typename Y> class SharedPtr;
 }
 
 namespace snl_fei {

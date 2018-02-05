@@ -9,16 +9,21 @@
 #ifndef _fei_GraphReducer_hpp_
 #define _fei_GraphReducer_hpp_
 
-#include <fei_iosfwd.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_Graph.hpp>
 #include <fei_CommUtils.hpp>
+#include <fei_Graph.hpp>
 #include <fei_Reducer.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_iosfwd.hpp>
 #include <snl_fei_RaggedTable_specialize.hpp>
+#include <vector>
+
+#include "fei_iostream.hpp"
 
 namespace fei {
 
   /** Basic algebraic matrix-graph representation. */
+class Reducer;
+
   class GraphReducer : public fei::Graph {
   public:
     /** constructor */

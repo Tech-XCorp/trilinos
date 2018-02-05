@@ -51,18 +51,20 @@
 #ifndef ANASAZI_BLOCK_PCG_SOLVER_H
 #define ANASAZI_BLOCK_PCG_SOLVER_H
 
-#include "Epetra_ConfigDefs.h"
 #include "Anasaziepetra_ModeLaplace_DLLExportMacro.h"
-
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 #include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
-
+#include "Epetra_Vector.h"
 #include "Teuchos_BLAS.hpp"
 #include "Teuchos_LAPACK.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 class ANASAZIEPETRA_MODELAPLACE_LIB_DLL_EXPORT BlockPCGSolver : public virtual Epetra_Operator {
 

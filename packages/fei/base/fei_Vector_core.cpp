@@ -6,17 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_fstream.hpp"
-
-#include "fei_Vector_core.hpp"
-#include "fei_VectorSpace.hpp"
-#include "fei_CSVec.hpp"
-#include "snl_fei_RecordCollection.hpp"
-#include "fei_TemplateUtils.hpp"
-#include "fei_impl_utils.hpp"
-
 #include <fstream>
-#include <sstream>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_CSVec.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_EqnComm.hpp"
+#include "fei_FieldMask.hpp"
+#include "fei_Record.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_Vector_core.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_fstream.hpp"
+#include "fei_fwd.hpp"
+#include "fei_impl_utils.hpp"
+#include "fei_macros.hpp"
+#include "snl_fei_RecordCollection.hpp"
+
 #undef fei_file
 #define fei_file "fei_Vector_core.cpp"
 

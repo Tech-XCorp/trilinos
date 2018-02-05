@@ -44,9 +44,18 @@
 #define IFPACK_H
 
 
+#include <iosfwd>
+
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Preconditioner.h"
+#include "Ifpack_config.h"
 #include "Teuchos_iostream_helpers.hpp"
+
+class Epetra_RowMatrix;
+class Ifpack_Preconditioner;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 
 #ifdef HAVE_HYPRE

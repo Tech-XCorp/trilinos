@@ -43,14 +43,17 @@
 #ifndef IFPACK_METISPARTITIONER_H
 #define IFPACK_METISPARTITIONER_H
 
+#include <sstream>
+
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
 #include "Ifpack_OverlappingPartitioner.h"
+#include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Ifpack_Graph;
-class Epetra_Map;
+
 class Epetra_BlockMap;
 class Epetra_Import;
+class Epetra_Map;
+class Ifpack_Graph;
 
 //! Ifpack_METISPartitioner: A class to decompose Ifpack_Graph's using METIS.
 /*!

@@ -40,18 +40,25 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_Amesos.h"
-#include "Ifpack_Condest.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Map.h"
-#include "Epetra_Comm.h"
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
 #include "Amesos.h"
+#include "Amesos_BaseSolver.h"
+#include "Epetra_Comm.h"
 #include "Epetra_LinearProblem.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_RowMatrix.h"
 #include "Epetra_Time.h"
+#include "Ifpack_Amesos.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Utils.hpp"
 
 static bool FirstTime = true;
 

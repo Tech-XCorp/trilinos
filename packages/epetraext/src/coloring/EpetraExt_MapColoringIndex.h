@@ -43,6 +43,12 @@
 #define EpetraExt_MAPCOLORINGINDEX_H
 
 #include <EpetraExt_TCrsGraph_MapColoringIndex.h>
+#include <vector>
+
+class Epetra_CrsGraph;
+class Epetra_IntVector;
+class Epetra_LongLongVector;
+class Epetra_MapColoring;
 
 namespace EpetraExt {
 

@@ -48,10 +48,22 @@
 // ************************************************************************
 //@HEADER
 
+#include <stddef.h>
+#include <sstream>
+#include <stdexcept>
+#include <vector>
+
+#include "LOCA_EigenvalueSort_Strategies.H"
+#include "NOX_Abstract_Group.H"
 #include "Teuchos_LAPACK.hpp"
 #include "Teuchos_ParameterList.hpp"
-#include "LOCA_GlobalData.H"
-#include "LOCA_EigenvalueSort_Strategies.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace LOCA {
+class GlobalData;
+}  // namespace LOCA
 
 NOX::Abstract::Group::ReturnType
 LOCA::EigenvalueSort::LargestMagnitude::sort(int n, double* evals,

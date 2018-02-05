@@ -41,9 +41,11 @@
 #ifndef EPETRAEXT_OPERATOROUT_H
 #define EPETRAEXT_OPERATOROUT_H
 #include <EpetraExt_ConfigDefs.h>
-class Epetra_Operator;
-class Epetra_MultiVector;
+#include <stdio.h>
+
 class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Operator;
 
 namespace EpetraExt {
  

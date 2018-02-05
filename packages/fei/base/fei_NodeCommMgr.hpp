@@ -9,9 +9,17 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_fwd.hpp>
-
 #include <fei_CommUtils.hpp>
+#include <fei_fwd.hpp>
+#include <stddef.h>
+#include <vector>
+
+#include "fei_defs.h"
+#include "fei_mpi.h"
+
+class NodeDatabase;
+class NodeDescriptor;
+class SNL_FEI_Structure;
 
 /**
   NodeCommMgr (Node communication manager) is responsible for

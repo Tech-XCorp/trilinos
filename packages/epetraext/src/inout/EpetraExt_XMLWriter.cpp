@@ -41,21 +41,22 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
+#include <iomanip>
+#include <stdexcept>
+
 #include "EpetraExt_XMLWriter.h"
+#include "Epetra_Comm.h"
 #include "Epetra_Map.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_CrsMatrix.h"
 #include "Epetra_MultiVector.h"
-#include "Teuchos_ParameterList.hpp"
+#include "Epetra_RowMatrix.h"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_XMLObject.hpp"
 #include "Teuchos_XMLParameterListWriter.hpp"
-#include "Teuchos_Assert.hpp"
 
 using namespace Teuchos;
 

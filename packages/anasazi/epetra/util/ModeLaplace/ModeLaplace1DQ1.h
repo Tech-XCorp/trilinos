@@ -51,17 +51,22 @@
 #ifndef ANASAZI_MODE_LAPLACE_1D_Q1_H
 #define ANASAZI_MODE_LAPLACE_1D_Q1_H
 
-#include "Epetra_ConfigDefs.h"
-#include "Anasaziepetra_ModeLaplace_DLLExportMacro.h"
+#include <math.h>
 
+#include "Anasaziepetra_ModeLaplace_DLLExportMacro.h"
+#include "CheckingTools.h"
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_RowMatrix.h"
-
-#include "CheckingTools.h"
 #include "ModeLaplace.h"
 #include "SortingTools.h"
+
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 class ANASAZIEPETRA_MODELAPLACE_LIB_DLL_EXPORT ModeLaplace1DQ1 : public ModeLaplace {
 

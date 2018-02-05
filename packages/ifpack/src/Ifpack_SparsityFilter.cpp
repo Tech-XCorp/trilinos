@@ -40,14 +40,18 @@
 //@HEADER
 */
 
+#include <stdlib.h>
+#include <algorithm>
+#include <iostream>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_SparsityFilter.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
+
+class Epetra_Vector;
 
 //==============================================================================
 Ifpack_SparsityFilter::Ifpack_SparsityFilter(const Teuchos::RefCountPtr<Epetra_RowMatrix>& Matrix,

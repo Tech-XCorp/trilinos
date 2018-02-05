@@ -5,16 +5,30 @@
 /*    of the U.S. Government.  Export of this program may require     */
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
-#include "fei_fstream.hpp"
+#include <istream>
+#include <map>
+#include <string>
+#include <utility>
 
-#include "fei_utils.hpp"
-#include "snl_fei_Utils.hpp"
+#include "fei_ConnectivityBlock.hpp"
+#include "fei_LinearSystemCore.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
 #include "fei_MatrixReducer.hpp"
 #include "fei_Matrix_Impl.hpp"
-#include "fei_LinearSystemCore.hpp"
+#include "fei_Param.hpp"
 #include "fei_ParameterSet.hpp"
-
+#include "fei_Pattern.hpp"
+#include "fei_Record.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_fwd.hpp"
+#include "fei_macros.hpp"
+#include "fei_sstream.hpp"
+#include "fei_utils.hpp"
 #include "fei_version.h"
+#include "snl_fei_RecordCollection.hpp"
+#include "snl_fei_Utils.hpp"
 
 #ifdef FEI_HAVE_TIME_H
 #include <time.h>

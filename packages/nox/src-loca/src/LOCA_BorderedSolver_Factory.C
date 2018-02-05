@@ -48,14 +48,28 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include <sstream>
+#include <string>
+#include <type_traits>
 
-#include "LOCA_BorderedSolver_Factory.H"
-#include "LOCA_BorderedSolver_AbstractStrategy.H"
 #include "LOCA_BorderedSolver_Bordering.H"
+#include "LOCA_BorderedSolver_Factory.H"
 #include "LOCA_BorderedSolver_Nested.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_config.h"
+
+namespace LOCA {
+namespace BorderedSolver {
+class AbstractStrategy;
+}  // namespace BorderedSolver
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
 
 LOCA::BorderedSolver::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

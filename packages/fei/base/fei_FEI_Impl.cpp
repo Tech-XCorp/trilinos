@@ -6,23 +6,43 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_utils.hpp>
-
+#include <fei_Data.hpp>
 #include <fei_FEI_Impl.hpp>
+#include <fei_LibraryWrapper.hpp>
+#include <fei_ParameterSet.hpp>
+#include <fei_Pattern.hpp>
 #include <fei_Record.hpp>
 #include <fei_TemplateUtils.hpp>
-#include <fei_ParameterSet.hpp>
-#include <fei_base.hpp>
-
-#include <fei_Pattern.hpp>
-#include <fei_LibraryWrapper.hpp>
-#include <fei_Data.hpp>
 #include <fei_defs.h>
-
-#include <stdexcept>
+#include <fei_utils.hpp>
+#include <snl_fei_Broker_FEData.hpp>
+#include <__tree>
+#include <algorithm>
 #include <cmath>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_ConnectivityBlock.hpp"
+#include "fei_Factory.hpp"
+#include "fei_FiniteElementData.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_LinearSystemCore.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_Solver.hpp"
+#include "fei_Vector.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
+#include "fei_mpi.h"
+#include "fei_sstream.hpp"
+#include "snl_fei_Factory.hpp"
+#include "snl_fei_RecordCollection.hpp"
+#include "snl_fei_Utils.hpp"
 
 #undef fei_file
 #define fei_file "fei_FEI_Impl.cpp"

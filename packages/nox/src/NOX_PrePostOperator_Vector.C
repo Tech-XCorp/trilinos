@@ -46,7 +46,18 @@
 // ************************************************************************
 //@HEADER
 
+#include <vector>
+
+#include "NOX_Abstract_PrePostOperator.H"
 #include "NOX_PrePostOperator_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Solver {
+class Generic;
+}  // namespace Solver
+}  // namespace NOX
 
 void NOX::PrePostOperatorVector::runPreIterate(const NOX::Solver::Generic& solver)
 {

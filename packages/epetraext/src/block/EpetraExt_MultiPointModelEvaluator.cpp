@@ -42,7 +42,25 @@
 */
 
 #include "EpetraExt_MultiPointModelEvaluator.h"
+
+#include <math.h>
+#include <iostream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "EpetraExt_BlockCrsMatrix.h"
+#include "EpetraExt_BlockMultiVector.h"
+#include "EpetraExt_BlockVector.h"
+#include "EpetraExt_MultiComm.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_as.hpp"
 
 EpetraExt::MultiPointModelEvaluator::MultiPointModelEvaluator(

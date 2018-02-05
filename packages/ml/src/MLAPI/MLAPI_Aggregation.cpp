@@ -2,28 +2,49 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <assert.h>
+#include <stddef.h>
+#include <__functional_base>
+#include <algorithm>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "MLAPI_MultiVector.h"
+#include "Teuchos_BLAS_wrappers.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "ml_common.h"
+#include "ml_epetra_utils.h"
+#include "ml_memory.h"
+#include "ml_op_utils.h"
+#include "ml_operator.h"
 #ifdef HAVE_ML_MLAPI
 
-#include "ml_include.h"
-#include <iostream>
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
-#include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_LAPACK.h"
 #include "Epetra_CrsMatrix.h"
-#include "MLAPI_Error.h"
-#include "MLAPI_Space.h"
-#include "MLAPI_Operator.h"
-#include "MLAPI_Workspace.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_LAPACK.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_Vector.h"
 #include "MLAPI_Aggregation.h"
+#include "MLAPI_Error.h"
+#include "MLAPI_Operator.h"
+#include "MLAPI_Space.h"
+#include "MLAPI_Workspace.h"
+#include "Teuchos_ParameterList.hpp"
 
 namespace MLAPI {
 
 #include "ml_aggregate.h"
-#include "ml_agg_METIS.h"
 
 // ======================================================================
 void GetPtent(const Operator& A, Teuchos::ParameterList& List,

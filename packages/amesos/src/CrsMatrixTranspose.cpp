@@ -45,8 +45,13 @@
 //
 //
 #include "CrsMatrixTranspose.h"
+
+#include <assert.h>
 #include <vector>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
 
 int CrsMatrixTranspose( Epetra_CrsMatrix *In,  Epetra_CrsMatrix *Out ) { 
 

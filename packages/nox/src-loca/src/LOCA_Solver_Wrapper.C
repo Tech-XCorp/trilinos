@@ -48,9 +48,27 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Solver_Wrapper.H"    // class definition
-#include "LOCA_MultiContinuation_AbstractGroup.H"
+#include <stddef.h>
+#include <type_traits>
+
 #include "LOCA_Extended_MultiAbstractGroup.H"
+#include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "LOCA_Solver_Wrapper.H"    // class definition
+#include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_Generic.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Vector;
+}  // namespace Abstract
+}  // namespace NOX
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::Solver::Wrapper::
 Wrapper(const Teuchos::RCP<NOX::Solver::Generic>& solver) :

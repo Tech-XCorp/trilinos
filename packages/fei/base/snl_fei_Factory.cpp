@@ -8,9 +8,34 @@
 #ifndef _snl_fei_Factory_cpp_
 #define _snl_fei_Factory_cpp_
 
-#include <fei_macros.hpp>
-
 #include <snl_fei_Factory.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+#include "fei_Factory.hpp"
+#include "fei_FiniteElementData.hpp"
+#include "fei_LibraryWrapper.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_LinearSystemCore.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_MatrixGraph_Impl2.hpp"
+#include "fei_Param.hpp"
+#include "fei_ParameterSet.hpp"
+#include "fei_Reducer.hpp"
+#include "fei_Solver.hpp"
+#include "fei_Vector.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
+#include "fei_sstream.hpp"
+#include "fei_utils.hpp"
+#include "snl_fei_Broker.hpp"
+#include "snl_fei_Broker_FEData.hpp"
+#include "snl_fei_Broker_LinSysCore.hpp"
 
 //----------------------------------------------------------------------------
 snl_fei::Factory::Factory(MPI_Comm comm,

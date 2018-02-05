@@ -6,7 +6,6 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
 #include "fei_Pool.hpp"
 
 fei_Pool::fei_Pool(unsigned int sz)

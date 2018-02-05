@@ -6,10 +6,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_iostream.hpp>
-#include <fei_defs.h>
-
 #include <fei_BlockDescriptor.hpp>
+#include <fei_iostream.hpp>
+#include <ostream>
+
+#include "fei_console_ostream.hpp"
 
 //====Constructor===============================================================
 BlockDescriptor::BlockDescriptor()

@@ -6,13 +6,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
 #include <snl_fei_Broker_LinSysCore.hpp>
 
 #undef fei_file
 #define fei_file "snl_fei_Broker_LinSysCore.cpp"
 #include <fei_ErrMacros.hpp>
+
+#include "fei_LinearSystemCore.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_Reducer.hpp"
 
 //----------------------------------------------------------------------------
 snl_fei::Broker_LinSysCore::Broker_LinSysCore(fei::SharedPtr<LinearSystemCore> lsc,

@@ -44,11 +44,28 @@
 #ifndef EPETRAEXT_MULTIPOINTMODELEVALUATOR_H
 #define EPETRAEXT_MULTIPOINTMODELEVALUATOR_H
 
-#include "Epetra_ConfigDefs.h"
-#include "EpetraExt_ModelEvaluator.h"
+#include <vector>
+
 #include "EpetraExt_BlockCrsMatrix.h"
-#include "EpetraExt_BlockVector.h"
 #include "EpetraExt_BlockMultiVector.h"
+#include "EpetraExt_BlockVector.h"
+#include "EpetraExt_ModelEvaluator.h"
+#include "Epetra_ConfigDefs.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Operator;
+class Epetra_RowMatrix;
+class Epetra_Vector;
+namespace EpetraExt {
+class BlockCrsMatrix;
+class BlockMultiVector;
+class BlockVector;
+class MultiComm;
+}  // namespace EpetraExt
 #ifdef HAVE_MPI
 #include "EpetraExt_MultiMpiComm.h"
 #else

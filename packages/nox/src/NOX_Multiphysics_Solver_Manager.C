@@ -45,11 +45,34 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Multiphysics_Solver_Manager.H"    // class definition
-#include "NOX_Multiphysics_DataExchange_Interface.H"
+#include <stddef.h>
+#include <ostream>
+#include <string>
+#include <vector>
+
+#include "NOX_Abstract_Group.H"
 #include "NOX_Multiphysics_Solver_FixedPointBased.H"
+#include "NOX_Multiphysics_Solver_Generic.H"
+#include "NOX_Multiphysics_Solver_Manager.H"    // class definition
+#include "NOX_StatusTest_Generic.H"
 #include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class Vector;
+}  // namespace Abstract
+namespace Multiphysics {
+namespace DataExchange {
+class Interface;
+}  // namespace DataExchange
+}  // namespace Multiphysics
+namespace Solver {
+class Generic;
+}  // namespace Solver
+}  // namespace NOX
 
 
 NOX::Multiphysics::Solver::Manager::Manager(

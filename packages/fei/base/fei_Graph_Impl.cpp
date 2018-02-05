@@ -6,17 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_Graph_Impl.hpp>
-#include <fei_EqnComm.hpp>
 #include <fei_CommUtils.hpp>
+#include <fei_EqnComm.hpp>
+#include <fei_Graph_Impl.hpp>
 #include <fei_TemplateUtils.hpp>
-#include <fei_VectorSpace.hpp>
+#include <fei_macros.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "fei_Graph_Impl.cpp"
 #include <fei_ErrMacros.hpp>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_Graph.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_mpi.h"
+#include "snl_fei_MapContig.hpp"
+#include "snl_fei_RaggedTable.hpp"
 
 //----------------------------------------------------------------------------
 fei::Graph_Impl::Graph_Impl(MPI_Comm comm, int firstLocalRow, int lastLocalRow)

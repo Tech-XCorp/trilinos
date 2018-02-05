@@ -43,7 +43,7 @@
 // ***********************************************************************
 //
 // @HEADER
-#include <Teuchos_Array.hpp>
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "Xpetra_EpetraCrsMatrix.hpp"
 
 namespace Xpetra {

@@ -43,12 +43,10 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "Epetra_CrsGraph.h"
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "Xpetra_EpetraCrsGraph.hpp"
-
 #include "Xpetra_Exceptions.hpp"
-#include "Xpetra_Utils.hpp"
-#include "Xpetra_EpetraExport.hpp"
-#include "Xpetra_EpetraImport.hpp"
 
 namespace Xpetra {
 

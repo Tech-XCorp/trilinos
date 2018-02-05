@@ -43,8 +43,11 @@
 // ***********************************************************************
 //
 // @HEADER
-#include "Xpetra_Utils.hpp"
+#include <ostream>
+
+#include "Teuchos_TestForException.hpp"
 #include "Xpetra_Exceptions.hpp"
+#include "Xpetra_Utils.hpp"
 
 namespace Xpetra {
 

@@ -41,6 +41,10 @@
 
 #include "Tpetra_Details_PackTriples.hpp"
 
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
+
 #ifdef HAVE_TPETRACORE_MPI
 
 namespace { // (anonymous)

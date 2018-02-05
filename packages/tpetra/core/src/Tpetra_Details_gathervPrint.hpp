@@ -51,10 +51,14 @@
 #ifndef TPETRA_DETAILS_GATHERPRINT_HPP
 #define TPETRA_DETAILS_GATHERPRINT_HPP
 
-#include <Tpetra_ConfigDefs.hpp>
 #include <Teuchos_Comm.hpp>
-#include <string>
+#include <Tpetra_ConfigDefs.hpp>
 #include <ostream>
+#include <string>
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace Tpetra {
 namespace Details {

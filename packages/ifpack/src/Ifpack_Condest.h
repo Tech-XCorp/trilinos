@@ -43,10 +43,11 @@
 #ifndef IFPACK_CONDEST_H
 #define IFPACK_CONDEST_H
 
-#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_CondestType.h"
-class Ifpack_Preconditioner;
+#include "Ifpack_ConfigDefs.h"
+
 class Epetra_RowMatrix;
+class Ifpack_Preconditioner;
 
 double Ifpack_Condest(const Ifpack_Preconditioner& IFP,
 		      const Ifpack_CondestType CT,

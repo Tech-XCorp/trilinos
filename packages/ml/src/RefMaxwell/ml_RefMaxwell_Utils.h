@@ -1,14 +1,26 @@
 #ifndef ML_REFMAXWELL_UTILS_H
 #define ML_REFMAXWELL_UTILS_H
 
+#include <iosfwd>
+
+#include "ml_comm.h"
+#include "ml_config.h"
+#include "ml_operator.h"
+
+class Epetra_CrsMatrix;
+class Epetra_IntVector;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
+struct ML_Aggregate_Struct;
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 #include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
-#include "Teuchos_RCP.hpp"
-#include "ml_include.h"
-#include "ml_MultiLevelPreconditioner.h"
 #include "Epetra_IntVector.h"
 #include "Epetra_MultiVector.h"
+#include "Teuchos_RCP.hpp"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_include.h"
 
 namespace ML_Epetra
 {

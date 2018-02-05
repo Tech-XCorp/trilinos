@@ -48,9 +48,16 @@
 // ************************************************************************
 //@HEADER
 
+#include <sstream>
+#include <type_traits>
+
 #include "NOX_GlobalData.H"
-#include "Teuchos_ParameterList.hpp"
+#include "NOX_MeritFunction_Generic.H"
 #include "NOX_MeritFunction_SumOfSquares.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::GlobalData::
 GlobalData(const Teuchos::RCP<Teuchos::ParameterList>& noxParams)

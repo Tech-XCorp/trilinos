@@ -42,6 +42,8 @@
 
 #include "AztecOO_StatusTestMaxIters.h"
 
+#include <ostream>
+
 AztecOO_StatusTestMaxIters::AztecOO_StatusTestMaxIters(int MaxIters) 
   : AztecOO_StatusTest() {
 

@@ -43,7 +43,19 @@
 */
 
 #include "Aztec2Petra.h"
+
+#include <iostream>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_SerialComm.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
 
 int Aztec2Petra(int * proc_config,
 		AZ_MATRIX * Amat, double * az_x, double * az_b,

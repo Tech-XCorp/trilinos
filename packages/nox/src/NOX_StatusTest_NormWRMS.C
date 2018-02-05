@@ -48,14 +48,21 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_StatusTest_NormWRMS.H"
-#include "NOX_Common.H"
-#include "NOX_Abstract_Vector.H"
+#include <math.h>
+#include <sstream>
+#include <type_traits>
+
 #include "NOX_Abstract_Group.H"
 #include "NOX_Abstract_ImplicitWeighting.H"
+#include "NOX_Abstract_Vector.H"
 #include "NOX_Solver_Generic.H"
 #include "NOX_Solver_LineSearchBased.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_StatusTest_NormWRMS.H"
 #include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 //#include "/home/rppawlo/Trilinos/packages/epetra/src/Epetra_Vector.h"
 //#include "/home/rppawlo/nox/src-epetra/NOX_Epetra_Vector.H"

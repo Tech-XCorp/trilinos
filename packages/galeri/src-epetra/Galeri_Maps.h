@@ -42,12 +42,20 @@
 #ifndef GALERI_MAPS_H
 #define GALERI_MAPS_H
 
+#include <iosfwd>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Map.h"
 #include "Galeri_ConfigDefs.h"
 #include "Galeri_Exception.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
 #include "Teuchos_ParameterList.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 namespace Galeri {
 

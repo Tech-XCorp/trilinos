@@ -39,12 +39,10 @@
 // ************************************************************************
 // @HEADER
 
+#include <Kokkos_Macros.hpp>
+
 #include "Tpetra_Details_Profiling.hpp"
-// I don't like including everything, but currently (as of 19 Apr
-// 2017), Kokkos does not provide a public header file to get just the
-// Profiling hooks.  Users are just supposed to include
-// Kokkos_Core.hpp.
-#include "Kokkos_Core.hpp"
+#include "impl/Kokkos_Profiling_Interface.hpp"
 
 namespace Tpetra {
 namespace Details {

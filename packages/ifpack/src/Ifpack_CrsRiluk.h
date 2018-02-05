@@ -43,22 +43,33 @@
 #ifndef _IFPACK_CRSRILUK_H_
 #define _IFPACK_CRSRILUK_H_
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_ScalingType.h"
-#include "Ifpack_IlukGraph.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_CompObject.h"
-#include "Epetra_Operator.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Object.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Map.h"
-class Epetra_Comm;
-class Epetra_VbrMatrix;
-class Epetra_RowMatrix;
+#include <iosfwd>
 
+#include "Epetra_CombineMode.h"
+#include "Epetra_CompObject.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_IlukGraph.h"
+#include "Ifpack_ScalingType.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_CrsGraph;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_VbrMatrix;
+class Epetra_Vector;
 
 namespace Teuchos {
   class ParameterList;

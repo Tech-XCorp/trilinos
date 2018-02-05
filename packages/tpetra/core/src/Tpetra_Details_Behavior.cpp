@@ -1,14 +1,17 @@
-#include "Tpetra_Details_Behavior.hpp"
-#include "TpetraCore_config.h"
+#include <__functional_base>
 #include <algorithm> // std::transform
 #include <atomic> // std::atomic_thread_fence, std::memory_order_release
-#include <cstdlib> // std::getenv
 #include <cctype> // std::toupper
+#include <cstdlib> // std::getenv
+#include <functional>
+#include <iosfwd>
+#include <map>
 #include <mutex> // std::call_once, std::once_flag
 #include <string>
-#include <map>
+#include <utility>
 #include <vector>
-#include <functional>
+
+#include "Tpetra_Details_Behavior.hpp"
 
 namespace Tpetra {
 namespace Details {

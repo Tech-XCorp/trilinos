@@ -9,13 +9,20 @@
 #ifndef _snl_fei_RecordCollection_hpp_
 #define _snl_fei_RecordCollection_hpp_
 
-#include <fei_iosfwd.hpp>
-#include <fei_Pool_alloc.hpp>
 #include <fei_FieldMask.hpp>
+#include <fei_Pool_alloc.hpp>
 #include <fei_Record.hpp>
-
+#include <fei_iosfwd.hpp>
+#include <stddef.h>
 #include <map>
+#include <utility>
 #include <vector>
+
+#include "fei_iostream.hpp"
+
+namespace fei {
+class FieldMask;
+}  // namespace fei
 
 #undef fei_file
 #define fei_file "snl_fei_RecordCollection.hpp"

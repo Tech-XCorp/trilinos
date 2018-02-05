@@ -7,11 +7,17 @@
 /*--------------------------------------------------------------------*/
 
 #include <fei_ReverseMapper.hpp>
-#include <stdexcept>
-#include <sstream>
-#include <vector>
 #include <fei_VectorSpace.hpp>
 #include <snl_fei_RecordCollection.hpp>
+#include <stddef.h>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
+#include <vector>
+
+#include "fei_EqnRecord.hpp"
+#include "fei_FieldMask.hpp"
+#include "fei_Record.hpp"
 
 namespace fei {
 

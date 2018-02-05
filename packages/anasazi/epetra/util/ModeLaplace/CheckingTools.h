@@ -51,16 +51,19 @@
 #ifndef ANASAZI_CHECKING_TOOLS_H
 #define ANASAZI_CHECKING_TOOLS_H
 
-#include "Epetra_ConfigDefs.h"
 #include "Anasaziepetra_ModeLaplace_DLLExportMacro.h"
-
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_LAPACK.h"
 #include "Epetra_LocalMap.h"
 #include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Operator.h"
 #include "Epetra_Vector.h"
+
+class Epetra_Comm;
+class Epetra_MultiVector;
+class Epetra_Operator;
 
 class ANASAZIEPETRA_MODELAPLACE_LIB_DLL_EXPORT CheckingTools {
 

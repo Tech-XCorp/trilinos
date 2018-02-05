@@ -40,9 +40,10 @@
 //@HEADER
 
 #include <EpetraExt_View_MultiVector.h>
-
 #include <Epetra_MultiVector.h>
-#include <Epetra_BlockMap.h>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

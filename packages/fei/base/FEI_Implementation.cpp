@@ -6,34 +6,49 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_CommUtils.hpp>
-#include <fei_iostream.hpp>
-#include <fei_fstream.hpp>
-#include <fei_sstream.hpp>
-
-#include <fei_utils.hpp>
-
-#include <fei_Data.hpp>
-#include <fei_LinearSystemCore.hpp>
-#include <fei_FiniteElementData.hpp>
-
-#include <fei_LibraryWrapper.hpp>
-#include <fei_Filter.hpp>
-
-#include <fei_LinSysCoreFilter.hpp>
-#include <fei_FEDataFilter.hpp>
-
+#include <FEI_Implementation.hpp>
 #include <SNL_FEI_Structure.hpp>
 #include <fei_BlockDescriptor.hpp>
-#include <fei_NodeDatabase.hpp>
+#include <fei_CommUtils.hpp>
 #include <fei_ConnectivityTable.hpp>
-#include <FEI_Implementation.hpp>
+#include <fei_Data.hpp>
+#include <fei_FEDataFilter.hpp>
+#include <fei_Filter.hpp>
+#include <fei_FiniteElementData.hpp>
+#include <fei_LibraryWrapper.hpp>
+#include <fei_LinSysCoreFilter.hpp>
+#include <fei_LinearSystemCore.hpp>
+#include <fei_NodeDatabase.hpp>
+#include <fei_fstream.hpp>
+#include <fei_iostream.hpp>
+#include <fei_sstream.hpp>
+#include <fei_utils.hpp>
 #include <snl_fei_Utils.hpp>
 
 #undef fei_file
 #define fei_file "FEI_Implementation.cpp"
 
 #include <fei_ErrMacros.hpp>
+#include <__tree>
+#include <algorithm>
+#include <map>
+#include <ostream>
+#include <string>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_NodeCommMgr.hpp"
+#include "fei_NodeDescriptor.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_TemplateUtils.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_defs.h"
+#include "fei_iosfwd.hpp"
+#include "fei_mpi.h"
+
+namespace snl_fei {
+template <class RecordType> class Constraint;
+}  // namespace snl_fei
 
 //------------------------------------------------------------------------------
 FEI_Implementation::FEI_Implementation(fei::SharedPtr<LibraryWrapper> libWrapper,

@@ -44,14 +44,26 @@
 #ifndef TPETRA_EPETRAROWMATRIX_HPP
 #define TPETRA_EPETRAROWMATRIX_HPP
 
+#include <stddef.h>
+
+#include "Epetra_Map.h"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
 #include "TpetraCore_config.h"
+
+class Epetra_Comm;
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #if defined(HAVE_TPETRA_EPETRA)
 
-#include <Epetra_Comm.h>
 #include <Epetra_BasicRowMatrix.h>
-#include <Tpetra_CrsMatrix.hpp>
+#include <Epetra_Comm.h>
 #include <Teuchos_TestForException.hpp>
+#include <Tpetra_CrsMatrix.hpp>
 #include <memory> // std::shared_ptr
 #include <stdexcept>
 #include <type_traits>

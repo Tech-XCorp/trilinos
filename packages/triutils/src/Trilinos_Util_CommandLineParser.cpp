@@ -41,9 +41,16 @@
 
 /* ------------------------------------------------------------------------ */
 
-#include "Trilinos_Util.h"
-#include "Trilinos_Util_CommandLineParser.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <__functional_base>
+#include <__tree>
 #include <cstring>
+#include <string>
+#include <utility>
+
+#include "Epetra_ConfigDefs.h"
+#include "Trilinos_Util_CommandLineParser.h"
 
 using namespace std;
 
@@ -360,7 +367,6 @@ void Trilinos_Util::InputFileReader::SetSeparationChars(const string c)
 }
 
 #include <iostream>
-#include <fstream>
 
 int Trilinos_Util::InputFileReader::ReadFile(const char * FileName)
 {

@@ -39,20 +39,24 @@
 // ***********************************************************************
 //@HEADER
 
-#include <EpetraExt_ConfigDefs.h>
 #include <EpetraExt_MMHelpers.h>
 #include <Epetra_Comm.h>
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_Import.h>
-#include <Epetra_Export.h>
-#include <Epetra_Distributor.h>
-#include <Epetra_HashTable.h>
-#include <Epetra_Util.h>
-#include <Epetra_Import_Util.h>
 #include <Epetra_GIDTypeSerialDenseVector.h>
+#include <Epetra_HashTable.h>
+#include <Epetra_Import.h>
+#include <Epetra_Import_Util.h>
+#include <Epetra_Util.h>
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <__bit_reference>
+#include <string>
 
-#include <Teuchos_TimeMonitor.hpp>
-#include <limits>
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+
+class Epetra_Export;
 
 
 #ifdef HAVE_MPI

@@ -41,6 +41,8 @@
 #ifndef EPETRAEXT_ROWMATRIXOUT_H
 #define EPETRAEXT_ROWMATRIXOUT_H
 #include <EpetraExt_ConfigDefs.h>
+#include <stdio.h>
+
 class Epetra_RowMatrix;
 
 namespace EpetraExt {

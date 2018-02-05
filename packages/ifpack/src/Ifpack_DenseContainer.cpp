@@ -40,9 +40,12 @@
 //@HEADER
 */
 
+#include <ostream>
+#include <vector>
+
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_DenseContainer.h"
-#include "Epetra_RowMatrix.h"
 
 //==============================================================================
 int Ifpack_DenseContainer::NumRows() const

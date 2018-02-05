@@ -9,12 +9,18 @@
 #ifndef _fei_Vector_Local_hpp_
 #define _fei_Vector_Local_hpp_
 
-#include <fei_iosfwd.hpp>
 #include <fei_SharedPtr.hpp>
-#include <fei_VectorSpace.hpp>
 #include <fei_Vector.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_iosfwd.hpp>
+#include <map>
+#include <vector>
+
+#include "fei_iostream.hpp"
 
 namespace fei {
+
+class VectorSpace;
 
 class Vector_Local : public fei::Vector {
  public:

@@ -9,14 +9,20 @@
 #ifndef _fei_Matrix_Local_hpp_
 #define _fei_Matrix_Local_hpp_
 
-#include <fei_SharedPtr.hpp>
-#include <fei_MatrixGraph.hpp>
 #include <fei_Matrix.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <fei_SharedPtr.hpp>
 #include <fei_SparseRowGraph.hpp>
-
 #include <vector>
 
+#include "fei_iostream.hpp"
+
 namespace fei {
+class MatrixGraph;
+class ParameterSet;
+class SparseRowGraph;
+class Vector;
+
 class Matrix_Local : public fei::Matrix {
  public:
   Matrix_Local(fei::SharedPtr<fei::MatrixGraph> matrixGraph,

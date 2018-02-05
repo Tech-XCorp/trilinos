@@ -39,24 +39,49 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_DefaultSpmdVectorSpace.hpp"
-#include "Thyra_DefaultSpmdMultiVector.hpp"
-#include "Thyra_DefaultSpmdVector.hpp"
-#include "Thyra_DetachedVectorView.hpp"
-#include "Thyra_DetachedMultiVectorView.hpp"
-#include "Thyra_VectorSpaceFactoryBase.hpp"
-#include "Thyra_ProductVectorSpaceBase.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_dyn_cast.hpp"
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_DefaultSerialComm.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_as.hpp"
+#include "Thyra_DefaultSpmdMultiVector_decl.hpp"
+#include "Thyra_DefaultSpmdVectorSpace_decl.hpp"
+#include "Thyra_DefaultSpmdVector_decl.hpp"
+#include "Thyra_DetachedMultiVectorView.hpp"
+#include "Thyra_DetachedVectorView.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_MultiVectorBase_decl.hpp"
+#include "Thyra_ProductVectorSpaceBase.hpp"
+#include "Thyra_ScalarProdVectorSpaceBase_decl.hpp"
+#include "Thyra_SpmdMultiVectorBase.hpp"
+#include "Thyra_SpmdVectorBase.hpp"
+#include "Thyra_SpmdVectorSpaceBase_decl.hpp"
+#include "Thyra_VectorBase.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorSpaceFactoryBase.hpp"
 #ifdef HAVE_MPI
 #include "Teuchos_DefaultMpiComm.hpp"
 #endif
 
-#include "Epetra_Map.h"
 #include "Epetra_Comm.h"
+#include "Epetra_Map.h"
 #include "Epetra_SerialComm.h"
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"

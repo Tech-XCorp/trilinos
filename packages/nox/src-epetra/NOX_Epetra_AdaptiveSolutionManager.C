@@ -45,7 +45,21 @@
 // ************************************************************************
 //@HEADER
 
+#include <type_traits>
+
+#include "Epetra_CombineMode.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Export.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_Vector.h"
 #include "NOX_Epetra_AdaptiveSolutionManager.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_CrsGraph;
 
 using Teuchos::rcp;
 

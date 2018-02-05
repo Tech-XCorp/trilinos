@@ -48,10 +48,18 @@
 // ************************************************************************
 //@HEADER
 
+#include <math.h>
+#include <iostream>
+#include <type_traits>
+#include <vector>
+
+#include "NOX_Abstract_Vector.H"
 #include "NOX_Common.H"
 #include "NOX_LAPACK_Vector.H"
-#include "Teuchos_BLAS_wrappers.hpp"  // for blas access
 #include "NOX_Random.H" // for Random class
+#include "Teuchos_BLAS_wrappers.hpp"  // for blas access
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::LAPACK::Vector::Vector() :
   n(0),

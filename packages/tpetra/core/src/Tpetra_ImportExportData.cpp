@@ -43,6 +43,8 @@
 
 #include <Tpetra_ImportExportData.hpp>
 
+#include "TpetraCore_config.h"
+
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 
 #include "TpetraCore_ETIHelperMacros.h"

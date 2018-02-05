@@ -48,9 +48,24 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
+#include <__functional_base>
+#include <__tree>
+#include <iomanip>
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 #include "NOX_Utils.H"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_basic_oblackholestream.hpp"
+#include "Teuchos_config.h"
+#include "Teuchos_oblackholestream.hpp"
 
 #ifdef HAVE_MPI
 #include <mpi.h>

@@ -44,13 +44,31 @@
 //
 // @HEADER
 
-#include "MueLu_ConfigDefs.hpp"
 #if defined(HAVE_MUELU_ML) && defined(HAVE_MUELU_EPETRA)
-#include <ml_ValidateParameters.h>
 #include <ml_MultiLevelPreconditioner.h> // for default values
+#include <ml_ValidateParameters.h>
 #endif
 
 #include <MueLu_ML2MueLuParameterTranslator.hpp>
+#include <stdio.h>
+#include <string.h>
+#include <deque>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "MueLu_Exceptions.hpp"
+#include "MueLu_MasterList.hpp"
+#include "MueLu_ParameterListUtils.hpp"
+#include "MueLu_config.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_FilteredIterator.hpp"
+#include "Teuchos_ParameterEntry.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
 
 namespace MueLu {
 

@@ -7,17 +7,33 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_Reducer.hpp>
-#include <fei_MatrixGraph.hpp>
-#include <fei_Matrix.hpp>
-#include <fei_Matrix_core.hpp>
-#include <fei_Vector.hpp>
-#include <fei_Graph_Impl.hpp>
 #include <fei_ArrayUtils.hpp>
-#include <fei_TemplateUtils.hpp>
+#include <fei_Graph_Impl.hpp>
+#include <fei_Matrix.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <fei_Matrix_core.hpp>
+#include <fei_Reducer.hpp>
 #include <fei_SparseRowGraph.hpp>
+#include <fei_TemplateUtils.hpp>
 #include <fei_Vector.hpp>
 #include <fei_impl_utils.hpp>
+#include <stddef.h>
+#include <algorithm>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_CSRMat.hpp"
+#include "fei_CSVec.hpp"
+#include "fei_FillableMat.hpp"
+#include "fei_Graph.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_defs.h"
+#include "fei_fwd.hpp"
+#include "fei_iostream.hpp"
+#include "fei_macros.hpp"
+#include "fei_mpi.h"
+#include "fei_ostream_ops.hpp"
 
 namespace fei {
 

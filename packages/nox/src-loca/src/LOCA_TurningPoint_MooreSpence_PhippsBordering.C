@@ -48,15 +48,37 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_TurningPoint_MooreSpence_PhippsBordering.H"
-#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
-#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
+#include <stddef.h>
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
+
 #include "LOCA_BorderedSolver_AbstractStrategy.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_Factory.H"
-#include "LOCA_ErrorCheck.H"
-#include "Teuchos_LAPACK.hpp"  // for 3x3 matrix solve
 #include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Factory.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_TurningPoint_MooreSpence_AbstractGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_ExtendedGroup.H"
+#include "LOCA_TurningPoint_MooreSpence_ExtendedMultiVector.H"
+#include "LOCA_TurningPoint_MooreSpence_PhippsBordering.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_LAPACK.hpp"  // for 3x3 matrix solve
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::TurningPoint::MooreSpence::PhippsBordering::PhippsBordering(
      const Teuchos::RCP<LOCA::GlobalData>& global_data,

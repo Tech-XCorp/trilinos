@@ -40,16 +40,13 @@
 //@HEADER
 */
 
+#include "Ifpack2_config.h"
 #include "Thyra_Ifpack2PreconditionerFactory_decl.hpp"
-
-#include "Ifpack2_ConfigDefs.hpp"
 
 #ifdef HAVE_IFPACK2_EXPLICIT_INSTANTIATION
 
-#include "Thyra_Ifpack2PreconditionerFactory_def.hpp"
-
-#include "Ifpack2_ExplicitInstantiationHelpers.hpp"
 #include "Ifpack2_ETIHelperMacros.h"
+#include "Ifpack2_ExplicitInstantiationHelpers.hpp"
 
 namespace Thyra {
 

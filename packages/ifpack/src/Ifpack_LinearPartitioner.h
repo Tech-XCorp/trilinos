@@ -44,14 +44,18 @@
 #define IFPACK_LINEARPARTITIONER_H
 
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
 #include "Ifpack_OverlappingPartitioner.h"
+#include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
+class Ifpack_Graph;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 //! Ifpack_LinearPartitioner: A class to define linear partitions.
 

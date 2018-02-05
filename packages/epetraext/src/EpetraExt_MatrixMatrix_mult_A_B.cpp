@@ -39,24 +39,24 @@
 // ***********************************************************************
 //@HEADER
 
-#include <EpetraExt_ConfigDefs.h>
-#include <EpetraExt_MatrixMatrix.h>
-
 #include <EpetraExt_MMHelpers.h>
-
-#include <EpetraExt_Transpose_RowMatrix.h>
-
-#include <Epetra_Export.h>
-#include <Epetra_Import.h>
-#include <Epetra_Util.h>
-#include <Epetra_Map.h>
-#include <Epetra_Comm.h>
+#include <EpetraExt_MatrixMatrix.h>
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_Vector.h>
-#include <Epetra_Directory.h>
-#include <Epetra_HashTable.h>
-#include <Epetra_Distributor.h>
+#include <Epetra_Import.h>
 #include <Epetra_IntSerialDenseVector.h>
+#include <Epetra_Map.h>
+#include <Epetra_Util.h>
+#include <Epetra_Vector.h>
+#include <math.h>
+#include <stddef.h>
+#include <stdexcept>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 #ifdef HAVE_VECTOR
 #include <vector>
@@ -66,8 +66,6 @@
 #include <Epetra_MpiDistributor.h>
 #endif
 
-
-#include <Teuchos_TimeMonitor.hpp>
 
 namespace EpetraExt {
 

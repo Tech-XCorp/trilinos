@@ -39,8 +39,20 @@
 // ************************************************************************
 // @HEADER
 
-#include <Tpetra_CombineMode.hpp>
 #include <Teuchos_StandardParameterEntryValidators.hpp>
+#include <Tpetra_CombineMode.hpp>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 
 namespace Tpetra {
 

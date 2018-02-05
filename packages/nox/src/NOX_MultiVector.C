@@ -48,7 +48,16 @@
 // ************************************************************************
 //@HEADER
 
+#include <iostream>
+#include <vector>
+
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
 #include "NOX_MultiVector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::MultiVector::MultiVector(int numVecs) :
   vecs(numVecs)

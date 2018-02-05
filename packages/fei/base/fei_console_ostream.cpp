@@ -6,8 +6,8 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
-#include "fei_iostream.hpp"
+#include <stddef.h>
+#include <iostream>
 
 namespace fei {
 

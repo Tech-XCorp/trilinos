@@ -41,6 +41,8 @@
 
 #include <Tpetra_Util.hpp>
 
+#include "Teuchos_Comm.hpp"
+
 namespace Tpetra {
 namespace Details {
 

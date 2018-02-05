@@ -6,14 +6,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <fei_ostream_ops.hpp>
-
-#include <fei_Vector.hpp>
-#include <fei_Matrix.hpp>
-#include <fei_FillableMat.hpp>
 #include <fei_CSRMat.hpp>
 #include <fei_CSVec.hpp>
+#include <fei_FillableMat.hpp>
+#include <fei_Matrix.hpp>
+#include <fei_Vector.hpp>
+#include <fei_ostream_ops.hpp>
+#include <stddef.h>
+#include <map>
+#include <ostream>
+#include <utility>
+#include <vector>
+
+#include "fei_SparseRowGraph.hpp"
+#include "fei_iostream.hpp"
 
 
 FEI_OSTREAM& operator<<(FEI_OSTREAM& os, fei::Vector& vec)

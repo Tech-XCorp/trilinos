@@ -41,8 +41,22 @@
 
 
 #include "EpetraExt_ModelEvaluatorScalingTools.h"
-#include "Teuchos_implicit_cast.hpp"
+
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_PolynomialDecl.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_implicit_cast.hpp"
 
 //
 // Here in the implementation of scaling we write all scaling routines to

@@ -45,7 +45,40 @@
 //
 // @HEADER
 
+#include <algorithm>
+#include <iosfwd>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_toString.hpp"
+#include "Thyra_DefaultBlockedLinearOp_decl.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_PhysicallyBlockedLinearOpBase.hpp"
+#include "TpetraCore_config.h"
+#include "Tpetra_CrsMatrix_decl.hpp"
 #include "Xpetra_ConfigDefs.hpp"
+#include "Xpetra_CrsMatrix.hpp"
+#include "Xpetra_CrsMatrixWrap.hpp"
+#include "Xpetra_EpetraCrsMatrix.hpp"
+#include "Xpetra_Map.hpp"
+#include "Xpetra_Matrix.hpp"
+#include "Xpetra_ThyraUtils.hpp"
+#include "Xpetra_TpetraCrsMatrix.hpp"
+#include "Xpetra_TpetraExport.hpp"
+#include "Xpetra_TpetraImport.hpp"
+#include "Xpetra_UseShortNamesScalar.hpp"
+#include "Xpetra_config.hpp"
 #ifdef HAVE_XPETRA_THYRA
 
 #include "Xpetra_BlockedCrsMatrix.hpp"

@@ -9,15 +9,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <fei_fwd.hpp>
-#include <fei_mpi.h>
-
 #include <Teuchos_ParameterList.hpp>
-
+#include <fei_fwd.hpp>
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
+#include <stddef.h>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
+
+#include "fei_CSRMat.hpp"
+#include "fei_CSVec.hpp"
+#include "fei_FillableMat.hpp"
+#include "fei_Reducer.hpp"
+
+namespace fei {
+class Graph;
+class Matrix;
+}  // namespace fei
 
 
 /** The fei namespace contains public functions, classes and interfaces.

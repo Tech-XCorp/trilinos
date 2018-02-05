@@ -43,15 +43,12 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "Xpetra_EpetraMultiVector.hpp"
-
-#include "Xpetra_EpetraImport.hpp"
-#include "Xpetra_EpetraExport.hpp"
+#include "Xpetra_EpetraVector.hpp"
 #include "Xpetra_Exceptions.hpp"
 
-#include "Xpetra_EpetraVector.hpp"
-
-#include "Epetra_SerialComm.h"
+class Epetra_MultiVector;
 
 
 namespace Xpetra {

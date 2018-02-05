@@ -40,18 +40,28 @@
 //@HEADER
 
 #include "BelosEpetraUtils.h"
+
+#include <assert.h>
+#include <stdlib.h>
+#include <ostream>
+#include <type_traits>
+
 #include "BelosEpetraAdapter.hpp"
-#include "Teuchos_Workspace.hpp"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Map.h"
 #include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_Workspace.hpp"
 #ifdef EPETRA_MPI
 #include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "Epetra_Map.h"
 
 #ifdef HAVE_BELOS_TRIUTILS
 #include "Trilinos_Util.h"

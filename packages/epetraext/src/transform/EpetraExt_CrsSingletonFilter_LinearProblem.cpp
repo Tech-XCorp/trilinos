@@ -40,18 +40,27 @@
 // ***********************************************************************
 //@HEADER
 
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Map.h"
-#include "Epetra_Util.h"
-#include "Epetra_Export.h"
-#include "Epetra_Import.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
-#include "Epetra_GIDTypeVector.h"
-#include "Epetra_Comm.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_MapColoring.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <iostream>
+#include <type_traits>
+
 #include "EpetraExt_CrsSingletonFilter_LinearProblem.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Export.h"
+#include "Epetra_GIDTypeVector.h"
+#include "Epetra_Import.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Map.h"
+#include "Epetra_MapColoring.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Util.h"
 
 namespace EpetraExt {
 

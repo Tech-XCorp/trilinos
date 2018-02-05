@@ -44,12 +44,21 @@
 #ifndef IFPACK_OVERLAPPINGROWMATRIX_H
 #define IFPACK_OVERLAPPINGROWMATRIX_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
+#include <iosfwd>
+
 #include "Epetra_CombineMode.h"
-#include "Teuchos_RefCountPtr.hpp"
 #include "Epetra_Import.h"
 #include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_Import;
+class Epetra_MultiVector;
+class Epetra_Vector;
 #ifdef HAVE_IFPACK_PARALLEL_SUBDOMAIN_SOLVERS
 #include "Epetra_IntVector.h"
 #else
@@ -58,10 +67,10 @@
 # endif
 #endif
 
-class Epetra_Map;
 class Epetra_BlockMap;
-class Epetra_CrsMatrix;
 class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Map;
 
 //! Ifpack_OverlappingRowMatrix: matrix with ghost rows, based on Epetra_RowMatrix
 //

@@ -40,15 +40,16 @@
 //@HEADER
 */
 
+#include <string.h>
+#include <type_traits>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_ReorderFilter.h"
 #include "Ifpack_Reordering.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 
 //==============================================================================
 Ifpack_ReorderFilter::Ifpack_ReorderFilter(const Teuchos::RefCountPtr<Epetra_RowMatrix>& Matrix_in,

@@ -39,6 +39,10 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "Epetra_ConfigDefs.h"
 #include "Trilinos_Util.h"
 
 void Trilinos_Util_read_coo(const char *data_file, int MyPID,

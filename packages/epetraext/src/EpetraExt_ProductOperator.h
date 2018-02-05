@@ -42,11 +42,19 @@
 #ifndef EPETRAEXT_PRODUCT_OPERATOR_H
 #define EPETRAEXT_PRODUCT_OPERATOR_H
 
-#include "Epetra_Operator.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_BLAS_types.hpp"
+#include <ostream>
+#include <stdexcept>
 #include <vector>
 
+#include "Epetra_Operator.h"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 class Epetra_Vector;
 
 namespace EpetraExt {

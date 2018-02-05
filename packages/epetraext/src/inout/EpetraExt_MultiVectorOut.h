@@ -41,7 +41,10 @@
 #ifndef EPETRAEXT_MULTIVECTOROUT_H
 #define EPETRAEXT_MULTIVECTOROUT_H
 #include <EpetraExt_ConfigDefs.h>
+#include <stdio.h>
+
 class Epetra_MultiVector;
+
 namespace EpetraExt {
  
   //! Writes an Epetra_MultiVector object to a Matrix Market format file

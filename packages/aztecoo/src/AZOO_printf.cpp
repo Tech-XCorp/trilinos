@@ -42,11 +42,9 @@
 //@HEADER
 */
 
-#include <stdio.h>
 #include <stdarg.h>
-
-#include <AztecOO_ConfigDefs.h>
-#include <az_aztec.h>
+#include <stdio.h>
+#include <ostream>
 
 /** az_ostream_out is a singleton class that holds a std::ostream pointer
   that can be used as the destination for Aztec's normal printf output.

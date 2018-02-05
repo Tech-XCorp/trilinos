@@ -43,14 +43,21 @@
 #ifndef IFPACK_OVERLAPGRAPH_H
 #define IFPACK_OVERLAPGRAPH_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Epetra_Object.h"
+#include <ostream>
+
 #include "Epetra_CrsGraph.h"
 #include "Epetra_Import.h"
+#include "Epetra_Object.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
-class Epetra_Comm;
 class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_Import;
 class Epetra_RowMatrix;
 
 namespace Teuchos {

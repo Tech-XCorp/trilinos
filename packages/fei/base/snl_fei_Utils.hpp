@@ -9,18 +9,21 @@
 #ifndef _snl_fei_Utils_hpp_
 #define _snl_fei_Utils_hpp_
 
+#include <fei_SharedPtr.hpp>
 #include <fei_fwd.hpp>
 #include <fei_mpi.h>
-#include <fei_SharedPtr.hpp>
 
 namespace fei {
   class CSVec;
   class Matrix;
+class MatrixGraph;
+class SparseRowGraph;
 }
 
-#include <vector>
+#include <iosfwd>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace snl_fei {
 

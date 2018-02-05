@@ -6,15 +6,30 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_ParameterSet.hpp>
-#include "fei_MatrixReducer.hpp"
-#include "fei_EqnComm.hpp"
-#include "fei_Matrix_core.hpp"
-#include "fei_sstream.hpp"
-#include "fei_fstream.hpp"
 #include <fei_CommUtils.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+#include <vector>
+
+#include "fei_EqnComm.hpp"
+#include "fei_ErrMacros.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_MatrixReducer.hpp"
+#include "fei_Matrix_core.hpp"
+#include "fei_Reducer.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_chk_mpi.hpp"
+#include "fei_defs.h"
+#include "fei_fstream.hpp"
+#include "fei_mpi.h"
+#include "fei_sstream.hpp"
 
 namespace fei {
+
+class ParameterSet;
+class Vector;
 
 MatrixReducer::MatrixReducer(fei::SharedPtr<fei::Reducer> reducer,
                              fei::SharedPtr<fei::Matrix> target)

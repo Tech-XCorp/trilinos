@@ -39,11 +39,11 @@
 // ************************************************************************
 // @HEADER
 
-#include "TpetraCore_config.h"
-#include "Tpetra_Details_assumeMpiIsCudaAware.hpp"
-#include <string>
 #include <cctype> // toupper
 #include <cstdlib> // getenv
+#include <string>
+
+#include "Tpetra_Details_assumeMpiIsCudaAware.hpp"
 
 namespace Tpetra {
 namespace Details {

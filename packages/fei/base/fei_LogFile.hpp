@@ -9,6 +9,8 @@
 #ifndef _fei_LogFile_hpp_
 #define _fei_LogFile_hpp_
 
+#include <stddef.h>
+
 #include "fei_iosfwd.hpp"
 
 namespace fei {

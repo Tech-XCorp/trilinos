@@ -49,6 +49,7 @@
 *
 */
 
+#include <ctype.h>
 /* JW - This is essentially a C file that was "converted" to C++, but still
    contains C function calls.  Since it is independent of the rest of
    the package, we will not include the central ConfigDefs file, but
@@ -56,10 +57,10 @@
    build problem on sass2889.
 #include <Epetra_ConfigDefs.h> */
 #include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-#include "Teuchos_Assert.hpp"
+#include <stdexcept>
+
 #include "EpetraExt_mmio.h"
+#include "Teuchos_Assert.hpp"
 
 using namespace EpetraExt;
 namespace EpetraExt {

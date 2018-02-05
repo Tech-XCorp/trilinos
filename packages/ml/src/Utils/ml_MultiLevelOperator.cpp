@@ -3,7 +3,13 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
+#include "Epetra_BlockMap.h"
+#include "ml_MultiLevelOperator.h"
 #include "ml_common.h"
+#include "ml_defs.h"
+#include "ml_struct.h"
+
+class Epetra_Comm;
 #ifdef ML_WITH_EPETRA
 
 #ifdef ML_MPI
@@ -13,13 +19,9 @@
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #endif
-#include "ml_include.h"
-
-#include "ml_epetra.h"
-#include "ml_epetra_operator.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "ml_epetra.h"
 
 namespace ML_Epetra
 {

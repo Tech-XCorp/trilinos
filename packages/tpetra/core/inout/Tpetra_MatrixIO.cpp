@@ -41,17 +41,22 @@
 // @HEADER
 */
 
-#include "Tpetra_MatrixIO.hpp"
-
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
 #include <algorithm>
-#include <iterator>
-#include <exception>
-#include <string>
 #include <cctype>
+#include <cstdio>
+#include <exception>
+#include <functional>
+#include <iterator>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "TpetraCore_config.h"
+#include "Tpetra_MatrixIO.hpp"
 
 bool Tpetra::Utils::parseIfmt(Teuchos::ArrayRCP<char> fmt, int &perline, int &width) {
   TEUCHOS_TEST_FOR_EXCEPT(fmt.size() != 0 && fmt[fmt.size()-1] != '\0');

@@ -48,8 +48,19 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_TurningPoint_MooreSpence_ExtendedVector.H"  // Class definition
+#include "LOCA_Extended_Vector.H"
 #include "LOCA_TurningPoint_MooreSpence_ExtendedMultiVector.H"
+#include "LOCA_TurningPoint_MooreSpence_ExtendedVector.H"  // Class definition
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+class GlobalData;
+namespace Extended {
+class MultiVector;
+}  // namespace Extended
+}  // namespace LOCA
 
 LOCA::TurningPoint::MooreSpence::ExtendedVector::ExtendedVector(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

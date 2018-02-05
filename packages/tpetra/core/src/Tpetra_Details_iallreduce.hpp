@@ -58,17 +58,25 @@
 /// "You" only refers to Tpetra developers.  Users, this file is not
 /// for you!
 
-#include "TpetraCore_config.h"
+#include "Kokkos_View.hpp"
 #include "Teuchos_EReductionType.hpp"
+#include "TpetraCore_config.h"
 #ifdef HAVE_TPETRACORE_MPI
-#  include "Tpetra_Details_extractMpiCommFromTeuchos.hpp"
 #  include "Tpetra_Details_MpiTypeTraits.hpp"
+#  include "Tpetra_Details_extractMpiCommFromTeuchos.hpp"
 #endif // HAVE_TPETRACORE_MPI
-#include "Kokkos_Core.hpp"
+#include <stddef.h>
+#include <functional>
 #include <memory>
 #include <stdexcept>
 #include <type_traits>
-#include <functional>
+
+#include "Kokkos_Core.hpp"
+
+namespace Kokkos {
+struct LayoutLeft;
+struct LayoutRight;
+}  // namespace Kokkos
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
 namespace Teuchos {

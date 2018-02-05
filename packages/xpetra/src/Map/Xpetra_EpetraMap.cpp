@@ -43,7 +43,10 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "Epetra_BlockMap.h"
 #include "Xpetra_ConfigDefs.hpp"
+
+class Epetra_Map;
 
 #ifdef HAVE_XPETRA_EPETRA
 

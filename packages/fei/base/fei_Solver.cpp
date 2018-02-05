@@ -6,19 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_Solver.hpp>
-
-#include <fei_Matrix_Impl.hpp>
 #include <fei_MatrixReducer.hpp>
-#include <snl_fei_LinearSystem_FEData.hpp>
-#include <fei_ParameterSet.hpp>
+#include <fei_Matrix_Impl.hpp>
+#include <fei_Solver.hpp>
 #include <fei_utils.hpp>
+#include <snl_fei_LinearSystem_FEData.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "fei_Solver.cpp"
 #include <fei_ErrMacros.hpp>
+#include <iosfwd>
+#include <vector>
+
+#include "fei_FiniteElementData.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_LinearSystemCore.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_SharedPtr.hpp"
 
 //----------------------------------------------------------------------------
 int fei_Solver_solve(fei::LinearSystem* linearSystem,

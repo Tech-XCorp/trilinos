@@ -6,23 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_Lookup_Impl.hpp>
-
-#include <fei_VectorSpace.hpp>
-
-#include <snl_fei_Utils.hpp>
-#include <fei_TemplateUtils.hpp>
 #include <fei_CommUtils.hpp>
-
-#include <snl_fei_Constraint.hpp>
-
+#include <fei_Lookup_Impl.hpp>
+#include <fei_TemplateUtils.hpp>
+#include <fei_VectorSpace.hpp>
 #include <snl_fei_SubdMsgHandler.hpp>
 
 #undef fei_file
 #define fei_file "fei_Lookup_Impl.cpp"
 #include <fei_ErrMacros.hpp>
+#include <__tree>
+#include <stdexcept>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_FieldMask.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_SharedIDs.hpp"
+#include "fei_mpi.h"
+#include "snl_fei_RecordCollection.hpp"
 
 //----------------------------------------------------------------------------
 fei::Lookup_Impl::Lookup_Impl(fei::SharedPtr<fei::MatrixGraph> matGraph,

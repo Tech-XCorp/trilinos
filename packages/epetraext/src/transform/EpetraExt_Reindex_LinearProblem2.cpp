@@ -39,15 +39,17 @@
 // ***********************************************************************
 //@HEADER
 
-#include <EpetraExt_Reindex_LinearProblem2.h>
-
 #include <EpetraExt_Reindex_CrsMatrix.h>
+#include <EpetraExt_Reindex_LinearProblem2.h>
 #include <EpetraExt_Reindex_MultiVector.h>
-
-#include <Epetra_LinearProblem.h>
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_MultiVector.h>
+#include <Epetra_LinearProblem.h>
 #include <Epetra_Map.h>
+#include <Epetra_MultiVector.h>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_RowMatrix.h"
 
 namespace EpetraExt {
 

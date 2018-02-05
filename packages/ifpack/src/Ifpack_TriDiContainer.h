@@ -43,13 +43,20 @@
 #ifndef IFPACK_TRIDICONTAINER_H
 #define IFPACK_TRIDICONTAINER_H
 
+#include <iosfwd>
+
+#include "Epetra_IntSerialDenseVector.h" // Is this needed \cbl
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseVector.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Container.h"
 #include "Ifpack_SerialTriDiMatrix.h"
 #include "Ifpack_SerialTriDiSolver.h"
-#include "Epetra_IntSerialDenseVector.h" // Is this needed \cbl
-#include "Epetra_SerialDenseVector.h"
+
 class Epetra_RowMatrix;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 //! Ifpack_TriDiContainer: a class to define containers for dense matrices.
 /*!

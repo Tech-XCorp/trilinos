@@ -48,18 +48,44 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_BorderedSolver_EpetraAugmented.H"
+#include <stddef.h>
+#include <ostream>
+#include <type_traits>
+
 #include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
 #include "Epetra_Vector.h"
-#include "NOX_Epetra_MultiVector.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
-#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
-#include "LOCA_Epetra_Group.H"
-#include "LOCA_Epetra_AugmentedOp.H"
+#include "LOCA_BorderedSolver_AbstractOperator.H"
+#include "LOCA_BorderedSolver_EpetraAugmented.H"
+#include "LOCA_BorderedSolver_JacobianOperator.H"
 #include "LOCA_BorderedSolver_LowerTriangularBlockElimination.H"
 #include "LOCA_BorderedSolver_UpperTriangularBlockElimination.H"
-#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "LOCA_Epetra_AugmentedOp.H"
+#include "LOCA_Epetra_Group.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_LinearSystem.H"
+#include "NOX_Epetra_MultiVector.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::BorderedSolver::EpetraAugmented::EpetraAugmented(
      const Teuchos::RCP<LOCA::GlobalData>& global_data,

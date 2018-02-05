@@ -39,8 +39,10 @@
 // ************************************************************************
 //@HEADER
 
+#include <__locale>
+
 #include "BelosSolverFactory.hpp"
-#include <locale>
+#include "Teuchos_ArrayView.hpp"
 
 namespace Belos {
 namespace Impl {

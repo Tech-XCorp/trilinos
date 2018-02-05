@@ -9,20 +9,24 @@
 #ifndef _fei_Reducer_hpp_
 #define _fei_Reducer_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_mpi.h>
-#include <fei_Logger.hpp>
+#include <fei_CSRMat.hpp>
+#include <fei_CSVec.hpp>
 #include <fei_CSVec.hpp>
 #include <fei_FillableMat.hpp>
-#include <fei_CSVec.hpp>
-#include <fei_CSRMat.hpp>
+#include <fei_Logger.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
+#include <iosfwd>
+#include <vector>
 
 namespace fei {
-  class MatrixGraph;
   class Graph;
   class Matrix;
+  class MatrixGraph;
   class Vector;
+class SparseRowGraph;
+template <typename T> class SharedPtr;
 
   class Reducer : private fei::Logger {
    public:

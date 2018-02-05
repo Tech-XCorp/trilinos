@@ -42,6 +42,9 @@
 #ifndef THYRA_EPETRAEXT_ADD_TRANSFORMER_HPP
 #define THYRA_EPETRAEXT_ADD_TRANSFORMER_HPP
 
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Thyra_LinearOpTransformerBase.hpp"
 
 
@@ -53,6 +56,8 @@ namespace Thyra {
  *
  * \ingroup EpetraExt_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class LinearOpBase;
+
 class EpetraExtAddTransformer : public LinearOpTransformerBase<double>
 {
 public:

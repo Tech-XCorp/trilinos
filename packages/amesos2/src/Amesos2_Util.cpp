@@ -41,10 +41,10 @@
 //
 // @HEADER
 
-#include "Amesos2_Util.hpp"
+#include <ostream>
 
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_DefaultSerialComm.hpp>
+#include "Amesos2_Util.hpp"
+#include "Teuchos_FancyOStream.hpp"
 
 #ifdef HAVE_MPI
 #  include <Teuchos_DefaultMpiComm.hpp>

@@ -45,7 +45,32 @@
 // ************************************************************************
 //@HEADER
 
+#include <stddef.h>
+#include <iostream>
+#include <vector>
+
+#include "EpetraExt_BlockCrsMatrix.h"
+#include "EpetraExt_BlockVector.h"
+#include "EpetraExt_MultiComm.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
 #include "LOCA_Epetra_Interface_MultiPoint.H"
+#include "LOCA_Epetra_Interface_Required.H"
+#include "NOX_Config.h"
+#include "NOX_Epetra_Interface_Jacobian.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Operator;
+namespace LOCA {
+class ParameterVector;
+}  // namespace LOCA
 
 #ifdef HAVE_NOX_EPETRAEXT
 

@@ -48,12 +48,24 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_MultiVector.H"
-#include "NOX_Epetra_Vector.H"
+#include <stddef.h>
+#include <iostream>
+#include <type_traits>
+#include <vector>
 
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_LocalMap.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "NOX_Epetra_MultiVector.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::Epetra::MultiVector::MultiVector(int numvecs)
   : noxEpetraVectors(numvecs)

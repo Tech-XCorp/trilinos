@@ -27,12 +27,29 @@
 // @HEADER
 
 #include "Amesos_Klu.h"
-#include "Epetra_Map.h"
-#include "Epetra_Import.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Util.h"
+
+#include <assert.h>
+#include <math.h>
+#include <stddef.h>
+#include <iostream>
+#include <sstream>
+#include <type_traits>
+
+#include "Amesos_ConfigDefs.h"
 #include "Amesos_Support.h"
+#include "Amesos_config.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
 
 extern "C" {
 

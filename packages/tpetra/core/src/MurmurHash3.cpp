@@ -7,6 +7,10 @@
 // compile and run any of them on any platform, but your performance with the
 // non-native version will be less than optimal.
 
+#include <_types/_uint64_t.h>
+#include <_types/_uint8_t.h>
+#include <stdint.h>
+
 #include "MurmurHash3.hpp"
 
 //-----------------------------------------------------------------------------

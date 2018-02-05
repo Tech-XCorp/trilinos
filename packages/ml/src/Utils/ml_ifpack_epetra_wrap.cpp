@@ -3,35 +3,40 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+#include "Epetra_Comm.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Ifpack_Preconditioner.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Utils.hpp"
+#include "ml_comm.h"
 #include "ml_config.h"
-#include "ml_include.h"
+#include "ml_epetra.h"
+#include "ml_utils.h"
+
+class Ifpack_DenseContainer;
 #if defined(HAVE_ML_IFPACK) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_EPETRA)
-#include "Ifpack_config.h"
-#include "ml_epetra_utils.h"
+#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Time.h"
-#include "ml_ifpack.h"
-#include "ml_ifpack_wrap.h"
 #include "Ifpack_Chebyshev.h"
-#include "Ifpack_SORa.h"
 #ifdef rst_dump
 #include "ml_Ifpack_ML.h"
 #endif
-// converter from ML_Operator to Epetra_RowMatrix (only wraps)
-#include "ml_RowMatrix.h"
 // IFPACK factory class
 #ifdef HAVE_IFPACK_DYNAMIC_FACTORY
 #include "Ifpack_DynamicFactory.h"
 #else
 #include "Ifpack.h"
 #endif
-#include "Ifpack_Chebyshev.h"
-#include "Ifpack_BlockRelaxation.h"
 #include <climits>
+
+#include "Ifpack_BlockRelaxation.h"
 
 using namespace ML_Epetra;
 

@@ -6,21 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_sstream.hpp"
-
-#include "fei_CommUtils.hpp"
-#include "fei_TemplateUtils.hpp"
-
-#include "fei_defs.h"
-#include "fei_NodeDescriptor.hpp"
-#include "fei_NodeDatabase.hpp"
-#include "fei_BlockDescriptor.hpp"
-#include "SNL_FEI_Structure.hpp"
-#include "snl_fei_Utils.hpp"
-#include "fei_Filter.hpp"
-
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <cstdlib>
+#include <istream>
+#include <stdexcept>
+
+#include "SNL_FEI_Structure.hpp"
+#include "fei_ArrayUtils.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_Filter.hpp"
+#include "fei_NodeDatabase.hpp"
+#include "fei_NodeDescriptor.hpp"
+#include "fei_defs.h"
+#include "fei_iosfwd.hpp"
+#include "fei_iostream.hpp"
+#include "fei_mpi.h"
+#include "fei_sstream.hpp"
+#include "snl_fei_Utils.hpp"
 
 #undef fei_file
 #define fei_file "fei_Filter.cpp"

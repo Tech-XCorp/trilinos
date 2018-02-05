@@ -16,6 +16,8 @@
 /* ******************************************************************** */
 
 #include "MLAPI_BaseLinearCombination.h"
+#include "MLAPI_MultiVector.h"
+#include "MLAPI_Space.h"
 
 namespace MLAPI {
 

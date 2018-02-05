@@ -46,6 +46,10 @@
 #define _AztecOO_string_maps_h_
 
 #include <AztecOO.h>
+#include <iosfwd>
+#include <map>
+
+#include "AztecOO_config.h"
 
 #ifdef HAVE_AZTECOO_TEUCHOS
 #include <Teuchos_map.hpp>

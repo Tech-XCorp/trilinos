@@ -40,13 +40,15 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
-#include "Ifpack_LinePartitioner.h"
-#include "Ifpack_Graph.h"
-#include "Epetra_Util.h"
 #include <cfloat>
+#include <cmath>
+#include <vector>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Util.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
+#include "Ifpack_LinePartitioner.h"
 
 // ============================================================================
 

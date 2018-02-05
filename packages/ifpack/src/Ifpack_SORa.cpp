@@ -42,19 +42,30 @@
 */
 
 #include "Ifpack_SORa.h"
-#include "Ifpack.h"
-#include "Ifpack_Utils.h"
+
+#include <math.h>
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Epetra_Import.h"
-#include "Epetra_Export.h"
-#include "Epetra_IntVector.h"
 
 #ifdef HAVE_IFPACK_EPETRAEXT
 #include "EpetraExt_MatrixMatrix.h"
-#include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_MultiVectorOut.h"
-#include "EpetraExt_Transpose_RowMatrix.h"
 
 
 #define ABS(x) ((x)>=0?(x):-(x))

@@ -6,15 +6,25 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_CommUtils.hpp>
-#include <fei_iostream.hpp>
-#include <fei_impl_utils.hpp>
-#include <fei_FillableMat.hpp>
 #include <fei_CSRMat.hpp>
 #include <fei_CSVec.hpp>
+#include <fei_CommUtils.hpp>
+#include <fei_FillableMat.hpp>
 #include <fei_Graph.hpp>
 #include <fei_Matrix.hpp>
 #include <fei_Reducer.hpp>
+#include <fei_impl_utils.hpp>
+#include <fei_iostream.hpp>
+#include <algorithm>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "fei_SparseRowGraph.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_defs.h"
+#include "fei_mpi.h"
 
 namespace fei {
 namespace impl_utils {

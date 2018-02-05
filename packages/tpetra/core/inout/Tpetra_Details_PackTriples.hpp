@@ -42,12 +42,17 @@
 #ifndef TPETRA_DETAILS_PACKTRIPLES_HPP
 #define TPETRA_DETAILS_PACKTRIPLES_HPP
 
-#include "TpetraCore_config.h"
 #include "Teuchos_Comm.hpp"
+#include "TpetraCore_config.h"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 #ifdef HAVE_TPETRACORE_MPI
-#  include "Tpetra_Details_extractMpiCommFromTeuchos.hpp"
 #  include "Tpetra_Details_MpiTypeTraits.hpp"
+#  include "Tpetra_Details_extractMpiCommFromTeuchos.hpp"
 #endif // HAVE_TPETRACORE_MPI
+#include <stddef.h>
 #include <ostream>
 
 namespace Tpetra {

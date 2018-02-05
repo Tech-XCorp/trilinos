@@ -44,10 +44,9 @@
 //
 // @HEADER
 
-#include <cstring>
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <cstring>
+#include <vector>
 
 namespace MueLu {
 

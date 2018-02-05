@@ -42,7 +42,13 @@
 #ifndef THYRA_EPETRA_OPERATOR_VIEW_EXTRACTOR_STD_HPP
 #define THYRA_EPETRA_OPERATOR_VIEW_EXTRACTOR_STD_HPP
 
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Thyra_EpetraOperatorViewExtractorBase.hpp"
+#include "Thyra_EpetraTypes.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+
+class Epetra_Operator;
 
 
 namespace Thyra {
@@ -56,6 +62,8 @@ namespace Thyra {
  *
  * \ingroup Epetra_Thyra_Op_Vec_adapters_grp
  */
+template <class Scalar> class LinearOpBase;
+
 class EpetraOperatorViewExtractorStd : virtual public EpetraOperatorViewExtractorBase
 {
 public:

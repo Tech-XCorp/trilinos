@@ -43,18 +43,25 @@
 #ifndef IFPACK_AMESOS_H
 #define IFPACK_AMESOS_H
 
+#include <iosfwd>
+
+#include "Epetra_Operator.h"
+#include "Ifpack_CondestType.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Preconditioner.h"
-#include "Epetra_Operator.h"
 #include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
-class Epetra_Map;
-class Epetra_Time;
-class Epetra_Comm;
 class Amesos_BaseSolver;
+class Epetra_Comm;
 class Epetra_LinearProblem;
+class Epetra_Map;
+class Epetra_MultiVector;
 class Epetra_RowMatrix;
+class Epetra_Time;
 
 //! Ifpack_Amesos: a class to use Amesos' factorizations as preconditioners.
 /*!

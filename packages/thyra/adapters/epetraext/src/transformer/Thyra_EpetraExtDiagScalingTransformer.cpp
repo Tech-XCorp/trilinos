@@ -40,19 +40,27 @@
 // @HEADER
 
 
-#include "Thyra_EpetraExtDiagScalingTransformer.hpp"
-#include "Thyra_MultipliedLinearOpBase.hpp"
-#include "Thyra_DiagonalLinearOpBase.hpp"
-#include "Thyra_ScaledAdjointLinearOpBase.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
-#include "Thyra_get_Epetra_Operator.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Epetra_SerialComm.h"
+#include <stdexcept>
+#include <type_traits>
+
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Operator.h"
 #include "Teuchos_Assert.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Thyra_DiagonalLinearOpBase.hpp"
+#include "Thyra_EpetraExtDiagScalingTransformer.hpp"
+#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_MultipliedLinearOpBase.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ScaledAdjointLinearOpBase_decl.hpp"
+#include "Thyra_get_Epetra_Operator.hpp"
+
+class Epetra_Vector;
 
 
 namespace Thyra {

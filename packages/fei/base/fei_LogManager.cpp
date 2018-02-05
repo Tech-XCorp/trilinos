@@ -6,10 +6,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_utils.hpp>
-#include <fei_LogManager.hpp>
-#include <fei_Logger.hpp>
 #include <fei_LogFile.hpp>
+#include <fei_LogManager.hpp>
+#include <fei_utils.hpp>
+
+#include "fei_fwd.hpp"
 
 fei::LogManager::LogManager()
  : output_level_(NONE),

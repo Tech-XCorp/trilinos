@@ -45,7 +45,21 @@
 // ************************************************************************
 //@HEADER
 
+#include <stdexcept>
+
+#include "Epetra_Vector.h"
 #include "LOCA_Epetra_AdaptiveSolutionManager.H"
+#include "LOCA_Epetra_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_AdaptiveSolutionManager.H"
+#include "NOX_Epetra_LinearSystem.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+class Epetra_CrsGraph;
+class Epetra_Map;
 
 
 using Teuchos::rcp;

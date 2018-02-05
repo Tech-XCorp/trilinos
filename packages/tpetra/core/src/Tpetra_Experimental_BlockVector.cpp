@@ -41,12 +41,11 @@
 // @HEADER
 */
 
-#include "Tpetra_Experimental_BlockVector_decl.hpp"
-
+#include "TpetraCore_config.h"
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 
-#include "Tpetra_Experimental_BlockVector_def.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
+#include "Tpetra_Experimental_BlockVector_def.hpp"
 
 namespace Tpetra {
 

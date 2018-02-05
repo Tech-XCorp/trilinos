@@ -16,7 +16,10 @@
 #ifndef ML_IFPACK_WRAP
 #define ML_IFPACK_WRAP
 
+#include "ml_config.h"
 #include "ml_include.h"
+#include "ml_smoother.h"
+#include "ml_struct.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_IFPACK)
 
 #ifndef ML_CPP

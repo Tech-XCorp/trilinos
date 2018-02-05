@@ -6,24 +6,25 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_mpi.h>
-
-#include <fei_defs.h>
-
-#include <fei_TemplateUtils.hpp>
-#include <fei_mpiTraits.hpp>
-#include <fei_CommUtils.hpp>
-#include <fei_NodeDescriptor.hpp>
-#include <fei_NodeCommMgr.hpp>
 #include <SNL_FEI_Structure.hpp>
-
+#include <fei_CommUtils.hpp>
+#include <fei_NodeCommMgr.hpp>
 #include <fei_NodeDatabase.hpp>
+#include <fei_NodeDescriptor.hpp>
+#include <fei_defs.h>
+#include <fei_macros.hpp>
+#include <fei_mpi.h>
 
 #undef fei_file
 #define fei_file "fei_NodeCommMgr.cpp"
 #include <fei_ErrMacros.hpp>
+#include <algorithm>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
 
 //------Constructor-------------------------------------------------------------
 NodeCommMgr::NodeCommMgr(MPI_Comm comm, const SNL_FEI_Structure& problemStructure, int sharedNodeOwnership)

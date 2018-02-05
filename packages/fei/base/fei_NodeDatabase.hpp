@@ -9,14 +9,18 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
-#include "fei_fwd.hpp"
-#include "fei_defs.h"
+#include <map>
+#include <vector>
+
 #include "fei_NodeDescriptor.hpp"
 #include "fei_Pool_alloc.hpp"
+#include "fei_defs.h"
+#include "fei_fwd.hpp"
+#include "fei_macros.hpp"
 #include "fei_mpi.h"
 
-#include <map>
+class NodeCommMgr;
+class NodeDescriptor;
 
 /** Container that holds NodeDescriptors, and is able to reference them by
  global identifiers, or by nodeNumbers or eqnNumbers.

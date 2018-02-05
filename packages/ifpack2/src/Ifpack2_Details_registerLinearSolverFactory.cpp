@@ -41,9 +41,10 @@
 //@HEADER
 */
 
+#include "Ifpack2_Details_LinearSolverFactory_decl.hpp"
 #include "Ifpack2_Details_registerLinearSolverFactory.hpp"
-#include "Ifpack2_Details_LinearSolverFactory.hpp"
 #include "Ifpack2_ETIHelperMacros.h"
+#include "Teuchos_RCPDecl.hpp"
 
 // Define the Ifpack2 ETI macros and Tpetra typedefs that go along
 // with them.  This works whether or not ETI is ON, because Bug 6380

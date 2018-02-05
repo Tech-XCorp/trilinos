@@ -40,17 +40,21 @@
 //@HEADER
 
 #include <EpetraExt_Transpose_RowMatrix.h>
-
-#include <Epetra_Export.h>
 #include <Epetra_CrsGraph.h>
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
-#include <Epetra_Import.h>
 #include <Epetra_Export.h>
-#include <Epetra_Comm.h>
-
-#include <Teuchos_TimeMonitor.hpp>
+#include <Epetra_Import.h>
+#include <Epetra_Map.h>
+#include <stddef.h>
+#include <iostream>
 #include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_RowMatrix.h"
 
 //#define ENABLE_TRANSPOSE_TIMINGS
 

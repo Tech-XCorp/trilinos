@@ -43,10 +43,8 @@
 
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 
-#include "Tpetra_Experimental_BlockCrsMatrix_Helpers_decl.hpp"
-#include "Tpetra_Experimental_BlockCrsMatrix_Helpers_def.hpp"
-
 #include "TpetraCore_ETIHelperMacros.h"
+#include "Tpetra_Experimental_BlockCrsMatrix_Helpers_def.hpp"
 
 namespace Tpetra {
   namespace Experimental {

@@ -43,7 +43,12 @@
 #ifndef IFPACK_LOCALFILTER_H
 #define IFPACK_LOCALFILTER_H
 
+#include <vector>
+
 #include "Ifpack_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"
 #else
@@ -52,11 +57,12 @@
 #include "Epetra_RowMatrix.h"
 #include "Teuchos_RefCountPtr.hpp"
 
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_Import;
 class Epetra_Map;
 class Epetra_MultiVector;
 class Epetra_Vector;
-class Epetra_Import;
-class Epetra_BlockMap;
 
 //! Ifpack_LocalFilter a class for light-weight extraction of the submatrix corresponding to local rows and columns.
 

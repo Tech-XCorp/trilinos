@@ -48,8 +48,20 @@
 // ************************************************************************
 //@HEADER
 
+#include <vector>
+
+#include "LOCA_Extended_MultiVector.H"
+#include "LOCA_Extended_Vector.H"
 #include "LOCA_Hopf_ComplexMultiVector.H"
 #include "LOCA_Hopf_ComplexVector.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+class GlobalData;
+}  // namespace LOCA
 
 LOCA::Hopf::ComplexMultiVector::ComplexMultiVector(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

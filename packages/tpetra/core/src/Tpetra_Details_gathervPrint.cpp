@@ -41,9 +41,21 @@
 // @HEADER
 */
 
-#include <Tpetra_Details_gathervPrint.hpp>
 #include <Teuchos_CommHelpers.hpp>
+#include <Tpetra_Details_gathervPrint.hpp>
+#include <stddef.h>
 #include <algorithm>
+#include <string>
+#include <type_traits>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
 
 namespace Tpetra {
 namespace Details {

@@ -48,12 +48,29 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_MultiPredictor_Random.H"
+#include <sstream>
+#include <type_traits>
+#include <vector>
+
+#include "LOCA_Extended_MultiVector.H"
 #include "LOCA_GlobalData.H"
-#include "NOX_Utils.H"
-#include "LOCA_MultiContinuation_ExtendedVector.H"
 #include "LOCA_MultiContinuation_ExtendedMultiVector.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
+#include "LOCA_MultiPredictor_AbstractStrategy.H"
+#include "LOCA_MultiPredictor_Random.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace MultiContinuation {
+class ExtendedGroup;
+}  // namespace MultiContinuation
+}  // namespace LOCA
 
 LOCA::MultiPredictor::Random::Random(
           const Teuchos::RCP<LOCA::GlobalData>& global_data,

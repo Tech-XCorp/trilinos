@@ -40,7 +40,16 @@
 //@HEADER
 
 #include "EpetraExt_ModelEvaluator.h"
+
+#include <stddef.h>
+#include <algorithm>
+#include <ostream>
+
+#include "Epetra_Vector.h"
+#include "Teuchos_ArrayView.hpp"
 #include "Teuchos_implicit_cast.hpp"
+
+class Epetra_MultiVector;
 
 
 namespace EpetraExt {

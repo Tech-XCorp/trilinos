@@ -9,10 +9,19 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_fwd.hpp>
 #include <fei_defs.h>
-#include <fei_macros.hpp>
+#include <fei_fwd.hpp>
 #include <fei_iostream.hpp>
+#include <fei_macros.hpp>
+#include <stddef.h>
+#include <ostream>
+#include <vector>
+
+#include "fei_console_ostream.hpp"
+
+class EqnCommMgr;
+class NodeDescriptor;
+class SNL_FEI_Structure;
 
 /**
 FEI_Implementation manages one or several instances of this class in the process

@@ -9,12 +9,23 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_fwd.hpp>
-#include <fei_mpi.h>
+#include <FEI.hpp>
 #include <fei_SharedPtr.hpp>
 #include <fei_defs.h>
+#include <fei_fwd.hpp>
+#include <fei_mpi.h>
+#include <stddef.h>
+#include <iosfwd>
+#include <vector>
 
-#include <FEI.hpp>
+#include "fei_macros.hpp"
+#include "fei_version.h"
+
+class Data;
+class Filter;
+class LibraryWrapper;
+class LinearSystemCore;
+class SNL_FEI_Structure;
 
 /**
 This is the (C++) user's point of interaction with the FEI implementation. The

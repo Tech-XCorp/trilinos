@@ -42,9 +42,13 @@
 #ifndef EPETRAEXT_BLOCKMULTIVECTOR_H
 #define EPETRAEXT_BLOCKMULTIVECTOR_H
 
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_MultiVector.h" 
 #include "Teuchos_RCP.hpp"
-#include <vector>
+#include "Teuchos_RCPDecl.hpp"
 
 //! EpetraExt::BlockMultiVector: A class for constructing a distributed block multivector
 

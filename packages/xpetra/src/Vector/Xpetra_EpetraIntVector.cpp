@@ -43,9 +43,8 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
 #include "Xpetra_EpetraIntVector.hpp"
-#include "Xpetra_EpetraImport.hpp"
-#include "Xpetra_EpetraExport.hpp"
 
 namespace Xpetra {
 

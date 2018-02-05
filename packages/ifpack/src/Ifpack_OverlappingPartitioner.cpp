@@ -40,14 +40,14 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
-#include "Ifpack_Graph.h"
+#include <algorithm>
+#include <iostream>
+#include <sstream>
 
 #include "Epetra_Comm.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
+#include "Ifpack_OverlappingPartitioner.h"
 #include "Teuchos_ParameterList.hpp"
 
 static const std::string PrintMsg_ = "(Ifpack_OvPartitioner) ";

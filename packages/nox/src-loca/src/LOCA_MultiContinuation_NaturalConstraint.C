@@ -48,10 +48,23 @@
 // ************************************************************************
 //@HEADER
 
+#include <stddef.h>
+#include <algorithm>
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
+
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "LOCA_MultiContinuation_ExtendedVector.H"
 #include "LOCA_MultiContinuation_NaturalConstraint.H"
 #include "LOCA_MultiContinuation_NaturalGroup.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 LOCA::MultiContinuation::NaturalConstraint::NaturalConstraint(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

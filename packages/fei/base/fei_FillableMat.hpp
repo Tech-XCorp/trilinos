@@ -10,12 +10,19 @@
 #define _fei_FillableMat_hpp_
 
 #include <fei_CSVec.hpp>
-#include <fei_Pool_alloc.hpp>
 #include <fei_EqnBuffer.hpp>
-#include <vector>
+#include <fei_Pool_alloc.hpp>
+#include <__functional_base>
+#include <iosfwd>
 #include <map>
+#include <utility>
+#include <vector>
+
+class EqnBuffer;
 
 namespace fei {
+
+class CSVec;
 
 class FillableMat {
  public:

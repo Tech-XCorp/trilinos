@@ -46,9 +46,9 @@
 #ifndef MUELU_FACTORYBASE_HPP
 #define MUELU_FACTORYBASE_HPP
 
-#include "MueLu_config.hpp"
 #include "MueLu_BaseClass.hpp"
 #include "MueLu_Level_fwd.hpp"
+#include "MueLu_config.hpp"
 
 namespace MueLu {
 
@@ -57,6 +57,8 @@ namespace MueLu {
     @brief Base class for factories (e.g., R, P, and A_coarse).
     @ingroup MueLuBaseClasses
   */
+class Level;
+
   class FactoryBase : public virtual BaseClass {
 
   public:

@@ -43,8 +43,9 @@
 
 #include <EpetraExt_ConfigDefs.h>
 #include <Epetra_ConfigDefs.h>
-class Epetra_Comm;
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Map;
   /*! \namespace EpetraExt
      \brief The EpetraExt namespace contains a variety of useful functions and class that extend Epetra capabilities.

@@ -42,12 +42,35 @@
 #ifndef THYRA_EPETRA_MODEL_EVALUATOR_HPP
 #define THYRA_EPETRA_MODEL_EVALUATOR_HPP
 
-#include "Thyra_ModelEvaluatorDefaultBase.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_LinearOpWithSolveFactoryBase.hpp"
+#include <stddef.h>
+#include <iosfwd>
+#include <string>
+#include <type_traits>
+#include <vector>
+
 #include "EpetraExt_ModelEvaluator.h"
 #include "Epetra_Map.h"
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_ParameterListAcceptor.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_LinearOpWithSolveFactoryBase.hpp"
+#include "Thyra_ModelEvaluatorBase_decl.hpp"
+#include "Thyra_ModelEvaluatorDefaultBase.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+
+class Epetra_Map;
+class Epetra_Operator;
+class Epetra_Vector;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 
 namespace Thyra {
@@ -172,6 +195,12 @@ namespace Thyra {
  *
  * \ingroup EpetraExt_Thyra_Op_Vec_adapters_grp
  */
+class EpetraLinearOp;
+template <class Scalar> class LinearOpBase;
+template <class Scalar> class LinearOpWithSolveFactoryBase;
+template <class Scalar> class PreconditionerBase;
+template <class Scalar> class VectorSpaceBase;
+
 class EpetraModelEvaluator
   : public ModelEvaluatorDefaultBase<double>,
     virtual public Teuchos::ParameterListAcceptor

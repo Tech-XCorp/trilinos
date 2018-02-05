@@ -27,12 +27,27 @@
 // @HEADER
 
 #include "Amesos_Lapack.h"
-#include "Epetra_Map.h"
+
+#include <stddef.h>
+#include <iostream>
+#include <sstream>
+#include <type_traits>
+#include <vector>
+
+#include "Amesos_ConfigDefs.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Export.h"
 #include "Epetra_Import.h"
+#include "Epetra_LAPACK.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
-#include "Epetra_Util.h"
-#include "Epetra_LAPACK.h"
+#include "Teuchos_ParameterList.hpp"
+
 using namespace Teuchos;
 
 //=============================================================================

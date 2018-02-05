@@ -38,18 +38,22 @@
 //
 // ***********************************************************************
 //@HEADER
-#include "Epetra_ConfigDefs.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <vector>
+
 #include "EpetraExt_CrsMatrixIn.h"
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_Import.h"
 #include "Epetra_Time.h"
 #include "Epetra_Util.h"
-
-#include <fstream>
 
 #if defined(__PGI)
 #include <sstream>

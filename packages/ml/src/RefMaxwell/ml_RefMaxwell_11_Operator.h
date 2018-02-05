@@ -18,18 +18,33 @@
 
 #ifndef ML_REFMAXWELL_11_OPERATOR_H
 #define ML_REFMAXWELL_11_OPERATOR_H
+#include "ml_comm.h"
+#include "ml_config.h"
+#include "ml_operator.h"
+
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Map;
+class Epetra_MultiVector;
+namespace EpetraExt {
+class RowMatrix_Transpose;
+}  // namespace EpetraExt
+namespace ML_Epetra {
+class Epetra_Multi_CrsMatrix;
+}  // namespace ML_Epetra
 #if defined(HAVE_ML_EPETRA) && defined (HAVE_ML_EPETRAEXT)
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include "ml_Preconditioner.h"
-#include "Epetra_Operator_With_MatMat.h"
-#include "Epetra_Multi_CrsMatrix.h"
 #include "EpetraExt_Reindex_CrsMatrix.h"
-#include "EpetraExt_Transpose_RowMatrix.h"
 #include "EpetraExt_SolverMap_CrsMatrix.h"
+#include "EpetraExt_Transpose_RowMatrix.h"
+#include "Epetra_Comm.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_Multi_CrsMatrix.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Operator_With_MatMat.h"
+#include "Epetra_Vector.h"
+#include "ml_Preconditioner.h"
+
 namespace ML_Epetra{
 
 /*! ML_RefMaxwell_11_Operator encapsulates the reformulated (1,1) block

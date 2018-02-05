@@ -48,8 +48,9 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_VectorSpace_L2.H"
 #include "Epetra_Vector.h"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_VectorSpace_L2.H"
 
 NOX::Epetra::VectorSpaceL2::VectorSpaceL2()
 {

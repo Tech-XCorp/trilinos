@@ -40,19 +40,28 @@
 // @HEADER
 
 #include "Galeri_Utils.h"
-#include "Galeri_Exception.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Comm.h"
+
+#include <stdio.h>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseSolver.h"
-#include "Epetra_LAPACK.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_IntSerialDenseMatrix.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseSolver.h"
+#include "Galeri_ConfigDefs.h"
+#include "Galeri_Exception.h"
 #include "Teuchos_ParameterList.hpp"
 
 namespace Galeri {

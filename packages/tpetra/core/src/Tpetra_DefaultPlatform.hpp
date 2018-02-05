@@ -43,8 +43,13 @@
 #define TPETRA_DEFAULT_PLATFORM_HPP
 
 #include <Kokkos_DefaultNode.hpp>
+
 #include "Tpetra_ConfigDefs.hpp"
 #include "Tpetra_SerialPlatform.hpp"
+
+namespace Teuchos {
+template <class T> class RCP;
+}  // namespace Teuchos
 #ifdef HAVE_MPI
 #  include "Tpetra_MpiPlatform.hpp"
 #endif

@@ -39,9 +39,15 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <ostream>
+#include <stdexcept>
+
+#include "Epetra_ConfigDefs.h"
+#include "Teuchos_TestForException.hpp"
 #include "Trilinos_Util.h"
 #include "Trilinos_Util_iohb.h"
-#include "Teuchos_TestForException.hpp"
 
 void Trilinos_Util_read_hb(const char *data_file, int MyPID,
         int *N_global, int *n_nonzeros,

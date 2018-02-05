@@ -9,10 +9,13 @@
 /*--------------------------------------------------------------------*/
 
 #include "fei_iosfwd.hpp"
+
 namespace fei {
-  class FillableMat;
   class CSRMat;
   class CSVec;
+  class FillableMat;
+class Matrix;
+class Vector;
 }//namespace fei
 
 /*

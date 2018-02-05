@@ -46,12 +46,13 @@
 #ifndef MUELU_DESCRIBABLE_DECL_HPP
 #define MUELU_DESCRIBABLE_DECL_HPP
 
+#include <iosfwd>
 #include <string>                       // for string
-#include "Teuchos_FancyOStream.hpp"     // for FancyOStream
-#include "Teuchos_VerbosityLevel.hpp"   // for EVerbosityLevel
-#include "Teuchos_Describable.hpp"
 
 #include "MueLu_VerbosityLevel.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_FancyOStream.hpp"     // for FancyOStream
+#include "Teuchos_VerbosityLevel.hpp"   // for EVerbosityLevel
 
 namespace MueLu {
 

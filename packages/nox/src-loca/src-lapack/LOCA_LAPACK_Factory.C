@@ -48,12 +48,31 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
+#include <iosfwd>
+#include <string>
+#include <type_traits>
 
-#include "LOCA_LAPACK_Factory.H"
-#include "LOCA_Parameter_SublistParser.H"
 #include "LOCA_BorderedSolver_LAPACKDirectSolve.H"
 #include "LOCA_Eigensolver_DGGEVStrategy.H"
+#include "LOCA_LAPACK_Factory.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+class GlobalData;
+namespace BorderedSolver {
+class AbstractStrategy;
+}  // namespace BorderedSolver
+namespace Eigensolver {
+class AbstractStrategy;
+}  // namespace Eigensolver
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::LAPACK::Factory::Factory() :
   globalData()

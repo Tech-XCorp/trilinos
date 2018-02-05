@@ -42,12 +42,16 @@
 #include "EpetraExt_SubCopy_CrsMatrix.h"
 
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
+#include <Epetra_GIDTypeSerialDenseVector.h>
 #include <Epetra_Import.h>
 #include <Epetra_IntSerialDenseVector.h>
-#include <Epetra_LongLongSerialDenseVector.h>
-#include <Epetra_GIDTypeSerialDenseVector.h>
-#include <vector>
+#include <Epetra_Map.h>
+#include <assert.h>
+#include <iostream>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

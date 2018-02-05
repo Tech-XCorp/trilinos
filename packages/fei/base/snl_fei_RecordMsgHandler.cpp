@@ -6,13 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_sstream.hpp"
+#include <__tree>
+#include <cstdlib>
+#include <map>
+#include <ostream>
+#include <set>
+#include <stdexcept>
 
-#include "snl_fei_RecordMsgHandler.hpp"
-#include "snl_fei_RecordCollection.hpp"
-#include "snl_fei_PointBlockMap.hpp"
+#include "fei_CommUtils.hpp"
 #include "fei_FieldMask.hpp"
+#include "fei_Record.hpp"
 #include "fei_TemplateUtils.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
+#include "fei_sstream.hpp"
+#include "snl_fei_PointBlockMap.hpp"
+#include "snl_fei_RaggedTable.hpp"
+#include "snl_fei_RecordCollection.hpp"
+#include "snl_fei_RecordMsgHandler.hpp"
 
 #undef fei_file
 #define fei_file "snl_fei_RecordMsgHandler.cpp"

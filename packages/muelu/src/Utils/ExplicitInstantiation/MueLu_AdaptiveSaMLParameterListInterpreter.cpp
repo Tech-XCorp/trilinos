@@ -46,11 +46,10 @@
 
 
 
-#include "MueLu_AdaptiveSaMLParameterListInterpreter_def.hpp"
-
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   template class MueLu::AdaptiveSaMLParameterListInterpreter<SC,LO,GO,NO>;
 
+#include "MueLu_AdaptiveSaMLParameterListInterpreter_decl.hpp"
 #include "MueLu_ETI_4arg.hpp"
 
 

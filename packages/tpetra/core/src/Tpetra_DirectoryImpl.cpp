@@ -41,6 +41,7 @@
 // @HEADER
 */
 
+#include "TpetraCore_config.h"
 #include "Tpetra_DirectoryImpl.hpp"
 
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION

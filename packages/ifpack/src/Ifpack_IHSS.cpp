@@ -42,10 +42,22 @@
 */
 
 #include "Ifpack_IHSS.h"
+
+#include <stdio.h>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
 #include "Ifpack.h"
-#include "Ifpack_Utils.h"
+#include "Ifpack_ConfigDefs.h"
 #include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_TestForException.hpp"
 
 
 

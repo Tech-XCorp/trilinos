@@ -2,21 +2,29 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
+#include <stddef.h>
+#include <sstream>
+#include <string>
+
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+#include "MLAPI_Space.h"
+#include "MLAPI_Workspace.h"
 #include "ml_common.h"
+#include "ml_config.h"
+#include "ml_krylov.h"
+#include "ml_operator.h"
+#include "ml_rap.h"
 #ifdef HAVE_ML_MLAPI
-#include "ml_include.h"
-#include "MLAPI_Error.h"
-#include "MLAPI_Operator.h"
-#include "MLAPI_MultiVector.h"
-#include "MLAPI_Eig.h"
-#include "ml_anasazi.h"
-#include "float.h"
-#include <fstream>
+#include "Amesos_Lapack.h"
+#include "Epetra_LinearProblem.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
-#include "Epetra_LinearProblem.h"
+#include "MLAPI_Eig.h"
+#include "MLAPI_Error.h"
+#include "MLAPI_MultiVector.h"
+#include "MLAPI_Operator.h"
 #include "Teuchos_ParameterList.hpp"
-#include "Amesos_Lapack.h"
 
 namespace MLAPI {
 
@@ -157,9 +165,6 @@ void Eigs(const Operator& A, int NumEigenvalues,
   Epetra_MultiVector EigenVectors(A.GetRowMatrix()->OperatorDomainMap(),
                                   NumEigenvalues);
   EigenVectors.Random();
-#ifdef HAVE_ML_ANASAxI
-  //int NumRealEigenvectors, NumImagEigenvectors;
-#endif
 
   AnasaziList.set("eigen-analysis: action", "LM");
 

@@ -48,32 +48,46 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_ParameterList.hpp"
-#ifdef HAVE_TEUCHOS_EXTENDED
-#include "Teuchos_XMLParameterListHelpers.hpp"
-#endif
+#include <stddef.h>
+#include <__functional_base>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
-#include "NOX_Common.H"
-#include "NOX_StatusTest_Generic.H"
-#include "NOX_StatusTest_Factory.H"
-#include "NOX_Utils.H"
 #include "NOX_Abstract_Vector.H"
-#include "NOX_Abstract_Group.H"
-
 // Concrete StatusTest Objects
 #include "NOX_StatusTest_Combo.H"
-#include "NOX_StatusTest_NormF.H"
-#include "NOX_StatusTest_NormWRMS.H"
-#include "NOX_StatusTest_NormUpdate.H"
-#include "NOX_StatusTest_MaxIters.H"
-#include "NOX_StatusTest_FiniteValue.H"
 #include "NOX_StatusTest_Divergence.H"
-#include "NOX_StatusTest_Stagnation.H"
-#include "NOX_StatusTest_RelativeNormF.H"
+#include "NOX_StatusTest_Factory.H"
+#include "NOX_StatusTest_FiniteValue.H"
+#include "NOX_StatusTest_MaxIters.H"
 #include "NOX_StatusTest_NStep.H"
+#include "NOX_StatusTest_NormF.H"
+#include "NOX_StatusTest_NormUpdate.H"
+#include "NOX_StatusTest_NormWRMS.H"
+#include "NOX_StatusTest_RelativeNormF.H"
+#include "NOX_StatusTest_Stagnation.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_XMLParameterListCoreHelpers.hpp"
+#include "Teuchos_config.h"
 
-#include <sstream>
+namespace NOX {
+namespace Abstract {
+class Group;
+}  // namespace Abstract
+namespace StatusTest {
+class Generic;
+}  // namespace StatusTest
+}  // namespace NOX
 
 using namespace Teuchos;
 

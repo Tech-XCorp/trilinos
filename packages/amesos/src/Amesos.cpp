@@ -26,9 +26,17 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Amesos_config.h"
+#include <stdio.h>
+#include <iostream>
+#include <string>
+
 #include "Amesos.h"
 #include "Amesos_Klu.h"
+#include "Amesos_config.h"
+#include "Epetra_ConfigDefs.h"
+
+class Amesos_BaseSolver;
+class Epetra_LinearProblem;
 #ifdef HAVE_AMESOS_LAPACK
 #include "Amesos_Lapack.h"
 #endif
@@ -62,7 +70,6 @@
 #ifdef HAVE_AMESOS_CSPARSE
 #include "Amesos_CSparse.h"
 #endif
-#include "Epetra_Object.h"
 
 static bool verbose = false; 
 

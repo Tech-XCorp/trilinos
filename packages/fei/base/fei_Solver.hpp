@@ -9,13 +9,13 @@
 #ifndef _fei_Solver_hpp_
 #define _fei_Solver_hpp_
 
-#include <fei_macros.hpp>
 #include <fei_SharedPtr.hpp>
+#include <fei_macros.hpp>
 
 namespace fei {
-  class ParameterSet;
-  class Matrix;
   class LinearSystem;
+  class Matrix;
+  class ParameterSet;
 
   /** Interface for requesting that a linear-system be solved.
    */

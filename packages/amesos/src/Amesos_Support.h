@@ -1,9 +1,20 @@
 #ifndef AMESOS_SUPPORT_H
 #define AMESOS_SUPPORT_H
 
+#include "Amesos_config.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_MultiVector.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_CrsMatrix;
+class Epetra_Map;
+class Epetra_MultiVector;
+namespace EpetraExt {
+class CrsMatrix_Reindex;
+class MultiVector_Reindex;
+}  // namespace EpetraExt
 
 #ifdef HAVE_AMESOS_EPETRAEXT
 #include "EpetraExt_Reindex_CrsMatrix.h"

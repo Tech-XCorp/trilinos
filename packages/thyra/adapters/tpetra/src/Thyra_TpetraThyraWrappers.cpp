@@ -41,11 +41,17 @@
 // @HEADER
 */
 
-//#include "Thyra_TpetraThyraWrappers.hpp"
-#include "Thyra_TpetraThyraWrappers_decl.hpp"
+#include <algorithm>
+#include <sstream>
 
-
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_Comm.hpp"
 #include "Teuchos_DefaultSerialComm.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
 #ifdef HAVE_MPI
 #  include "Teuchos_DefaultMpiComm.hpp"
 #endif

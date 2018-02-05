@@ -43,8 +43,8 @@
 #define _TRILINOS_UTIL_CLP_
 
 #include <iostream>
-#include <string>
 #include <map>
+#include <string>
 
 class Trilinos_Util_Map {
 

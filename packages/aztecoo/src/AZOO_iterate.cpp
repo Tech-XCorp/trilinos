@@ -43,7 +43,19 @@
 */
 
 #include "AZOO_iterate.h"
+
+#include <math.h>
 #include <stdlib.h>
+#include <iostream>
+
+#include "Aztec2Petra.h"
+#include "AztecOO.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
 
 
 void AZOO_iterate(double * xsolve, double * b, 

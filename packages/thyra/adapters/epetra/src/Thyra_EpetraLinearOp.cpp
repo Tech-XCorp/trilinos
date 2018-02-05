@@ -39,21 +39,38 @@
 // ***********************************************************************
 // @HEADER
 
+#include <assert.h>
+#include <cmath>
+#include <memory>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h" // Printing and absolute row sums only!
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_as.hpp"
+#include "Teuchos_getConst.hpp"
+#include "Thyra_Config.h"
 #include "Thyra_EpetraLinearOp.hpp"
 #include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_SpmdMultiVectorBase.hpp"
-#include "Thyra_MultiVectorStdOps.hpp"
-#include "Thyra_AssertOp.hpp"
-#include "Teuchos_dyn_cast.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_getConst.hpp"
-#include "Teuchos_as.hpp"
-#include "Teuchos_TimeMonitor.hpp"
-
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_CrsMatrix.h" // Printing and absolute row sums only!
+#include "Thyra_MultiVectorBase_decl.hpp"
+#include "Thyra_MultiVectorStdOps_decl.hpp"
+#include "Thyra_SpmdVectorSpaceBase_decl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
 
 
 namespace Thyra {
@@ -61,6 +78,8 @@ namespace Thyra {
 
 // Constructors / initializers / accessors
 
+
+template <class Scalar> class VectorBase;
 
 EpetraLinearOp::EpetraLinearOp()
   :isFullyInitialized_(false),

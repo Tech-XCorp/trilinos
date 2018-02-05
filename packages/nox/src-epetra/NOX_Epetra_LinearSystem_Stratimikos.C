@@ -48,39 +48,35 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_LinearSystem_Stratimikos.H"    // class definition
-
 #ifdef HAVE_NOX_STRATIMIKOS
 
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_InvOperator.h"
+#include "Epetra_LinearProblem.h"
+// External include files for Epetra
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "NOX_Epetra_FiniteDifference.H"
 // NOX includes
 #include "NOX_Epetra_Interface_Jacobian.H"
 #include "NOX_Epetra_Interface_Preconditioner.H"
 #include "NOX_Epetra_MatrixFree.H"
-#include "NOX_Epetra_FiniteDifference.H"
-#include "Teuchos_ParameterList.hpp"
 #include "NOX_Epetra_Scaling.H"
 #include "NOX_Utils.H"
-
-// External include files for Epetra
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_InvOperator.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_LinearProblem.h"
-
 // External include files for Stratimikos
 #include "Stratimikos_DefaultLinearSolverBuilder.hpp"
-#include "Thyra_VectorBase.hpp"
-#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
-#include "Thyra_PreconditionerFactoryBase.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
+#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_VerboseObject.hpp"
-#include "Thyra_SolveSupportTypes.hpp"
+#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
 #include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_PreconditionerFactoryBase.hpp"
+#include "Thyra_SolveSupportTypes.hpp"
+#include "Thyra_VectorBase.hpp"
 
 // EpetraExt includes for dumping a matrix
 #ifdef HAVE_NOX_EPETRAEXT
@@ -97,9 +93,9 @@
 #include "Teko_StratimikosFactory.hpp"
 #endif
 
-#include "Teuchos_TimeMonitor.hpp"
-
 #include <typeinfo>
+
+#include "Teuchos_TimeMonitor.hpp"
 
 //***********************************************************************
 NOX::Epetra::LinearSystemStratimikos::

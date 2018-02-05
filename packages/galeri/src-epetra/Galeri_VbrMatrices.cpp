@@ -39,13 +39,16 @@
 // ************************************************************************
 // @HEADER
 
-#include "Galeri_ConfigDefs.h"
-#include "Galeri_VbrMatrices.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Map.h"
-#include "Epetra_BlockMap.h"
 #include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_VbrMatrix.h"
+#include "Galeri_VbrMatrices.h"
+
+class Epetra_Comm;
 
 namespace Galeri {
 

@@ -40,8 +40,16 @@
 //@HEADER
 
 #include "EpetraExt_BlockCrsMatrix.h"
+
+#include <stddef.h>
+#include <iostream>
+
 #include "EpetraExt_BlockUtility.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+
+class Epetra_Comm;
 
 namespace EpetraExt {
 

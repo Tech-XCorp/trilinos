@@ -5,29 +5,32 @@
 /*    of the U.S. Government.  Export of this program may require     */
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
-#include <math.h>
-
-#include <fei_macros.hpp>
-
-#include <fei_FiniteElementData.hpp>
-
 #include <fei_CommUtils.hpp>
-#include <snl_fei_LinearSystem_FEData.hpp>
-#include <fei_VectorSpace.hpp>
+#include <fei_DirichletBCManager.hpp>
+#include <fei_FiniteElementData.hpp>
 #include <fei_MatrixGraph.hpp>
 #include <fei_Matrix_Impl.hpp>
-#include <snl_fei_Constraint.hpp>
-#include <snl_fei_Utils.hpp>
+#include <fei_VectorSpace.hpp>
 #include <fei_impl_utils.hpp>
-
-#include <fei_DirichletBCRecord.hpp>
-#include <fei_DirichletBCManager.hpp>
-#include <fei_EqnBuffer.hpp>
-#include <fei_FEDataFilter.hpp>
+#include <snl_fei_LinearSystem_FEData.hpp>
 
 #undef fei_file
 #define fei_file "snl_fei_LinearSystem_FEData.cpp"
 #include <fei_ErrMacros.hpp>
+#include <algorithm>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <utility>
+
+#include "fei_FieldDofMap.hpp"
+#include "fei_FillableMat.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_Lookup.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_Vector.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iostream.hpp"
 
 //----------------------------------------------------------------------------
 snl_fei::LinearSystem_FEData::LinearSystem_FEData(fei::SharedPtr<FiniteElementData>& feData,

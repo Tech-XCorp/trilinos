@@ -48,9 +48,14 @@
 // ************************************************************************
 //@HEADER
 
+#include <cmath>
+#include <iomanip>
+#include <ostream>
+
 #include "NOX_LineSearch_Utils_Printing.H"
 #include "NOX_Utils.H"
-#include "NOX_Common.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::LineSearch::Utils::Printing::
 Printing(const Teuchos::RCP<NOX::Utils>& u) :

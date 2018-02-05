@@ -43,15 +43,19 @@
 #ifndef IFPACK_USERPARTITIONER_H
 #define IFPACK_USERPARTITIONER_H
 
+#include <sstream>
+#include <string>
+
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
 #include "Ifpack_OverlappingPartitioner.h"
+#include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
+class Ifpack_Graph;
 
 //! Ifpack_UserPartitioner: A class to define linear partitions.
 

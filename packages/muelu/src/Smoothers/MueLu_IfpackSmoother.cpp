@@ -43,18 +43,17 @@
 // ***********************************************************************
 //
 // @HEADER
-#include "MueLu_ConfigDefs.hpp"
 
+#include "MueLu_config.hpp"
 #if defined(HAVE_MUELU_EPETRA) && defined(HAVE_MUELU_IFPACK)
 #include <Ifpack.h>
 #include <Ifpack_Chebyshev.h>
-#include "Xpetra_MultiVectorFactory.hpp"
 
 #include "MueLu_IfpackSmoother.hpp"
-
 #include "MueLu_Level.hpp"
-#include "MueLu_Utilities.hpp"
 #include "MueLu_Monitor.hpp"
+#include "MueLu_Utilities.hpp"
+#include "Xpetra_MultiVectorFactory.hpp"
 
 namespace MueLu {
 

@@ -6,15 +6,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
 #include <fei_GraphReducer.hpp>
-#include <fei_TemplateUtils.hpp>
-#include <fei_VectorSpace.hpp>
 
 #undef fei_file
 #define fei_file "fei_GraphReducer.cpp"
 #include <fei_ErrMacros.hpp>
+
+#include "fei_Graph.hpp"
+#include "fei_Reducer.hpp"
+#include "fei_SharedPtr.hpp"
 
 //----------------------------------------------------------------------------
 fei::GraphReducer::GraphReducer(fei::SharedPtr<fei::Reducer> reducer,

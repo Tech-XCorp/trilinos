@@ -39,8 +39,14 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdexcept>
+#include <type_traits>
+
 #include "AnasaziSpecializedEpetraAdapter.hpp"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Operator.h"
 #include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
 
 /*! \file AnasaziSpecializedEpetraAdapter.cpp
   \brief Implementations of specialized Anasazi multi-vector and operator classes using Epetra_MultiVector and Epetra_Operator

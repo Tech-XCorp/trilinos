@@ -56,10 +56,15 @@
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_VbrMatrix.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_RowMatrix;
+class Epetra_Vector;
 
 
 /*! \file 

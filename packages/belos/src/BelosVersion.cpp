@@ -39,11 +39,11 @@
 // ************************************************************************
 //@HEADER
 
-#include "BelosConfigDefs.hpp"
-
 /*! \file BelosVersion.cpp
     \brief Simple function for returning the current version number [necessary for portability]
 */
+
+#include <iosfwd>
 
 namespace Belos {
 

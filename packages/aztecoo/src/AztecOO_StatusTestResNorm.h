@@ -45,11 +45,15 @@
 #ifndef AZTECOO_STATUSTESTRESNORM_H
 #define AZTECOO_STATUSTESTRESNORM_H
 
-#include "AztecOO_StatusTest.h"
+#include <iosfwd>
 #include <vector>
+
+#include "AztecOO_StatusTest.h"
+#include "AztecOO_StatusType.h"
+
 class Epetra_MultiVector;
-class Epetra_Vector;
 class Epetra_Operator;
+class Epetra_Vector;
 
 //! AztecOO_StatusTestResNorm: An implementation of AztecOO_StatusTest using a family of residual norms.
 

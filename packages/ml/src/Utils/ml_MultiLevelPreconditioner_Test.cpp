@@ -13,22 +13,35 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
+#include <assert.h>
+#include <stdio.h>
+#include <iostream>
+#include <sstream>
+#include <vector>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_LinearProblem.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "az_aztec.h"
+#include "ml_config.h"
+#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS) && defined(HAVE_ML_AZTECOO)
 
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Time.h"
 #include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_Vector.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
-#include "ml_epetra.h"
-#include "ml_amesos_wrap.h"
-#include "ml_MultiLevelPreconditioner.h"
 #include "AztecOO.h"
+#include "ml_MultiLevelPreconditioner.h"
+#include "ml_amesos_wrap.h"
+#include "ml_epetra.h"
 
 // ============================================================================
 static int SetLHSAndRHS(Epetra_Vector& LHS, Epetra_Vector& RHS,

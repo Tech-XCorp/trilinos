@@ -9,21 +9,34 @@
 #ifndef _fei_VectorSpace_hpp_
 #define _fei_VectorSpace_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_constants.hpp>
-#include <fei_fwd.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_Logger.hpp>
-#include <fei_utils.hpp>
 #include <fei_CommUtils.hpp>
 #include <fei_FieldDofMap.hpp>
+#include <fei_Logger.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_constants.hpp>
 #include <fei_ctg_set.hpp>
+#include <fei_fwd.hpp>
+#include <fei_macros.hpp>
+#include <fei_utils.hpp>
 #include <snl_fei_RaggedTable.hpp>
+#include <stddef.h>
+#include <iosfwd>
+#include <map>
+#include <vector>
+
+#include "fei_SharedIDs.hpp"
+#include "fei_mpi.h"
+
+namespace snl_fei {
+class PointBlockMap;
+class RecordCollection;
+}  // namespace snl_fei
 
 namespace fei {
   class FieldMask;
   class Lookup_Impl;
   class Pattern;
+class ParameterSet;
   template<typename GlobalIDType> class Record;
   template<typename GlobalIDType> class Record_Operator;
   template<typename GlobalIDType> class SharedIDs;

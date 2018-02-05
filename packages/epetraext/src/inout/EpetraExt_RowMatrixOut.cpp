@@ -39,20 +39,24 @@
 // ***********************************************************************
 //@HEADER
 #include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_mmio.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_LongLongVector.h"
-#include "Epetra_GIDTypeVector.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_LongLongSerialDenseVector.h"
-#include "Epetra_GIDTypeSerialDenseVector.h"
-#include "Epetra_Import.h"
-#include "Epetra_CrsMatrix.h"
+
+#include <assert.h>
 #include <limits>
+
+#include "EpetraExt_mmio.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_GIDTypeSerialDenseVector.h"
+#include "Epetra_GIDTypeVector.h"
+#include "Epetra_Import.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_SerialDenseVector.h"
 
 using namespace EpetraExt;
 namespace EpetraExt {

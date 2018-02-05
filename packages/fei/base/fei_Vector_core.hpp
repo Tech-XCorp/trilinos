@@ -9,17 +9,27 @@
 #ifndef _fei_Vector_core_hpp_
 #define _fei_Vector_core_hpp_
 
-#include <fei_iosfwd.hpp>
 #include <fei_CSVec.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_Reducer.hpp>
-#include <fei_Logger.hpp>
-#include <fei_SharedPtr.hpp>
 #include <fei_EqnComm.hpp>
+#include <fei_Logger.hpp>
+#include <fei_Reducer.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_iosfwd.hpp>
+#include <stddef.h>
+#include <algorithm>
+#include <iosfwd>
+#include <stdexcept>
+#include <vector>
+
+#include "fei_iostream.hpp"
+#include "fei_mpi.h"
 
 namespace fei {
 
 /** Class to provide infrastructure for fei::Vector implementations. */
+class EqnComm;
+
 class Vector_core : protected fei::Logger {
  public:
   /** constructor */

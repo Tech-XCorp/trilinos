@@ -1,12 +1,17 @@
 
-#include <sstream>
-#include <fei_set_shared_ids.hpp>
 #include <fei_CommMap.hpp>
 #include <fei_CommUtils.hpp>
-#include <fei_TemplateUtils.hpp>
-#include <snl_fei_RecordCollection.hpp>
-#include <fei_SharedIDs.hpp>
 #include <fei_LinearDecomposition.hpp>
+#include <fei_SharedIDs.hpp>
+#include <fei_set_shared_ids.hpp>
+#include <snl_fei_RecordCollection.hpp>
+#include <stddef.h>
+#include <map>
+#include <utility>
+#include <vector>
+
+#include "fei_Record.hpp"
+#include "fei_mpi.h"
 
 namespace fei {
 

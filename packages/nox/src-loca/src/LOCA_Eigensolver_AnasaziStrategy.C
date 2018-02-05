@@ -48,21 +48,51 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Abstract_MultiVector.H"
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_Parameter_SublistParser.H"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
-#include "NOX_Utils.H"
-#include "LOCA_Factory.H"
+#include <ctype.h>
+#include <math.h>
+#include <algorithm>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "AnasaziEigenproblem.hpp"
+#include "AnasaziStatusTestResNorm.hpp"
+#include "AnasaziTypes.hpp"
+#include "Anasazi_LOCA_Sort.H"
+#include "LOCA_AnasaziOperator_AbstractStrategy.H"
 #include "LOCA_Eigensolver_AnasaziStrategy.H"
-#include "LOCA_EigenvalueSort_Strategies.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_Factory.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Config.h"
+#include "NOX_Utils.H"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+
+namespace Anasazi {
+template <class MagnitudeType> class SortManager;
+}  // namespace Anasazi
+namespace LOCA {
+namespace EigenvalueSort {
+class AbstractStrategy;
+}  // namespace EigenvalueSort
+}  // namespace LOCA
 
 #ifdef HAVE_LOCA_ANASAZI
-#include "Anasazi_LOCA_MultiVecTraits.H"
-#include "Anasazi_LOCA_OperatorTraits.H"
-#include "AnasaziBlockKrylovSchurSolMgr.hpp"
 #include "AnasaziBasicEigenproblem.hpp"
+#include "AnasaziBlockKrylovSchurSolMgr.hpp"
 #endif
 
 LOCA::Eigensolver::AnasaziStrategy::AnasaziStrategy(

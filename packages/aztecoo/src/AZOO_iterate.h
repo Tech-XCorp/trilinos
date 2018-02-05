@@ -49,14 +49,15 @@
 #define __cplusplus
 #endif
 
+#include "Aztec2Petra.h"
+#include "AztecOO.h"
 #include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_VbrMatrix.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_LinearProblem.h"
-#include "AztecOO.h"
-#include "Aztec2Petra.h"
+#include "Epetra_Map.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "az_aztec.h"
 
 /*! \file 
 \brief AZOO_iterate:  A function built around AztecOO that mimics the Aztec funciton AZ_iterate.

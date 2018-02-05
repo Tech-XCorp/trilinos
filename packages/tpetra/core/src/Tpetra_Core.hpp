@@ -48,8 +48,14 @@
 /// enabled) and Kokkos, if necessary.  The finalize() function
 /// finalizes MPI (by calling MPI_Finalize) and Kokkos, if necessary.
 
-#include <Tpetra_ConfigDefs.hpp>
 #include <Teuchos_Comm.hpp>
+#include <Tpetra_ConfigDefs.hpp>
+
+#include "Teuchos_RCPDecl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace Tpetra {
 

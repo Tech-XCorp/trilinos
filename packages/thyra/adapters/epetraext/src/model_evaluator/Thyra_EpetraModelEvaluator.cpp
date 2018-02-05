@@ -39,19 +39,50 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_EpetraModelEvaluator.hpp"
-#include "Thyra_LinearOpWithSolveFactoryHelpers.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
-#include "Thyra_DetachedMultiVectorView.hpp"
-#include "Thyra_ModelEvaluatorDelegatorBase.hpp" // Gives verbose macros!
+#include <map>
+#include <sstream>
+#include <stdexcept>
+
 #include "EpetraExt_ModelEvaluatorScalingTools.h"
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
 #include "Epetra_RowMatrix.h"
-#include "Teuchos_Time.hpp"
-#include "Teuchos_implicit_cast.hpp"
-#include "Teuchos_Assert.hpp"
+#include "Epetra_Vector.h"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterEntryValidator.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Polynomial.hpp"
+#include "Teuchos_PolynomialDecl.hpp"
 #include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Time.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerboseObject.hpp"
 #include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Teuchos_implicit_cast.hpp"
+#include "Thyra_Config.h"
+#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_EpetraModelEvaluator.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_LinearOpWithSolveFactoryBase_decl.hpp"
+#include "Thyra_ModelEvaluatorDelegatorBase.hpp" // Gives verbose macros!
+#include "Thyra_VectorBase.hpp"
+
+namespace Stokhos {
+class ProductEpetraOperator;
+class ProductEpetraVector;
+}  // namespace Stokhos
+namespace Thyra {
+template <class Scalar> class PreconditionerBase;
+template <class Scalar> class VectorSpaceBase;
+}  // namespace Thyra
 
 
 namespace {

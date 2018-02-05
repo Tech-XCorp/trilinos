@@ -49,6 +49,10 @@
 //
 
 #include <AztecOO_string_maps.h>
+#include <__functional_base>
+#include <string>
+
+#include "az_aztec.h"
 
 #ifdef HAVE_AZTECOO_TEUCHOS
 //=============================================================================

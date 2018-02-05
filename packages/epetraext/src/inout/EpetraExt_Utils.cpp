@@ -41,7 +41,8 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
+#include <cstdio>
+
 #include "EpetraExt_Utils.h"
 
 // ============================================================================ 

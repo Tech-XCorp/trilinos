@@ -40,14 +40,18 @@
 //@HEADER
 
 #include <EpetraExt_BlockAdjacencyGraph.h>
-
-#include <Epetra_CrsMatrix.h>
+#include <Epetra_Comm.h>
 #include <Epetra_CrsGraph.h>
 #include <Epetra_Map.h>
-#include <Epetra_Comm.h>
-
-#include <math.h>
+#include <cstdio>
 #include <cstdlib>
+#include <iostream>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Teuchos_RCP.hpp"
 
 namespace EpetraExt {
 

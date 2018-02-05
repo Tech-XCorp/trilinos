@@ -9,9 +9,15 @@
 #ifndef _snl_fei_RecordMsgHandler_hpp_
 #define _snl_fei_RecordMsgHandler_hpp_
 
-#include <fei_macros.hpp>
 #include <fei_CommUtils.hpp>
 #include <fei_fwd.hpp>
+#include <fei_macros.hpp>
+#include <vector>
+
+namespace snl_fei {
+class PointBlockMap;
+class RecordCollection;
+}  // namespace snl_fei
 
 namespace fei {
   class FieldMask;

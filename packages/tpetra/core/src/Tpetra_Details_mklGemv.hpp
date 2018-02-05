@@ -54,6 +54,7 @@
 /// The point of this file is to wrap MKL _GEMV calls, so that
 /// application code is not exposed to MKL include files.
 
+#include "Kokkos_Complex.hpp"
 #include "TpetraCore_config.h"
 #include "Tpetra_Details_Blas.hpp"
 #include "Tpetra_Details_libGemv.hpp"

@@ -47,10 +47,9 @@
 
 
 
-#include "MueLu_Facade_BGS2x2_def.hpp"
-
 #define MUELU_ETI_GROUP(SC,LO,GO,NO) \
   template class MueLu::FacadeBGS2x2<SC,LO,GO,NO>;
 
 #include "MueLu_ETI_4arg.hpp"
+#include "MueLu_Facade_BGS2x2_decl.hpp"
 

@@ -6,18 +6,25 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_iostream.hpp>
-#include <fei_sstream.hpp>
 #include <fei_DirichletBCManager.hpp>
 #include <fei_DirichletBCRecord.hpp>
-#include <fei_NodeDatabase.hpp>
 #include <fei_EqnBuffer.hpp>
+#include <fei_Matrix.hpp>
+#include <fei_NodeDatabase.hpp>
 #include <fei_SharedPtr.hpp>
 #include <fei_VectorSpace.hpp>
-#include <fei_Matrix.hpp>
-
-#include <algorithm>
+#include <fei_iostream.hpp>
+#include <fei_sstream.hpp>
+#include <__tree>
+#include <ostream>
+#include <stdexcept>
 #include <vector>
+
+#include "SNL_FEI_Structure.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_NodeDescriptor.hpp"
+#include "fei_Reducer.hpp"
+#include "fei_console_ostream.hpp"
 
 typedef std::vector<fei::DirichletBCRecord> DBCvec;
 

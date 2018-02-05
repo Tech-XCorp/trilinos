@@ -48,13 +48,26 @@
 // ************************************************************************
 //@HEADER
 
-#include "Epetra_config.h"
-#include "LOCA_Epetra_CompactWYOp.H"
+#include <stddef.h>
+#include <iosfwd>
+#include <vector>
 
-#include "Epetra_Map.h"
-#include "Epetra_Comm.h"
-#include "LOCA_GlobalData.H"
+#include "Epetra_DataAccess.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "LOCA_Epetra_CompactWYOp.H"
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "Teuchos_BLAS.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
 
 LOCA::Epetra::CompactWYOp::CompactWYOp(
         const Teuchos::RCP<LOCA::GlobalData>& global_data,

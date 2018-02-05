@@ -10,7 +10,6 @@
 #define _fei_ConnectivityBlock_hpp_
 
 #include <fei_macros.hpp>
-
 #include <map>
 #include <vector>
 

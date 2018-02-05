@@ -43,13 +43,10 @@
 // ***********************************************************************
 //
 // @HEADER
-#include <sstream>
 #include <fstream>
-#include "MueLu_Memory.hpp"
+#include <string>
 
-#include <iostream> // TODO: remove
-#include <unistd.h>
-#include <time.h>
+#include "MueLu_Memory.hpp"
 #ifdef MUELU_USE_MALLINFO
 #include <malloc.h>
 #endif

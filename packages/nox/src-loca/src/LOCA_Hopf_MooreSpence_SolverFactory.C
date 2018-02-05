@@ -48,13 +48,29 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include <sstream>
+#include <string>
+#include <type_traits>
 
-#include "LOCA_Hopf_MooreSpence_SolverFactory.H"
-#include "LOCA_Hopf_MooreSpence_SolverStrategy.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_Hopf_MooreSpence_SalingerBordering.H"
+#include "LOCA_Hopf_MooreSpence_SolverFactory.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_config.h"
+
+namespace LOCA {
+namespace Hopf {
+namespace MooreSpence {
+class SolverStrategy;
+}  // namespace MooreSpence
+}  // namespace Hopf
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
 
 LOCA::Hopf::MooreSpence::SolverFactory::SolverFactory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

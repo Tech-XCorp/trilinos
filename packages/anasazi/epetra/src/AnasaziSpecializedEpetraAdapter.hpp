@@ -46,21 +46,34 @@
 #ifndef ANASAZI_SPECIALIZED_EPETRA_ADAPTER_HPP
 #define ANASAZI_SPECIALIZED_EPETRA_ADAPTER_HPP
 
+#include <stddef.h>
+#include <iosfwd>
+#include <vector>
+
 #include "AnasaziConfigDefs.hpp"
-#include "Anasaziepetra_DLLExportMacro.h"
-#include "AnasaziTypes.hpp"
+#include "AnasaziEpetraAdapter.hpp"
 #include "AnasaziMultiVec.hpp"
 #include "AnasaziOperator.hpp"
-#include "AnasaziEpetraAdapter.hpp"
-
-#include "Teuchos_Assert.hpp"
-#include "Teuchos_SerialDenseMatrix.hpp"
-#include "Teuchos_RCP.hpp"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Map.h"
+#include "AnasaziTypes.hpp"
+#include "Anasazi_config.h"
+#include "Anasaziepetra_DLLExportMacro.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_TestForException.hpp"
+
+class Epetra_Operator;
+namespace Teuchos {
+template <typename OrdinalType, typename ScalarType> class SerialDenseMatrix;
+}  // namespace Teuchos
 
 #if defined(HAVE_ANASAZI_TPETRA) && defined(HAVE_ANASAZI_TSQR)
 #  include <Tpetra_ConfigDefs.hpp> // HAVE_TPETRA_EPETRA 

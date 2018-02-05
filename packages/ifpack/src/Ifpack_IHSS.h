@@ -43,23 +43,39 @@
 #ifndef IFPACK_IHSS_H
 #define IFPACK_IHSS_H
 
+#include <string.h>
+#include <iosfwd>
+
+#include "Epetra_ConfigDefs.h"
+#include "Ifpack_CondestType.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Preconditioner.h"
+#include "Ifpack_config.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_Operator;
+class Epetra_RowMatrix;
 
 #ifdef HAVE_IFPACK_EPETRAEXT
-#include "Ifpack_Condest.h"
-#include "Ifpack_ScalingType.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_CompObject.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_Object.h"
-#include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
 #include "Epetra_Time.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_ScalingType.h"
 #include "Teuchos_RefCountPtr.hpp"
 
 

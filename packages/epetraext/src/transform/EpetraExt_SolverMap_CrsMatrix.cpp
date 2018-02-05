@@ -40,13 +40,15 @@
 //@HEADER
 
 #include <EpetraExt_SolverMap_CrsMatrix.h>
-
+#include <Epetra_Comm.h>
 #include <Epetra_CrsGraph.h>
 #include <Epetra_CrsMatrix.h>
 #include <Epetra_Map.h>
-#include <Epetra_Comm.h>
-
+#include <assert.h>
 #include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

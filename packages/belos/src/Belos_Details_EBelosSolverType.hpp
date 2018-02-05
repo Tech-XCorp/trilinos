@@ -46,6 +46,7 @@
 /// \brief Declaration of Belos::Details::EBelosSolverType enum, and
 ///   associated functions.
 
+#include <iosfwd>
 #include <string>
 #include <utility>
 #include <vector>

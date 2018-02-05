@@ -42,13 +42,27 @@
 #ifndef EPETRA_EXT_MODEL_EVALUATOR_HPP
 #define EPETRA_EXT_MODEL_EVALUATOR_HPP
 
+#include <iosfwd>
+#include <stdexcept>
+#include <type_traits>
+#include <vector>
+
 #include "EpetraExt_ConfigDefs.h"
 #include "EpetraExt_PolynomialVectorTraits.h"
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_Describable.hpp"
-#include "Teuchos_Polynomial.hpp"
 #include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
 #include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_Describable.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Polynomial.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+
+class Epetra_MultiVector;
+namespace Teuchos {
+template <typename CoeffT> class Polynomial;
+}  // namespace Teuchos
 
 #ifdef HAVE_PYTRILINOS
 #ifndef PyObject_HEAD
@@ -58,22 +72,21 @@ typedef _object PyObject;
 #endif
 
 class Epetra_Map;
-class Epetra_Vector;
 class Epetra_Operator;
+class Epetra_Vector;
 
 // Forward declaration of Stochastic Galerkin (SG) argument types
 namespace Stokhos {
-  class EpetraVectorOrthogPoly;
   class EpetraMultiVectorOrthogPoly;
   class EpetraOperatorOrthogPoly;
+  class EpetraVectorOrthogPoly;
+  class ProductEpetraMultiVector;
+  class ProductEpetraOperator;
+  class ProductEpetraVector;
+  template <typename ordinal_type, typename scalar_type, typename node_type> class OrthogPolyExpansion;
   template <typename ordinal_type, typename scalar_type> class OrthogPolyBasis;
   template <typename ordinal_type, typename scalar_type> class Quadrature;
   template <typename ordinal_type, typename scalar_type> class StandardStorage;
-  template <typename ordinal_type, typename scalar_type, typename node_type> class OrthogPolyExpansion;
-
-  class ProductEpetraVector;
-  class ProductEpetraMultiVector;
-  class ProductEpetraOperator;
 }
 
 namespace EpetraExt {

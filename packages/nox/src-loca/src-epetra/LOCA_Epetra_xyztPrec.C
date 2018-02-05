@@ -45,12 +45,34 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Epetra_xyztPrec.H"
-#include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_VectorOut.h"
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "EpetraExt_BlockCrsMatrix.h"
+#include "EpetraExt_BlockVector.h"
 #include "EpetraExt_MatrixMatrix.h"
+#include "EpetraExt_MultiComm.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+#include "LOCA_Epetra_xyztPrec.H"
+#include "NOX_Epetra_Interface_Jacobian.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "NOX_Epetra_LinearSystem_AztecOO.H"
+#include "NOX_Epetra_Vector.H"
 #include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_Import;
+class Epetra_Operator;
 
 //#define FILE_DEBUG 1
 

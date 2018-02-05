@@ -40,13 +40,10 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_DiagPreconditioner.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
 #include "Epetra_Vector.h"
-#include "Epetra_Comm.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_DiagPreconditioner.h"
 
 // ============================================================================ 
 Ifpack_DiagPreconditioner::

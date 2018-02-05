@@ -42,10 +42,12 @@
 #ifndef EpetraExt_BLOCK_ADJACENCY_GRAPH_H
 #define EpetraExt_BLOCK_ADJACENCY_GRAPH_H
 
-class Epetra_CrsGraph;
-
 #include <Teuchos_RCP.hpp>
 #include <vector>
+
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_CrsGraph;
 
 namespace EpetraExt {
 

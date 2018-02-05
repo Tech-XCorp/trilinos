@@ -40,7 +40,6 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_IC_Utils.h"
 
 #define SYMSTR 1 /* structurally symmetric version */

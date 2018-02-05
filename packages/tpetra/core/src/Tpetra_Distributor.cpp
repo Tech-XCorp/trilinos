@@ -38,11 +38,29 @@
 // ************************************************************************
 // @HEADER
 
-#include "Tpetra_Distributor.hpp"
-#include "Tpetra_Details_gathervPrint.hpp"
-#include "Teuchos_StandardParameterEntryValidators.hpp"
-#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+#include <iomanip>
+#include <iostream>
+#include <map>
 #include <numeric>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_StandardParameterEntryValidators.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerboseObjectParameterListHelpers.hpp"
+#include "Teuchos_any.hpp"
+#include "Teuchos_as.hpp"
+#include "Tpetra_Details_Behavior.hpp"
+#include "Tpetra_Details_gathervPrint.hpp"
+#include "Tpetra_Distributor.hpp"
+#include "Tpetra_Util.hpp"
 
 namespace Tpetra {
   namespace Details {

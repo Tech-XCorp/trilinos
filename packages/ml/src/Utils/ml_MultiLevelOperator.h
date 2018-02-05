@@ -32,14 +32,18 @@
 #ifndef ML_MULTILEVELOPERATOR_H
 #define ML_MULTILEVELOPERATOR_H
 
-class Epetra_MultiVector;
-class Epetra_BlockMap;
-class Epetra_Comm;
-
-#include "ml_common.h"
 #include "Epetra_LinearProblem.h"
 #include "Epetra_Object.h"
+#include "Epetra_Operator.h"
+#include "ml_common.h"
 #include "ml_include.h"
+#include "ml_struct.h"
+#include "ml_utils.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_Map;
+class Epetra_MultiVector;
 
 //! ML_Epetra: default namespace for all Epetra interfaces.
 

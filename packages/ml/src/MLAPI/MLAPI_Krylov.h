@@ -19,13 +19,14 @@
 
 namespace Teuchos {
   class List;
+class ParameterList;
 }
 
 namespace MLAPI {
 
-class Operator;
 class BaseOperator;
 class MultiVector;
+class Operator;
 
 /*!
 \file MLAPI_Krylov

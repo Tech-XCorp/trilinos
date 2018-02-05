@@ -48,8 +48,21 @@
 // It is based on the Epetra, AztecOO, and ML packages defined in the Trilinos
 // framework ( http://trilinos.org/ ).
 
-#include "AnasaziConfigDefs.hpp"
+#include <math.h>
+#include <string.h>
+#include <iostream>
+#include <new>
+
 #include "CheckingTools.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_LAPACK.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
 
 
 CheckingTools::CheckingTools(const Epetra_Comm &_Comm) :

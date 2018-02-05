@@ -45,21 +45,26 @@
 #ifndef _EPETRA_MSRMATRIX_H_
 #define _EPETRA_MSRMATRIX_H_
 
-#include "Epetra_Object.h"
+#include <iosfwd>
+
 #include "Epetra_CompObject.h"
-#include "Epetra_RowMatrix.h"
 #include "Epetra_Map.h"
+#include "Epetra_Object.h"
+#include "Epetra_RowMatrix.h"
 #include "az_aztec.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
 #ifdef AZTEC_MPI
 #include "Epetra_MpiComm.h"
 #else
 #include "Epetra_SerialComm.h"
 #endif
 
-class Epetra_Import;
 class Epetra_Export;
-class Epetra_Vector;
+class Epetra_Import;
 class Epetra_MultiVector;
+class Epetra_Vector;
 
 //! Epetra_MsrMatrix: A class for constructing and using real-valued double-precision sparse compressed row matrices.
 

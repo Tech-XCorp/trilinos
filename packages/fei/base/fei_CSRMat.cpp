@@ -7,11 +7,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_CSRMat.hpp"
 #include <fei_impl_utils.hpp>
-#include "fei_ArrayUtils.hpp"
-#include <limits>
+#include <stddef.h>
 #include <cmath>
+#include <limits>
+#include <map>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_CSRMat.hpp"
 
 namespace fei {
 

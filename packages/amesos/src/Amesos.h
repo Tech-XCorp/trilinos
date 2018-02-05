@@ -31,7 +31,13 @@
 #ifndef _AMESOS_FACTORY_H_
 #define _AMESOS_FACTORY_H_
 
+#include <iosfwd>
+
 #include "Amesos_BaseSolver.h"
+#include "Teuchos_ParameterList.hpp"
+
+class Amesos_BaseSolver;
+class Epetra_LinearProblem;
 
 /** \brief Factory for binding a third party direct solver to an
  * Epetra_LinearProblem.

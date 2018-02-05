@@ -9,16 +9,19 @@
 #ifndef _fei_LinearSystem_hpp_
 #define _fei_LinearSystem_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_MatrixGraph.hpp>
-#include <fei_Matrix.hpp>
-#include <fei_Vector.hpp>
 #include <fei_DirichletBCManager.hpp>
+#include <fei_Matrix.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_Vector.hpp>
+#include <fei_macros.hpp>
+#include <vector>
 
 namespace fei {
   class Factory;
   class ParameterSet;
+class DirichletBCManager;
+class MatrixGraph;
 
   /** A simple container to bind a matrix and two vectors together as the
       matrix, rhs and solution of a linear system.

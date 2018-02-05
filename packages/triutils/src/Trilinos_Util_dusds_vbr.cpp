@@ -39,6 +39,8 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdlib.h>
+
 #include "Trilinos_Util.h"
 
 void Trilinos_Util_dusds_vbr(SPBLASMAT *A)

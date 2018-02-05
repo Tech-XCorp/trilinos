@@ -46,20 +46,25 @@
     \brief Provides utilities for Epetra examples and tests.
 */
 
-#include "Epetra_config.h"
+#include <iosfwd>
+
 #include "Belos_config.h"
+#include "Epetra_config.h"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 #ifdef EPETRA_MPI
 #include "mpi.h"
 #endif
 
-class Epetra_Map;
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+
 class Epetra_Comm;
 class Epetra_CrsMatrix;
+class Epetra_Map;
 class Epetra_MultiVector;
 
-#include "Teuchos_RCP.hpp"
-#include "Teuchos_Ptr.hpp"
 using Teuchos::RCP;
 using Teuchos::rcp;
 

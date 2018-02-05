@@ -10,20 +10,19 @@
 #ifndef _fei_CommUtils_hpp_
 #define _fei_CommUtils_hpp_
 
+#include <fei_CommMap.hpp>
+#include <fei_ErrMacros.hpp>
+#include <fei_TemplateUtils.hpp>
+#include <fei_chk_mpi.hpp>
+#include <fei_iostream.hpp>
 #include <fei_macros.hpp>
 #include <fei_mpi.h>
 #include <fei_mpiTraits.hpp>
-#include <fei_chk_mpi.hpp>
-#include <fei_iostream.hpp>
-#include <fei_CommMap.hpp>
-#include <fei_TemplateUtils.hpp>
 #include <snl_fei_RaggedTable.hpp>
-
-#include <vector>
-#include <set>
 #include <map>
+#include <set>
+#include <vector>
 
-#include <fei_ErrMacros.hpp>
 #undef fei_file
 #define fei_file "fei_CommUtils.hpp"
 

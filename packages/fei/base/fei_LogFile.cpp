@@ -6,11 +6,14 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_LogFile.hpp"
-#include "fei_iostream.hpp"
-#include "fei_fstream.hpp"
-#include "fei_sstream.hpp"
+#include <ostream>
 #include <string>
+
+#include "fei_LogFile.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_fstream.hpp"
+#include "fei_iostream.hpp"
+#include "fei_sstream.hpp"
 
 fei::LogFile::LogFile()
  : output_stream_(0),

@@ -6,28 +6,25 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <snl_fei_BlkSizeMsgHandler.hpp>
-
-#include <fei_utils.hpp>
-
-#include <snl_fei_Utils.hpp>
-#include <fei_FieldMask.hpp>
-#include <snl_fei_RecordCollection.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_ParameterSet.hpp>
 #include <fei_Graph.hpp>
-#include <snl_fei_Constraint.hpp>
 #include <fei_TemplateUtils.hpp>
-
-#include <fei_EqnBuffer.hpp>
-#include <fei_EqnCommMgr.hpp>
-#include <SNL_FEI_Structure.hpp>
+#include <fei_VectorSpace.hpp>
+#include <snl_fei_BlkSizeMsgHandler.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "snl_fei_BlkSizeMsgHandler.cpp"
 #include <fei_ErrMacros.hpp>
+#include <__tree>
+#include <map>
+#include <set>
+#include <utility>
+
+#include "fei_CommUtils.hpp"
+#include "fei_ctg_set.hpp"
+#include "snl_fei_PointBlockMap.hpp"
+#include "snl_fei_RaggedTable.hpp"
+#include "snl_fei_RaggedTable_specialize.hpp"
 
 //----------------------------------------------------------------------------
 snl_fei::BlkSizeMsgHandler::BlkSizeMsgHandler(fei::VectorSpace* vspace,

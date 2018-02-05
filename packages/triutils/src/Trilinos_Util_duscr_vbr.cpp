@@ -39,6 +39,8 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdlib.h>
+
 #include "Trilinos_Util.h"
 
 void Trilinos_Util_duscr_vbr(int n, double *val, int *indx, 

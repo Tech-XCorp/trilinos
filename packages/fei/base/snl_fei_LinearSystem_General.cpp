@@ -6,27 +6,47 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <fei_utils.hpp>
-
-#include <cmath>
-
-#include <snl_fei_LinearSystem_General.hpp>
+#include <fei_DirichletBCManager.hpp>
+#include <fei_LogManager.hpp>
+#include <fei_MatrixGraph.hpp>
 #include <fei_MatrixReducer.hpp>
 #include <fei_Matrix_Impl.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_MatrixGraph.hpp>
 #include <fei_SparseRowGraph.hpp>
-#include <snl_fei_Constraint.hpp>
-#include <fei_Record.hpp>
-#include <fei_utils.hpp>
+#include <fei_VectorSpace.hpp>
 #include <fei_impl_utils.hpp>
-#include <fei_LogManager.hpp>
+#include <fei_utils.hpp>
+#include <snl_fei_Constraint.hpp>
+#include <snl_fei_LinearSystem_General.hpp>
+#include <string.h>
+#include <algorithm>
+#include <cmath>
+#include <fstream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
-#include <fei_DirichletBCRecord.hpp>
-#include <fei_DirichletBCManager.hpp>
-#include <fei_EqnBuffer.hpp>
-#include <fei_LinSysCoreFilter.hpp>
+#include "fei_ArrayUtils.hpp"
+#include "fei_CSRMat.hpp"
+#include "fei_CSVec.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_FillableMat.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_LinearSystemCore.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_Reducer.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_Vector.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_fwd.hpp"
+#include "fei_iostream.hpp"
+#include "fei_sstream.hpp"
+#include "snl_fei_Utils.hpp"
+
+namespace fei {
+class ParameterSet;
+template <typename GlobalIDType> class Record;
+}  // namespace fei
 
 #undef fei_file
 #define fei_file "snl_fei_LinearSystem_General.cpp"

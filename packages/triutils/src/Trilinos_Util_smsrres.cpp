@@ -39,6 +39,11 @@
 // ***********************************************************************
 // @HEADER
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "Epetra_ConfigDefs.h"
 #include "Trilinos_Util.h"
 
 double Trilinos_Util_smsrres (int m, int n,

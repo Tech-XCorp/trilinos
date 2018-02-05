@@ -48,10 +48,12 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_StatusTest_Stagnation.H" // class definition
-#include "NOX_Common.H"
-#include "NOX_Solver_Generic.H"
+#include <ostream>
+
 #include "NOX_Abstract_Group.H"
+#include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_StatusTest_Stagnation.H" // class definition
 
 NOX::StatusTest::Stagnation::Stagnation(int maxSteps_, double tolerance_) :
   maxSteps(maxSteps_),

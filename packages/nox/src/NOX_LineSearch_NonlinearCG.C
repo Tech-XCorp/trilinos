@@ -45,16 +45,24 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_LineSearch_NonlinearCG.H"
+#include <math.h>
+#include <iomanip>
+#include <ostream>
+#include <type_traits>
 
-#include "NOX_Common.H"
-#include "NOX_Abstract_Vector.H"
 #include "NOX_Abstract_Group.H"
-#include "NOX_Solver_Generic.H"
-#include "Teuchos_ParameterList.hpp"
-#include "NOX_Utils.H"
+#include "NOX_Abstract_Vector.H"
 #include "NOX_GlobalData.H"
+#include "NOX_LineSearch_NonlinearCG.H"
+#include "NOX_Solver_Generic.H"
 #include "NOX_StatusTest_FiniteValue.H"
+#include "NOX_Utils.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 NOX::LineSearch::NonlinearCG::
 NonlinearCG(const Teuchos::RCP<NOX::GlobalData>& gd,

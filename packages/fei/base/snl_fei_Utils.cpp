@@ -6,23 +6,30 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <limits>
-#include <cmath>
-#include <stdexcept>
-
-#include <snl_fei_Utils.hpp>
-#include "fei_Record.hpp"
-#include <fei_MatrixGraph.hpp>
-#include <fei_SparseRowGraph.hpp>
-#include <fei_Matrix_Impl.hpp>
-#include <fei_ParameterSet.hpp>
-
-#include <fei_CommUtils.hpp>
-#include <fei_TemplateUtils.hpp>
 #include <fei_CSVec.hpp>
-#include <fei_chk_mpi.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <fei_Matrix_Impl.hpp>
+#include <fei_SparseRowGraph.hpp>
+#include <snl_fei_Constraint.hpp>
+#include <snl_fei_Utils.hpp>
+#include <string.h>
+#include <__tree>
+#include <cmath>
+#include <istream>
+#include <map>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_defs.h"
+#include "fei_sstream.hpp"
+
+namespace fei {
+template <typename GlobalIDType> class Record;
+}  // namespace fei
 
 #undef fei_file
 #define fei_file "snl_fei_Utils.cpp"

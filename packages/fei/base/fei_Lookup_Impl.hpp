@@ -9,17 +9,25 @@
 #ifndef _fei_Lookup_Impl_hpp_
 #define _fei_Lookup_Impl_hpp_
 
-#include <fei_macros.hpp>
+#include <fei_ConnectivityBlock.hpp>
+#include <fei_Lookup.hpp>
 #include <fei_MatrixGraph.hpp>
 #include <fei_Pattern.hpp>
-#include <fei_ConnectivityBlock.hpp>
 #include <fei_SharedIDs.hpp>
-#include <snl_fei_RecordCollection.hpp>
-#include <snl_fei_PointBlockMap.hpp>
 #include <fei_TemplateUtils.hpp>
-#include <fei_Lookup.hpp>
-
+#include <fei_macros.hpp>
+#include <snl_fei_PointBlockMap.hpp>
+#include <snl_fei_RecordCollection.hpp>
+#include <stddef.h>
+#include <map>
+#include <set>
+#include <utility>
 #include <vector>
+
+#include "fei_Record.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_defs.h"
 
 namespace fei {
   /** An implementation of the Lookup interface.

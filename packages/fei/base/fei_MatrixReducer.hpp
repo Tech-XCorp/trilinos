@@ -9,18 +9,26 @@
 #ifndef _fei_MatrixReducer_hpp_
 #define _fei_MatrixReducer_hpp_
 
-#include <fei_iosfwd.hpp>
-#include <fei_mpi.h>
-#include <fei_defs.h>
-
 #include <fei_Matrix.hpp>
-#include <fei_Reducer.hpp>
 #include <fei_MatrixGraph.hpp>
 #include <fei_Matrix_core.hpp>
+#include <fei_Reducer.hpp>
+#include <fei_defs.h>
+#include <fei_iosfwd.hpp>
+#include <fei_mpi.h>
 
 #undef fei_file
 #define fei_file "fei_MatrixReducer.hpp"
 #include <fei_ErrMacros.hpp>
+
+#include "fei_SharedPtr.hpp"
+#include "fei_iostream.hpp"
+
+namespace fei {
+class ParameterSet;
+class Reducer;
+class Vector;
+}  // namespace fei
 
 namespace fei {
 

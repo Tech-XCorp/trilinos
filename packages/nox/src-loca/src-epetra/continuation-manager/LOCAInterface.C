@@ -47,7 +47,22 @@
 //@HEADER
 */
 
+#include <iostream>
+
+#include "ContinuationManager.H"
+#include "Epetra_CrsMatrix.h"
 #include "LOCAInterface.H"
+#include "LOCA_Parameter_Vector.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "ProblemLOCAPrototype.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Operator;
+class Epetra_Vector;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCAInterface::
 LOCAInterface( Teuchos::RCP <ProblemLOCAPrototype> & aProblem ,

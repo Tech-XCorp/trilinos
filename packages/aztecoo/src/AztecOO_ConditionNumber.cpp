@@ -41,10 +41,13 @@
 
 #include "AztecOO_ConditionNumber.h"	// class definition
 
-#include "Epetra_Map.h"	        // class data element
-#include "Epetra_Vector.h"	// class data element
-#include "Epetra_Operator.h"	// class data element
+#include <stddef.h>
+
 #include "AztecOO.h"            // class data element
+#include "Epetra_Map.h"	        // class data element
+#include "Epetra_Operator.h"	// class data element
+#include "Epetra_Vector.h"	// class data element
+#include "az_aztec.h"
 
 // ***********************************************************************
 AztecOOConditionNumber::AztecOOConditionNumber() :

@@ -45,17 +45,19 @@
 #ifdef AZTEC_MPI
 #include "Epetra_MpiComm.h"
 #else
-#include "Epetra_Comm.h"
 #endif
 
-#include "AztecOO_Scaling.h"
-#include "AztecOO.h"
+#include <math.h>
+#include <stddef.h>
+#include <iostream>
 
+#include "AztecOO.h"
+#include "AztecOO_Scaling.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Map.h"
-#include "Epetra_Vector.h"
 #include "Epetra_RowMatrix.h"
-#include "Epetra_Operator.h"
-#include "Epetra_CrsMatrix.h"
+#include "Epetra_Vector.h"
+#include "az_aztec.h"
 
 //---------------------------------------------------------------
 //Prototypes for utility functions that are used internally by

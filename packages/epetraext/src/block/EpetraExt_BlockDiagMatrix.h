@@ -42,15 +42,22 @@
 #ifndef EPETRAEXT_BLOCKDIAGMATRIX_H
 #define EPETRAEXT_BLOCKDIAGMATRIX_H
 
+#include <iosfwd>
+
 #include "Epetra_BLAS.h"
-#include "Epetra_LAPACK.h"
-#include "Epetra_DistObject.h"
 #include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DistObject.h"
+#include "Epetra_LAPACK.h"
 #include "Epetra_Map.h"
 #include "Epetra_Operator.h"
 #include "Teuchos_ParameterList.hpp"
 
 class Epetra_Comm;
+class Epetra_Distributor;
+class Epetra_MultiVector;
+class Epetra_OffsetIndex;
+class Epetra_SrcDistObject;
 
 //! EpetraExt_BlockDiagMatrix: A class for storing distributed block matrices.
 

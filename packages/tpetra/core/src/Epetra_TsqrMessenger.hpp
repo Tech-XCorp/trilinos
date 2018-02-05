@@ -59,14 +59,21 @@
 
 #include <Tpetra_ConfigDefs.hpp>
 
+#include "Teuchos_RCPDecl.hpp"
+#include "TpetraCore_config.h"
+#include "Tsqr_MessengerBase.hpp"
+
+class Epetra_Comm;
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
+
 #if defined(HAVE_TPETRA_EPETRA) && defined(HAVE_TPETRA_TSQR)
 
 // Include Epetra's MPI wrappers.
 #include <Epetra_Comm.h>
-
 // Include Teuchos' MPI wrappers.
 #include <Teuchos_Comm.hpp>
-
 #include <Teuchos_RCP.hpp>
 #include <Tsqr_TeuchosMessenger.hpp>
 

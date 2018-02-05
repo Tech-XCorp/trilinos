@@ -44,10 +44,20 @@
 //
 // @HEADER
 #include <Teuchos_TabularOutputter.hpp>
+#include <stddef.h>
+#include <__tree>
+#include <iomanip>
 
-#include "MueLu_Level.hpp"
-
+#include "MueLu_ConfigDefs.hpp"
 #include "MueLu_FactoryManagerBase.hpp"
+#include "MueLu_Level.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 
 namespace MueLu {
 

@@ -39,7 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
 void  Trilinos_Util_scscmv (int isym, int m, int n, 
 	      double *val, int *indx, int *pntr, 
 	      double *x, double *y)

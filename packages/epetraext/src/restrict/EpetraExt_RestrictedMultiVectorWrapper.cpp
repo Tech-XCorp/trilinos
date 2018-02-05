@@ -41,15 +41,13 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
-
 
 #ifdef HAVE_MPI
 
 
 #include "EpetraExt_RestrictedMultiVectorWrapper.h"
-#include "Epetra_MpiComm.h"
 #include "Epetra_BlockMap.h"
+#include "Epetra_MpiComm.h"
 #include "Epetra_MultiVector.h"
 
 

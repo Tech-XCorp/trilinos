@@ -40,14 +40,18 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
+#include <stdio.h>
+#include <type_traits>
 
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Map.h"
 #include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_LocalFilter.h"
+#include "Teuchos_ENull.hpp"
 
 //==============================================================================
 Ifpack_LocalFilter::Ifpack_LocalFilter(const Teuchos::RefCountPtr<const Epetra_RowMatrix>& Matrix) :

@@ -40,35 +40,42 @@
 // @HEADER
 
 #include "Galeri_CrsMatrices.h"
-#include "Galeri_Exception.h"
-#include "Epetra_Map.h"
-#include "Epetra_CrsMatrix.h"
-#include "Teuchos_ParameterList.hpp"
-#include "CrsMatrices/Galeri_Diag.h"
-#include "CrsMatrices/Galeri_Tridiag.h"
-#include "CrsMatrices/Galeri_Lehmer.h"
-#include "CrsMatrices/Galeri_Minij.h"
-#include "CrsMatrices/Galeri_Ris.h"
-#include "CrsMatrices/Galeri_Hilbert.h"
-#include "CrsMatrices/Galeri_JordanBlock.h"
-#include "CrsMatrices/Galeri_Cauchy.h"
-#include "CrsMatrices/Galeri_Fielder.h"
-#include "CrsMatrices/Galeri_Hanowa.h"
-#include "CrsMatrices/Galeri_KMS.h"
-#include "CrsMatrices/Galeri_Parter.h"
-#include "CrsMatrices/Galeri_Pei.h"
-#include "CrsMatrices/Galeri_Ones.h"
-#include "CrsMatrices/Galeri_Vander.h"
-#include "CrsMatrices/Galeri_Cross2D.h"
-#include "CrsMatrices/Galeri_Cross3D.h"
-#include "CrsMatrices/Galeri_Star2D.h"
-#include "CrsMatrices/Galeri_UniFlow2D.h"
-#include "CrsMatrices/Galeri_Recirc2D.h"
+
+#include <math.h>
+#include <sstream>
+#include <string>
+
 #include "CrsMatrices/Galeri_BentPipe2D.h"
-#include "CrsMatrices/Galeri_Stretched2D.h"
-#include "CrsMatrices/Galeri_Laplace1DNeumann.h"
 #include "CrsMatrices/Galeri_BigCross2D.h"
 #include "CrsMatrices/Galeri_BigStar2D.h"
+#include "CrsMatrices/Galeri_Cauchy.h"
+#include "CrsMatrices/Galeri_Cross3D.h"
+#include "CrsMatrices/Galeri_Diag.h"
+#include "CrsMatrices/Galeri_Fielder.h"
+#include "CrsMatrices/Galeri_Hanowa.h"
+#include "CrsMatrices/Galeri_Hilbert.h"
+#include "CrsMatrices/Galeri_JordanBlock.h"
+#include "CrsMatrices/Galeri_KMS.h"
+#include "CrsMatrices/Galeri_Laplace1DNeumann.h"
+#include "CrsMatrices/Galeri_Lehmer.h"
+#include "CrsMatrices/Galeri_Minij.h"
+#include "CrsMatrices/Galeri_Ones.h"
+#include "CrsMatrices/Galeri_Parter.h"
+#include "CrsMatrices/Galeri_Pei.h"
+#include "CrsMatrices/Galeri_Recirc2D.h"
+#include "CrsMatrices/Galeri_Ris.h"
+#include "CrsMatrices/Galeri_Star2D.h"
+#include "CrsMatrices/Galeri_Stretched2D.h"
+#include "CrsMatrices/Galeri_Tridiag.h"
+#include "CrsMatrices/Galeri_UniFlow2D.h"
+#include "CrsMatrices/Galeri_Vander.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_Map.h"
+#include "Galeri_Cross2D.h"
+#include "Galeri_Exception.h"
+#include "Teuchos_ParameterList.hpp"
+
+class Epetra_CrsMatrix;
 
 namespace Galeri {
 

@@ -42,10 +42,18 @@
 #ifndef EPETRAEXT_MULTISERIALCOMM_H
 #define EPETRAEXT_MULTISERIALCOMM_H
 
+#include <iosfwd>
+
 #include "EpetraExt_ConfigDefs.h"
 #include "EpetraExt_MultiComm.h" 
+#include "Epetra_Comm.h"
 #include "Epetra_SerialComm.h" 
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_BlockMap;
+class Epetra_Directory;
+class Epetra_Distributor;
 
 //! EpetraExt::MultiSerialComm is a class for keeping track of two levels of
 //! parallelism. The class is an Epetra_SerialComm for the global problem 

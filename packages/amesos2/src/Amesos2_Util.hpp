@@ -52,19 +52,36 @@
 #ifndef AMESOS2_UTIL_HPP
 #define AMESOS2_UTIL_HPP
 
-#include "Amesos2_config.h"
-
-#include <Teuchos_RCP.hpp>
-#include <Teuchos_BLAS_types.hpp>
 #include <Teuchos_ArrayView.hpp>
+#include <Teuchos_BLAS_types.hpp>
 #include <Teuchos_FancyOStream.hpp>
-
-#include <Tpetra_Map.hpp>
-#include <Tpetra_DistObject_decl.hpp>
+#include <Teuchos_RCP.hpp>
 #include <Tpetra_ComputeGatherMap.hpp> // added for gather map... where is the best place??
+#include <Tpetra_DistObject_decl.hpp>
+#include <Tpetra_Map.hpp>
+#include <stddef.h>
+#include <stdexcept>
+#include <type_traits>
 
-#include "Amesos2_TypeDecl.hpp"
 #include "Amesos2_Meta.hpp"
+#include "Amesos2_TypeDecl.hpp"
+#include "Amesos2_config.h"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_as.hpp"
+#include "TpetraCore_config.h"
+#include "Tpetra_DirectoryImpl_decl.hpp"
+#include "Tpetra_Map_decl.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 #ifdef HAVE_TPETRA_INST_INT_INT
 #ifdef HAVE_AMESOS2_EPETRA

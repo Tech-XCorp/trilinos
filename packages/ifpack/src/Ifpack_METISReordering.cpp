@@ -40,17 +40,25 @@
 //@HEADER
 */
 
+#include <stdlib.h>
+#include <iostream>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Reordering.h"
-#include "Ifpack_METISReordering.h"
 #include "Ifpack_Graph.h"
 #include "Ifpack_Graph_Epetra_CrsGraph.h"
 #include "Ifpack_Graph_Epetra_RowMatrix.h"
-#include "Epetra_Comm.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_Map.h"
-#include "Teuchos_ParameterList.hpp"
+#include "Ifpack_METISReordering.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
 typedef int idxtype;
 #ifdef HAVE_IFPACK_METIS

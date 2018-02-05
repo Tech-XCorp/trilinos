@@ -41,12 +41,12 @@
 // @HEADER
 */
 
+#include "TpetraCore_config.h"
 #include "Tpetra_Details_Transfer_decl.hpp"
 
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 
 #include "TpetraCore_ETIHelperMacros.h"
-#include "Tpetra_Details_Transfer_def.hpp"
 
 namespace Tpetra {
 namespace Details {

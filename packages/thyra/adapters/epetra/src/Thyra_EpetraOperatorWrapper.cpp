@@ -39,24 +39,44 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdexcept>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_MultiVector.h"
+#include "RTOpPack_Types.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Thyra_DefaultProductVector_decl.hpp"
+#include "Thyra_DetachedSpmdVectorView.hpp"
+#include "Thyra_EpetraLinearOp.hpp"
 #include "Thyra_EpetraOperatorWrapper.hpp"
 #include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_DetachedSpmdVectorView.hpp"
-#include "Thyra_DefaultProductVector.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ProductVectorBase.hpp"
 #include "Thyra_ProductVectorSpaceBase.hpp"
-#include "Thyra_SpmdVectorBase.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_SpmdVectorSpaceBase_decl.hpp"
+#include "Thyra_VectorBase.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+
+class Epetra_Comm;
+namespace Teuchos {
+template <typename Ordinal> class SerialComm;
+}  // namespace Teuchos
 
 #ifdef HAVE_MPI
 #  include "Epetra_MpiComm.h"
 #endif
-#include "Epetra_SerialComm.h"
-#include "Epetra_Vector.h"
 
 #ifdef HAVE_MPI
 #  include "Teuchos_DefaultMpiComm.hpp"
 #endif
-#include "Teuchos_DefaultSerialComm.hpp"
 
 
 namespace Thyra { 

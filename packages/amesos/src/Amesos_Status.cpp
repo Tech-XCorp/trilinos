@@ -27,6 +27,9 @@
 // @HEADER
 
 #include "Amesos_Status.h"
+
+#include <sstream>
+
 void Amesos_Status::SetStatusParameters( const Teuchos::ParameterList &ParameterList) {
 
   // some verbose output:

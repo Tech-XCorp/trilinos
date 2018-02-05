@@ -6,12 +6,23 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_Vector_Local.hpp"
-#include "fei_sstream.hpp"
-#include "fei_fstream.hpp"
 #include <fei_ErrMacros.hpp>
-
+#include <stddef.h>
 #include <algorithm>
+#include <ostream>
+#include <utility>
+
+#include "fei_CommUtils.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+#include "fei_Vector_Local.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_fstream.hpp"
+#include "fei_sstream.hpp"
+
+namespace fei {
+class Vector;
+}  // namespace fei
 
 #undef fei_file
 #define fei_file "fei_Vector_Local.cpp"

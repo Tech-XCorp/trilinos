@@ -1,11 +1,13 @@
 
 #include <fei_CommUtils.hpp>
-#include <fei_TemplateUtils.hpp>
 
 #undef fei_file
 #define fei_file "fei_CommUtils.cpp"
 
 #include <fei_ErrMacros.hpp>
+
+#include "fei_macros.hpp"
+#include "fei_mpi.h"
 
 namespace fei {
 

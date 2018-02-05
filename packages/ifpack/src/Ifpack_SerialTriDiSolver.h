@@ -43,14 +43,17 @@
 
 #ifndef IFPACK_SERIALTRIDISOLVER_H
 #define IFPACK_SERIALTRIDISOLVER_H
-class Ifpack_SerialTriDiMatrix;
+#include <iosfwd>
+
+#include "Epetra_BLAS.h"
+#include "Epetra_CompObject.h"
+#include "Epetra_DLLExportMacro.h"
+#include "Epetra_Object.h"
+#include "Teuchos_LAPACK.hpp"
+
 //class Epetra_SerialDenseVector;
 class Epetra_SerialDenseMatrix;
-
-#include "Epetra_Object.h"
-#include "Epetra_CompObject.h"
-#include "Epetra_BLAS.h"
-#include "Teuchos_LAPACK.hpp"
+class Ifpack_SerialTriDiMatrix;
 
 
 //! Ifpack_SerialTriDiSolver: A class for solving TriDi linear problems.

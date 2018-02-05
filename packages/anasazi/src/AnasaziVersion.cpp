@@ -43,7 +43,8 @@
     \brief Version function that will return the current version of Anasazi being utilized
 */
 
-#include "AnasaziConfigDefs.hpp"
+#include <iosfwd>
+
 #include "Trilinos_version.h"
 
 namespace Anasazi {

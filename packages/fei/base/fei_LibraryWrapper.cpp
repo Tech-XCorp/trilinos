@@ -6,11 +6,12 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
+#include <cstdlib>
+
+#include "fei_FiniteElementData.hpp"
 #include "fei_LibraryWrapper.hpp"
 #include "fei_LinearSystemCore.hpp"
-#include "fei_FiniteElementData.hpp"
-#include <cstdlib>
+#include "fei_SharedPtr.hpp"
 
 LibraryWrapper::LibraryWrapper(fei::SharedPtr<LinearSystemCore> lsc)
  : haveLinearSystemCore_(true),

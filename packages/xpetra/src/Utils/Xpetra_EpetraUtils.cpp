@@ -43,6 +43,18 @@
 // ***********************************************************************
 //
 // @HEADER
+#include <algorithm>
+#include <sstream>
+#include <typeinfo>
+
+#include "Epetra_Comm.h"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Xpetra_ConfigDefs.hpp"
 
 #ifdef HAVE_XPETRA_EPETRA
@@ -51,9 +63,9 @@
 
 // header files for comm objects conversion
 #ifdef HAVE_MPI
-#include <mpi.h>
 #include <Teuchos_DefaultMpiComm.hpp>
 #include <Teuchos_OpaqueWrapper.hpp>
+#include <mpi.h>
 #endif
 #include <Teuchos_DefaultSerialComm.hpp>
 #ifdef HAVE_MPI

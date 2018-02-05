@@ -1,5 +1,10 @@
 
 #include <Xpetra_BlockReorderManager.hpp>
+#include <iosfwd>
+#include <stack>
+#include <string>
+
+#include "Teuchos_StrUtils.hpp"
 
 namespace Xpetra {
 

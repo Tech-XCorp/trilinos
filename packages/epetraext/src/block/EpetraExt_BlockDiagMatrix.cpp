@@ -42,10 +42,22 @@
 */
 
 #include "EpetraExt_BlockDiagMatrix.h"
-#include "Epetra_MultiVector.h"
+
+#include <stddef.h>
+#include <cmath>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_LAPACK.h"
-#include "Epetra_Distributor.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_SrcDistObject.h"
+#include "Teuchos_Utils.hpp"
+
+class Epetra_Distributor;
+class Epetra_OffsetIndex;
 
 #define AM_MULTIPLY 0
 #define AM_INVERT   1

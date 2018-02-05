@@ -48,17 +48,34 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_GlobalData.H"
-#include "LOCA_ErrorCheck.H"
+#include <sstream>
+#include <string>
+#include <type_traits>
 
+#include "LOCA_AnasaziOperator_Cayley.H"
+#include "LOCA_AnasaziOperator_Cayley2Matrix.H"
 #include "LOCA_AnasaziOperator_Factory.H"
-#include "LOCA_AnasaziOperator_AbstractStrategy.H"
 #include "LOCA_AnasaziOperator_JacobianInverse.H"
 #include "LOCA_AnasaziOperator_ShiftInvert.H"
 #include "LOCA_AnasaziOperator_ShiftInvert2Matrix.H"
-#include "LOCA_AnasaziOperator_Cayley.H"
-#include "LOCA_AnasaziOperator_Cayley2Matrix.H"
+#include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_TimeDependent_AbstractGroup.H"
+#include "NOX_Abstract_Group.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_config.h"
+
+namespace LOCA {
+namespace AnasaziOperator {
+class AbstractStrategy;
+}  // namespace AnasaziOperator
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
 
 LOCA::AnasaziOperator::Factory::Factory(
             const Teuchos::RCP<LOCA::GlobalData>& global_data) :

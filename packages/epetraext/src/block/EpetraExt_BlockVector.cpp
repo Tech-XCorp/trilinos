@@ -40,9 +40,11 @@
 //@HEADER
 
 #include "EpetraExt_BlockVector.h"
+
+#include <iostream>
+
 #include "EpetraExt_BlockUtility.h"
-#include "Epetra_Map.h"
-#include "Epetra_Comm.h"
+#include "Teuchos_RCP.hpp"
 
 namespace EpetraExt {
 

@@ -6,9 +6,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_FillableMat.hpp>
-#include <fei_EqnBuffer.hpp>
 #include <fei_CSVec.hpp>
+#include <fei_EqnBuffer.hpp>
+#include <fei_FillableMat.hpp>
+#include <stddef.h>
+#include <__tree>
+#include <ostream>
+#include <stdexcept>
+
+#include "fei_Pool_alloc.hpp"
 
 namespace fei {
 

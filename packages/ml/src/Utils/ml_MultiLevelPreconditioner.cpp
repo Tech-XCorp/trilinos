@@ -35,54 +35,73 @@
 #    Modified by:      $Author$
 #############################################################################*/
 
-#include "ml_common.h"
-#include "ml_include.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <cmath>
+#include <exception>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_IntSerialDenseMatrix.h"
+#include "Epetra_MsrMatrix.h"
+#include "Epetra_MultiVector.h"
+#include "Teuchos_Utils.hpp"
+#include "ml_1level.h"
 #include "ml_RowMatrix.h"
+#include "ml_agg_genP.h"
+#include "ml_agg_reitzinger.h"
+#include "ml_amesos.h"
+#include "ml_aztec_utils.h"
+#include "ml_csolve.h"
+#include "ml_grid.h"
+#include "ml_mat_formats.h"
+#include "ml_op_utils.h"
+#include "ml_rap.h"
+#include "ml_smoother.h"
+#include "ml_utils.h"
 
 #ifdef IFPACK_NODE_AWARE_CODE
 extern int ML_NODE_ID; //FIXME
 #endif
 
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
-#include "ml_memory.h"
-#include "ml_DD_prec.h"
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Epetra_SerialDenseSolver.h"
 #include "Epetra_Import.h"
-#include "Epetra_Export.h"
-#include "Epetra_Time.h"
-#include "Epetra_Operator.h"
+#include "Epetra_Map.h"
 #include "Epetra_RowMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_Time.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "ml_DD_prec.h"
+#include "ml_memory.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
-#include "ml_amesos_wrap.h"
-#include "ml_agg_METIS.h"
-#include "ml_epetra_utils.h"
-#include "ml_epetra.h"
-#include "ml_MultiLevelPreconditioner.h"
-#include "ml_agg_ParMETIS.h"
-#include "ml_anasazi.h"
 #include "ml_FilterType.h"
+#include "ml_MultiLevelPreconditioner.h"
 #include "ml_ValidateParameters.h"
+#include "ml_agg_METIS.h"
+#include "ml_agg_ParMETIS.h"
+#include "ml_epetra.h"
+#include "ml_epetra_utils.h"
 
 #ifdef HAVE_ML_EPETRAEXT
 #include "EpetraExt_RowMatrixOut.h"
-#include "EpetraExt_OperatorOut.h"
 #endif
 
 #include "ml_ifpack_wrap.h"
 #include "ml_viz_stats.h"
+
 using namespace Teuchos;
 using namespace std;
 
@@ -3344,18 +3363,6 @@ int ML_Epetra::MultiLevelPreconditioner::SetCoarse()
   return 0;
 }
 
-// ============================================================================
-/*! Values for \c "aggregation: type"
- * - \c Uncoupled-MIS
- * - \c METIS
- * - \c ParMETIS
- * - \c Uncoupled
- * - \c Coupled (deprecated)
- * - \c MIS
- * - \c user
- * - \c greedy
- */
-#include "ml_agg_user.h"
 int ML_Epetra::MultiLevelPreconditioner::SetAggregation()
 {
   char aggListName[80];

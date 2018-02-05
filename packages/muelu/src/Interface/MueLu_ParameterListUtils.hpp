@@ -47,11 +47,11 @@
 #ifndef MUELU_PARAMETERLISTUTILS_HPP
 #define MUELU_PARAMETERLISTUTILS_HPP
 
-#include <string>
-#include <sstream>
-
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_RCPDecl.hpp>
+#include <sstream>
+#include <string>
+
 #include "MueLu_ConfigDefs.hpp"
 
 namespace MueLu {

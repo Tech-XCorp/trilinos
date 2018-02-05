@@ -40,19 +40,18 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_SILU.h"
 #ifdef HAVE_IFPACK_SUPERLU
 
-#include "Ifpack_CondestType.h"
-#include "Epetra_ConfigDefs.h"
 #include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_CondestType.h"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RefCountPtr.hpp"
 

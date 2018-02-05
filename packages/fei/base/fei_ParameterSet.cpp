@@ -6,7 +6,6 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
 #include <fei_ParameterSet.hpp>
 
 fei::ParameterSet::ParameterSet()

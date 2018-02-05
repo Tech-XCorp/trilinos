@@ -43,22 +43,30 @@
 #ifndef IFPACK_CHEBYSHEV_H
 #define IFPACK_CHEBYSHEV_H
 
+#include <iosfwd>
+
+#include "Ifpack_CondestType.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Preconditioner.h"
+#include "Ifpack_config.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
 namespace Teuchos {
   class ParameterList;
 }
 
-class Epetra_MultiVector;
-class Epetra_Vector;
-class Epetra_Map;
 class Epetra_Comm;
-class Epetra_Time;
-class Epetra_Vector;
+class Epetra_Map;
+class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_RowMatrix;
+class Epetra_Time;
+class Epetra_Vector;
+class Epetra_Vector;
 
 #ifdef HAVE_IFPACK_EPETRAEXT
 class EpetraExt_PointToBlockDiagPermute;

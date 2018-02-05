@@ -40,14 +40,15 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Condest.h"
-#include "Ifpack_CondestType.h"
-#include "Ifpack_Preconditioner.h"
-#include "Epetra_Vector.h"
 #include "Epetra_LinearProblem.h"
 #include "Epetra_Map.h"
-#include "Epetra_RowMatrix.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_CondestType.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_config.h"
+#include "az_aztec.h"
 #ifdef HAVE_IFPACK_AZTECOO
 #include "AztecOO.h"
 #endif

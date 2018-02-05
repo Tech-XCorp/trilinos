@@ -39,8 +39,6 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Trilinos_Util.h"
-
 int Trilinos_Util_csrmsr( int n, double *a, int *ja, int *ia, double *ao,
              int *jao, double *wk, int *iwk)
 {

@@ -50,9 +50,14 @@
  *      Author: wiesner
  */
 
-#include "MueLu_Level.hpp"
+#include <ostream>
 
+#include "MueLu_Exceptions.hpp"
+#include "MueLu_Level.hpp"
 #include "MueLu_NoFactory.hpp"
+#include "MueLu_VerbosityLevel.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
 
 namespace MueLu {
 

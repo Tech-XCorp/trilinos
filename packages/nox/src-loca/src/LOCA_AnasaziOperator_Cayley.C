@@ -48,10 +48,27 @@
 // ************************************************************************
 //@HEADER
 
+#include <math.h>
+#include <sstream>
+#include <type_traits>
+
 #include "LOCA_AnasaziOperator_Cayley.H"
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_GlobalData.H"
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_TimeDependent_AbstractGroup.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
 
 LOCA::AnasaziOperator::Cayley::Cayley(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

@@ -45,7 +45,11 @@
 #ifndef AZTECOO_STATUSTESTMAXITERS_H
 #define AZTECOO_STATUSTESTMAXITERS_H
 
+#include <iosfwd>
+
 #include "AztecOO_StatusTest.h"
+#include "AztecOO_StatusType.h"
+
 class Epetra_MultiVector;
 
 //! AztecOO_StatusTestMaxIters: An AztecOO_StatusTest class specifying a maximum number of iterations.

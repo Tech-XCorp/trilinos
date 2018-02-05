@@ -44,10 +44,32 @@
 // ***********************************************************************
 //
 // @HEADER
+#include <algorithm>
+#include <string>
+#include <type_traits>
+
+#include "EpetraExt_MatrixMatrix.h"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_toString.hpp"
+#include "TpetraCore_config.h"
+#include "Tpetra_CrsMatrix_decl.hpp"
+#include "Xpetra_EpetraVector.hpp"
 #include "Xpetra_IteratorOps.hpp"
+#include "Xpetra_TpetraExport.hpp"
+#include "Xpetra_TpetraImport.hpp"
+#include "Xpetra_TpetraVector.hpp"
+
+class Epetra_CrsMatrix;
 
 namespace Xpetra {
 
+template <class S, class LO, class GO, class N> class Vector;
 #if defined(HAVE_XPETRA_EPETRA) && !defined(XPETRA_EPETRA_NO_32BIT_GLOBAL_INDICES)
   template<>
   void Jacobi<double,int,int,EpetraNode>(double omega,

@@ -10,7 +10,7 @@
 #define _fei_LogManager_hpp_
 
 #include <fei_fwd.hpp>
-
+#include <iosfwd>
 #include <string>
 #include <vector>
 

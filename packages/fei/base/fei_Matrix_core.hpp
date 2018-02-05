@@ -9,19 +9,29 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
+#include <fei_CommUtils.hpp>
+#include <fei_EqnComm.hpp>
+#include <fei_FillableMat.hpp>
+#include <fei_Logger.hpp>
+#include <fei_MatrixGraph.hpp>
+#include <fei_Vector.hpp>
+#include <fei_fwd.hpp>
 #include <fei_macros.hpp>
 #include <fei_mpi.h>
-#include <fei_EqnComm.hpp>
-#include <fei_fwd.hpp>
-#include <fei_Vector.hpp>
-#include <fei_CommUtils.hpp>
-#include <fei_FillableMat.hpp>
-#include <fei_MatrixGraph.hpp>
-#include <fei_Logger.hpp>
-
+#include <stddef.h>
+#include <iosfwd>
+#include <map>
+#include <utility>
 #include <vector>
 
+#include "fei_SharedPtr.hpp"
+#include "fei_VectorSpace.hpp"
+
 namespace fei {
+class EqnComm;
+class ParameterSet;
+class Vector;
+
 class Matrix_core : protected fei::Logger {
  public:
 

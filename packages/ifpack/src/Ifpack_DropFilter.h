@@ -43,15 +43,21 @@
 #ifndef IFPACK_DROPFILTER_H
 #define IFPACK_DROPFILTER_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
-#include "Teuchos_RefCountPtr.hpp"
+#include <vector>
 
+#include "Epetra_RowMatrix.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_BlockMap;
 class Epetra_Comm;
+class Epetra_Import;
 class Epetra_Map;
 class Epetra_MultiVector;
-class Epetra_Import;
-class Epetra_BlockMap;
+class Epetra_Vector;
 
 //! Ifpack_DropFilter: Filter based on matrix entries.
 /*!

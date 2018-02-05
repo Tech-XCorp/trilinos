@@ -43,14 +43,21 @@
 #ifndef IFPACK_OVERLAPPINGPARTITIONER_H
 #define IFPACK_OVERLAPPINGPARTITIONER_H
 
+#include <iosfwd>
+#include <vector>
+
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
+class Ifpack_Graph;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 /* \brief Ifpack_OverlappingPartitioner: A class to create overlapping
     partitions of a local graph.

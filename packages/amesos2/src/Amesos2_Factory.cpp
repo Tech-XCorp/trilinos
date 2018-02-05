@@ -41,6 +41,9 @@
 //
 // @HEADER
 
+#include <stddef.h>
+#include <__locale>
+
 #include "Amesos2_Factory.hpp"
 
 namespace Amesos2 {

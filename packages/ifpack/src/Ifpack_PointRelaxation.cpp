@@ -40,19 +40,31 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include <iomanip>
 #include <cmath>
-#include "Epetra_Operator.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_CombineMode.h"
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Import.h"
 #include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
-#include "Ifpack_Preconditioner.h"
+#include "Epetra_Time.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_PointRelaxation.h"
 #include "Ifpack_Utils.h"
-#include "Ifpack_Condest.h"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_Utils.hpp"
 
 static const int IFPACK_JACOBI = 0;
 static const int IFPACK_GS = 1;

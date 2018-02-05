@@ -9,14 +9,15 @@
 #ifndef _fei_Pool_alloc_hpp_
 #define _fei_Pool_alloc_hpp_
 
-#include "fei_macros.hpp"
-#include "fei_Pool.hpp"
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <limits>
 #include <new>
 #include <stdexcept>
-#include <iostream>
+
+#include "fei_Pool.hpp"
+#include "fei_macros.hpp"
 
 fei_Pool* get_fei_mem_pool(size_t n);
 

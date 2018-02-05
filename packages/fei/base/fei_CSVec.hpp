@@ -10,8 +10,9 @@
 /*--------------------------------------------------------------------*/
 
 #include <fei_macros.hpp>
-#include <vector>
+#include <stddef.h>
 #include <algorithm>
+#include <vector>
 
 namespace fei {
 

@@ -40,11 +40,9 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
+#include <vector>
+
 #include "Ifpack_LinearPartitioner.h"
-#include "Epetra_CrsGraph.h"
 
 //==============================================================================
 int Ifpack_LinearPartitioner::ComputePartitions()

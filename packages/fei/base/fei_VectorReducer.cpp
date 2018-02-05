@@ -6,16 +6,21 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
+#include <fei_CommUtils.hpp>
+#include <fei_Vector.hpp>
 #include <fei_VectorReducer.hpp>
 #include <fei_VectorSpace.hpp>
 #include <fei_Vector_core.hpp>
-#include <fei_Vector.hpp>
-#include <fei_CommUtils.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "fei_VectorReducer.cpp"
 
 #include <fei_ErrMacros.hpp>
+#include <stdexcept>
+#include <vector>
+
+#include "fei_Reducer.hpp"
 
 namespace fei {
 

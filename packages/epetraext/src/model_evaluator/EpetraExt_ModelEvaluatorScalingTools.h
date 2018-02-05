@@ -43,8 +43,18 @@
 #define EPETRA_EXT_MODEL_EVALUATOR_SCALING_TOOLS_H
 
 
+#include <iosfwd>
+#include <string>
+
 #include "EpetraExt_ModelEvaluator.h"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
+
+class Epetra_Operator;
+class Epetra_Vector;
 
 
 namespace EpetraExt {

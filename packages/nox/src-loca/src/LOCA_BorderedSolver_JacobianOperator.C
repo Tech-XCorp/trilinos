@@ -48,8 +48,21 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_BorderedSolver_JacobianOperator.H"
 #include "LOCA_Abstract_TransposeSolveGroup.H"
+#include "LOCA_BorderedSolver_JacobianOperator.H"
+#include "NOX_Abstract_Group.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace NOX {
+namespace Abstract {
+class MultiVector;
+}  // namespace Abstract
+}  // namespace NOX
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::BorderedSolver::JacobianOperator::
 JacobianOperator(const Teuchos::RCP<const NOX::Abstract::Group>& grp) :

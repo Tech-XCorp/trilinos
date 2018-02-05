@@ -14,10 +14,28 @@
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
 
-#include "ml_common.h"
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Teuchos_ParameterList.hpp"
+#include "ml_1level.h"
+#include "ml_aggregate.h"
+#include "ml_config.h"
+#include "ml_defs.h"
+#include "ml_grid.h"
+#include "ml_operator.h"
+#include "ml_smoother.h"
+#include "ml_struct.h"
+#include "ml_utils.h"
 #if defined(HAVE_ML_EPETRA) && defined(HAVE_ML_TEUCHOS)
 
-#include "ml_include.h"
 #ifndef ML_CPP
 #ifdef __cplusplus
 extern "C"
@@ -40,19 +58,12 @@ extern int ML_Aggregate_Stats_CleanUp_Amalgamate( ML *ml, ML_Aggregate *ag);
 }
 #endif
 #endif
-#include "Epetra_Map.h"
-#include "Epetra_Vector.h"
-#include "Epetra_Import.h"
-#include "Epetra_Time.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_FECrsMatrix.h"
 #ifdef ML_MPI
 #include "Epetra_MpiComm.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
-#include "ml_epetra.h"
 #include "ml_MultiLevelPreconditioner.h"
+#include "ml_epetra.h"
 #include "ml_viz_stats.h"
 
 // ============================================================================

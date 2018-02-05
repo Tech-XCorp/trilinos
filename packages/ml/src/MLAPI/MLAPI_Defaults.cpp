@@ -4,7 +4,6 @@
 /* ******************************************************************** */
 #include "ml_common.h"
 #ifdef HAVE_ML_MLAPI
-#include "MLAPI_Error.h"
 #include "MLAPI_Defaults.h"
 #include "Teuchos_ParameterList.hpp"
 

@@ -48,13 +48,16 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Common.H"
-#include "NOX_StatusTest_RelativeNormF.H"
-#include "NOX_Abstract_Vector.H"
+#include <stddef.h>
+#include <cmath>
+#include <ostream>
+
 #include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
 #include "NOX_Solver_Generic.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_StatusTest_RelativeNormF.H"
 #include "NOX_Utils.H"
-#include "Teuchos_Assert.hpp"
 #include "Teuchos_as.hpp"
 
 NOX::StatusTest::RelativeNormF::

@@ -6,37 +6,48 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_sstream.hpp>
-
-#include <limits>
-#include <cmath>
-
-#include <fei_MatrixGraph_Impl2.hpp>
-
-#include <fei_utils.hpp>
-#include "fei_TemplateUtils.hpp"
-
-#include <fei_Pattern.hpp>
-#include <fei_LogManager.hpp>
-#include <fei_TemplateUtils.hpp>
-#include <fei_impl_utils.hpp>
-#include <snl_fei_Utils.hpp>
-#include <fei_FieldMask.hpp>
-#include <fei_Record.hpp>
-#include <snl_fei_RecordCollection.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_ParameterSet.hpp>
-#include <fei_ostream_ops.hpp>
-#include <fei_Reducer.hpp>
-#include <fei_GraphReducer.hpp>
 #include <fei_ConnectivityBlock.hpp>
-#include <snl_fei_BlkSizeMsgHandler.hpp>
+#include <fei_FieldMask.hpp>
+#include <fei_GraphReducer.hpp>
 #include <fei_Graph_Impl.hpp>
-#include <snl_fei_Constraint.hpp>
+#include <fei_LogManager.hpp>
+#include <fei_MatrixGraph_Impl2.hpp>
+#include <fei_ParameterSet.hpp>
+#include <fei_Pattern.hpp>
+#include <fei_Record.hpp>
+#include <fei_Reducer.hpp>
+#include <fei_TemplateUtils.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_impl_utils.hpp>
+#include <fei_ostream_ops.hpp>
+#include <fei_sstream.hpp>
+#include <fei_utils.hpp>
+#include <snl_fei_BlkSizeMsgHandler.hpp>
+#include <snl_fei_RecordCollection.hpp>
+#include <snl_fei_Utils.hpp>
+#include <__functional_base>
+#include <__tree>
+#include <cmath>
+#include <cstdlib>
+#include <istream>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
-#include <fei_EqnBuffer.hpp>
-#include <fei_EqnCommMgr.hpp>
-#include <SNL_FEI_Structure.hpp>
+#include "fei_CSVec.hpp"
+#include "fei_CommUtils.hpp"
+#include "fei_FillableMat.hpp"
+#include "fei_Graph.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_Param.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_SparseRowGraph.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_ctg_set.hpp"
+#include "fei_fwd.hpp"
+#include "fei_iostream.hpp"
+#include "fei_macros.hpp"
+#include "snl_fei_PointBlockMap.hpp"
 
 #undef fei_file
 #define fei_file "fei_MatrixGraph.cpp"

@@ -39,13 +39,59 @@
 // ************************************************************************
 //@HEADER
 
-#include "Belos_Details_registerLinearSolverFactory.hpp"
+#include <exception>
+#include <map>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include "BelosBiCGStabSolMgr.hpp"
+#include "BelosBlockCGSolMgr.hpp"
+#include "BelosBlockGmresSolMgr.hpp"
+#include "BelosCGIteration.hpp"
+#include "BelosFixedPointIteration.hpp"
+#include "BelosFixedPointSolMgr.hpp"
+#include "BelosGCRODRIter.hpp"
+#include "BelosGCRODRSolMgr.hpp"
+#include "BelosGmresIteration.hpp"
+#include "BelosLinearProblem.hpp"
+#include "BelosMinresIteration.hpp"
+#include "BelosMinresSolMgr.hpp"
+#include "BelosPCPGIter.hpp"
+#include "BelosPCPGSolMgr.hpp"
+#include "BelosPseudoBlockCGSolMgr.hpp"
+#include "BelosPseudoBlockGmresIter.hpp"
+#include "BelosPseudoBlockGmresSolMgr.hpp"
+#include "BelosPseudoBlockTFQMRSolMgr.hpp"
+#include "BelosRCGSolMgr.hpp"
+#include "BelosSimpleOrthoManager.hpp"
+#include "BelosStatusTest.hpp"
+#include "BelosStatusTestGenResNorm.hpp"
+#include "BelosStatusTestGenResSubNorm.hpp"
+#include "BelosStatusTestImpResNorm.hpp"
+#include "BelosStochasticCGIteration.hpp"
+#include "BelosTFQMRSolMgr.hpp"
+#include "BelosTypes.hpp"
 #include "Belos_Details_LinearSolverFactory.hpp"
+#include "Belos_config.h"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_Object.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RCPNode.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_any.hpp"
+
+class Epetra_Operator;
 
 #ifdef HAVE_BELOS_EPETRA
 #  include "Epetra_MultiVector.h"
-#  include "Epetra_Operator.h"
-#  include "BelosEpetraAdapter.hpp"
 
 namespace Belos {
 namespace Details {

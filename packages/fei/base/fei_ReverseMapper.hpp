@@ -9,11 +9,9 @@
 #ifndef _fei_ReverseMapper_hpp_
 #define _fei_ReverseMapper_hpp_
 
-#include <fei_macros.hpp>
-
-#include <map>
-
 #include <fei_EqnRecord.hpp>
+#include <fei_macros.hpp>
+#include <map>
 
 namespace fei {
   class VectorSpace;

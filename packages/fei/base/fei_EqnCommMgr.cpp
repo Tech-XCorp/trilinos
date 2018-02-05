@@ -6,19 +6,27 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_defs.h>
-
-#include <fei_EqnCommMgr.hpp>
-
 #include <fei_CommUtils.hpp>
-
-#include <fei_ProcEqns.hpp>
 #include <fei_EqnBuffer.hpp>
-#include <fei_TemplateUtils.hpp>
-
+#include <fei_EqnCommMgr.hpp>
+#include <fei_ProcEqns.hpp>
+#include <fei_macros.hpp>
+#include <__tree>
 #include <algorithm>
+#include <cstdlib>
+#include <map>
+#include <ostream>
+#include <set>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_CSRMat.hpp"
+#include "fei_CSVec.hpp"
+#include "fei_SparseRowGraph.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iosfwd.hpp"
+#include "fei_iostream.hpp"
+#include "snl_fei_PointBlockMap.hpp"
 
 #undef fei_file
 #define fei_file "EqnCommMgr.cpp"

@@ -40,14 +40,15 @@
 //@HEADER
 */
 
+#include <assert.h>
+#include <iostream>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_Time.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_DiagonalFilter.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 
 //==============================================================================
 Ifpack_DiagonalFilter::Ifpack_DiagonalFilter(const Teuchos::RefCountPtr<Epetra_RowMatrix>& Matrix,

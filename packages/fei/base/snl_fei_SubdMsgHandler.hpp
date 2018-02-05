@@ -9,11 +9,14 @@
 #ifndef _snl_fei_SubdMsgHandler_hpp_
 #define _snl_fei_SubdMsgHandler_hpp_
 
-#include <fei_macros.hpp>
 #include <fei_CommUtils.hpp>
 #include <fei_fwd.hpp>
-
+#include <fei_macros.hpp>
 #include <vector>
+
+namespace snl_fei {
+class RecordCollection;
+}  // namespace snl_fei
 
 namespace fei {
   template<typename T> class SharedIDs;

@@ -7,9 +7,8 @@
 /*--------------------------------------------------------------------*/
 
 
-#include <fei_macros.hpp>
-
 #include <fei_Param.hpp>
+#include <stddef.h>
 
 fei::Param::Param(const char* name,
 		  const char* value)

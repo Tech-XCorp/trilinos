@@ -40,17 +40,11 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
-#include "Ifpack_GreedyPartitioner.h"
-#include "Ifpack_Graph.h"
+#include <vector>
 
-#include "Epetra_Comm.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_CrsGraph.h"
-#include "Teuchos_ParameterList.hpp"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Graph.h"
+#include "Ifpack_GreedyPartitioner.h"
 
 //==============================================================================
 int Ifpack_GreedyPartitioner::ComputePartitions()

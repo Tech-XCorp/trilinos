@@ -39,16 +39,19 @@
 // ***********************************************************************
 // @HEADER
 
-#include <stdlib.h>
+#include <assert.h>
 #include <stdio.h>
-#include <vector>
+#include <iosfwd>
 #include <limits>
-#include "Trilinos_Util_CountMatrixMarket.h"
-#include "Epetra_ConfigDefs.h"
+#include <vector>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Map.h"
 #include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
+#include "Trilinos_Util_CountMatrixMarket.h"
 
 template<typename int_type>
 int Trilinos_Util_ReadMatrixMarket2Epetra_internal(

@@ -42,8 +42,8 @@
 #include "Galeri_ConfigDefs.h"
 
 class Epetra_Comm;
-class Epetra_Map;
 class Epetra_CrsMatrix;
+class Epetra_Map;
 class Epetra_Vector;
 
 namespace Galeri 

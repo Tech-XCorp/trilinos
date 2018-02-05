@@ -3,6 +3,11 @@
 
 #include "ml_common.h"
 
+class Epetra_CrsMatrix;
+class Epetra_IntVector;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+
 /*!
 \file MLAPI_Aggregation.h
 
@@ -19,12 +24,13 @@
 
 namespace Teuchos {
   class ParameterList;
+template <class T> class RCP;
 }
 
 namespace MLAPI {
 
-class Operator;
 class MultiVector;
+class Operator;
 
 //! Builds the tentative prolongator using aggregation.
 void GetPtent(const Operator& A, Teuchos::ParameterList& List,

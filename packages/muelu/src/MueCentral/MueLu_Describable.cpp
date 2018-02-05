@@ -46,7 +46,13 @@
 #ifndef MUELU_DESCRIBABLE_HPP
 #define MUELU_DESCRIBABLE_HPP
 
+#include <stddef.h>
+#include <ostream>
+#include <string>
+
 #include "MueLu_Describable.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace MueLu {
 

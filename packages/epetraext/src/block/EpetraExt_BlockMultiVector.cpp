@@ -40,8 +40,12 @@
 //@HEADER
 
 #include "EpetraExt_BlockMultiVector.h"
+
+#include <iostream>
+#include <vector>
+
 #include "EpetraExt_BlockUtility.h"
-#include "Epetra_Map.h"
+#include "Teuchos_RCP.hpp"
 
 using std::vector;
 

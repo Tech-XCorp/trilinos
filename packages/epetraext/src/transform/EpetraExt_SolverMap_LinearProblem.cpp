@@ -40,10 +40,12 @@
 //@HEADER
 
 #include <EpetraExt_SolverMap_LinearProblem.h>
-
-#include <Epetra_LinearProblem.h>
 #include <Epetra_CrsMatrix.h>
-#include <Epetra_Map.h>
+#include <Epetra_LinearProblem.h>
+
+#include "EpetraExt_SolverMap_CrsMatrix.h"
+#include "EpetraExt_Transform.h"
+#include "Epetra_RowMatrix.h"
 
 class Epetra_MultiVector;
 

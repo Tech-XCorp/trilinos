@@ -9,23 +9,39 @@
 #ifndef _fei_MatrixGraph_Impl2_hpp_
 #define _fei_MatrixGraph_Impl2_hpp_
 
-#include <fei_macros.hpp>
-#include <fei_SharedPtr.hpp>
-#include <fei_VectorSpace.hpp>
-#include <fei_Reducer.hpp>
 #include <fei_Graph.hpp>
-#include <snl_fei_Constraint.hpp>
-#include <fei_Record.hpp>
 #include <fei_Logger.hpp>
-#include <fei_SparseRowGraph.hpp>
 #include <fei_MatrixGraph.hpp>
-
-#include <vector>
+#include <fei_Record.hpp>
+#include <fei_Reducer.hpp>
+#include <fei_SharedPtr.hpp>
+#include <fei_SparseRowGraph.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_macros.hpp>
+#include <snl_fei_Constraint.hpp>
+#include <stddef.h>
+#include <iosfwd>
 #include <map>
+#include <set>
+#include <vector>
+
+#include "fei_ConnectivityBlock.hpp"
+#include "fei_Pattern.hpp"
+#include "fei_mpi.h"
+
+namespace snl_fei {
+class RecordCollection;
+}  // namespace snl_fei
 
 namespace fei {
   class ConnectivityBlock;
   class Pattern;
+class CSVec;
+class FillableMat;
+class Graph;
+class ParameterSet;
+class Reducer;
+class SparseRowGraph;
 
 /** A container for the data that defines connectivity, and which will
     ultimately be used to generate a matrix graph.

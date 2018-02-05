@@ -41,16 +41,28 @@
 //@HEADER
 */
 
-#include "Epetra_ConfigDefs.h"
-#include "EpetraExt_PointToBlockDiagPermute.h"
-#include "EpetraExt_BlockDiagMatrix.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Import.h"
-#include "Epetra_Export.h"
-#include "Epetra_Comm.h"
-
+#include <math.h>
 #include <stdio.h>
-#include <fstream>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "EpetraExt_BlockDiagMatrix.h"
+#include "EpetraExt_PointToBlockDiagPermute.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Export.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+
+class Epetra_Distributor;
+class Epetra_OffsetIndex;
+class Epetra_SrcDistObject;
 
 #define MAX(x,y) ((x)>(y)?(x):(y))
 

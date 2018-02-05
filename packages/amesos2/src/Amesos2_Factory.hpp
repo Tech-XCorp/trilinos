@@ -82,15 +82,23 @@
 #ifndef AMESOS2_FACTORY_HPP
 #define AMESOS2_FACTORY_HPP
 
-#include "Amesos2_config.h"
+#include <iosfwd>
+#include <stdexcept>
+#include <string>
 
+#include "Amesos2_KLU2_decl.hpp"
+#include "Amesos2_MatrixTraits.hpp"
+#include "Amesos2_Meta.hpp"
+#include "Amesos2_MultiVecAdapter.hpp"
+#include "Amesos2_MultiVecAdapter_decl.hpp"
 #include "Amesos2_Solver.hpp"
 #include "Amesos2_SolverTraits.hpp"
-
-#include "Teuchos_ScalarTraits.hpp"
-#include "Amesos2_MultiVecAdapter.hpp"
-#include "Amesos2_MatrixTraits.hpp"
+#include "Amesos2_config.h"
 #include "Amesos2_ctassert.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_TestForException.hpp"
 
 #ifdef HAVE_AMESOS2_BASKER
 #include "Amesos2_Basker.hpp"

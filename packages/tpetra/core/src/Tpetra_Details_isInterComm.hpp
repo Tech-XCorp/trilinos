@@ -54,8 +54,12 @@
 /// should not rely on anything else in this file.  <i>Users</i> may
 /// not rely on <i>anything</i> in this file!
 
-#include "TpetraCore_config.h"
 #include "Teuchos_Comm.hpp"
+#include "TpetraCore_config.h"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace Tpetra {
 namespace Details {

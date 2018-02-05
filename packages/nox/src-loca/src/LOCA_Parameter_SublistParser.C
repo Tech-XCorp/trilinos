@@ -48,10 +48,17 @@
 // ************************************************************************
 //@HEADER
 
-#include "Teuchos_ParameterList.hpp"
-#include "LOCA_Parameter_SublistParser.H"
-#include "LOCA_GlobalData.H"
+#include <iosfwd>
+#include <map>
+#include <string>
+#include <utility>
+
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_Parameter_SublistParser.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 LOCA::Parameter::SublistParser::SublistParser(
           const Teuchos::RCP<LOCA::GlobalData>& global_data) :

@@ -43,6 +43,8 @@
 #ifndef IFPACK2_PARAMETERS_HPP
 #define IFPACK2_PARAMETERS_HPP
 
+#include <iosfwd>
+
 #include "Ifpack2_ConfigDefs.hpp"
 #include "Teuchos_ParameterList.hpp"
 

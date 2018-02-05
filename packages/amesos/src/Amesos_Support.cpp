@@ -26,8 +26,15 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Amesos_Klu.h"
+#include <type_traits>
+
 #include "Amesos_Support.h"
+#include "Amesos_Time.h"
+#include "EpetraExt_Reindex_CrsMatrix.h"
+#include "EpetraExt_Reindex_MultiVector.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 
 Amesos_StandardIndex::Amesos_StandardIndex( const Epetra_Map& OriginalMap ) 
 {

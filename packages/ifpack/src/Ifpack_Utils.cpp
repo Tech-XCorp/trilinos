@@ -40,17 +40,31 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_Utils.h"
-#include "Epetra_Comm.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_Map.h"
+#include <assert.h>
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <__bit_reference>
+#include <iostream>
+#include <stdexcept>
+#include <vector>
+
 #include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
 #include "Epetra_Import.h"
+#include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_Utils.h"
+#include "Teuchos_Assert.hpp"
 
 void Ifpack_PrintLine()
 {
@@ -371,7 +385,6 @@ static void print()
   printf("\n");
 }
 
-#include <iomanip>
 template<class T>
 static void print(const char str[], T val)
 {
@@ -410,10 +423,8 @@ static void print(const char str[], T one, T two, T three, bool equal = true)
   std::cout << endl;
 }
 
-//============================================================================
-#include "limits.h"
-#include "float.h"
 #include "Epetra_FECrsMatrix.h"
+#include "float.h"
 
 int Ifpack_Analyze(const Epetra_RowMatrix& A, const bool Cheap,
                    const int NumPDEEqns)

@@ -46,6 +46,22 @@
 #  include <Teuchos_DefaultSerialComm.hpp>
 #endif // HAVE_TPETRACORE_MPI
 #include <Kokkos_Core.hpp>
+#include <algorithm>
+#include <sstream>
+#include <stdexcept>
+#include <type_traits>
+
+#include "Kokkos_Core_fwd.hpp"
+#include "Kokkos_Serial.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace Tpetra {
   namespace { // (anonymous)

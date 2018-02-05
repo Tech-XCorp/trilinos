@@ -46,10 +46,13 @@
 #ifndef MUELU_MEMORY_HPP
 #define MUELU_MEMORY_HPP
 
+#include <iosfwd>
 #include <string>
 
-namespace Teuchos { class Time; }
-namespace Teuchos { template <typename Ordinal> class Comm; }
+namespace Teuchos {
+class Time;
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 
 namespace MueLu {
 

@@ -41,15 +41,12 @@
 // @HEADER
 */
 
-// Including this is the easy way to get access to all the Node types.
-#include "Kokkos_DefaultNode.hpp"
-#include "Tpetra_ConfigDefs.hpp"
-
 // Don't bother compiling anything, or even including anything else,
 // unless KokkosSerialWrapperNode is enabled.
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
+#include "TpetraCore_config.h"
 #if defined(HAVE_TPETRA_EXPLICIT_INSTANTIATION) && defined(HAVE_TPETRA_INST_SERIAL)
 
-#include "Tpetra_CrsGraph_decl.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 #include "Tpetra_CrsGraph_def.hpp"
 

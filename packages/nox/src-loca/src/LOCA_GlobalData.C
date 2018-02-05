@@ -48,12 +48,23 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_GlobalData.H"
-#include "NOX_Utils.H"
-#include "Teuchos_ParameterList.hpp"
+#include <type_traits>
+
 #include "LOCA_ErrorCheck.H"
 #include "LOCA_Factory.H"
+#include "LOCA_GlobalData.H"
 #include "LOCA_Parameter_SublistParser.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+namespace LOCA {
+namespace Abstract {
+class Factory;
+}  // namespace Abstract
+}  // namespace LOCA
 
 LOCA::GlobalData::GlobalData(
            const Teuchos::RCP<NOX::Utils>& loca_utils,

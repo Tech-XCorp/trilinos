@@ -48,12 +48,20 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Solver_SingleStep.H"    // class definition
+#include <ostream>
+#include <type_traits>
+
+#include "NOX_Abstract_Group.H"    // class definition
+#include "NOX_Abstract_Vector.H"
 #include "NOX_GlobalData.H"    // class definition
-#include "NOX_Abstract_Group.H"    // class definition
-#include "NOX_Abstract_Group.H"    // class definition
+#include "NOX_Solver_PrePostOperator.H"
+#include "NOX_Solver_SingleStep.H"    // class definition
 #include "NOX_Solver_SolverUtils.H"
+#include "NOX_StatusTest_Generic.H"
+#include "NOX_Utils.H"
 #include "Teuchos_ParameterList.hpp"  // class data element
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::Solver::SingleStep::
 SingleStep(const Teuchos::RCP<NOX::Abstract::Group>& xGrp,

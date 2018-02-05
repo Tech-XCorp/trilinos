@@ -41,9 +41,10 @@
 //@HEADER
 */
 
-#include "Tpetra_Details_libGemv.hpp"
-#include "KokkosKernels_config.h"
 #include <stdexcept>
+
+#include "TpetraCore_config.h"
+#include "Tpetra_Details_libGemv.hpp"
 
 // TpetraCore_config.h (included in Tpetra_Details_libGemv.hpp)
 // defines the TPETRACORE_F77_BLAS_MANGLE macro.  First argument is

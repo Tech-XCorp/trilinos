@@ -2,10 +2,11 @@
 /* See the file COPYRIGHT for a complete copyright notice, contact      */
 /* person and disclaimer.                                               */
 /* ******************************************************************** */
-#include "ml_include.h"
+#include <stdio.h>
+#include <__bit_reference>
+
 #include "ml_qr_fix.h"
 #include "ml_qr_fix.hpp"
-#include <stdio.h>
 
 /* -mb: make this global var for now - decide where to put in ML */
 static ML_qr_fix *QRFixStructure = NULL;

@@ -43,13 +43,14 @@
 #ifndef IFPACK_DIAG_PRECONDITIONER_H
 #define IFPACK_DIAG_PRECONDITIONER_H
 
-#include "Ifpack_ConfigDefs.h"
 #include "Epetra_Operator.h"
 #include "Epetra_Vector.h"
+#include "Ifpack_ConfigDefs.h"
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Map;
 class Epetra_MultiVector;
-class Epetra_Comm;
 
 //! Ifpack_DiagPreconditioner: a class for diagonal preconditioning.
 /*

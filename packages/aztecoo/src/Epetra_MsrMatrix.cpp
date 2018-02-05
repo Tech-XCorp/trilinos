@@ -42,12 +42,17 @@
 //@HEADER
 */
 
+#include <math.h>
+#include <ostream>
+
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_Import.h"
-#include "Epetra_Export.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
 #include "Epetra_MsrMatrix.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Vector.h"
+
 //==============================================================================
 Epetra_MsrMatrix::Epetra_MsrMatrix(int * proc_config, AZ_MATRIX * a_mat)
   : Epetra_Object("Epetra::MsrMatrix"),

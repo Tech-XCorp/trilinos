@@ -41,9 +41,11 @@
 #ifndef EPETRAEXT_VECTORIN_H
 #define EPETRAEXT_VECTORIN_H
 #include <EpetraExt_ConfigDefs.h>
+
+class Epetra_BlockMap;
 class Epetra_Comm;
 class Epetra_Vector;
-class Epetra_BlockMap;
+
 namespace EpetraExt {
  
   //! Constructs an Epetra_Vector object from a Matrix Market format file.

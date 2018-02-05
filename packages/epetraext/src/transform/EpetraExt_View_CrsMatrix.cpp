@@ -40,9 +40,13 @@
 //@HEADER
 
 #include <EpetraExt_View_CrsMatrix.h>
-
 #include <Epetra_CrsGraph.h>
 #include <Epetra_CrsMatrix.h>
+#include <assert.h>
+#include <iostream>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

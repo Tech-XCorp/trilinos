@@ -40,9 +40,12 @@
 //@HEADER
 
 #include "Ifpack_SerialTriDiSolver.h"
-#include "Ifpack_SerialTriDiMatrix.h"
-#include "Epetra_SerialDenseVector.h"
+
 #include <iostream>
+
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Ifpack_SerialTriDiMatrix.h"
 
 //=============================================================================
 Ifpack_SerialTriDiSolver::Ifpack_SerialTriDiSolver()

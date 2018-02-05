@@ -47,7 +47,14 @@
 //@HEADER
 */
 
+#include <iosfwd>
+
 #include "ProblemLOCAPrototype.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Vector;
 
 ProblemLOCAPrototype::ProblemLOCAPrototype()
 {

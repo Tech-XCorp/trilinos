@@ -42,10 +42,16 @@
 
 #ifndef IFPACK_EPETRA_CRSGRAPH_H
 #define IFPACK_EPETRA_CRSGRAPH_H
+#include <iosfwd>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_CrsGraph.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Graph.h"
-#include "Epetra_CrsGraph.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
 class Epetra_Comm;
 class Epetra_CrsGraph;

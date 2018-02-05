@@ -39,26 +39,34 @@
 // ***********************************************************************
 //@HEADER
 
-#include <Epetra_ConfigDefs.h>
 #include <EpetraExt_MapColoring.h>
-
-#include <EpetraExt_Transpose_CrsGraph.h>
 #include <EpetraExt_Overlap_CrsGraph.h>
-
-#include <Epetra_CrsGraph.h>
-#include <Epetra_GIDTypeVector.h>
-#include <Epetra_MapColoring.h>
-#include <Epetra_Map.h>
+#include <EpetraExt_Transpose_CrsGraph.h>
 #include <Epetra_Comm.h>
-#include <Epetra_Util.h>
-#include <Epetra_Import.h>
+#include <Epetra_ConfigDefs.h>
+#include <Epetra_CrsGraph.h>
 #include <Epetra_Export.h>
-
+#include <Epetra_GIDTypeVector.h>
+#include <Epetra_Import.h>
+#include <Epetra_Map.h>
+#include <Epetra_MapColoring.h>
 #include <Epetra_Time.h>
-
-#include <vector>
-#include <set>
+#include <Epetra_Util.h>
+#include <stdlib.h>
+#include <__tree>
+#include <algorithm>
+#include <iostream>
 #include <map>
+#include <set>
+#include <utility>
+#include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_Object.h"
 
 using std::vector;
 using std::set;

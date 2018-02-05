@@ -40,12 +40,15 @@
 //@HEADER
 
 #include <EpetraExt_Transpose_CrsGraph.h>
-
-#include <Epetra_Export.h>
 #include <Epetra_CrsGraph.h>
-#include <Epetra_Map.h>
-
+#include <Epetra_Export.h>
 #include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
+
+class Epetra_BlockMap;
 
 namespace EpetraExt {
 

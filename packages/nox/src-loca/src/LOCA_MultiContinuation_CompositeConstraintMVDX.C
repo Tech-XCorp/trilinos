@@ -48,9 +48,24 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_MultiContinuation_CompositeConstraintMVDX.H"
-#include "LOCA_GlobalData.H"
+#include <stddef.h>
+#include <iosfwd>
+#include <type_traits>
+#include <vector>
+
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "LOCA_MultiContinuation_CompositeConstraint.H"
+#include "LOCA_MultiContinuation_CompositeConstraintMVDX.H"
+#include "LOCA_MultiContinuation_ConstraintInterface.H"
+#include "LOCA_MultiContinuation_ConstraintInterfaceMVDX.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "Teuchos_BLAS_types.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 LOCA::MultiContinuation::CompositeConstraintMVDX::CompositeConstraintMVDX(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

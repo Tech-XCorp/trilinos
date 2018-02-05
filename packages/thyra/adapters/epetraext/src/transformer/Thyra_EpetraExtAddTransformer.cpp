@@ -40,29 +40,34 @@
 // @HEADER
 
 
-#include "Thyra_EpetraExtAddTransformer.hpp"
-#include "Thyra_AddedLinearOpBase.hpp"
-#include "Thyra_ScaledAdjointLinearOpBase.hpp"
-#include "Thyra_EpetraLinearOp.hpp"
-#include "Thyra_get_Epetra_Operator.hpp"
-#include "Thyra_EpetraThyraWrappers.hpp"
-#include "Thyra_DiagonalLinearOpBase.hpp"
-#include "Thyra_DefaultDiagonalLinearOp.hpp"
-#include "Thyra_IdentityLinearOpBase.hpp"
-#include "Thyra_VectorStdOps.hpp"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Epetra_SerialComm.h"
-#include "Epetra_Vector.h"
-#include "Epetra_CrsMatrix.h"
-#include "Teuchos_Assert.hpp"
-#include "EpetraExt_ConfigDefs.h"
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+
 #include "EpetraExt_MatrixMatrix.h"
-#include "EpetraExt_MMHelpers.h"
-#include "EpetraExt_Transpose_RowMatrix.h"
-
-
-#include "EpetraExt_RowMatrixOut.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_dyn_cast.hpp"
+#include "Thyra_AddedLinearOpBase.hpp"
+#include "Thyra_DefaultDiagonalLinearOp_decl.hpp"
+#include "Thyra_DiagonalLinearOpBase.hpp"
+#include "Thyra_EpetraExtAddTransformer.hpp"
+#include "Thyra_EpetraLinearOp.hpp"
+#include "Thyra_EpetraThyraWrappers.hpp"
+#include "Thyra_IdentityLinearOpBase.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_OperatorVectorTypes.hpp"
+#include "Thyra_ScaledAdjointLinearOpBase_decl.hpp"
+#include "Thyra_VectorSpaceBase_decl.hpp"
+#include "Thyra_VectorStdOps_decl.hpp"
+#include "Thyra_get_Epetra_Operator.hpp"
 
 
 namespace Thyra {
@@ -70,6 +75,8 @@ namespace Thyra {
 
 // Overridden from LinearOpTransformerBase
 
+
+template <class Scalar> class VectorBase;
 
 bool EpetraExtAddTransformer::isCompatible(
       const LinearOpBase<double> &op_in) const

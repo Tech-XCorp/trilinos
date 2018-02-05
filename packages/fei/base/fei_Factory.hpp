@@ -9,16 +9,20 @@
 #ifndef _fei_Factory_hpp_
 #define _fei_Factory_hpp_
 
+#include "FEI.hpp"
+#include "fei_LibraryWrapper.hpp"
+#include "fei_LinearSystem.hpp"
+#include "fei_Matrix.hpp"
+#include "fei_MatrixGraph.hpp"
+#include "fei_SharedPtr.hpp"
+#include "fei_Solver.hpp"
+#include "fei_Vector.hpp"
+#include "fei_VectorSpace.hpp"
 #include "fei_macros.hpp"
 #include "fei_mpi.h"
-#include "fei_VectorSpace.hpp"
-#include "fei_MatrixGraph.hpp"
-#include "fei_Matrix.hpp"
-#include "fei_Vector.hpp"
-#include "fei_LinearSystem.hpp"
-#include "fei_Solver.hpp"
-#include "fei_LibraryWrapper.hpp"
-#include "FEI.hpp"
+
+class FEI;
+class LibraryWrapper;
 
 namespace fei {
   //first, a forward declaration...

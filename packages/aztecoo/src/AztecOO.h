@@ -46,16 +46,22 @@
 #define _AZTECOO_H_
 
 #include <AztecOO_ConfigDefs.h>
+#include <iosfwd>
 
-class Epetra_Comm;
-class Epetra_BlockMap;
-class Epetra_MultiVector;
-class Epetra_RowMatrix;
+#include "AztecOO_StatusTest.h"
+#include "AztecOO_config.h"
 #include "Epetra_LinearProblem.h"
 #include "Epetra_Object.h"
 #include "Epetra_Vector.h"
-#include "AztecOO_StatusTest.h"
 #include "az_aztec.h"
+
+class AztecOO_StatusTest;
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_MultiVector;
+class Epetra_Operator;
+class Epetra_RowMatrix;
+class Epetra_Vector;
 
 #ifdef HAVE_AZTECOO_TEUCHOS
 //forward declaration for Teuchos::ParameterList

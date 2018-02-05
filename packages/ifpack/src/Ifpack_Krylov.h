@@ -43,14 +43,21 @@
 #ifndef IFPACK_KRYLOV_H
 #define IFPACK_KRYLOV_H
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Preconditioner.h"
-#include "Teuchos_RefCountPtr.hpp"
-#include "Ifpack_PointRelaxation.h"
-#include "Ifpack_BlockRelaxation.h"
-#include "Ifpack_SparseContainer.h"
-#include "Ifpack_DenseContainer.h"
+#include <iosfwd>
+
 #include "Ifpack_Amesos.h"
+#include "Ifpack_BlockRelaxation.h"
+#include "Ifpack_CondestType.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_DenseContainer.h"
+#include "Ifpack_PointRelaxation.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_SparseContainer.h"
+#include "Ifpack_config.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 #ifdef HAVE_IFPACK_AZTECOO
 #include "AztecOO.h"
 #endif
@@ -59,14 +66,14 @@ namespace Teuchos {
   class ParameterList;
 }
 
-class Epetra_MultiVector;
-class Epetra_Vector;
-class Epetra_Map;
 class Epetra_Comm;
-class Epetra_Time;
-class Epetra_Vector;
+class Epetra_Map;
+class Epetra_MultiVector;
 class Epetra_Operator;
 class Epetra_RowMatrix;
+class Epetra_Time;
+class Epetra_Vector;
+class Epetra_Vector;
 #ifdef HAVE_IFPACK_AZTECOO
 class AztecOO;
 #endif

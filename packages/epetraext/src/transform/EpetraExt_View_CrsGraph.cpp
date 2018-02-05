@@ -40,11 +40,14 @@
 //@HEADER
 
 #include <EpetraExt_View_CrsGraph.h>
-
-#include <Epetra_CrsGraph.h>
 #include <Epetra_BlockMap.h>
-
+#include <Epetra_CrsGraph.h>
+#include <assert.h>
+#include <iostream>
 #include <vector>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

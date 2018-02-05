@@ -40,10 +40,16 @@
 //@HEADER
 
 #include <EpetraExt_Scale_LinearProblem.h>
-
-#include <Epetra_LinearProblem.h>
 #include <Epetra_CrsMatrix.h>
+#include <Epetra_LinearProblem.h>
 #include <Epetra_Vector.h>
+#include <math.h>
+#include <iostream>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 
 namespace EpetraExt {
 

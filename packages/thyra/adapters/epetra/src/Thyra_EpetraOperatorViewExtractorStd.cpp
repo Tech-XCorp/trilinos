@@ -39,9 +39,16 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Thyra_EpetraOperatorViewExtractorStd.hpp"
+#include <stddef.h>
+#include <stdexcept>
+
+#include "Teuchos_Ptr.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Thyra_EpetraLinearOpBase.hpp"
-#include "Thyra_ScaledAdjointLinearOpBase.hpp"
+#include "Thyra_EpetraOperatorViewExtractorStd.hpp"
+#include "Thyra_LinearOpBase_decl.hpp"
+#include "Thyra_ScaledAdjointLinearOpBase_decl.hpp"
 
 class Epetra_Operator;
 

@@ -48,11 +48,24 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Random.H" //for NOX::Random
-#include "LOCA_Extended_Vector.H"  // Class definition
-#include "LOCA_Extended_MultiVector.H" // for createMultiVector
-#include "LOCA_GlobalData.H"
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+#include <vector>
+
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_Extended_MultiVector.H" // for createMultiVector
+#include "LOCA_Extended_Vector.H"  // Class definition
+#include "LOCA_GlobalData.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "NOX_Random.H" //for NOX::Random
+#include "Teuchos_DataAccess.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
 
 LOCA::Extended::Vector::Vector(
             const Teuchos::RCP<LOCA::GlobalData>& global_data,

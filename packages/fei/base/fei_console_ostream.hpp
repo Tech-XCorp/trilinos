@@ -9,8 +9,10 @@
 #ifndef _fei_console_ostream_hpp_
 #define _fei_console_ostream_hpp_
 
-#include "fei_macros.hpp"
+#include <iosfwd>
+
 #include "fei_iostream.hpp"
+#include "fei_macros.hpp"
 
 namespace fei {
 

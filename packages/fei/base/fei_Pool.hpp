@@ -9,9 +9,9 @@
 #ifndef _fei_Pool_hpp_
 #define _fei_Pool_hpp_
 
-#include "fei_macros.hpp"
-
 #include <cstdlib>
+
+#include "fei_macros.hpp"
 
 #ifndef FEI_ALLOC_CHUNK_SIZE_K
 #define FEI_ALLOC_CHUNK_SIZE_K 512

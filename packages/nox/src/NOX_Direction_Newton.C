@@ -48,14 +48,23 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Direction_Newton.H" // class definition
-#include "NOX_Common.H"
-#include "NOX_Abstract_Vector.H"
+#include <math.h>
+#include <sstream>
+#include <string>
+#include <type_traits>
+
 #include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Common.H"
+#include "NOX_Direction_Generic.H"
+#include "NOX_Direction_Newton.H" // class definition
+#include "NOX_GlobalData.H"
 #include "NOX_Solver_Generic.H"
 #include "NOX_Solver_LineSearchBased.H"
 #include "NOX_Utils.H"
-#include "NOX_GlobalData.H"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 
 NOX::Direction::Newton::

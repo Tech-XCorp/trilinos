@@ -40,29 +40,43 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
+#include <algorithm>
+#include <cmath>
+#include <complex>
 #include <iomanip>
-#include "Epetra_Operator.h"
-#include "Epetra_RowMatrix.h"
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_LinearProblem.h"
 #include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_Time.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Polynomial.h"
 #include "Ifpack_Utils.h"
-#include "Ifpack_Condest.h"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ENull.hpp"
 #include "Teuchos_LAPACK.hpp"
 #include "Teuchos_SerialDenseMatrix.hpp"
-#include <complex>
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "az_aztec.h"
 #ifdef HAVE_IFPACK_AZTECOO
-#include "Ifpack_DiagPreconditioner.h"
 #include "AztecOO.h"
+#include "Ifpack_DiagPreconditioner.h"
 #endif
 
 #ifdef HAVE_IFPACK_EPETRAEXT
-#include "Epetra_CrsMatrix.h"
 #include "EpetraExt_PointToBlockDiagPermute.h"
+#include "Epetra_CrsMatrix.h"
 #endif
 
 

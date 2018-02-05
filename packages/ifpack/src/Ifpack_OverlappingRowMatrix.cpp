@@ -40,29 +40,40 @@
 //@HEADER
 */
 
+#include <stddef.h>
+#include <algorithm>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_Comm.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Import.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_OverlappingRowMatrix.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Map.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_Comm.h"
-#include "Epetra_MultiVector.h"
+#include "Teuchos_ENull.hpp"
+
+class Epetra_Vector;
 
 #ifdef HAVE_IFPACK_PARALLEL_SUBDOMAIN_SOLVERS
+#include "EpetraExt_BlockMapOut.h"
+#include "EpetraExt_OperatorOut.h"
 #include "Epetra_IntVector.h"
 #include "Epetra_MpiComm.h"
-#include "Teuchos_Hashtable.hpp"
 #include "Teuchos_Array.hpp"
-#include "EpetraExt_OperatorOut.h"
-#include "EpetraExt_BlockMapOut.h"
+#include "Teuchos_Hashtable.hpp"
 #else
 # ifdef IFPACK_NODE_AWARE_CODE
+# include "EpetraExt_BlockMapOut.h"
+# include "EpetraExt_OperatorOut.h"
 # include "Epetra_IntVector.h"
 # include "Epetra_MpiComm.h"
-# include "Teuchos_Hashtable.hpp"
 # include "Teuchos_Array.hpp"
-# include "EpetraExt_OperatorOut.h"
-# include "EpetraExt_BlockMapOut.h"
+# include "Teuchos_Hashtable.hpp"
+
   extern int ML_NODE_ID;
   int IFPACK_NODE_ID;
 # endif

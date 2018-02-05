@@ -6,16 +6,24 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <snl_fei_SubdMsgHandler.hpp>
-#include <snl_fei_RecordCollection.hpp>
 #include <fei_SharedIDs.hpp>
 #include <fei_TemplateUtils.hpp>
+#include <snl_fei_RecordCollection.hpp>
+#include <snl_fei_SubdMsgHandler.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "snl_fei::SubdMsgHandler"
 #include <fei_ErrMacros.hpp>
+#include <__tree>
+#include <map>
+#include <ostream>
+#include <set>
+
+#include "fei_CommUtils.hpp"
+#include "fei_Record.hpp"
+#include "fei_iostream.hpp"
+#include "snl_fei_RaggedTable.hpp"
 
 snl_fei::SubdMsgHandler::SubdMsgHandler(RecordCollection* recordCollection,
 					fei::SharedIDs<int>* sharedIDTable,

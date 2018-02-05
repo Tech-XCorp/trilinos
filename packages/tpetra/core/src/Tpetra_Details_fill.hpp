@@ -54,8 +54,20 @@
 /// to find the actual interface that Tpetra developers are supposed
 /// to use.
 
-#include "Tpetra_Details_Blas.hpp"
+#include <stddef.h>
 #include <type_traits>
+
+#include "Kokkos_ExecPolicy.hpp"
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_View.hpp"
+#include "Tpetra_Details_Blas.hpp"
+#include "impl/Kokkos_OldMacros.hpp"
+#include "impl/Kokkos_ViewMapping.hpp"
+
+namespace Kokkos {
+class Serial;
+struct LayoutLeft;
+}  // namespace Kokkos
 
 namespace Tpetra {
 namespace Details {

@@ -42,11 +42,9 @@
 */
 
 #include "Tpetra_Details_mklGemm.hpp"
-#include "KokkosKernels_config.h"
 #ifdef HAVE_KOKKOSKERNELS_MKL
 #  include <mkl.h>
 #endif // HAVE_KOKKOSKERNELS_MKL
-#include <sstream>
 #include <stdexcept>
 
 namespace Tpetra {

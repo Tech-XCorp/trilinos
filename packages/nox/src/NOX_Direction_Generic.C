@@ -51,6 +51,16 @@
 #include "NOX_Direction_Generic.H"
 #include "NOX_Solver_LineSearchBased.H"
 
+namespace NOX {
+namespace Abstract {
+class Group;
+class Vector;
+}  // namespace Abstract
+namespace Solver {
+class Generic;
+}  // namespace Solver
+}  // namespace NOX
+
 
 bool NOX::Direction::Generic::compute(NOX::Abstract::Vector& d,
                       NOX::Abstract::Group& g,

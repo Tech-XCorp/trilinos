@@ -42,11 +42,9 @@
 */
 
 #include "Tpetra_Details_cublasGemv.hpp"
-#include "Kokkos_Macros.hpp"
 #ifdef KOKKOS_ENABLE_CUDA
 #  include <cublas.h>
 #endif // KOKKOS_ENABLE_CUDA
-#include <sstream>
 #include <stdexcept>
 
 namespace Tpetra {

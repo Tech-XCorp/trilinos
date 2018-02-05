@@ -40,9 +40,13 @@
 //@HEADER
 */
 
+#include <string.h>
+#include <ostream>
+#include <vector>
+
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_TriDiContainer.h"
-#include "Epetra_RowMatrix.h"
 
 //==============================================================================
 int Ifpack_TriDiContainer::NumRows() const

@@ -48,8 +48,12 @@
 // ************************************************************************
 //@HEADER
 
+#include <stddef.h>
+
 #include "LOCA_Extended_MultiAbstractGroup.H"
 #include "LOCA_MultiContinuation_AbstractGroup.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 Teuchos::RCP<const LOCA::MultiContinuation::AbstractGroup>
 LOCA::Extended::MultiAbstractGroup::getBaseLevelUnderlyingGroup() const

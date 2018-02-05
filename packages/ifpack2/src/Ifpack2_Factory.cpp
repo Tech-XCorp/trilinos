@@ -41,12 +41,13 @@
 //@HEADER
 */
 
-#include "Ifpack2_ConfigDefs.hpp"
-#include "Ifpack2_Factory_decl.hpp"
+#include <ostream>
+#include <stdexcept>
+#include <string>
 
+#include "Ifpack2_config.h"
+#include "Teuchos_TestForException.hpp"
 #ifdef HAVE_IFPACK2_EXPLICIT_INSTANTIATION
-#  include "Ifpack2_Factory_def.hpp"
-#  include "Ifpack2_ExplicitInstantiationHelpers.hpp"
 #  include "Ifpack2_ETIHelperMacros.h"
 #endif // HAVE_IFPACK2_EXPLICIT_INSTANTIATION
 

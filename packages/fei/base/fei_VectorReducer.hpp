@@ -9,15 +9,22 @@
 #ifndef _fei_VectorReducer_hpp_
 #define _fei_VectorReducer_hpp_
 
-#include <fei_iosfwd.hpp>
-#include <fei_VectorSpace.hpp>
 #include <fei_Reducer.hpp>
 #include <fei_Vector.hpp>
+#include <fei_VectorSpace.hpp>
+#include <fei_iosfwd.hpp>
 
 #undef fei_file
 #define fei_file "fei_VectorReducer.hpp"
 
 #include <fei_ErrMacros.hpp>
+
+#include "fei_SharedPtr.hpp"
+#include "fei_iostream.hpp"
+
+namespace fei {
+class Reducer;
+}  // namespace fei
 
 namespace fei {
 

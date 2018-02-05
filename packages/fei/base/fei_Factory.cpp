@@ -6,15 +6,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_Factory.hpp>
-#include <fei_LogManager.hpp>
-#include <fei_LogFile.hpp>
-#include <fei_ParameterSet.hpp>
-
-#include <FEI_Implementation.hpp>
 #include <fei_FEI_Impl.hpp>
+#include <fei_Factory.hpp>
+#include <fei_LogFile.hpp>
+#include <fei_LogManager.hpp>
+#include <fei_ParameterSet.hpp>
+#include <fei_macros.hpp>
+#include <stddef.h>
+#include <iosfwd>
+
+#include "FEI.hpp"
+#include "fei_LibraryWrapper.hpp"
+#include "fei_Param.hpp"
+#include "fei_fwd.hpp"
+#include "fei_version.h"
 
 //----------------------------------------------------------------------------
 fei::Factory::Factory(MPI_Comm comm)

@@ -43,8 +43,10 @@
 // ***********************************************************************
 //
 // @HEADER
+#include "KokkosCompat_ClassicNodeAPI_Wrapper.hpp"
+#include "Teuchos_ENull.hpp"
 #include "Xpetra_EpetraExport.hpp"
-#include "Xpetra_Exceptions.hpp"
+#include "Xpetra_config.hpp"
 
 namespace Xpetra {
 

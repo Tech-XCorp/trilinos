@@ -9,14 +9,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-#include <snl_fei_RaggedTable.hpp>
 #include <fei_ctg_set.hpp>
+#include <fei_macros.hpp>
 #include <snl_fei_MapContig.hpp>
+#include <snl_fei_RaggedTable.hpp>
+#include <stddef.h>
+#include <utility>
+
+#include "fei_Pool_alloc.hpp"
 
 namespace snl_fei {
 
 /** specialization for MapContig<fei::ctg_set<int> > */
+template <typename MAP_TYPE, typename SET_TYPE> class RaggedTable;
+
 template<>
 class RaggedTable<MapContig<fei::ctg_set<int>*>,fei::ctg_set<int> >
   : public fei::IndexTable {

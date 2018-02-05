@@ -43,12 +43,20 @@
 #ifndef _IFPACK_ILUK_GRAPH_H_
 #define _IFPACK_ILUK_GRAPH_H_
 
-#include "Ifpack_ConfigDefs.h"
-#include "Epetra_Object.h"
+#include <iosfwd>
+
+#include "Epetra_BlockMap.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_Import.h"
-
+#include "Epetra_Object.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_Import;
 
 namespace Teuchos {
   class ParameterList;

@@ -40,17 +40,20 @@
 //@HEADER
 
 #include <EpetraExt_LPTrans_From_GraphTrans.h>
-
+#include <Epetra_CrsGraph.h>
+#include <Epetra_CrsMatrix.h>
 #include <Epetra_Export.h>
 #include <Epetra_Import.h>
 #include <Epetra_LinearProblem.h>
-#include <Epetra_CrsGraph.h>
-#include <Epetra_CrsMatrix.h>
-#include <Epetra_MultiVector.h>
-#include <Epetra_Vector.h>
-#include <Epetra_IntVector.h>
 #include <Epetra_Map.h>
-#include <Epetra_Comm.h>
+#include <Epetra_MultiVector.h>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_RowMatrix.h"
+
+class Epetra_BlockMap;
 
 namespace EpetraExt {
 

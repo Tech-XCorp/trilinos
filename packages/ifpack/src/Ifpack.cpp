@@ -39,21 +39,32 @@
 // ***********************************************************************
 //@HEADER
 */
-#include "Ifpack_ConfigDefs.h"
+#include <stdlib.h>
+#include <iomanip>
+#include <ostream>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_RowMatrix.h"
 #include "Ifpack.h"
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_PointRelaxation.h"
+#include "Ifpack_AdditiveSchwarz.h"
 #include "Ifpack_BlockRelaxation.h"
+#include "Ifpack_DenseContainer.h"
 #include "Ifpack_IC.h"
 #include "Ifpack_ICT.h"
 #include "Ifpack_ILU.h"
-#include "Ifpack_SILU.h"
 #include "Ifpack_ILUT.h"
-#include "Ifpack_SPARSKIT.h"
-#include "Ifpack_AdditiveSchwarz.h"
-#include "Ifpack_DenseContainer.h"
-#include "Ifpack_TriDiContainer.h"
+#include "Ifpack_PointRelaxation.h"
 #include "Ifpack_SparseContainer.h"
+#include "Ifpack_TriDiContainer.h"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_any.hpp"
 #ifdef HAVE_IFPACK_AMESOS
 #include "Ifpack_Amesos.h"
 #endif
@@ -68,14 +79,14 @@
 #endif
 
 #include "Ifpack_Chebyshev.h"
-#include "Ifpack_Polynomial.h"
-#include "Ifpack_Krylov.h"
 #include "Ifpack_IHSS.h"
+#include "Ifpack_Krylov.h"
+#include "Ifpack_Polynomial.h"
 #include "Ifpack_SORa.h"
-
 #include "Teuchos_CommandLineProcessor.hpp"
 #include "Teuchos_StringToIntMap.hpp"
-#include "Epetra_CrsMatrix.h"
+
+class Ifpack_Preconditioner;
 
 
 namespace {

@@ -43,17 +43,26 @@
 #ifndef IFPACK_LINEPARTITIONER_H
 #define IFPACK_LINEPARTITIONER_H
 
+#include <sstream>
+#include <string>
+#include <type_traits>
+
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Partitioner.h"
-#include "Ifpack_OverlappingPartitioner.h"
 #include "Ifpack_Graph_Epetra_RowMatrix.h"
+#include "Ifpack_OverlappingPartitioner.h"
+#include "Ifpack_Partitioner.h"
 #include "Teuchos_ParameterList.hpp"
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Utils.hpp"
+
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
 class Epetra_RowMatrix;
+class Ifpack_Graph;
 
 /* \brief Ifpack_LinePartitioner: A class to define partitions into a set of lines.
 

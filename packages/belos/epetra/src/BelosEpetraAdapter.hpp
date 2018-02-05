@@ -46,16 +46,37 @@
     \brief Provides several interfaces between Belos virtual classes and Epetra concrete classes.
 */
 
-#include "Epetra_MultiVector.h"
-#include "Epetra_Operator.h"
-#include "Epetra_Map.h"
-#include "Epetra_LocalMap.h"
-#include "Teuchos_SerialDenseMatrix.hpp"
+#include <stddef.h>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+#include <vector>
 
 #include "BelosConfigDefs.hpp"
 #include "BelosMultiVec.hpp"
 #include "BelosOperator.hpp"
 #include "BelosTypes.hpp"
+#include "Epetra_BlockMap.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_LocalMap.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_Operator.h"
+#include "TeuchosCore_config.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_Range1D.hpp"
+#include "Teuchos_ScalarTraits.hpp"
+#include "Teuchos_SerialDenseMatrix.hpp"
+#include "Teuchos_TestForException.hpp"
+
+class Epetra_Comm;
+class Epetra_Map;
+namespace Belos {
+template <class ScalarType, class MV, class OP> class OperatorTraits;
+template <class ScalarType, class MV> class MultiVecTraits;
+}  // namespace Belos
 
 #ifdef HAVE_BELOS_TSQR
 // This header file actually lives in the Tpetra package.

@@ -41,7 +41,12 @@
 // @HEADER
 */
 
+#include "Epetra_Comm.h"
 #include "Tpetra_EpetraRowMatrix.hpp"
+
+namespace Teuchos {
+template <typename Ordinal> class Comm;
+}  // namespace Teuchos
 #if defined(HAVE_TPETRA_EPETRA)
 
 #ifdef HAVE_TPETRACORE_MPI

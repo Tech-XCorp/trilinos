@@ -44,6 +44,8 @@
 #ifndef TPETRA_DETAILS_HASH_HPP
 #define TPETRA_DETAILS_HASH_HPP
 
+#include "Kokkos_Macros.hpp"
+#include "Kokkos_View.hpp"
 #include "Tpetra_ConfigDefs.hpp"
 #ifdef TPETRA_USE_MURMUR_HASH
 #  include <Kokkos_Functional.hpp> // hash function used by Kokkos::UnorderedMap

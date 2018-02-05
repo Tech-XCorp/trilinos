@@ -53,6 +53,13 @@
 
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_RCP.hpp>
+#include <iosfwd>
+
+#include "Teuchos_RCPDecl.hpp"
+
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 namespace Amesos2 {
 

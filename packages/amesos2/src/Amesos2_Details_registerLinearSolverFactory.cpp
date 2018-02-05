@@ -41,11 +41,11 @@
 //
 // @HEADER
 
+#include "Amesos2_Details_LinearSolverFactory_decl.hpp"
 #include "Amesos2_Details_registerLinearSolverFactory.hpp"
-#include "Amesos2_Details_LinearSolverFactory.hpp"
-// Amesos2 has a required dependency on Tpetra, so we don't need to
-// protect inclusion of Tpetra header files with a macro.
-#include "Tpetra_MultiVector.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "TpetraCore_config.h"
+#include "Tpetra_MultiVector_decl.hpp"
 #include "Tpetra_Operator.hpp"
 
 #ifdef HAVE_TPETRA_INST_INT_INT

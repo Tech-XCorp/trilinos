@@ -42,11 +42,16 @@
 #ifndef EPETRAEXT_BLOCKUTILITY_H
 #define EPETRAEXT_BLOCKUTILITY_H
 
-#include <vector>
-
 #include <Epetra_ConfigDefs.h>
 #include <Epetra_CrsGraph.h>
 #include <Epetra_RowMatrix.h>
+#include <vector>
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_CrsGraph;
+class Epetra_Map;
+class Epetra_RowMatrix;
 
 //! EpetraExt::BlockUtility: A class of utilities for constructing block data structs
 

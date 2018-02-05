@@ -48,8 +48,13 @@
 // ************************************************************************
 //@HEADER
 
-#include "LOCA_Parameter_Library.H"
+#include <__tree>
+#include <iosfwd>
+#include <map>
+#include <utility>
+
 #include "LOCA_Parameter_Entry.H"
+#include "LOCA_Parameter_Library.H"
 
 LOCA::Parameter::Library::~Library() {
   ParameterMapIterator paramIt;

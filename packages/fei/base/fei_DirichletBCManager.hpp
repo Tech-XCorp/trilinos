@@ -9,15 +9,20 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_DirichletBCRecord.hpp>
 #include <SNL_FEI_Structure.hpp>
-#include <fei_VectorSpace.hpp>
-
+#include <fei_DirichletBCRecord.hpp>
 #include <fei_Pool_alloc.hpp>
+#include <fei_VectorSpace.hpp>
+#include <stddef.h>
+#include <__functional_base>
 #include <map>
+#include <utility>
 
-class NodeDatabase;
+#include "fei_SharedPtr.hpp"
+
 class EqnBuffer;
+class NodeDatabase;
+class SNL_FEI_Structure;
 
 namespace fei {
 class Matrix;

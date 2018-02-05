@@ -39,16 +39,10 @@
 // ***********************************************************************
 //@HEADER
 #include "EpetraExt_VectorOut.h"
+
 #include "EpetraExt_MultiVectorOut.h"
-#include "EpetraExt_mmio.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Vector.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_Import.h"
-#include "Epetra_CrsMatrix.h"
 
 using namespace EpetraExt;
 namespace EpetraExt {

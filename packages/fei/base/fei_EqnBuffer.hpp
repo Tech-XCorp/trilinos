@@ -9,9 +9,14 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
+#include <iosfwd>
+#include <vector>
+
 #include "fei_fwd.hpp"
 
-#include <vector>
+namespace fei {
+class CSVec;
+}  // namespace fei
 
 /**
 A class for holding equation data, along with optional RHS coefficients for the

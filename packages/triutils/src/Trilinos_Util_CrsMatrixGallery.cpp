@@ -39,32 +39,39 @@
 // ***********************************************************************
 // @HEADER
 
-#include "Epetra_config.h"
 #ifdef HAVE_MPI
-#include "mpi.h"
 #include "Epetra_MpiComm.h"
+#include "mpi.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
-#include "Epetra_Map.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Vector.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_Export.h"
-#include "Epetra_LinearProblem.h"
-#include "Epetra_Time.h"
-#include "Epetra_Util.h"
-#include "Epetra_IntSerialDenseVector.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Teuchos_TestForException.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Trilinos_Util.h"
+#include <assert.h>
+#include <stddef.h>
+#include <cmath>
+#include <stdexcept>
 #include <string>
 
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Export.h"
+#include "Epetra_IntSerialDenseVector.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
+#include "Epetra_Time.h"
+#include "Epetra_Util.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_Assert.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Trilinos_Util.h"
 #include "Trilinos_Util_CommandLineParser.h"
 #include "Trilinos_Util_CrsMatrixGallery.h"
+#include "Trilinos_Util_ReadMatrixMarket2Epetra.h"
 
 using namespace std;
 
@@ -3470,7 +3477,6 @@ GetCartesianCoordinates(
 
 
 #include <iostream>
-#include <fstream>
 
 // ================================================ ====== ==== ==== == =
 int Trilinos_Util::CrsMatrixGallery::WriteMatrix( const string & FileName, const bool UseSparse )

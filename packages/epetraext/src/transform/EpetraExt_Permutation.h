@@ -42,10 +42,19 @@
 #ifndef EpetraExt_PERMUTATION_H
 #define EpetraExt_PERMUTATION_H
 
+#include <EpetraExt_Transform.h>
 #include <Epetra_ConfigDefs.h>
 #include <Epetra_GIDTypeVector.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ostream>
 
-#include <EpetraExt_Transform.h>
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_MultiVector.h"
+
+class Epetra_BlockMap;
 
 namespace EpetraExt {
 

@@ -47,14 +47,35 @@
 //@HEADER
 */
 
-#include "NOX_Epetra_FiniteDifferenceColoringWithUpdate.H"
-#include "Epetra_MapColoring.h"
-#include "Epetra_CrsMatrix.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <cmath>
+#include <iostream>
 
+#include "Epetra_CombineMode.h"
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsMatrix.h"
 #include "Epetra_Map.h"
-#include "EpetraExt_VectorOut.h"
-#include "EpetraExt_RowMatrixOut.h"
+#include "Epetra_MapColoring.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
+#include "NOX_Epetra_FiniteDifference.H"
+#include "NOX_Epetra_FiniteDifferenceColoringWithUpdate.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_CrsGraph;
+namespace NOX {
+namespace Epetra {
+class Vector;
+}  // namespace Epetra
+}  // namespace NOX
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 using namespace NOX;
 using namespace NOX::Epetra;

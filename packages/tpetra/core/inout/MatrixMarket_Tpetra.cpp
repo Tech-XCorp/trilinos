@@ -39,8 +39,7 @@
 // ************************************************************************
 // @HEADER
 
-#include <Tpetra_ConfigDefs.hpp>
-
+#include "TpetraCore_config.h"
 #ifdef HAVE_TPETRA_EXPLICIT_INSTANTIATION
 #  include <MatrixMarket_Tpetra.hpp>
 #endif // HAVE_TPETRA_EXPLICIT_INSTANTIATION

@@ -40,10 +40,13 @@
 //@HEADER
 
 #include <EpetraExt_Overlap_CrsGraph.h>
-
-#include <Epetra_Import.h>
 #include <Epetra_CrsGraph.h>
-#include <Epetra_Map.h>
+#include <Epetra_Import.h>
+
+#include "EpetraExt_Transform.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CombineMode.h"
+#include "Epetra_DataAccess.h"
 
 namespace EpetraExt {
 

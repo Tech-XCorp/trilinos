@@ -48,8 +48,14 @@
 // ************************************************************************
 //@HEADER
 
-#include "NOX_Epetra_VectorSpace_ScaledL2.H"
+#include <type_traits>
+
 #include "Epetra_Vector.h"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_Scaling.H"
+#include "NOX_Epetra_VectorSpace_ScaledL2.H"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 NOX::Epetra::VectorSpaceScaledL2::
 VectorSpaceScaledL2(const Teuchos::RCP<NOX::Epetra::Scaling>& s,

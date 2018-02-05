@@ -39,6 +39,9 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdio.h>
+
+#include "Epetra_ConfigDefs.h"
 #include "Trilinos_Util.h"
 
 // read ASCII data file:

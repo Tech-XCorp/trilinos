@@ -6,13 +6,11 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_macros.hpp"
-
-#include "fei_Pool_alloc.hpp"
-#include "fei_Pool.hpp"
-
-#include <cstdlib>
 #include <map>
+#include <utility>
+
+#include "fei_Pool.hpp"
+#include "fei_Pool_alloc.hpp"
 
 struct fei_map_holder {
   std::map<size_t,fei_Pool*> fei_mem_pools;

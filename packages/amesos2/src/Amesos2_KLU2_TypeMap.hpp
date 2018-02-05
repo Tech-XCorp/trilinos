@@ -65,6 +65,10 @@
 
 #include "Amesos2_TypeMap.hpp"
 
+namespace Amesos2 {
+template <template <class , class > class ConcreteSolver, typename Scalar> struct TypeMap;
+}  // namespace Amesos2
+
 
 /* The KLU2 comples headers file only need to be included if
    complex has been enabled in Teuchos.  In addition we only need to

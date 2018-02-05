@@ -6,12 +6,17 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
 #include <snl_fei_RaggedTable_specialize.hpp>
+#include <stdexcept>
+
+#include "fei_ctg_set.hpp"
+#include "snl_fei_MapContig.hpp"
 
 namespace snl_fei {
 
 /** specialization for MapContig<fei::ctg_set<int>*> */
+template <typename MAP_TYPE, typename SET_TYPE> class RaggedTable;
+
 RaggedTable<MapContig<fei::ctg_set<int>*>,fei::ctg_set<int> >::RaggedTable(int firstKey, int lastKey)
   : map_(firstKey, lastKey),
     poolAllocatorSet_(),

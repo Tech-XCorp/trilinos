@@ -6,33 +6,43 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <limits>
-#include <cmath>
-
-#include <fei_defs.h>
-
 #include <fei_CommUtils.hpp>
-#include <fei_TemplateUtils.hpp>
+#include <fei_defs.h>
+#include <fei_macros.hpp>
 #include <snl_fei_Constraint.hpp>
+#include <stdlib.h>
+#include <__tree>
+#include <algorithm>
+#include <cmath>
+#include <limits>
+#include <map>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
+
+#include "fei_ArrayUtils.hpp"
+#include "fei_FieldDofMap.hpp"
+#include "fei_NodeDescriptor.hpp"
+#include "fei_console_ostream.hpp"
+#include "fei_iosfwd.hpp"
+#include "fei_iostream.hpp"
+
+class EqnBuffer;
+class ProcEqns;
+
 typedef snl_fei::Constraint<GlobalID> ConstraintType;
 
-#include <fei_LibraryWrapper.hpp>
-#include <SNL_FEI_Structure.hpp>
-#include <fei_FiniteElementData.hpp>
-#include <fei_Lookup.hpp>
 #include <FEI_Implementation.hpp>
-#include <fei_EqnCommMgr.hpp>
-#include <fei_EqnBuffer.hpp>
-#include <fei_NodeDatabase.hpp>
-#include <fei_NodeCommMgr.hpp>
-#include <fei_ProcEqns.hpp>
+#include <SNL_FEI_Structure.hpp>
 #include <fei_BlockDescriptor.hpp>
 #include <fei_ConnectivityTable.hpp>
-#include <snl_fei_Utils.hpp>
-
+#include <fei_EqnCommMgr.hpp>
 #include <fei_FEDataFilter.hpp>
+#include <fei_FiniteElementData.hpp>
+#include <fei_LibraryWrapper.hpp>
+#include <fei_NodeCommMgr.hpp>
+#include <fei_NodeDatabase.hpp>
+#include <snl_fei_Utils.hpp>
 
 #undef fei_file
 #define fei_file "FEDataFilter.cpp"

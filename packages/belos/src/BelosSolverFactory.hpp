@@ -42,37 +42,49 @@
 #ifndef __Belos_SolverFactory_hpp
 #define __Belos_SolverFactory_hpp
 
-#include <BelosConfigDefs.hpp>
-#include <BelosOutputManager.hpp>
-#include <BelosSolverManager.hpp>
-
+#include <BelosBiCGStabSolMgr.hpp>
 #include <BelosBlockCGSolMgr.hpp>
 #include <BelosBlockGmresSolMgr.hpp>
+#include <BelosConfigDefs.hpp>
+#include <BelosFixedPointSolMgr.hpp>
 #include <BelosGCRODRSolMgr.hpp>
+#include <BelosGmresPolySolMgr.hpp>
+#include <BelosLSQRSolMgr.hpp>
+#include <BelosMinresSolMgr.hpp>
+#include <BelosOutputManager.hpp>
+#include <BelosPCPGSolMgr.hpp>
 #include <BelosPseudoBlockCGSolMgr.hpp>
 #include <BelosPseudoBlockGmresSolMgr.hpp>
 #include <BelosPseudoBlockStochasticCGSolMgr.hpp>
-#include <BelosLSQRSolMgr.hpp>
-#include <BelosMinresSolMgr.hpp>
-#include <BelosGmresPolySolMgr.hpp>
-#include <BelosPCPGSolMgr.hpp>
-#include <BelosRCGSolMgr.hpp>
-#include <BelosTFQMRSolMgr.hpp>
 #include <BelosPseudoBlockTFQMRSolMgr.hpp>
-#include <BelosFixedPointSolMgr.hpp>
-#include <BelosBiCGStabSolMgr.hpp>
-
-#include "Belos_Details_EBelosSolverType.hpp"
-#include "BelosCustomSolverFactory.hpp"
-
+#include <BelosRCGSolMgr.hpp>
+#include <BelosSolverManager.hpp>
+#include <BelosTFQMRSolMgr.hpp>
 #include <Teuchos_Describable.hpp>
 #include <Teuchos_StandardCatchMacros.hpp>
 #include <Teuchos_TypeNameTraits.hpp>
-
+#include <stddef.h>
 #include <map>
 #include <sstream>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
+
+#include "BelosCustomSolverFactory.hpp"
+#include "Belos_Details_EBelosSolverType.hpp"
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_CompilerCodeTweakMacros.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+#include "Teuchos_VerbosityLevel.hpp"
 
 namespace Belos {
 namespace Impl {

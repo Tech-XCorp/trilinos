@@ -29,24 +29,39 @@
 #ifndef AMESOS_LAPACK_H
 #define AMESOS_LAPACK_H
 
-#include "Amesos_ConfigDefs.h"
 #include "Amesos_BaseSolver.h"
-#include "Amesos_NoCopiable.h"
-#include "Amesos_Utils.h"
-#include "Amesos_Time.h"
-#include "Amesos_Status.h"
+#include "Amesos_ConfigDefs.h"
 #include "Amesos_Control.h"
+#include "Amesos_NoCopiable.h"
+#include "Amesos_Status.h"
+#include "Amesos_Time.h"
+#include "Amesos_Utils.h"
 #include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_SerialDenseMatrix.h"
-#include "Epetra_SerialDenseVector.h"
-#include "Epetra_SerialDenseSolver.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_Import.h"
 #include "Epetra_Export.h"
-class Epetra_RowMatrix;
-class Epetra_LinearProblem;
+#include "Epetra_Import.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_SerialDenseMatrix.h"
+#include "Epetra_SerialDenseSolver.h"
+#include "Epetra_SerialDenseVector.h"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Export;
+class Epetra_Import;
+class Epetra_LinearProblem;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_Vector;
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 //! Amesos_Lapack: an interface to LAPACK.
 /*!

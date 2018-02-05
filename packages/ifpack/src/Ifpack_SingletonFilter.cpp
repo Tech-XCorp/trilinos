@@ -40,15 +40,19 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_SingletonFilter.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_RowMatrix.h"
+#include <assert.h>
+#include <stdlib.h>
+#include <iostream>
+#include <type_traits>
+
 #include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_Map.h"
 #include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 #include "Epetra_Vector.h"
-#include "Epetra_Import.h"
+#include "Ifpack_ConfigDefs.h"
+#include "Ifpack_SingletonFilter.h"
 
 //==============================================================================
 Ifpack_SingletonFilter::Ifpack_SingletonFilter(const Teuchos::RefCountPtr<Epetra_RowMatrix>& Matrix) :

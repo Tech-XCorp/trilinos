@@ -41,9 +41,13 @@
 //@HEADER
 
 #include "AztecOO_StatusTestResNorm.h"
+
+#include <ostream>
+
+#include "Epetra_ConfigDefs.h"
 #include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 #include "Epetra_Operator.h"
+#include "Epetra_Vector.h"
 
 AztecOO_StatusTestResNorm::AztecOO_StatusTestResNorm(const Epetra_Operator & Operator, 
 						     const Epetra_Vector & LHS, const Epetra_Vector & RHS,

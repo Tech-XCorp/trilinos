@@ -47,15 +47,18 @@
 #ifndef MUELU_ML2MUELUPARAMETERTRANSLATOR_HPP
 #define MUELU_ML2MUELUPARAMETERTRANSLATOR_HPP
 
-#include <functional>
-#include <cctype>
-
-#include <Teuchos_ParameterList.hpp>
-#include <Teuchos_XMLParameterListCoreHelpers.hpp>
-
 #include <MueLu_Exceptions.hpp>
 #include <MueLu_MasterList.hpp>
 #include <MueLu_ParameterListUtils.hpp>
+#include <Teuchos_ParameterList.hpp>
+#include <Teuchos_XMLParameterListCoreHelpers.hpp>
+#include <algorithm>
+#include <cctype>
+#include <functional>
+#include <iosfwd>
+
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 
 namespace MueLu {
 

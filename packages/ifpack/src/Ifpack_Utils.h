@@ -43,16 +43,20 @@
 #ifndef IFPACK_UTILS_H
 #define IFPACK_UTILS_H
 
-#include "Ifpack_ConfigDefs.h"
+#include <iosfwd>
+
 #include "Epetra_Comm.h"
+#include "Ifpack_ConfigDefs.h"
+
+class Epetra_Comm;
 #if !( defined(_WIN32) )
 #  include "unistd.h" // Not a standard header file!
 #endif
-class Epetra_RowMatrix;
-class Epetra_CrsMatrix;
 class Epetra_CrsGraph;
-class Epetra_RowMatrix;
+class Epetra_CrsMatrix;
 class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Epetra_RowMatrix;
 class Epetra_Vector;
 
 /*! \file Ifpack_Utils.h

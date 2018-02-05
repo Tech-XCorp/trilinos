@@ -6,17 +6,16 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
-#include <fei_defs.h>
-
-#include <fei_Pattern.hpp>
-
 #include <fei_ConnectivityBlock.hpp>
+#include <fei_Pattern.hpp>
+#include <stddef.h>
 
 #undef fei_file
 #define fei_file "fei_ConnectivityBlock.cpp"
 #include <fei_ErrMacros.hpp>
+#include <__functional_base>
+#include <__tree>
+#include <utility>
 
 //----------------------------------------------------------------------------
 fei::ConnectivityBlock::ConnectivityBlock(int blockID,

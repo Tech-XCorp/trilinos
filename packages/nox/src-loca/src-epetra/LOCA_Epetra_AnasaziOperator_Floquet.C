@@ -45,11 +45,33 @@
 // ************************************************************************
 //@HEADER
 
+#include <iostream>
+#include <memory>
+#include <type_traits>
+
 #include "LOCA_Epetra_AnasaziOperator_Floquet.H"
-#include "Teuchos_ParameterList.hpp"
-#include "Teuchos_RCPDecl.hpp"
-#include "LOCA_GlobalData.H"
+#include "LOCA_Epetra_Interface_xyzt.H"
 #include "LOCA_ErrorCheck.H"
+#include "LOCA_GlobalData.H"
+#include "NOX_Abstract_Group.H"
+#include "NOX_Abstract_MultiVector.H"
+#include "NOX_Abstract_Vector.H"
+#include "NOX_Epetra_Group.H"
+#include "NOX_Epetra_Interface_Required.H"
+#include "NOX_Epetra_Vector.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+
+class Epetra_Vector;
+namespace LOCA {
+namespace Parameter {
+class SublistParser;
+}  // namespace Parameter
+}  // namespace LOCA
+namespace Teuchos {
+class ParameterList;
+}  // namespace Teuchos
 
 LOCA::Epetra::AnasaziOperator::Floquet::Floquet(
     const Teuchos::RCP<LOCA::GlobalData>& global_data,

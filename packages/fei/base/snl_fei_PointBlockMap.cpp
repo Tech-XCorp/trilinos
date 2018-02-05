@@ -6,10 +6,9 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include <fei_macros.hpp>
-
 #include <snl_fei_PointBlockMap.hpp>
-#include <fei_ctg_set.hpp>
+#include <stddef.h>
+
 #undef fei_file
 #define fei_file "snl_fei_PointBlockMap.cpp"
 #include <fei_ErrMacros.hpp>

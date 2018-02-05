@@ -43,11 +43,17 @@
 #ifndef IFPACK_GRAPH_EPETRA_ROWMATRIX_H
 #define IFPACK_GRAPH_EPETRA_ROWMATRIX_H
 
+#include <iosfwd>
+#include <vector>
+
+#include "Epetra_Map.h"
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Graph.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_Map.h"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
 #include "Teuchos_RefCountPtr.hpp"
+#include "Teuchos_RefCountPtrDecl.hpp"
 
 class Epetra_Comm;
 class Epetra_RowMatrix;

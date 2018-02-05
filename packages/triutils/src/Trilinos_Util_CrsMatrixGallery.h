@@ -42,20 +42,29 @@
 #ifndef __TRILINOS_UTILS_GALLERY_H
 #define __TRILINOS_UTILS_GALLERY_H
 
-class Epetra_Comm;
-class Epetra_Map;
-class Epetra_BlockMap;
-class Vector;
+#include <iosfwd>
+#include <string>
+#include <vector>
+
 #include "Epetra_ConfigDefs.h"
 #include "Epetra_CrsMatrix.h"
 #include "Epetra_VbrMatrix.h"
-class Epetra_Export;
-class Epetra_LinearProblem;
-#include <string>
-#include <vector>
 #include "Trilinos_Util_CommandLineParser.h"
 
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_CrsMatrix;
+class Epetra_Export;
+class Epetra_LinearProblem;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_VbrMatrix;
+class Epetra_Vector;
+class Vector;
+
 namespace Trilinos_Util {
+
+class CommandLineParser;
 
 class CrsMatrixGallery
 {

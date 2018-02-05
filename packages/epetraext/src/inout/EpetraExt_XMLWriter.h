@@ -44,21 +44,23 @@
 #ifndef EPETRAEXT_XMLWRITER_H
 #define EPETRAEXT_XMLWRITER_H
 
-#include "EpetraExt_ConfigDefs.h"
-#include "Teuchos_RCP.hpp"
 #include <fstream>
 #include <vector>
 
-class Epetra_Map;
+#include "EpetraExt_ConfigDefs.h"
+#include "Teuchos_RCP.hpp"
+
 class Epetra_Comm;
+class Epetra_CrsGraph;
+class Epetra_Map;
 class Epetra_Map;
 class Epetra_MultiVector;
-class Epetra_CrsGraph;
 class Epetra_RowMatrix;
+
 namespace Teuchos {
   class FileXML;
-  class XMLObject;
   class ParameterList;
+  class XMLObject;
 }
 
 namespace EpetraExt

@@ -43,17 +43,23 @@
 #ifndef IFPACK_METISREORDERING_H
 #define IFPACK_METISREORDERING_H
 
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include "Epetra_RowMatrix.h"
 #include "Ifpack_ConfigDefs.h"
 #include "Ifpack_Reordering.h"
-#include "Epetra_RowMatrix.h"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RefCountPtr.hpp"
 
-class Epetra_Comm;
-class Ifpack_Graph;
-class Epetra_Map;
 class Epetra_BlockMap;
+class Epetra_Comm;
 class Epetra_Import;
+class Epetra_Map;
+class Epetra_MultiVector;
+class Epetra_RowMatrix;
+class Ifpack_Graph;
 
 //! Ifpack_METISReordering: A class to reorder a graph using METIS.
 

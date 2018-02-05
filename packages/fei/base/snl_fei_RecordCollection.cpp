@@ -6,12 +6,15 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_sstream.hpp"
+#include <__tree>
+#include <ostream>
+#include <stdexcept>
 
 #include "fei_FieldMask.hpp"
 #include "fei_Record.hpp"
-#include "snl_fei_RecordCollection.hpp"
 #include "fei_SharedIDs.hpp"
+#include "fei_sstream.hpp"
+#include "snl_fei_RecordCollection.hpp"
 
 #undef fei_file
 #define fei_file "snl_fei_RecordCollection.cpp"

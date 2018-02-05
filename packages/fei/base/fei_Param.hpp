@@ -10,6 +10,7 @@
 #define _fei_Param_hpp_
 
 #include <fei_macros.hpp>
+#include <iosfwd>
 #include <string>
 
 namespace fei {

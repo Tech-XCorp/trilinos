@@ -39,6 +39,9 @@
 // ***********************************************************************
 // @HEADER
 
+#include <stdio.h>
+
+#include "Epetra_ConfigDefs.h"
 #include "Trilinos_Util.h"
 
 void Trilinos_Util_write_vec(const char *filename, int n_equations,double *x)

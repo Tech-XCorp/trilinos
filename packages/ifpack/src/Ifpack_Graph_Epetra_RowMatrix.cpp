@@ -40,12 +40,12 @@
 //@HEADER
 */
 
-#include "Ifpack_ConfigDefs.h"
-#include "Ifpack_Graph.h"
-#include "Ifpack_Graph_Epetra_RowMatrix.h"
+#include <ostream>
+
 #include "Epetra_Comm.h"
 #include "Epetra_Map.h"
 #include "Epetra_RowMatrix.h"
+#include "Ifpack_Graph_Epetra_RowMatrix.h"
 
 //==============================================================================
 Ifpack_Graph_Epetra_RowMatrix::Ifpack_Graph_Epetra_RowMatrix(const Teuchos::RefCountPtr<const Epetra_RowMatrix>& RowMatrix) :

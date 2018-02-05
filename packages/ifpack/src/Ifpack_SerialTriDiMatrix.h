@@ -44,10 +44,15 @@
 #ifndef IFPACK_SERIALTRIDIMATRIX_H
 #define IFPACK_SERIALTRIDIMATRIX_H
 
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Object.h"
-#include "Epetra_CompObject.h"
+#include <iosfwd>
+#include <string>
+
 #include "Epetra_BLAS.h"
+#include "Epetra_CompObject.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_DLLExportMacro.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Object.h"
 
 class Epetra_VbrMatrix;
 

@@ -41,7 +41,6 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
 #ifdef HAVE_EPETRAEXT_HDF5
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"
@@ -49,13 +48,13 @@
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "Teuchos_ParameterList.hpp"
-#include "Epetra_BlockMap.h"
-#include "Epetra_DistObject.h"
 #include "EpetraExt_Exception.h"
-#include "EpetraExt_Utils.h"
 #include "EpetraExt_HDF5.h"
 #include "EpetraExt_HDF5_Handle.h"
+#include "EpetraExt_Utils.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_DistObject.h"
+#include "Teuchos_ParameterList.hpp"
 
 #define CHECK_HID(hid_t) \
   { if (hid_t < 0) \

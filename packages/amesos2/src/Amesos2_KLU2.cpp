@@ -42,10 +42,12 @@
 // @HEADER
 
 #include "Amesos2_KLU2_decl.hpp"
+#include "Amesos2_config.h"
+#include "KokkosClassic_DefaultNode_config.h"
+#include "TpetraCore_config.h"
 
 #ifdef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
 
-#include "Amesos2_KLU2_def.hpp"
 #include "Amesos2_ExplicitInstantiationHelpers.hpp"
 
 namespace Amesos2 {
@@ -129,10 +131,6 @@ namespace Amesos2 {
 #endif
 }
 #endif
-//
-// 7-Nov-2014: JJH code copied from Amesos2_SuperLU.cpp.
-//
-#include "Kokkos_DefaultNode.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 
 #define AMESOS2_KLU2_LOCAL_INSTANT(S,LO,GO,N)                        \

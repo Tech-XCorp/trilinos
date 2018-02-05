@@ -40,16 +40,26 @@
 //@HEADER
 
 #include "Ifpack_CrsRiluk.h"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Comm.h"
-#include "Epetra_Map.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_VbrMatrix.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_MultiVector.h"
 
 #include <Teuchos_ParameterList.hpp>
+#include <assert.h>
 #include <ifp_parameters.h>
+#include <math.h>
+#include <ostream>
+#include <type_traits>
+#include <vector>
+
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
+#include "Epetra_VbrMatrix.h"
+#include "Epetra_Vector.h"
+#include "Teuchos_ENull.hpp"
 
 //==============================================================================
 Ifpack_CrsRiluk::Ifpack_CrsRiluk(const Ifpack_IlukGraph & Graph_in)

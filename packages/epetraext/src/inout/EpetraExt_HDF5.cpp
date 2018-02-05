@@ -41,39 +41,37 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
-
 
 #ifdef HAVE_EPETRAEXT_HDF5
 
 #include "EpetraExt_HDF5.h"
 #ifdef HAVE_MPI
-#  include "mpi.h"
 #  include <H5FDmpio.h>
+
 #  include "Epetra_MpiComm.h"
+#  include "mpi.h"
 #endif // HAVE_MPI
 
+#include "EpetraExt_DistArray.h"
+#include "EpetraExt_Exception.h"
+#include "EpetraExt_Utils.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_FECrsGraph.h"
+#include "Epetra_FECrsMatrix.h"
+#include "Epetra_Import.h"
+#include "Epetra_IntVector.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_RowMatrix.h"
 // The user could have passed in an Epetra_Comm that is either an
 // Epetra_MpiComm or an Epetra_SerialComm.  The latter could happen
 // whether or not we built Trilinos with MPI.  Thus, we need to
 // include this header regardless.
 #include "Epetra_SerialComm.h"
-
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RCP.hpp"
-#include "Epetra_Map.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_FECrsGraph.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_IntVector.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Import.h"
-#include "EpetraExt_Exception.h"
-#include "EpetraExt_Utils.h"
-#include "EpetraExt_DistArray.h"
 
 #define CHECK_HID(hid_t) \
   { if (hid_t < 0) \

@@ -41,31 +41,30 @@
 //@HEADER
 */
 
-#include "EpetraExt_ConfigDefs.h"
 #ifdef HAVE_MPI
 #include "Epetra_MpiComm.h"
 #include "mpi.h"
 #else
-#include "Epetra_SerialComm.h"
 #endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <iostream>
+#include <stdexcept>
+#include <string>
+
 #include "EpetraExt_XMLReader.h"
+#include "Epetra_Comm.h"
+#include "Epetra_ConfigDefs.h"
+#include "Epetra_CrsGraph.h"
+#include "Epetra_CrsMatrix.h"
+#include "Epetra_DataAccess.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
 #include "Teuchos_ParameterList.hpp"
 #include "Teuchos_RCP.hpp"
+#include "Teuchos_TestForException.hpp"
 #include "Teuchos_XMLObject.hpp"
-#include "Teuchos_StringInputSource.hpp"
-#include "Teuchos_FileInputSource.hpp"
-#include "Teuchos_ParameterList.hpp"
 #include "Teuchos_XMLParameterListReader.hpp"
-#include "Teuchos_Assert.hpp"
-#include "Epetra_ConfigDefs.h"
-#include "Epetra_Map.h"
-#include "Epetra_CrsGraph.h"
-#include "Epetra_FECrsGraph.h"
-#include "Epetra_RowMatrix.h"
-#include "Epetra_CrsMatrix.h"
-#include "Epetra_FECrsMatrix.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Import.h"
 
 #if defined(__PGI)
 #include <sstream>

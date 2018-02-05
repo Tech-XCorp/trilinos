@@ -48,12 +48,41 @@
 */
 
 
+#include <memory>
+#include <sstream>
+#include <type_traits>
+
+#include "Amesos.h"
+#include "Amesos_BaseSolver.h"
+#include "Epetra_LinearProblem.h"
+#include "Epetra_Operator.h"
+#include "Epetra_Time.h"
+#include "NOX_Config.h"
+#include "NOX_Epetra_LinearSystem.H"
 #include "NOX_Epetra_LinearSystem_Amesos.H"
+#include "NOX_Epetra_Vector.H"
+#include "NOX_Utils.H"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_ParameterListExceptions.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Utils.hpp"
+
+namespace NOX {
+namespace Epetra {
+class Scaling;
+namespace Interface {
+class Required;
+}  // namespace Interface
+}  // namespace Epetra
+}  // namespace NOX
 
 #ifdef HAVE_NOX_AMESOS
 
-#include "Epetra_Vector.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Vector.h"
 #include "NOX_Epetra_Interface_Jacobian.H"
 
 NOX::Epetra::LinearSystemAmesos::

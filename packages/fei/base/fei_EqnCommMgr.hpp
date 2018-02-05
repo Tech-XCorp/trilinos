@@ -9,16 +9,27 @@
 /*    a license from the United States Government.                    */
 /*--------------------------------------------------------------------*/
 
-#include "fei_fwd.hpp"
-#include "fei_mpi.h"
-
-#include "snl_fei_PointBlockMap.hpp"
-
 #include <fei_CSRMat.hpp>
 #include <fei_CSVec.hpp>
 #include <fei_CommUtils.hpp>
-#include "fei_ProcEqns.hpp"
+#include <stddef.h>
+#include <iosfwd>
+#include <vector>
+
 #include "fei_EqnBuffer.hpp"
+#include "fei_ProcEqns.hpp"
+#include "fei_fwd.hpp"
+#include "fei_macros.hpp"
+#include "fei_mpi.h"
+#include "snl_fei_PointBlockMap.hpp"
+
+namespace fei {
+class CSRMat;
+class CSVec;
+}  // namespace fei
+namespace snl_fei {
+class PointBlockMap;
+}  // namespace snl_fei
 
 /**
   The EqnCommMgr (Equation communication manager) class is responsible

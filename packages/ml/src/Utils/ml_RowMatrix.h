@@ -9,7 +9,17 @@
  *  \brief Wrapper from ML_Operator to Epetra_RowMatrix
  */
 
+#include <string.h>
+
+#include "Epetra_ConfigDefs.h"
+#include "ml_comm.h"
+#include "ml_config.h"
 #include "ml_include.h"
+#include "ml_operator.h"
+
+class Epetra_BlockMap;
+class Epetra_Comm;
+class Epetra_Import;
 
 #if defined(HAVE_ML_EPETRA)
 
@@ -19,15 +29,15 @@
 #else
 #include "Epetra_SerialComm.h"
 #endif
-#include "ml_epetra.h"
-#include "Epetra_Operator.h"
-class Epetra_MultiVector;
-#include "Epetra_RowMatrix.h"
 #include "Epetra_BlockMap.h"
 #include "Epetra_Map.h"
+#include "Epetra_Operator.h"
+#include "Epetra_RowMatrix.h"
+#include "ml_epetra.h"
 
-class Epetra_Vector;
 class Epetra_Importer;
+class Epetra_MultiVector;
+class Epetra_Vector;
 
 namespace ML_Epetra {
 

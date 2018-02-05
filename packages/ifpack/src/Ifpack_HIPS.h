@@ -47,20 +47,20 @@
 #ifdef HAVE_IFPACK_HIPS
 
 
-#include "Ifpack_Preconditioner.h"
-#include "Ifpack_Condest.h"
-#include "Ifpack_ScalingType.h"
+#include "Epetra_BlockMap.h"
+#include "Epetra_Comm.h"
 #include "Epetra_CompObject.h"
-#include "Epetra_MultiVector.h"
-#include "Epetra_Vector.h"
 #include "Epetra_CrsGraph.h"
 #include "Epetra_CrsMatrix.h"
-#include "Epetra_BlockMap.h"
-#include "Epetra_Map.h"
-#include "Epetra_Object.h"
-#include "Epetra_Comm.h"
 #include "Epetra_CrsMatrix.h"
+#include "Epetra_Map.h"
+#include "Epetra_MultiVector.h"
+#include "Epetra_Object.h"
 #include "Epetra_Time.h"
+#include "Epetra_Vector.h"
+#include "Ifpack_Condest.h"
+#include "Ifpack_Preconditioner.h"
+#include "Ifpack_ScalingType.h"
 #include "Teuchos_RefCountPtr.hpp"
 
 

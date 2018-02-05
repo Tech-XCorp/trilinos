@@ -42,9 +42,11 @@
 #define EPETRAEXT_CRSMATRIXIN_H
 #include <EpetraExt_ConfigDefs.h>
 #include <Epetra_ConfigDefs.h>
+
 class Epetra_Comm;
 class Epetra_CrsMatrix;
 class Epetra_Map;
+
 namespace EpetraExt {
 
 #ifndef EPETRA_NO_32BIT_GLOBAL_INDICES

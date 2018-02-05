@@ -42,6 +42,59 @@
 #ifndef __MatrixMarket_Tpetra_hpp
 #define __MatrixMarket_Tpetra_hpp
 
+#include <stdio.h>
+#include <sys/_types/_time_t.h>
+#include <algorithm>
+#include <cstddef>
+#include <ctime>
+#include <exception>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <numeric>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
+
+#include "Teuchos_Array.hpp"
+#include "Teuchos_ArrayRCP.hpp"
+#include "Teuchos_ArrayRCPDecl.hpp"
+#include "Teuchos_ArrayView.hpp"
+#include "Teuchos_ArrayViewDecl.hpp"
+#include "Teuchos_Comm.hpp"
+#include "Teuchos_CommHelpers.hpp"
+#include "Teuchos_DefaultSerialComm.hpp"
+#include "Teuchos_ENull.hpp"
+#include "Teuchos_EReductionType.hpp"
+#include "Teuchos_FancyOStream.hpp"
+#include "Teuchos_MatrixMarket_Banner.hpp"
+#include "Teuchos_MatrixMarket_CoordDataReader.hpp"
+#include "Teuchos_MatrixMarket_Raw_Adder.hpp"
+#include "Teuchos_MatrixMarket_Raw_Graph_Adder.hpp"
+#include "Teuchos_MatrixMarket_SymmetrizingAdder.hpp"
+#include "Teuchos_MatrixMarket_SymmetrizingGraphAdder.hpp"
+#include "Teuchos_MatrixMarket_assignScalar.hpp"
+#include "Teuchos_MatrixMarket_generic.hpp"
+#include "Teuchos_OrdinalTraits.hpp"
+#include "Teuchos_ParameterList.hpp"
+#include "Teuchos_PtrDecl.hpp"
+#include "Teuchos_RCP.hpp"
+#include "Teuchos_RCPDecl.hpp"
+#include "Teuchos_ScalarTraitsDecl.hpp"
+#include "Teuchos_SetScientific.hpp"
+#include "Teuchos_TestForException.hpp"
+#include "Teuchos_Tuple.hpp"
+#include "Teuchos_TypeNameTraits.hpp"
+#include "Teuchos_as.hpp"
+#include "Tpetra_CombineMode.hpp"
+#include "Tpetra_ComputeGatherMap.hpp"
+#include "Tpetra_ConfigDefs.hpp"
+#include "Tpetra_CrsGraph_decl.hpp"
+#include "Tpetra_CrsMatrix.hpp"
 /// \file MatrixMarket_Tpetra.hpp
 /// \brief Matrix Market file readers and writers for Tpetra objects.
 /// \author Mark Hoemmen
@@ -54,26 +107,13 @@
 /// Market format") for interchange of sparse and dense matrices.
 ///
 #include "Tpetra_Details_gathervPrint.hpp"
-#include "Tpetra_CrsMatrix.hpp"
+#include "Tpetra_Export_decl.hpp"
+#include "Tpetra_Import_decl.hpp"
+#include "Tpetra_Map_decl.hpp"
+#include "Tpetra_MultiVector_decl.hpp"
 #include "Tpetra_Operator.hpp"
 #include "Tpetra_Vector.hpp"
-#include "Tpetra_ComputeGatherMap.hpp"
-#include "Teuchos_MatrixMarket_Raw_Adder.hpp"
-#include "Teuchos_MatrixMarket_Raw_Graph_Adder.hpp"
-#include "Teuchos_MatrixMarket_SymmetrizingAdder.hpp"
-#include "Teuchos_MatrixMarket_SymmetrizingGraphAdder.hpp"
-#include "Teuchos_MatrixMarket_assignScalar.hpp"
-#include "Teuchos_MatrixMarket_Banner.hpp"
-#include "Teuchos_MatrixMarket_CoordDataReader.hpp"
-#include "Teuchos_SetScientific.hpp"
-
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <iterator>
-#include <vector>
-#include <stdexcept>
-#include <numeric>
+#include "Tpetra_Vector_decl.hpp"
 
 namespace Tpetra {
   /// \namespace MatrixMarket
