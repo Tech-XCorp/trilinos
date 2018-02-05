@@ -40,7 +40,9 @@
 // ************************************************************************
 //@HEADER
 
-#include <Epetra_ConfigDefs.h>
+
+#ifdef TEMP_DISTABLE_FOR_IYWU_SHADOW_BUG
+
 #include <Epetra_FECrsMatrix.h>
 #include <Epetra_IntSerialDenseVector.h>
 #include <Epetra_SerialDenseMatrix.h>
@@ -49,6 +51,7 @@
 #include <Epetra_Comm.h>
 #include <Epetra_Map.h>
 #include <Epetra_Util.h>
+
 
 //----------------------------------------------------------------------------
 Epetra_FECrsMatrix::Epetra_FECrsMatrix(Epetra_DataAccess CV,
@@ -1338,3 +1341,4 @@ int Epetra_FECrsMatrix::InputNonlocalValue(int rowoffset,
   return(0);
 }
 
+#endif
