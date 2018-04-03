@@ -125,11 +125,15 @@ namespace Belos {
   public:
     PseudoBlockCGSolMgr () :
       base_type ()
-    {}
+    {
+       printf("    PseudoBlockCGSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     PseudoBlockCGSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
                          const Teuchos::RCP<Teuchos::ParameterList> &pl) :
       base_type ()
-    {}
+    {
+      printf("    PseudoBlockCGSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     virtual ~PseudoBlockCGSolMgr () {}
 
     Teuchos::RCP<StatusTestGenResNorm<ScalarType,MV,OP> >
@@ -416,7 +420,9 @@ PseudoBlockCGSolMgr<ScalarType,MV,OP,true>::PseudoBlockCGSolMgr() :
   condEstimate_(-Teuchos::ScalarTraits<ScalarType>::one()),
   label_(label_default_),
   isSet_(false)
-{}
+{
+  printf("    PseudoBlockCGSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 // Basic Constructor
 template<class ScalarType, class MV, class OP>
@@ -440,6 +446,8 @@ PseudoBlockCGSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &probl
   label_(label_default_),
   isSet_(false)
 {
+  printf("    PseudoBlockCGSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(
     problem_.is_null (), std::invalid_argument,
     "Belos::PseudoBlockCGSolMgr two-argument constructor: "

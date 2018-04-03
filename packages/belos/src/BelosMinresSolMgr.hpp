@@ -464,7 +464,9 @@ namespace Belos {
     outputStyle_(0),
     outputFreq_(0),
     parametersSet_ (false)
-  {}
+  {
+    printf("    MinresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+  }
 
   //
   // Primary constructor (use this one)
@@ -477,6 +479,8 @@ namespace Belos {
     numIters_ (0),
     parametersSet_ (false)
   {
+    printf("    MinresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
     TEUCHOS_TEST_FOR_EXCEPTION(problem_.is_null(), std::invalid_argument,
                                "MinresSolMgr: The version of the constructor "
                                "that takes a LinearProblem to solve was given a "

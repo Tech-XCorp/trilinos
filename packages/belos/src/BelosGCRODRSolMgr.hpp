@@ -165,11 +165,15 @@ Systems," SIAM Journal on Scientific Computing, 28(5), pp. 1651-1674,
   public:
     GCRODRSolMgr () :
       base_type ()
-    {}
+    {
+      printf("    GCRODRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     GCRODRSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> >& problem,
                   const Teuchos::RCP<Teuchos::ParameterList>& pl) :
       base_type ()
-    {}
+    {
+      printf("    GCRODRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     virtual ~GCRODRSolMgr () {}
   };
 
@@ -581,6 +585,7 @@ GCRODRSolMgr<ScalarType,MV,OP,true>::GCRODRSolMgr():
   achievedTol_(0.0),
   numIters_(0)
 {
+  printf("    GCRODRSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
   init ();
 }
 
@@ -593,6 +598,8 @@ GCRODRSolMgr(const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> >& problem,
   achievedTol_(0.0),
   numIters_(0)
 {
+  printf("    GCRODRSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   // Initialize local pointers to null, and initialize local variables
   // to default values.
   init ();

@@ -165,11 +165,15 @@ namespace Belos {
   public:
     RCGSolMgr () :
       base_type ()
-    {}
+    {
+      printf("    RCGSolMgr SolverManagerRequiresRealLapack read %d PRETTYFUNCTION: %s\n", (int) supportsScalarType, __PRETTY_FUNCTION__);
+    }
     RCGSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
                const Teuchos::RCP<Teuchos::ParameterList> &pl) :
       base_type ()
-    {}
+    {
+      printf("    RCGSolMgr SolverManagerRequiresRealLapack read %d PRETTYFUNCTION: %s\n", (int) supportsScalarType, __PRETTY_FUNCTION__);
+    }
     virtual ~RCGSolMgr () {}
 
     //! clone for Inverted Injection (DII)
@@ -515,6 +519,8 @@ RCGSolMgr<ScalarType,MV,OP,true>::RCGSolMgr():
   achievedTol_(0.0),
   numIters_(0)
 {
+  printf("    RCGSolMgr SolverManagerRequiresRealLapack set true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   init();
 }
 
@@ -527,6 +533,8 @@ RCGSolMgr<ScalarType,MV,OP,true>::RCGSolMgr(
   achievedTol_(0.0),
   numIters_(0)
 {
+  printf("    RCGSolMgr SolverManagerRequiresRealLapack set true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   init();
   TEUCHOS_TEST_FOR_EXCEPTION(problem_ == Teuchos::null, std::invalid_argument, "Problem not given to solver manager.");
 

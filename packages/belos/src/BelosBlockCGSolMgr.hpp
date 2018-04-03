@@ -129,11 +129,16 @@ namespace Belos {
   public:
     BlockCGSolMgr () :
       base_type ()
-    {}
+    {
+      printf("    BlockCGSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     BlockCGSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> >& problem,
                   const Teuchos::RCP<Teuchos::ParameterList>& pl) :
       base_type ()
-    {}
+    {
+      printf("    BlockCGSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
+
     virtual ~BlockCGSolMgr () {}
   };
 
@@ -480,7 +485,9 @@ BlockCGSolMgr<ScalarType,MV,OP,true>::BlockCGSolMgr() :
   resScale_(resScale_default_),
   label_(label_default_),
   isSet_(false)
-{}
+{
+  printf("    BlockCGSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -507,6 +514,8 @@ BlockCGSolMgr(const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
   label_(label_default_),
   isSet_(false)
 {
+  printf("    BlockCGSolMgr SolverManagerRequiresLapack PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(problem_.is_null(), std::invalid_argument,
     "BlockCGSolMgr's constructor requires a nonnull LinearProblem instance.");
 

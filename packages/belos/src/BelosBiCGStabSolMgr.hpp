@@ -349,7 +349,9 @@ BiCGStabSolMgr<ScalarType,MV,OP>::BiCGStabSolMgr() :
   resScale_(resScale_default_),
   label_(label_default_),
   isSet_(false)
-{}
+{
+  printf("    BiCGStabSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 // Basic Constructor
 template<class ScalarType, class MV, class OP>
@@ -370,6 +372,8 @@ BiCGStabSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
   label_(label_default_),
   isSet_(false)
 {
+  printf("    BiCGStabSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(
     problem_.is_null (), std::invalid_argument,
     "Belos::BiCGStabSolMgr two-argument constructor: "

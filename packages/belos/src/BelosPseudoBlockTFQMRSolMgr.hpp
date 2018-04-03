@@ -360,7 +360,9 @@ PseudoBlockTFQMRSolMgr<ScalarType,MV,OP>::PseudoBlockTFQMRSolMgr() :
   label_(label_default_),
   isSet_(false),
   isSTSet_(false)
-{}
+{
+  printf("    PseudoBlockTFQMRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -386,6 +388,8 @@ PseudoBlockTFQMRSolMgr<ScalarType,MV,OP>::PseudoBlockTFQMRSolMgr(
   isSet_(false),
   isSTSet_(false)
 {
+  printf("    PseudoBlockTFQMRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(problem_ == Teuchos::null, std::invalid_argument, "Problem not given to solver manager.");
   
   // If the parameter list pointer is null, then set the current parameters to the default parameter list.

@@ -243,11 +243,15 @@ class LSQRSolMgr :
 public:
   LSQRSolMgr () :
     base_type ()
-  {}
+  {
+    printf("    LSQRSolMgr complex %d PRETTYFUNCTION: %s\n", (int) scalarTypeIsComplex, __PRETTY_FUNCTION__);
+  }
   LSQRSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
               const Teuchos::RCP<Teuchos::ParameterList> &pl) :
     base_type ()
-  {}
+  {
+    printf("    LSQRSolMgr complex %d PRETTYFUNCTION: %s\n", (int) scalarTypeIsComplex, __PRETTY_FUNCTION__);
+  }
   virtual ~LSQRSolMgr () {}
 
   //! clone for Inverted Injection (DII)
@@ -524,7 +528,9 @@ LSQRSolMgr<ScalarType,MV,OP,false>::LSQRSolMgr () :
   matResNorm_ (STM::zero ()),
   isSet_ (false),
   loaDetected_ (false)
-{}
+{
+  printf("    LSQRSolMgr real PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 template<class ScalarType, class MV, class OP>
 LSQRSolMgr<ScalarType,MV,OP,false>::
@@ -548,6 +554,8 @@ LSQRSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> >& problem,
   isSet_ (false),
   loaDetected_ (false)
 {
+  printf("    LSQRSolMgr real PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   // The linear problem to solve is allowed to be null here.  The user
   // must then set a nonnull linear problem (by calling setProblem())
   // before calling solve().
