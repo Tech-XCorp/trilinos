@@ -93,14 +93,7 @@ namespace { // (anonymous)
   // ensure that the function actually gets called as premain
   // if it doesn't SolverFactoryParent constructor will manually call
   // this registerSolverFactory() at construction.
-
-  // This would add premain registration.
-  // However two tests were seg faulting on clang (not linux) for parallel:
-  // Belos_Tpetra_MultipleSolves_MPI_4 & Ifpack2_AdditiveSchwarz_RILUK_MPI_4
-  // Note there are three places where I commented this out.
-  // TODO: Investigate that and decide if we want premain solve.
-
-  // Register_Belos_Details_Epetra_SolverFactory
-  //  register_belos_details_epetra_solverFactory;
+  Register_Belos_Details_Epetra_SolverFactory
+    register_belos_details_epetra_solverFactory;
 
 } // namespace (anonymous)
