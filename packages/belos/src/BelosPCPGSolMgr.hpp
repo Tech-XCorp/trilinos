@@ -166,11 +166,15 @@ namespace Belos {
   public:
     PCPGSolMgr () :
       base_type ()
-    {}
+    {
+      printf("    PCPGSolMgr SolverManagerRequiresRealLapack read %d PRETTYFUNCTION: %s\n", (int) supportsScalarType, __PRETTY_FUNCTION__);
+    }
     PCPGSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
                 const Teuchos::RCP<Teuchos::ParameterList> &pl) :
       base_type ()
-    {}
+    {
+      printf("    PCPGSolMgr SolverManagerRequiresRealLapack read %d PRETTYFUNCTION: %s\n", (int) supportsScalarType, __PRETTY_FUNCTION__);
+    }
     virtual ~PCPGSolMgr () {}
   };
 
@@ -466,7 +470,9 @@ PCPGSolMgr<ScalarType,MV,OP,true>::PCPGSolMgr() :
   dimU_(0),
   label_(label_default_),
   isSet_(false)
-{}
+{
+  printf("    PCPGSolMgr SolverManagerRequiresRealLapack set true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -491,6 +497,8 @@ PCPGSolMgr<ScalarType,MV,OP,true>::PCPGSolMgr(
   label_(label_default_),
   isSet_(false)
 {
+  printf("PCPGSolMgr SolverManagerRequiresRealLapack set true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(
     problem_.is_null (), std::invalid_argument,
     "Belos::PCPGSolMgr two-argument constructor: "

@@ -601,7 +601,9 @@ PseudoBlockGmresSolMgr<ScalarType,MV,OP>::PseudoBlockGmresSolMgr() :
   isSTSet_(false),
   expResTest_(false),
   loaDetected_(false)
-{}
+{
+  printf("    PseudoBlockGmresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 // Basic Constructor
 template<class ScalarType, class MV, class OP>
@@ -634,6 +636,8 @@ PseudoBlockGmresSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &pr
   expResTest_(false),
   loaDetected_(false)
 {
+  printf("    PseudoBlockGmresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(problem_ == Teuchos::null, std::invalid_argument, "Problem not given to solver manager.");
 
   // If the parameter list pointer is null, then set the current parameters to the default parameter list.

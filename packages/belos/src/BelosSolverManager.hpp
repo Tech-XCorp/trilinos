@@ -77,7 +77,9 @@ class SolverManager : virtual public Teuchos::Describable {
   //@{
 
   //! Empty constructor.
-  SolverManager() {};
+  SolverManager() {
+    printf("SolverManager PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+  };
 
   //! Destructor.
   virtual ~SolverManager() {};
@@ -223,7 +225,9 @@ namespace Details {
   class RealSolverManager<ScalarType, MV, OP, false> :
     public SolverManager<ScalarType, MV, OP> {
   public:
-    RealSolverManager () {}
+    RealSolverManager () {
+      printf("  RealSolverManager ROOT PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     virtual ~RealSolverManager () {}
   };
 
@@ -239,6 +243,7 @@ namespace Details {
     public SolverManager<ScalarType, MV, OP> {
   public:
     RealSolverManager () {
+      printf("  RealSolverManager true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
       TEUCHOS_TEST_FOR_EXCEPTION( true, std::logic_error,
         "This solver is not implemented for complex ScalarType." );
     }
@@ -337,7 +342,9 @@ namespace Details {
   class SolverManagerRequiresLapack<ScalarType, MV, OP, true> :
     public SolverManager<ScalarType, MV, OP> {
   public:
-    SolverManagerRequiresLapack () {}
+    SolverManagerRequiresLapack () {
+      printf("  SolverManagerRequiresLapack true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     virtual ~SolverManagerRequiresLapack () {}
   };
 
@@ -352,6 +359,8 @@ namespace Details {
     public SolverManager<ScalarType, MV, OP> {
   public:
     SolverManagerRequiresLapack () {
+      printf("  SolverManagerRequiresLapack false PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
       TEUCHOS_TEST_FOR_EXCEPTION
         (true, std::logic_error, "This solver is not implemented for ScalarType"
          " types for which Teuchos::LAPACK does not have a valid implementation.  "
@@ -438,7 +447,9 @@ namespace Details {
   class SolverManagerRequiresRealLapack<ScalarType, MV, OP, true> :
     public SolverManager<ScalarType, MV, OP> {
   public:
-    SolverManagerRequiresRealLapack () {}
+    SolverManagerRequiresRealLapack () {
+      printf("  SolverManagerRequiresLapack true PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+    }
     virtual ~SolverManagerRequiresRealLapack () {}
   };
 
@@ -454,6 +465,7 @@ namespace Details {
     public SolverManager<ScalarType, MV, OP> {
   public:
     SolverManagerRequiresRealLapack () {
+      printf("  SolverManagerRequiresLapack false PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
       TEUCHOS_TEST_FOR_EXCEPTION
         (true, std::logic_error, "This solver is not implemented for complex "
          "ScalarType types, or for ScalarType types for which Teuchos::LAPACK "

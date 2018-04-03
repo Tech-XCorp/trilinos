@@ -434,7 +434,9 @@ BlockGmresSolMgr<ScalarType,MV,OP>::BlockGmresSolMgr() :
   isSet_(false),
   isSTSet_(false),
   loaDetected_(false)
-{}
+{
+  printf("    BlockGmresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -467,6 +469,7 @@ BlockGmresSolMgr (const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
   isSTSet_(false),
   loaDetected_(false)
 {
+  printf("    BlockGmresSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
 
   TEUCHOS_TEST_FOR_EXCEPTION(problem_ == Teuchos::null, std::invalid_argument, "Problem not given to solver manager.");
 

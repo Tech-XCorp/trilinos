@@ -352,7 +352,9 @@ TFQMRSolMgr<ScalarType,MV,OP>::TFQMRSolMgr() :
   label_(label_default_),
   isSet_(false),
   isSTSet_(false)
-{}
+{
+  printf("    TFQMRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -378,6 +380,8 @@ TFQMRSolMgr<ScalarType,MV,OP>::TFQMRSolMgr(
   isSet_(false),
   isSTSet_(false)
 {
+  printf("    TFQMRSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(problem_ == Teuchos::null, std::invalid_argument, "Problem not given to solver manager.");
   
   // If the parameter list pointer is null, then set the current parameters to the default parameter list.

@@ -366,7 +366,9 @@ FixedPointSolMgr<ScalarType,MV,OP>::FixedPointSolMgr() :
   showMaxResNormOnly_(showMaxResNormOnly_default_),
   label_(label_default_),
   isSet_(false)
-{}
+{
+  printf("    FixedPointSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+}
 
 
 // Basic Constructor
@@ -388,6 +390,8 @@ FixedPointSolMgr(const Teuchos::RCP<LinearProblem<ScalarType,MV,OP> > &problem,
   label_(label_default_),
   isSet_(false)
 {
+  printf("    FixedPointSolMgr PRETTYFUNCTION: %s\n", __PRETTY_FUNCTION__);
+
   TEUCHOS_TEST_FOR_EXCEPTION(problem_.is_null(), std::invalid_argument, 
     "FixedPointSolMgr's constructor requires a nonnull LinearProblem instance.");
 
