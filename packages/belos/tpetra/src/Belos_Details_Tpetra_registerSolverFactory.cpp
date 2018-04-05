@@ -42,6 +42,13 @@
 
 /// \file Belos_Details_Tpetra_registerSolverFactory
 /// \brief Implement Injection and Inversion (DII) for Tpetra
+#include "BelosSolverFactory.hpp"
+#include "BelosBlockCGSolMgr.hpp"
+#include "BelosBlockGmresSolMgr.hpp"
+#include "BelosFixedPointSolMgr.hpp"
+#include "BelosTFQMRSolMgr.hpp"
+#include "BelosPseudoBlockGmresSolMgr.hpp"
+#include "BelosTpetraAdapter.hpp"
 
 namespace Belos {
 namespace Details {
@@ -62,20 +69,43 @@ void registerMinresSolMgr();
 void registerTFQMRSolMgr();
 void registerPseudoBlockTFQMRSolMgr();
 
+
 void registerSolverFactory() {
+/*
+  registerBiCGStabSolMgr();
+  registerBlockCGSolMgr();
+  registerBlockGmresSolMgr();
+  registerFixedPointSolMgr();
   registerGCRODRSolMgr();
+  registerLSQRSolMgr();
+  registerMinresSolMgr();
+  registerPCPGSolMgr();
+  registerPseudoBlockTFQMRSolMgr();
   registerPseudoBlockGmresSolMgr();
   registerPseudoBlockCGSolMgr();
-  registerBlockGmresSolMgr();
-  registerBlockCGSolMgr();
-  registerFixedPointSolMgr();
-  registerLSQRSolMgr();
-  registerPCPGSolMgr();
   registerRCGSolMgr();
-  registerBiCGStabSolMgr();
-  registerMinresSolMgr();
   registerTFQMRSolMgr();
-  registerPseudoBlockTFQMRSolMgr();
+ */
+
+  typedef double SC;
+  typedef int LO;
+  typedef int GO;
+  typedef Kokkos::Compat::KokkosDeviceWrapperNode<Kokkos::Serial> NT;
+
+  #define DECLARE_IT(solver,name)                               \
+  Belos::Impl::registerSolverSubclassForTypes<                  \
+    solver<SC,::Tpetra::MultiVector<SC, LO, GO, NT>,      \
+    ::Tpetra::Operator<SC, LO, GO, NT>>, SC,                    \
+    ::Tpetra::MultiVector<SC, LO, GO, NT>,                      \
+    ::Tpetra::Operator<SC, LO, GO, NT>> (name);
+
+  DECLARE_IT(BlockCGSolMgr,"BLOCK CG")
+  DECLARE_IT(BlockGmresSolMgr,"BLOCK GMRES")
+  DECLARE_IT(FixedPointSolMgr,"FIXED POINT")
+  DECLARE_IT(TFQMRSolMgr,"TFQMR")
+
+  registerPseudoBlockCGSolMgr();
+  registerPseudoBlockGmresSolMgr();
 }
 
 } // namespace Tpetra
@@ -93,7 +123,7 @@ namespace { // (anonymous)
   // ensure that the function actually gets called as premain
   // if it doesn't SolverFactoryParent constructor will manually call
   // this registerSolverFactory() at construction.
-  Register_Belos_Details_Tpetra_SolverFactory
-    register_belos_details_tpetra_solverFactory;
+  //Register_Belos_Details_Tpetra_SolverFactory
+  //  register_belos_details_tpetra_solverFactory;
 
 } // namespace (anonymous)

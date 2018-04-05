@@ -93,7 +93,7 @@ namespace { // (anonymous)
   // ensure that the function actually gets called as premain
   // if it doesn't SolverFactoryParent constructor will manually call
   // this registerSolverFactory() at construction.
-  Register_Belos_Details_Epetra_SolverFactory
-    register_belos_details_epetra_solverFactory;
+  //Register_Belos_Details_Epetra_SolverFactory
+  //  register_belos_details_epetra_solverFactory;
 
 } // namespace (anonymous)
