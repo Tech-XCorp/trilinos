@@ -1,3 +1,4 @@
+
 #ifndef _ZOLTAN2_COORD_PARTITIONMAPPING_HPP_
 #define _ZOLTAN2_COORD_PARTITIONMAPPING_HPP_
 
@@ -399,9 +400,9 @@ void getCoarsenedPartGraph(
       }
       g_part_xadj[i + 1] = nindex;
     }
-    return;
+    return; // TODO clean up flow here - remove this return
   }
-
+#ifdef HAVE_ZOLTAN2_MPI // TODO added this due to return above to clean up cuda warnings - needs rework
   RCP<const Teuchos::Comm<int> > tcomm = rcpFromRef(*comm);
   // KDD 8/8/18:  Ideally, we'd use part_t as the global ordinal in our map
   //     typedef part_t use_this_gno_t;
@@ -528,6 +529,7 @@ void getCoarsenedPartGraph(
     A_gather->getLocalRowCopy(i, Indices, Values, nentries);
   }
   envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Import Copy");
+#endif
 }
 
 
@@ -842,33 +844,32 @@ public:
  *  \param arrSize the size of the array.
  *  \param val    the pointer to the value to be filled. if given NULL, the filling performs arr[i] = i.
  */
-template <typename T>
+template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-    for(size_t i = 0; i < arrSize; ++i){
-      arr[i] = i;
-    }
-
+   // TODO Restore afer fixing for CUDA
+//    Kokkos::parallel_for(
+//      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+//      KOKKOS_LAMBDA (const int i) {
+    for(size_t i = 0; i < arrSize; ++i) {
+        arr[i] = i;
+    }//);
   }
   else {
     T v = *val;
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-    for(size_t i = 0; i < arrSize; ++i){
-      //cout << "writing to i:" << i << " arr:" << arrSize << endl;
-      arr[i] = v;
-    }
+   // TODO Restore afer fixing for CUDA
+   // Kokkos::parallel_for(
+   //   Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+   //   KOKKOS_LAMBDA (const int i) {
+      for(size_t i = 0; i < arrSize; ++i) {
+        arr[i] = v;
+    }//);
   }
 }
 
 /*! \brief CommunicationModel Base Class that performs mapping between the coordinate partitioning result.
  */
-template <typename part_t, typename pcoord_t>
+template <typename part_t, typename pcoord_t, typename node_t>
 class CommunicationModel{
 protected:
   double commCost;
@@ -960,8 +961,8 @@ public:
 /*! \brief CoordinateModelInput Class that performs mapping between the coordinate partitioning result and mpi ranks
  * base on the coordinate results and mpi physical coordinates.
  */
-template <typename pcoord_t,  typename tcoord_t, typename part_t>
-class CoordinateCommunicationModel:public CommunicationModel<part_t, pcoord_t> {
+template <typename pcoord_t,  typename tcoord_t, typename part_t, typename node_t>
+class CoordinateCommunicationModel:public CommunicationModel<part_t, pcoord_t, node_t> {
 public:
   //private:
   int proc_coord_dim; //dimension of the processors
@@ -969,7 +970,8 @@ public:
   int task_coord_dim; //dimension of the tasks coordinates.
   tcoord_t **task_coords; //the task coordinates allocated outside of the class.
   int partArraySize;
-  part_t *partNoArray;
+
+  Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
 
   int *machine_extent;
   bool *machine_extent_wrap_around;
@@ -980,13 +982,12 @@ public:
 
   //public:
   CoordinateCommunicationModel():
-    CommunicationModel<part_t, pcoord_t>(),
+    CommunicationModel<part_t, pcoord_t, node_t>(),
     proc_coord_dim(0),
     proc_coords(0),
     task_coord_dim(0),
     task_coords(0),
     partArraySize(-1),
-    partNoArray(NULL),
     machine_extent(NULL),
     machine_extent_wrap_around(NULL),
     machine(NULL),
@@ -1014,11 +1015,10 @@ public:
       bool *machine_extent_wrap_around_,
       const MachineRepresentation<pcoord_t,part_t> *machine_ = NULL
   ):
-    CommunicationModel<part_t, pcoord_t>(no_procs_, no_tasks_),
+    CommunicationModel<part_t, pcoord_t, node_t>(no_procs_, no_tasks_),
     proc_coord_dim(pcoord_dim_), proc_coords(pcoords_),
     task_coord_dim(tcoord_dim_), task_coords(tcoords_),
     partArraySize(-1),
-    partNoArray(NULL),
     machine_extent(machine_extent_),
     machine_extent_wrap_around(machine_extent_wrap_around_),
     machine(machine_),
@@ -1030,8 +1030,9 @@ public:
   void setPartArraySize(int psize){
     this->partArraySize = psize;
   }
-  void setPartArray(part_t *pNo){
-    this->partNoArray = pNo;
+
+  void setPartArray(Kokkos::View<part_t *> pNo){
+    this->kokkos_partNoArray = pNo;
   }
 
   /*! \brief Function is called whenever nprocs > no_task.
@@ -1056,7 +1057,7 @@ public:
     }
     /*
   //fill array.
-  fillContinousArray<part_t>(proc_permutation, nprocs, NULL);
+  fillContinousArray<part_t, node_t>(proc_permutation, nprocs, NULL);
   int _u_umpa_seed = 847449649;
   srand (time(NULL));
   int a = rand() % 1000 + 1;
@@ -1177,7 +1178,11 @@ public:
 
 
     part_t invalid = 0;
+<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
     fillContinousArray<part_t>(proc_to_task_xadj, this->no_procs+1, &invalid);
+=======
+    fillContinousArray<part_t, node_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
+>>>>>>> Zoltan2: Refactor MJ to use Cuda
 
     //obtain the number of parts that should be divided.
     part_t num_parts = MINOF(this->no_procs, this->no_tasks);
@@ -1231,7 +1236,7 @@ public:
       used_num_procs = this->no_tasks;
     }
     else {
-      fillContinousArray<part_t>(proc_adjList,this->no_procs, NULL);
+      fillContinousArray<part_t, node_t>(proc_adjList,this->no_procs, NULL);
     }
 
     int myPermutation = myRank % permutations; //the index of the permutation
@@ -1345,7 +1350,20 @@ public:
     //do the partitioning and renumber the parts.
     env->timerStart(MACRO_TIMERS, "Mapping - Proc Partitioning");
 
-    AlgMJ<pcoord_t, part_t, part_t, part_t> mj_partitioner;
+    AlgMJ<pcoord_t, part_t, part_t, part_t, node_t> mj_partitioner;
+
+    // pcoords was allocated as an array of arrays - each made individually
+    // so memory is not contiguous and cannot be directly passed to an unmanaged view
+    // eventually this should be built from the start as a Kokkos::View but I'm
+    // trying to restrict the scope of the refactoring so it can be done in steps.
+    // Make the 2d kokkos view and manually copy in the pieces for now
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_pcoords("pcoords", used_num_procs, procdim);
+    for(int i = 0; i < procdim; ++i) {
+      for(int j = 0; j < used_num_procs; ++j) {
+        make_kokkos_pcoords(j,i) = pcoords[i][j];
+      }
+    }
+
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_procs,
@@ -1353,11 +1371,11 @@ public:
         num_parts,
         procdim,
         //minCoordDim,
-        pcoords,//this->proc_coords,
-        proc_adjList,
+        make_kokkos_pcoords, // see note above - eventually this will be prebuilt already as kokkos
+        Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(proc_adjList, this->no_procs),
         proc_xadj,
         recursion_depth,
-        partNoArray,
+        kokkos_partNoArray,
         proc_partition_along_longest_dim//, false
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -1373,7 +1391,7 @@ public:
     part_t *task_xadj = allocMemory<part_t>(num_parts+1);
     part_t *task_adjList = allocMemory<part_t>(this->no_tasks);
     //fill task_adjList st: task_adjList[i] <- i.
-    fillContinousArray<part_t>(task_adjList,this->no_tasks, NULL);
+    fillContinousArray<part_t, node_t>(task_adjList,this->no_tasks, NULL);
 
     //get the permutation order from the task permutation index.
     ithPermutation<int>(this->task_coord_dim, myTaskPerm, permutation);
@@ -1386,6 +1404,19 @@ public:
 
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
+
+    // tcoords was allocated as an array of arrays - each made individually
+    // so memory is not contiguous and cannot be directly passed to an unmanaged view
+    // eventually this should be built from the start as a Kokkos::View but I'm
+    // trying to restrict the scope of the refactoring so it can be done in steps.
+    // Make the 2d kokkos view and manually copy in the pieces for now
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_tcoords("pcoords", used_num_procs, procdim);
+    for(int i = 0; i < procdim; ++i) {
+      for(int j = 0; j < used_num_procs; ++j) {
+        make_kokkos_tcoords(j,i) = tcoords[i][j];
+      }
+    }
+
     //partitioning of tasks
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1394,11 +1425,11 @@ public:
         num_parts,
         this->task_coord_dim,
         //minCoordDim,
-        tcoords, //this->task_coords,
-        task_adjList,
+        make_kokkos_tcoords,
+        Kokkos::View<part_t*>(task_adjList, this->no_procs),
         task_xadj,
         recursion_depth,
-        partNoArray,
+        kokkos_partNoArray,
         task_partition_along_longest_dim
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -1531,6 +1562,7 @@ protected:
   typedef typename Adapter::scalar_t tcoord_t;
   typedef typename Adapter::scalar_t scalar_t;
   typedef typename Adapter::lno_t lno_t;
+  typedef typename Adapter::node_t node_t;
 
 #endif
 
@@ -1541,7 +1573,7 @@ protected:
   ArrayRCP<part_t> local_task_to_rank; //allocMemory<part_t>(this->no_procs); //holds the processors mapped to tasks.
 
   bool isOwnerofModel;
-  CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t> *proc_task_comm;
+  CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t,node_t> *proc_task_comm;
   part_t nprocs;
   part_t ntasks;
   ArrayRCP<part_t> task_communication_xadj;
@@ -1725,8 +1757,8 @@ protected:
     std::string outF = gnuPlots + rankStr+ extentionS;
     std::ofstream gnuPlotCode(outF.c_str(), std::ofstream::out);
 
-    CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t> *tmpproc_task_comm =
-        static_cast <CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t> * > (proc_task_comm);
+    CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t, node_t> *tmpproc_task_comm =
+        static_cast <CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t, node_t> * > (proc_task_comm);
     //int mindim = MINOF(tmpproc_task_comm->proc_coord_dim, tmpproc_task_comm->task_coord_dim);
     int mindim = tmpproc_task_comm->proc_coord_dim;
     if (mindim != 3) {
@@ -2089,7 +2121,7 @@ public:
 
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             procDim,
             procCoordinates,
             coordDim,
@@ -2354,7 +2386,7 @@ public:
     envConst->timerStart(MACRO_TIMERS, "CoordinateCommunicationModel Create");
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             procDim,
             procCoordinates,
             coordDim,
@@ -2513,7 +2545,6 @@ public:
       int proc_dim,
       int num_processors,
       pcoord_t **machine_coords,
-
       int task_dim,
       part_t num_tasks,
       tcoord_t **task_coords,
@@ -2521,7 +2552,7 @@ public:
       ArrayRCP<part_t>task_comm_adj,
       pcoord_t *task_communication_edge_weight_,
       int recursion_depth,
-      part_t *part_no_array,
+      Kokkos::View<part_t *> kokkos_part_no_array,
       const part_t *machine_dimensions,
       int num_ranks_per_node = 1,
       bool divide_to_prime_first = false, bool reduce_best_mapping = true
@@ -2561,7 +2592,7 @@ public:
 
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             proc_dim,
             virtual_machine_coordinates,
             coordDim,
@@ -2572,10 +2603,8 @@ public:
 
     this->proc_task_comm->num_ranks_per_node = num_ranks_per_node;
     this->proc_task_comm->divide_to_prime_first = divide_to_prime_first;
-
     this->proc_task_comm->setPartArraySize(recursion_depth);
-    this->proc_task_comm->setPartArray(part_no_array);
-
+    this->proc_task_comm->setPartArray(kokkos_part_no_array);
     int myRank = problemComm->getRank();
 
     this->doMapping(myRank, this->comm);
@@ -2656,7 +2685,9 @@ public:
 
     for (int i = 0; i < machine_dim; ++i){
       part_t numMachinesAlongDim = machine_dimensions[i];
-      part_t *machineCounts= new part_t[numMachinesAlongDim];
+
+      typedef part_t temp_t; // hack to fix cuda warning - TODO
+      part_t *machineCounts= new temp_t[numMachinesAlongDim];
       memset(machineCounts, 0, sizeof(part_t) *numMachinesAlongDim);
 
       int *filledCoordinates= new int[numMachinesAlongDim];
@@ -2869,7 +2900,7 @@ void coordinateTaskMapperInterface(
     part_t *proc_to_task_xadj, /*output*/
     part_t *proc_to_task_adj, /*output*/
     int recursion_depth,
-    part_t *part_no_array,
+    Kokkos::View<part_t *> kokkos_part_no_array,
     const part_t *machine_dimensions,
     int num_ranks_per_node = 1,
     bool divide_to_prime_first = false
@@ -2908,7 +2939,7 @@ void coordinateTaskMapperInterface(
       task_communication_adj,
       task_communication_edge_weight_,
       recursion_depth,
-      part_no_array,
+      kokkos_part_no_array,
       machine_dimensions,
       num_ranks_per_node,
       divide_to_prime_first

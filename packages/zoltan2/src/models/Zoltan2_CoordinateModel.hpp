@@ -76,6 +76,7 @@ public:
   typedef typename Adapter::scalar_t    scalar_t;
   typedef typename Adapter::gno_t       gno_t;
   typedef typename Adapter::lno_t       lno_t;
+  typedef typename Adapter::node_t      node_t;
   typedef typename Adapter::user_t      user_t;
   typedef typename Adapter::userCoord_t userCoord_t;
   typedef StridedData<lno_t, scalar_t>  input_t;
@@ -91,7 +92,7 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags):
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef VectorAdapter<user_t> adapterWithCoords_t;
@@ -104,7 +105,7 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -122,7 +123,7 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -140,7 +141,7 @@ public:
 		  const RCP<const Comm<int> > &comm,
 		  modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef MeshAdapter<user_t> adapterWithCoords_t;
@@ -167,7 +168,10 @@ public:
 
   /*! \brief Returns the number of coordinates on this process.
    */
-  size_t getLocalNumCoordinates() const { return gids_.size();}
+  size_t getLocalNumCoordinates() const {
+    return nLocalIds_;
+  }
+
 
   /*! \brief Returns the global number coordinates.
    */
@@ -217,6 +221,17 @@ public:
     return nCoord;
   }
 
+  size_t getCoordinatesKokkos(
+    Kokkos::View<const gno_t *, typename node_t::device_type> &Ids,
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
+    Kokkos::View<scalar_t **, typename node_t::device_type> &wgts) const
+  {
+    Ids = kokkos_gids_;
+    xyz = kokkos_xyz_;
+    wgts = kokkos_weights_;
+    return getLocalNumCoordinates();
+  }
+
   ////////////////////////////////////////////////////
   // The Model interface.
   ////////////////////////////////////////////////////
@@ -232,14 +247,18 @@ public:
   }
 
 private:
+  size_t nLocalIds_;
   size_t numGlobalCoordinates_;
   const RCP<const Environment> env_;
   const RCP<const Comm<int> > comm_;
   int coordinateDim_;
   ArrayRCP<const gno_t> gids_;
+  Kokkos::View<const gno_t *, typename node_t::device_type> kokkos_gids_; // TODO: Clean this up with  non kokkos version
   ArrayRCP<input_t> xyz_;
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
   int userNumWeights_;
   ArrayRCP<input_t> weights_;
+  Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_; // TODO: Clean this up with  non kokkos version
 
   template <typename AdapterWithCoords>
   void sharedConstructor(const AdapterWithCoords *ia,
@@ -261,7 +280,7 @@ void CoordinateModel<Adapter>::sharedConstructor(
     const RCP<const Comm<int> > &comm,
     modelFlag_t &flags)
 {
-  size_t nLocalIds = ia->getLocalNumIDs();
+  nLocalIds_ = ia->getLocalNumIDs();
 
   // Get coordinates and weights (if any)
 
@@ -284,10 +303,17 @@ void CoordinateModel<Adapter>::sharedConstructor(
     coordArray && (!userNumWeights_|| weightArray));
 
 
-  if (nLocalIds){
+  if (nLocalIds_){
+
+    ia->getIDsKokkosView(kokkos_gids_);
+    ia->getCoordinatesKokkosView(kokkos_xyz_);
+    if(userNumWeights_ > 0) {
+      ia->getWeightsKokkos2dView(kokkos_weights_);
+    }
+
     const gno_t *gids=NULL;
     ia->getIDsView(gids);
-    gids_ = arcp(gids, 0, nLocalIds, false);
+    gids_ = arcp(gids, 0, nLocalIds_, false);
 
     for (int dim=0; dim < coordinateDim_; dim++){
       int stride;
@@ -297,7 +323,7 @@ void CoordinateModel<Adapter>::sharedConstructor(
       }
       Z2_FORWARD_EXCEPTIONS;
 
-      ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds*stride, false);
+      ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds_*stride, false);
       coordArray[dim] = input_t(cArray, stride);
     }
 
@@ -309,7 +335,7 @@ void CoordinateModel<Adapter>::sharedConstructor(
       }
       Z2_FORWARD_EXCEPTIONS;
 
-      ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds*stride, false);
+      ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds_*stride, false);
       weightArray[idx] = input_t(wArray, stride);
     }
   }
@@ -320,7 +346,7 @@ void CoordinateModel<Adapter>::sharedConstructor(
     weights_ = arcp(weightArray, 0, userNumWeights_);
  
   Teuchos::reduceAll<int, size_t>(*comm, Teuchos::REDUCE_SUM, 1, 
-                                  &nLocalIds, &numGlobalCoordinates_);
+                                  &nLocalIds_, &numGlobalCoordinates_);
 
   env_->memory("After construction of coordinate model");
 }

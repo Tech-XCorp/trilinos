@@ -558,8 +558,15 @@ bool mainExecute(int narg, char *arg[], RCP<const Comm<int> > &comm)
 
 int main(int narg, char *arg[])
 {
+<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
   Tpetra::ScopeGuard tscope(&narg, &arg);
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
+=======
+  Teuchos::GlobalMPISession session(&argc, &argv); 
+  Kokkos::initialize (argc, argv);
+
+  RCP<const Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
+>>>>>>> Zoltan2: Refactor MJ to use Cuda
 
   int result = 0;
   int rank = comm->getRank();
@@ -607,5 +614,6 @@ int main(int narg, char *arg[])
               << std::endl;
   }
 
+  Kokkos::finalize();
   return result;
 }

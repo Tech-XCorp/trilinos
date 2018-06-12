@@ -104,6 +104,7 @@ public:
   typedef typename InputTraits<User>::lno_t lno_t;
   typedef typename InputTraits<User>::gno_t gno_t;
   typedef typename InputTraits<User>::scalar_t scalar_t;
+  typedef typename InputTraits<User>::node_t node_t;
   typedef typename InputTraits<User>::part_t part_t;  
   typedef typename InputTraits<User>::offset_t offset_t;
 
@@ -121,7 +122,7 @@ public:
         this process.
    */
   virtual void getIDsView(const gno_t *&ids) const {
-    Kokkos::View<gno_t *> kokkosIds;
+    Kokkos::View<const gno_t *, typename node_t::device_type> kokkosIds;
     getIDsKokkosView(kokkosIds);
     ids = kokkosIds.data();
   }
@@ -131,7 +132,7 @@ public:
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
-  virtual void getIDsKokkosView(Kokkos::View<gno_t *> &ids) const {
+  virtual void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 
@@ -146,7 +147,7 @@ public:
   // */ 
   virtual void getWeightsView(const scalar_t *&wgt, int &stride,
                               int idx = 0) const {
-    Kokkos::View<scalar_t *> tempWeightsView;
+    Kokkos::View<scalar_t *, typename node_t::device_type> tempWeightsView;
     getWeightsKokkosView(tempWeightsView, idx);
     wgt = tempWeightsView.data();
     stride = 1;
@@ -159,9 +160,14 @@ public:
   // *   getNumWeightsPerID > 0.
   // *   This function should not be called if getNumWeightsPerID is zero.
   // */ 
-  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, 
-                              int idx = 0) const {
-    Z2_THROW_NOT_IMPLEMENTED
+  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *, typename node_t::device_type> &wgt, int idx) const {
+    throw std::logic_error("getWeightsKokkosView not implemented.");
+  }
+
+  // 2nd form returns the 2darray - still need to decide how this will all sort
+  // out but they should all be made consistent.
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> & wgt) const {
+    throw std::logic_error("getWeightsKokkos2dView not implemented.");
   }
 
   /*! \brief Provide pointer to an array containing the input part 
