@@ -91,7 +91,10 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags):
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
+#ifndef HAVE_ZOLTAN2_OMP
+                  gids_(),
+#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef VectorAdapter<user_t> adapterWithCoords_t;
@@ -104,7 +107,10 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
+#ifndef HAVE_ZOLTAN2_OMP
+                  gids_(),
+#endif 
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -122,7 +128,10 @@ public:
                   const RCP<const Comm<int> > &comm,
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
+#ifndef HAVE_ZOLTAN2_OMP
+                  gids_(),
+#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -140,7 +149,10 @@ public:
 		  const RCP<const Comm<int> > &comm,
 		  modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
-                  coordinateDim_(), gids_(), 
+                  coordinateDim_(),
+#ifndef HAVE_ZOLTAN2_OMP
+                  gids_(),
+#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef MeshAdapter<user_t> adapterWithCoords_t;
@@ -167,7 +179,14 @@ public:
 
   /*! \brief Returns the number of coordinates on this process.
    */
-  size_t getLocalNumCoordinates() const { return gids_.size();}
+  size_t getLocalNumCoordinates() const {
+#ifdef HAVE_ZOLTAN2_OMP
+    return kokkos_gids_.size();
+#else
+    return gids_.size();
+#endif
+  }
+
 
   /*! \brief Returns the global number coordinates.
    */
@@ -217,8 +236,7 @@ public:
     return nCoord;
   }
 
-  // TODO: Integrate with the non kokkos version above - should just be one
-  // available based on HAVE_ZOLTAN2_OMP
+#ifdef HAVE_ZOLTAN2_OMP
   size_t getCoordinates(Kokkos::View<const gno_t *> & Ids,
                         Kokkos::View<scalar_t *> & xyz,
                         Kokkos::View<scalar_t *> & wgts) const
@@ -230,6 +248,7 @@ public:
     size_t nCoord = getLocalNumCoordinates();
     return nCoord;
   }
+#endif
 
   ////////////////////////////////////////////////////
   // The Model interface.
@@ -305,24 +324,17 @@ void CoordinateModel<Adapter>::sharedConstructor(
   
 #ifdef HAVE_ZOLTAN2_OMP
     ia->getIDsKokkosView(kokkos_gids_);
-//#else
+#else
     const gno_t *gids=NULL;
     ia->getIDsView(gids);
-#endif
-
-    // this is some debug check code!
-    printf("Ids: ");
-    for(int n = 0; n < nLocalIds; ++n) {
-      printf("(%d,%d) ", gids[n], kokkos_gids_(n));
-    }
-    printf("\n");
-
-    
     gids_ = arcp(gids, 0, nLocalIds, false);
+#endif
+    
+
 
 #ifdef HAVE_ZOLTAN2_OMP
   //  ia->getCoordinatesKokkosView(kokkos_xyz_);
-//#else
+#else
     for (int dim=0; dim < coordinateDim_; dim++){
       int stride;
       const scalar_t *coords=NULL;
@@ -334,15 +346,14 @@ void CoordinateModel<Adapter>::sharedConstructor(
       ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds*stride, false);
       coordArray[dim] = input_t(cArray, stride);
     }
-
-    for (int idx=0; idx < userNumWeights_; idx++){
 #endif
 
+    for (int idx=0; idx < userNumWeights_; idx++){
 #ifdef HAVE_ZOLTAN2_OMP
       if(userNumWeights_ > 0) {
         ia->getWeightsKokkosView(kokkos_weights_);
       }
-//#else
+#else
       int stride;
       const scalar_t *weights;
       try{
@@ -354,13 +365,15 @@ void CoordinateModel<Adapter>::sharedConstructor(
       weightArray[idx] = input_t(wArray, stride);
 #endif
 
+/*
       // this is some debug check code!
       throw std::logic_error("Return to me - no weights yet - need to fix the getLocalView to use index!");
       printf("Wgts for idx %d: ", idx);
       for(int n = 0; n < nLocalIds; ++n) {
-        printf("(%d,%d) ", weights[n], kokkos_weights_(n));
+        printf("(%d,%d) ", weights[n], (int)kokkos_weights_(n));
       }
       printf("\n");
+*/
     }
   }
 

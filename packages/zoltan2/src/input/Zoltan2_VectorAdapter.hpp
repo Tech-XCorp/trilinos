@@ -144,7 +144,9 @@ public:
                               int idx = 0) const = 0;
 
   virtual void getEntriesKokkosView(Kokkos::View<scalar_t *> & elements,
-                              int idx = 0) const = 0;
+                              int idx = 0) const {
+    throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");                         
+  }
 
   ////////////////////////////////////////////////////////////////
   // Handy pseudonyms, since vectors are often used as coordinates

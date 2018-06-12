@@ -238,6 +238,7 @@ public:
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
+#ifdef HAVE_ZOLTAN2_OMP
   void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
     // TODO: The BasicUserTypes don't support the node type and are set to
     // default. Howveer I wasn't sure yet where/when we wanted to upgrade
@@ -249,7 +250,8 @@ public:
     ids = Kokkos::View<const gno_t*, kokkos_node_t,
       Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
   }
-  
+#endif
+
   int getNumWeightsPerID() const { return numWeights_;}
 
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const

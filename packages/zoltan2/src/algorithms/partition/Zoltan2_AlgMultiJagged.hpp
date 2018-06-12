@@ -560,12 +560,14 @@ private:
     size_t num_global_parts; //the targeted number of parts
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
-//#else
+    Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
+    Kokkos::View<mj_gno_t*> kokkos_current_mj_gnos; //current global ids of the coordinates, might change during migration.
+#else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
+    mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
+
 #endif
 
-    mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
     int *owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
 
     mj_lno_t *coordinate_permutations; //permutation of coordinates, for partitioning.
@@ -1293,7 +1295,11 @@ public:
                 int coord_dim,
                 mj_lno_t num_local_coords,
                 mj_gno_t num_global_coords,
+#ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos,
+#else
                 const mj_gno_t *initial_mj_gnos,
+#endif
                 mj_scalar_t **mj_coordinates,
 
                 int num_weights_per_coord,
@@ -1303,7 +1309,12 @@ public:
                 mj_scalar_t **mj_part_sizes,
 
                 mj_part_t *&result_assigned_part_ids,
+                
+#ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_gno_t*> &kokkos_result_mj_gnos
+#else
                 mj_gno_t *&result_mj_gnos
+#endif
 
                 );
     /*! \brief Multi Jagged  coordinate partitioning algorithm.
@@ -1449,11 +1460,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     ////temporary memory. It is not used here, but the functions require these to be allocated.
     ////will copy the memory to this->current_mj_gnos[j].
+#ifndef HAVE_ZOLTAN2_OMP
     this->initial_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    this->kokkos_initial_mj_gnos = Kokkos::View<const mj_scalar_t*, Kokkos::OpenMP,
-      Kokkos::MemoryTraits<Kokkos::Unmanaged> > (this->initial_mj_gnos, this->num_local_coords);
+    // TODO Delete me - I think we won't ever need to allocate anything for this? ...
+    //this->kokkos_initial_mj_gnos = Kokkos::View<const mj_scalar_t*, Kokkos::OpenMP,
+    //  Kokkos::MemoryTraits<Kokkos::Unmanaged> > (this->initial_mj_gnos, this->num_local_coords);
 #endif
 
     this->num_weights_per_coord = 0;
@@ -1895,7 +1909,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     //free the extra memory that we allocated.
     freeArray<mj_part_t>(this->assigned_part_ids);
+    
+#ifndef HAVE_ZOLTAN2_OMP
     freeArray<mj_gno_t>(this->initial_mj_gnos);
+#endif
+
     freeArray<mj_gno_t>(this->current_mj_gnos);
     freeArray<bool>(tmp_mj_uniform_weights);
     freeArray<bool>(tmp_mj_uniform_parts);
@@ -1924,7 +1942,11 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         num_local_coords(0), num_global_coords(0), mj_coordinates(NULL),
         mj_weights(NULL), mj_uniform_parts(NULL), mj_part_sizes(NULL),
         mj_uniform_weights(NULL), mj_gnos(), num_global_parts(1),
-        initial_mj_gnos(NULL), current_mj_gnos(NULL), owner_of_coordinate(NULL),
+#ifndef HAVE_ZOLTAN2_OMP
+        initial_mj_gnos(NULL),
+        current_mj_gnos(NULL),
+#endif
+        owner_of_coordinate(NULL),
         coordinate_permutations(NULL), new_coordinate_permutations(NULL),
         assigned_part_ids(NULL), part_xadj(NULL), new_part_xadj(NULL),
         distribute_points_on_cut_lines(true), max_concurrent_part_calculation(1),
@@ -2454,12 +2476,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     }
         this->mj_weights = weights;
+#ifndef HAVE_ZOLTAN2_OMP
     this->current_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
+#endif
+
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel for
 #endif
     for (mj_lno_t j=0; j < this->num_local_coords; j++)
+#ifdef HAVE_ZOLTAN2_OMP
+        // TODO optimize
+        this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
+#else
         this->current_mj_gnos[j] = this->initial_mj_gnos[j];
+#endif
 
     this->owner_of_coordinate = allocMemory<int>(this->num_local_coords);
 
@@ -5088,14 +5118,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         {
                 //migrate gnos.
                 ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
+        #ifdef HAVE_ZOLTAN2_OMP
+          throw std::logic_error("Restore me!");
+        #else
                 ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
                 distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+        
                 freeArray<mj_gno_t>(this->current_mj_gnos);
                 this->current_mj_gnos = allocMemory<mj_gno_t>(num_incoming_gnos);
                 memcpy(
                                 this->current_mj_gnos,
                                 received_gnos.getRawPtr(),
                                 num_incoming_gnos * sizeof(mj_gno_t));
+        #endif
         }
         //migrate coordinates
         for (int i = 0; i < this->coord_dim; ++i){
@@ -5860,6 +5895,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
         //migrate gnos to actual owners.
         ArrayRCP<mj_gno_t> received_gnos(incoming);
+
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("Restore me!");
+#else
         ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
         freeArray<mj_gno_t>(this->current_mj_gnos);
@@ -5867,6 +5906,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         memcpy( this->current_mj_gnos,
                 received_gnos.getRawPtr(),
                 incoming * sizeof(mj_gno_t));
+#endif
 
                 //migrate part ids to actual owners.
         ArrayView<mj_part_t> sent_partids(this->assigned_part_ids, this->num_local_coords);
@@ -6054,7 +6094,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         int coord_dim_,
         mj_lno_t num_local_coords_,
         mj_gno_t num_global_coords_,
+
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos_,
+#else
         const mj_gno_t *initial_mj_gnos_,
+#endif
+
         mj_scalar_t **mj_coordinates_,
 
         int num_weights_per_coord_,
@@ -6064,7 +6110,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_scalar_t **mj_part_sizes_,
 
         mj_part_t *&result_assigned_part_ids_,
+        
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_gno_t*> &kokkos_result_mj_gnos_
+#else
         mj_gno_t *&result_mj_gnos_
+#endif
+
 )
 {
 
@@ -6114,8 +6166,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->num_local_coords = num_local_coords_;
         this->num_global_coords = num_global_coords_;
         this->mj_coordinates = mj_coordinates_; //will copy the memory to this->mj_coordinates.
+  
+  #ifdef HAVE_ZOLTAN2_OMP
+         this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_; // see note below ... was original copying? seems cannot be...
+  #else
         this->initial_mj_gnos = (mj_gno_t *) initial_mj_gnos_; //will copy the memory to this->current_mj_gnos[j].
-
+  #endif
+  
         this->num_weights_per_coord = num_weights_per_coord_;
         this->mj_uniform_weights = mj_uniform_weights_;
         this->mj_weights = mj_weights_; //will copy the memory to this->mj_weights
@@ -6569,7 +6626,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 is_data_ever_migrated);
 
     result_assigned_part_ids_ = this->assigned_part_ids;
+    
+#ifdef HAVE_ZOLTAN2_OMP
+    kokkos_result_mj_gnos_ = this->kokkos_current_mj_gnos;
+#else
     result_mj_gnos_ = this->current_mj_gnos;
+#endif
 
     this->free_work_memory();
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
@@ -6615,8 +6677,13 @@ private:
     int coord_dim; // coordinate dimension.
     mj_lno_t num_local_coords; //number of local coords.
     mj_gno_t num_global_coords; //number of global coords.
+
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
+#else
     const mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
-  
+#endif
+
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
 
     int num_weights_per_coord; // number of weights per coordinate
@@ -6666,14 +6733,22 @@ private:
         int coord_dim_,
         mj_lno_t num_local_coords_,
         mj_gno_t num_global_coords_,  size_t num_global_parts_,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<const mj_gno_t*> &kokkos_initial_mj_gnos_,
+#else
         const mj_gno_t *initial_mj_gnos_,
+#endif
         mj_scalar_t **mj_coordinates_,
         int num_weights_per_coord_,
         mj_scalar_t **mj_weights_,
         //results
         RCP<const Comm<int> > &result_problemComm_,
         mj_lno_t & result_num_local_coords_,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
+#else
         mj_gno_t * &result_initial_mj_gnos_,
+#endif
         mj_scalar_t ** &result_mj_coordinates_,
         mj_scalar_t ** &result_mj_weights_,
         int * &result_actual_owner_rank_);
@@ -6690,7 +6765,10 @@ public:
                         num_global_parts(1), part_no_array(NULL),
                         recursion_depth(0),
                         coord_dim(0),num_local_coords(0), num_global_coords(0),
-                        initial_mj_gnos(NULL), mj_coordinates(NULL),
+#ifndef HAVE_ZOLTAN2_OMP
+                        initial_mj_gnos(NULL),
+#endif
+                        mj_coordinates(NULL),
                         num_weights_per_coord(0),
                         mj_uniform_weights(NULL), mj_weights(NULL),
                         mj_uniform_parts(NULL),
@@ -6809,14 +6887,22 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
                                  int coord_dim_,
                                  mj_lno_t num_local_coords_,
                                  mj_gno_t num_global_coords_, size_t num_global_parts_,
+#ifdef HAVE_ZOLTAN2_OMP
+                                 Kokkos::View<const mj_gno_t*> &kokkos_initial_mj_gnos_,
+#else
                                  const mj_gno_t *initial_mj_gnos_,
+#endif
                                  mj_scalar_t **mj_coordinates_,
                                  int num_weights_per_coord_,
                                  mj_scalar_t **mj_weights_,
                                  //results
                                  RCP<const Comm<int> > &result_problemComm_,
                                  mj_lno_t &result_num_local_coords_,
+#ifdef HAVE_ZOLTAN2_OMP
+                                 Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
+#else
                                  mj_gno_t * &result_initial_mj_gnos_,
+#endif
                                  mj_scalar_t ** &result_mj_coordinates_,
                                  mj_scalar_t ** &result_mj_weights_,
                                  int * &result_actual_owner_rank_){
@@ -6861,14 +6947,30 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   {
     ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
 
+#ifdef HAVE_ZOLTAN2_OMP
+   // ArrayView<const mj_gno_t> sent_gnos(kokkos_initial_mj_gnos_, num_local_coords_);
+   throw std::logic_error("Restore doPostsAndWaits");
+#else
     ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_, num_local_coords_);
     distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+#endif
 
+
+
+#ifdef HAVE_ZOLTAN2_OMP
+    kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *>("gids", num_incoming_gnos);
+    for(int n = 0; n < num_incoming_gnos; ++n) {
+      kokkos_result_initial_mj_gnos_(n) = received_gnos[n]; // TODO - fix to a single call
+    }
+#else
     result_initial_mj_gnos_ = allocMemory<mj_gno_t>(num_incoming_gnos);
     memcpy(
 	  result_initial_mj_gnos_,
 	  received_gnos.getRawPtr(),
 	  num_incoming_gnos * sizeof(mj_gno_t));
+#endif
+
+
   }
       
   //migrate coordinates
@@ -6947,11 +7049,21 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
    RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
    mj_lno_t result_num_local_coords = this->num_local_coords;
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_gno_t*> kokkos_result_initial_mj_gnos;
+#else
    mj_gno_t * result_initial_mj_gnos = NULL;
+#endif
    mj_scalar_t **result_mj_coordinates = this->mj_coordinates;
    mj_scalar_t **result_mj_weights = this->mj_weights;
    int *result_actual_owner_rank = NULL;
+
+
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<const mj_gno_t*> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
+#else
    const mj_gno_t * result_initial_mj_gnos_ = this->initial_mj_gnos;
+#endif
 
    //TODO: MD 08/2017: Further discussion is required.
    //MueLu calls MJ when it has very few coordinates per processors, such as 10. 
@@ -6995,24 +7107,41 @@ void Zoltan2_AlgMJ<Adapter>::partition(
          this->num_local_coords,
          this->num_global_coords,
          this->num_global_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+         this->kokkos_initial_mj_gnos,
+#else
          this->initial_mj_gnos,
+#endif
          this->mj_coordinates,
          this->num_weights_per_coord,
          this->mj_weights,
          //results
          result_problemComm,
          result_num_local_coords,
+#ifdef HAVE_ZOLTAN2_OMP
+         kokkos_result_initial_mj_gnos,
+#else
          result_initial_mj_gnos,
+#endif
          result_mj_coordinates,
          result_mj_weights,
          result_actual_owner_rank);
-     result_initial_mj_gnos_ = result_initial_mj_gnos;
+#ifdef HAVE_ZOLTAN2_OMP
+         kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
+#else
+         result_initial_mj_gnos_ = result_initial_mj_gnos;
+#endif
    }
    
 
 
    mj_part_t *result_assigned_part_ids = NULL;
+   
+#ifdef HAVE_ZOLTAN2_OMP
+  Kokkos::View<mj_gno_t*> kokkos_result_mj_gnos;
+#else
    mj_gno_t *result_mj_gnos = NULL;
+#endif
 
     if (am_i_in_subset){
       this->mj_partitioner.multi_jagged_part(
@@ -7027,7 +7156,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
           this->coord_dim,
           result_num_local_coords, //this->num_local_coords,
           this->num_global_coords,
+#ifdef HAVE_ZOLTAN2_OMP
+          kokkos_result_initial_mj_gnos_,
+#else
           result_initial_mj_gnos_, //this->initial_mj_gnos,
+#endif
           result_mj_coordinates, //this->mj_coordinates,
 
           this->num_weights_per_coord,
@@ -7037,7 +7170,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
           this->mj_part_sizes,
 
           result_assigned_part_ids,
+#ifdef HAVE_ZOLTAN2_OMP
+          kokkos_result_mj_gnos
+#else
           result_mj_gnos
+#endif
       );
 
     }
@@ -7048,12 +7185,20 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
     for (mj_lno_t i = 0; i < result_num_local_coords; i++)
+#ifdef HAVE_ZOLTAN2_OMP
+      localGidToLid[kokkos_result_initial_mj_gnos_(i)] = i;
+#else
       localGidToLid[result_initial_mj_gnos_[i]] = i;
+#endif
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
 
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
+#ifdef HAVE_ZOLTAN2_OMP
+      mj_lno_t origLID = localGidToLid[kokkos_result_mj_gnos(i)];
+#else
       mj_lno_t origLID = localGidToLid[result_mj_gnos[i]];
+#endif
       partId[origLID] = result_assigned_part_ids[i];
     }
 
@@ -7061,19 +7206,29 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     Teuchos::Hashtable<mj_gno_t, mj_lno_t>
     localGidToLid(result_num_local_coords);
     for (mj_lno_t i = 0; i < result_num_local_coords; i++)
+#ifdef HAVE_ZOLTAN2_OMP
+      localGidToLid.put(kokkos_result_initial_mj_gnos_(i), i);
+#else
       localGidToLid.put(result_initial_mj_gnos_[i], i);
+#endif
 
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
 
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
+#ifdef HAVE_ZOLTAN2_OMP
+      mj_lno_t origLID = localGidToLid.get(result_mj_gnos(i));
+#else
       mj_lno_t origLID = localGidToLid.get(result_mj_gnos[i]);
+#endif
       partId[origLID] = result_assigned_part_ids[i];
     }
 
 #endif // C++11 is enabled
 
+#ifndef HAVE_ZOLTAN2_OMP
     delete [] result_mj_gnos;
+#endif
     delete [] result_assigned_part_ids;
 
 
@@ -7093,8 +7248,15 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
+#ifdef HAVE_ZOLTAN2_OMP
+      //  ArrayView<const mj_gno_t> sent_gnos(result_num_local_coords);
+        
+        throw std::logic_error("Restore distributoer!");
+#else
         ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_, result_num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+#endif
+
       }
       {
         ArrayView<mj_part_t> sent_partnos(partId());
@@ -7108,8 +7270,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
+#ifdef HAVE_ZOLTAN2_OMP
+        localGidToLid2[this->kokkos_initial_mj_gnos(i)] = i;
+#else
         localGidToLid2[this->initial_mj_gnos[i]] = i;
-
+#endif
 
       for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
         mj_lno_t origLID = localGidToLid2[received_gnos[i]];
@@ -7120,8 +7285,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       Teuchos::Hashtable<mj_gno_t, mj_lno_t>
 	      localGidToLid2(this->num_local_coords);
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
+#ifdef HAVE_ZOLTAN2_OMP
+        localGidToLid2.put(this->kokkos_initial_mj_gnos(i), i);
+#else
         localGidToLid2.put(this->initial_mj_gnos[i], i);
-
+#endif
 
       for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
         mj_lno_t origLID = localGidToLid2.get(received_gnos[i]);
@@ -7133,7 +7301,12 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       }
 
       {
+  #ifdef HAVE_ZOLTAN2_OMP
+  
+  #else
         freeArray<mj_gno_t> (result_initial_mj_gnos);
+  #endif
+  
         for (int i = 0; i < this->coord_dim; ++i){
           freeArray<mj_scalar_t> (result_mj_coordinates[i]);
         }
@@ -7201,7 +7374,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         Kokkos::View<const mj_gno_t *> kokkos_gnos;
         Kokkos::View<mj_scalar_t *> kokkos_xyz;
         Kokkos::View<mj_scalar_t *> kokkos_wgts;
-//#else
+#else
         ArrayView<const mj_gno_t> gnos;
         ArrayView<input_t> xyz;
         ArrayView<input_t> wgts;
@@ -7213,15 +7386,15 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
 #ifdef HAVE_ZOLTAN2_OMP
         this->mj_coords->getCoordinates(kokkos_gnos, kokkos_xyz, kokkos_wgts);
-//#else
+#else
         this->mj_coords->getCoordinates(gnos, xyz, wgts);
 #endif
 
 
         //obtain global ids.
 #ifdef HAVE_ZOLTAN2_OMP
-     //   this->kokkos_initial_mj_gnos = kokkos_gnos;
-//#else
+        this->kokkos_initial_mj_gnos = kokkos_gnos;
+#else
         ArrayView<const mj_gno_t> mj_gnos = gnos;
         this->initial_mj_gnos = mj_gnos.getRawPtr();
 #endif
@@ -7241,10 +7414,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
 #ifdef HAVE_ZOLTAN2_OMP
                // this->kokkos_mj_coordinates = kokkos_xyz;
-                
-                ArrayRCP<const mj_scalar_t> ar;
-                xyz[dim].getInputArray(ar);
-                this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();
 #else
                 ArrayRCP<const mj_scalar_t> ar;
                 xyz[dim].getInputArray(ar);
