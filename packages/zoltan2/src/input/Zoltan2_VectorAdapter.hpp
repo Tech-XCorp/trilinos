@@ -143,6 +143,9 @@ public:
   virtual void getEntriesView(const scalar_t *&elements, int &stride,
                               int idx = 0) const = 0;
 
+  virtual void getEntriesKokkosView(Kokkos::View<scalar_t *> & elements,
+                              int idx = 0) const = 0;
+
   ////////////////////////////////////////////////////////////////
   // Handy pseudonyms, since vectors are often used as coordinates
   // User should not implement these methods.
@@ -154,6 +157,11 @@ public:
                                  int idx = 0) const
   {
     getEntriesView(elements, stride, idx);
+  }
+
+  inline void getCoordinatesKokkosView(Kokkos::View<scalar_t *> & elements, int idx = 0) const
+  {
+    getEntriesKokkosView(elements, idx);
   }
 };
 

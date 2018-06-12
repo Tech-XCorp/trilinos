@@ -528,7 +528,8 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr){
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
 class AlgMJ
 {
 private:
@@ -558,7 +559,12 @@ private:
     ArrayView<const mj_gno_t> mj_gnos; //global ids of the coordinates, comes from the input
     size_t num_global_parts; //the targeted number of parts
 
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
+//#else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
+#endif
+
     mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
     int *owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
 
@@ -1393,8 +1399,10 @@ public:
  *  \param part_no_array_: possibly null part_no_array, specifying how many parts each should be divided during partitioning.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::sequential_task_partitioning(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::sequential_task_partitioning(
     const RCP<const Environment> &env,
     mj_lno_t num_total_coords,
     mj_lno_t num_selected_coords,
@@ -1442,6 +1450,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::sequential_task_partitio
     ////temporary memory. It is not used here, but the functions require these to be allocated.
     ////will copy the memory to this->current_mj_gnos[j].
     this->initial_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
+
+#ifdef HAVE_ZOLTAN2_OMP
+    this->kokkos_initial_mj_gnos = Kokkos::View<const mj_scalar_t*, Kokkos::OpenMP,
+      Kokkos::MemoryTraits<Kokkos::Unmanaged> > (this->initial_mj_gnos, this->num_local_coords);
+#endif
 
     this->num_weights_per_coord = 0;
     bool *tmp_mj_uniform_weights = new bool[1];
@@ -1900,8 +1913,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::sequential_task_partitio
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::AlgMJ():
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+        execution_space, memory_space>::AlgMJ():
         mj_env(), mj_problemComm(), imbalance_tolerance(0),
         part_no_array(NULL), recursion_depth(0), coord_dim(0),
         num_weights_per_coord(0), initial_num_loc_coords(0),
@@ -1945,9 +1960,12 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::AlgMJ():
  * returns null if boxes are not stored, and prints warning mesage.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::mj_partBox_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::get_global_box() const
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::mj_partBox_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::get_global_box() const
 {
   return this->global_box;
 }
@@ -1956,8 +1974,10 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::get_global_box() const
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_to_keep_part_boxes(){
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::set_to_keep_part_boxes(){
   this->mj_keep_part_boxes = true;
 }
 
@@ -1970,8 +1990,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_to_keep_part_boxes()
  * and the number of parts before the last dimension is calculated.
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_part_specifications(){
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::set_part_specifications(){
 
         this->total_num_cut = 0; //how many cuts will be totally
         this->total_num_part = 1;    //how many parts will be totally
@@ -2063,8 +2085,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_part_specifications(
  * \param root how many more recursion depth is left.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::get_part_count(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::get_part_count(
                 mj_part_t num_total_future,
                 double root)
 {
@@ -2093,8 +2117,10 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::get_part_cou
  *  \param output_part_boxes: output, if boxes are kept, the initial box boundaries for obtained parts.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::update_part_num_arrays(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::update_part_num_arrays(
         std::vector <mj_part_t> &num_partitioning_in_current_dim, //assumes this vector is empty.
     std::vector<mj_part_t> *future_num_part_in_parts,
     std::vector<mj_part_t> *next_future_num_parts_in_parts, //assumes this vector is empty.
@@ -2287,8 +2313,10 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::update_part_num_arr
  *
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::allocate_set_work_memory(){
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::allocate_set_work_memory(){
 
         //points to process that initially owns the coordinate.
         this->owner_of_coordinate  = NULL;
@@ -2445,8 +2473,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::allocate_set_work_memory
 /* \brief compute the global bounding box
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::compute_global_box()
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::compute_global_box()
 {
     //local min coords
     mj_scalar_t *mins = allocMemory<mj_scalar_t>(this->coord_dim);
@@ -2503,8 +2533,10 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::compute_global_box()
  * \param initial_partitioning_boxes the input and output vector for boxes.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::init_part_boxes(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::init_part_boxes(
                 RCP<mj_partBoxVector_t> & initial_partitioning_boxes
 )
 {
@@ -2523,8 +2555,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::init_part_boxes(
  * \param total_weight is the output to represent the local total weight in the coordinate in the given range of coordinates.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_local_min_max_coord_totW(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_get_local_min_max_coord_totW(
                 mj_lno_t coordinate_begin_index,
                 mj_lno_t coordinate_end_index,
                 mj_lno_t *mj_current_coordinate_permutations,
@@ -2627,8 +2661,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_local_min_max_coo
  * The structure is same as localMinMaxTotal.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_global_min_max_coord_totW(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_get_global_min_max_coord_totW(
     mj_part_t current_concurrent_num_parts,
     mj_scalar_t *local_min_max_total,
     mj_scalar_t *global_min_max_total){
@@ -2681,8 +2717,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_global_min_max_co
  * \param obtained_part_index holds the amount of shift in the next_future_num_parts_in_parts for the output parts.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_initial_cut_coords_target_weights(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_get_initial_cut_coords_target_weights(
     mj_scalar_t min_coord,
     mj_scalar_t max_coord,
     mj_part_t num_cuts/*p-1*/ ,
@@ -2757,8 +2795,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_initial_cut_coord
  * \param partition_count is the number of parts that the current part will be partitioned into.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_initial_coordinate_parts(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::set_initial_coordinate_parts(
     mj_scalar_t &max_coordinate,
     mj_scalar_t &min_coordinate,
     mj_part_t &concurrent_current_part_index,
@@ -2811,8 +2851,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_initial_coordinate_p
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_1D_part(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_1D_part(
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t used_imbalance_tolerance,
     mj_part_t current_work_part,
@@ -3097,8 +3139,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_1D_part(
  * \param partIds is the array that holds the part ids of the coordinates
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_1D_part_get_thread_part_weights(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_1D_part_get_thread_part_weights(
     size_t total_part_count,
     mj_part_t num_cuts,
     mj_scalar_t max_coord,
@@ -3335,8 +3379,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_1D_part_get_thread_pa
  * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_accumulate_thread_results(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_accumulate_thread_results(
     const std::vector <mj_part_t> &num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts){
@@ -3433,8 +3479,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_accumulate_thread_res
  * \param expected_weight is the expected weight that should be placed on the left of the cut line.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_calculate_new_cut_position (
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_calculate_new_cut_position (
         mj_scalar_t cut_upper_bound,
     mj_scalar_t cut_lower_bound,
     mj_scalar_t cut_upper_weight,
@@ -3475,8 +3523,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_calculate_new_cut_pos
  * \param out_part_xadj is the indices of coordinates calculated for the partition on next dimension.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_create_new_partitions(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_create_new_partitions(
     mj_part_t num_parts,
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *current_concurrent_cut_coordinate,
@@ -3706,8 +3756,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_create_new_partitions
  * \param my_num_incomplete_cut is the number of cutlines whose position has not been determined yet. For K > 1 it is the count in a single part (whose cut lines are determined).
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_new_cut_coordinates(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_get_new_cut_coordinates(
                 const size_t &num_total_part,
                 const mj_part_t &num_cuts,
                 const mj_scalar_t &max_coordinate,
@@ -4072,8 +4124,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_new_cut_coordinat
  * the number of coordinates in each part in each processor.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::get_processor_num_points_in_parts(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::get_processor_num_points_in_parts(
     mj_part_t num_procs,
     mj_part_t num_parts,
     mj_gno_t *&num_points_in_all_processor_parts){
@@ -4147,8 +4201,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::get_processor_num_points
  * the number of coordinates in each part in each processor.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_check_to_migrate(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_check_to_migrate(
     size_t migration_reduce_all_population,
     mj_lno_t num_coords_for_last_dim_part,
     mj_part_t num_procs,
@@ -4208,8 +4264,10 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_check_to_migrate(
  * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::assign_send_destinations(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::assign_send_destinations(
     mj_part_t num_parts,
     mj_part_t *part_assignment_proc_begin_indices,
     mj_part_t *processor_chains_in_parts,
@@ -4259,8 +4317,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::assign_send_destinations
  * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_assign_proc_to_parts(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_assign_proc_to_parts(
                 mj_gno_t * num_points_in_all_processor_parts,
                 mj_part_t num_parts,
                 mj_part_t num_procs,
@@ -4603,8 +4663,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_assign_proc_to_parts(
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::assign_send_destinations2(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::assign_send_destinations2(
     mj_part_t num_parts,
     uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment, //input sorted wrt processors
     int *coordinate_destinations,
@@ -4652,8 +4714,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::assign_send_destinations
  * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_assign_parts_to_procs(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_assign_parts_to_procs(
     mj_gno_t * num_points_in_all_processor_parts,
     mj_part_t num_parts,
     mj_part_t num_procs,
@@ -4815,8 +4879,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_assign_parts_to_procs
  * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_migration_part_proc_assignment(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_migration_part_proc_assignment(
     mj_gno_t * num_points_in_all_processor_parts,
     mj_part_t num_parts,
     mj_part_t num_procs,
@@ -4889,8 +4955,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_migration_part_proc_a
  * \param num_parts is the number of parts that exist in the current partitioning.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_migrate_coords(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_migrate_coords(
     mj_part_t num_procs,
     mj_lno_t &num_new_local_points,
     std::string iteration,
@@ -5102,8 +5170,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_migrate_coords(
  * the processors that will be in the same group.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm){
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm){
     mj_part_t group_size = processor_ranks_for_subcomm.size();
     mj_part_t *ids = allocMemory<mj_part_t>(group_size);
     for(mj_part_t i = 0; i < group_size; ++i) {
@@ -5121,8 +5191,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::create_sub_communicator(
  * \param num_parts is the number of parts right before migration.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::fill_permutation_array(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::fill_permutation_array(
     mj_part_t output_num_parts,
     mj_part_t num_parts){
         //if there is single output part, then simply fill the permutation array.
@@ -5205,8 +5277,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::fill_permutation_array(
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_perform_migration(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_perform_migration(
     mj_part_t input_num_parts, //current umb parts
     mj_part_t &output_num_parts, //output umb parts.
     std::vector<mj_part_t> *next_future_num_parts_in_parts,
@@ -5359,8 +5433,10 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_perform_migration(
  * \param coordInd is the index according to which the partitioning is done.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::create_consistent_chunks(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::create_consistent_chunks(
     mj_part_t num_parts,
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *current_concurrent_cut_coordinate,
@@ -5684,8 +5760,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::create_consistent_chunks
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_final_parts(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::set_final_parts(
                 mj_part_t current_num_parts,
                 mj_part_t output_part_begin_index,
                 RCP<mj_partBoxVector_t> &output_part_boxes,
@@ -5824,8 +5902,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_final_parts(
 /*! \brief Function frees all allocated work memory.
 */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::free_work_memory(){
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::free_work_memory(){
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Free");
 
         for (int i=0; i < this->coord_dim; i++){
@@ -5909,8 +5989,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::free_work_memory(){
  *  \param migration_type : whether to migrate for perfect load imbalance (0) or less messages.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_partitioning_parameters(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::set_partitioning_parameters(
                 bool distribute_points_on_cut_lines_,
                 int max_concurrent_part_calculation_,
                 int check_migrate_avoid_migration_option_,
@@ -5956,8 +6038,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::set_partitioning_paramet
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::multi_jagged_part(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::multi_jagged_part(
 
         const RCP<const Environment> &env,
         RCP<const Comm<int> > &problemComm,
@@ -6510,10 +6594,13 @@ private:
     typedef typename Adapter::lno_t mj_lno_t;
     typedef typename Adapter::node_t mj_node_t;
     typedef typename Adapter::part_t mj_part_t;
+    typedef typename Adapter::node_t::memory_space memory_space;
+    typedef typename Adapter::node_t::execution_space execution_space;
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
     typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
 #endif
-    AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t> mj_partitioner;
+    AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+       execution_space, memory_space> mj_partitioner;
 
     RCP<const Environment> mj_env; //the environment object
     RCP<const Comm<int> > mj_problemComm; //initial comm object
@@ -6529,6 +6616,7 @@ private:
     mj_lno_t num_local_coords; //number of local coords.
     mj_gno_t num_global_coords; //number of global coords.
     const mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
+  
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
 
     int num_weights_per_coord; // number of weights per coordinate
@@ -6555,10 +6643,13 @@ private:
     ArrayRCP<mj_part_t> comAdj_; //communication graph adj.
 
 
+
+#ifndef HAVE_ZOLTAN2_OMP
     //when we have strided data, it returns a unstrided data in RCP form.
     //we need to hold on to that data, during the execution of mj, so that the data is not released.
     //coordinate_rcp_holder will hold that data, and release it when MJ is deleted.
     ArrayRCP<const mj_scalar_t> * coordinate_ArrayRCP_holder;
+#endif
 
     void set_up_partitioning_data(
       const RCP<PartitioningSolution<Adapter> >&solution);
@@ -6609,13 +6700,18 @@ public:
                         check_migrate_avoid_migration_option(0), migration_type(0),
                         minimum_migration_imbalance(0.30),
                         mj_keep_part_boxes(false), num_threads(1), mj_run_as_rcb(false),mj_premigration_option(0), min_coord_per_rank_for_premigration(32000),
-                        comXAdj_(), comAdj_(), coordinate_ArrayRCP_holder (NULL)
+                        comXAdj_(), comAdj_() 
+#ifndef HAVE_ZOLTAN2_OMP                        
+                        ,coordinate_ArrayRCP_holder (NULL)
+#endif
     {}
     ~Zoltan2_AlgMJ(){
+#ifndef HAVE_ZOLTAN2_OMP  
       if (coordinate_ArrayRCP_holder != NULL){
         delete [] this->coordinate_ArrayRCP_holder;
         this->coordinate_ArrayRCP_holder = NULL;
       }
+#endif
     }
 
     /*! \brief Set up validators specific to this algorithm
@@ -7100,26 +7196,63 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         this->mj_uniform_weights = allocMemory< bool >(criteria_dim);
 
         typedef StridedData<mj_lno_t, mj_scalar_t> input_t;
+        
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<const mj_gno_t *> kokkos_gnos;
+        Kokkos::View<mj_scalar_t *> kokkos_xyz;
+        Kokkos::View<mj_scalar_t *> kokkos_wgts;
+//#else
         ArrayView<const mj_gno_t> gnos;
         ArrayView<input_t> xyz;
         ArrayView<input_t> wgts;
+#endif
 
-
+#ifndef HAVE_ZOLTAN2_OMP
         this->coordinate_ArrayRCP_holder = new ArrayRCP<const mj_scalar_t> [this->coord_dim + this->num_weights_per_coord];
+#endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+        this->mj_coords->getCoordinates(kokkos_gnos, kokkos_xyz, kokkos_wgts);
+//#else
         this->mj_coords->getCoordinates(gnos, xyz, wgts);
+#endif
+
+
         //obtain global ids.
+#ifdef HAVE_ZOLTAN2_OMP
+     //   this->kokkos_initial_mj_gnos = kokkos_gnos;
+//#else
         ArrayView<const mj_gno_t> mj_gnos = gnos;
         this->initial_mj_gnos = mj_gnos.getRawPtr();
+#endif
 
         //extract coordinates from multivector.
         for (int dim=0; dim < this->coord_dim; dim++){
+        
+  
+// TEMPORARY - compare coords
+/*
+        printf("Inspect for dim: %d\n", dim);
+        for(int n = 0; n < kokkos_xyz.size(); ++n) {
+          printf("(%d,%d) ", xyz[dim][n], kokkos_xyz(n));
+        }
+        printf("\n");
+*/
+
+#ifdef HAVE_ZOLTAN2_OMP
+               // this->kokkos_mj_coordinates = kokkos_xyz;
+                
+                ArrayRCP<const mj_scalar_t> ar;
+                xyz[dim].getInputArray(ar);
+                this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();
+#else
                 ArrayRCP<const mj_scalar_t> ar;
                 xyz[dim].getInputArray(ar);
                 this->coordinate_ArrayRCP_holder[dim] = ar;
 
                 //multiJagged coordinate values assignment
                 this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();
+#endif
         }
 
         //if no weights are provided set uniform weight.
@@ -7130,11 +7263,15 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         else{
                 //if weights are provided get weights for all weight indices
                 for (int wdim = 0; wdim < this->num_weights_per_coord; wdim++){
+                #ifdef HAVE_ZOLTAN2_OMP
+                        throw std::logic_error("Punted on this - kokkos refactor in progress....");
+                #else
                         ArrayRCP<const mj_scalar_t> ar;
                         wgts[wdim].getInputArray(ar);
                         this->coordinate_ArrayRCP_holder[this->coord_dim + wdim] = ar;
                         this->mj_uniform_weights[wdim] = false;
                         this->mj_weights[wdim] = (mj_scalar_t *) ar.getRawPtr();
+                #endif
                 }
         }
 
@@ -7502,9 +7639,12 @@ Zoltan2_AlgMJ<Adapter>::getGlobalBoxBoundaries() const
 
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::get_kept_boxes() const
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::mj_partBoxVector_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::get_kept_boxes() const
 {
   if (this->mj_keep_part_boxes)
     return this->kept_boxes;
@@ -7513,9 +7653,12 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::get_kept_boxes() const
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::compute_global_box_boundaries(
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::mj_partBoxVector_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
+          execution_space, memory_space>::compute_global_box_boundaries(
   RCP<mj_partBoxVector_t> &localPartBoxes
 ) const
 {

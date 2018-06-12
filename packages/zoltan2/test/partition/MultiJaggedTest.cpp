@@ -801,6 +801,8 @@ int testFromDataFile(
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
 
     {
+    
+
     // Run a test with BasicVectorAdapter and xyzxyz format coordinates
     const int bvme = comm->getRank();
     const inputAdapter_t::lno_t bvlen =
@@ -1289,6 +1291,14 @@ void print_usage(char *executable){
 
 int main(int argc, char *argv[])
 {
+std::cout << "        Device: " << znode_t::name() << std::endl;
+std::cout << "Eecution space: " << znode_t::execution_space::name() << std::endl;
+std::cout << "  Memory space: " << znode_t::memory_space::name() << std::endl;
+#ifdef HAVE_ZOLTAN2_OMP
+std::cout << "It is HAVE_ZOLTAN2_OMP!" << std::endl;
+        printf("Num threads is %d\n", omp_get_num_threads());
+#endif
+
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
     //cout << argv << endl;

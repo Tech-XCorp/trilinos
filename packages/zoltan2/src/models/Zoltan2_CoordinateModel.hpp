@@ -217,6 +217,20 @@ public:
     return nCoord;
   }
 
+  // TODO: Integrate with the non kokkos version above - should just be one
+  // available based on HAVE_ZOLTAN2_OMP
+  size_t getCoordinates(Kokkos::View<const gno_t *> & Ids,
+                        Kokkos::View<scalar_t *> & xyz,
+                        Kokkos::View<scalar_t *> & wgts) const
+  {
+    Ids = kokkos_gids_;
+    xyz = kokkos_xyz_;
+    wgts = kokkos_weights_;
+
+    size_t nCoord = getLocalNumCoordinates();
+    return nCoord;
+  }
+
   ////////////////////////////////////////////////////
   // The Model interface.
   ////////////////////////////////////////////////////
@@ -237,9 +251,12 @@ private:
   const RCP<const Comm<int> > comm_;
   int coordinateDim_;
   ArrayRCP<const gno_t> gids_;
+  Kokkos::View<const gno_t *> kokkos_gids_; // TODO: Clean this up with  non kokkos version
   ArrayRCP<input_t> xyz_;
+  Kokkos::View<scalar_t *> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
   int userNumWeights_;
   ArrayRCP<input_t> weights_;
+  Kokkos::View<scalar_t *> kokkos_weights_; // TODO: Clean this up with  non kokkos version
 
   template <typename AdapterWithCoords>
   void sharedConstructor(const AdapterWithCoords *ia,
@@ -285,10 +302,27 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
 
   if (nLocalIds){
+  
+#ifdef HAVE_ZOLTAN2_OMP
+    ia->getIDsKokkosView(kokkos_gids_);
+//#else
     const gno_t *gids=NULL;
     ia->getIDsView(gids);
+#endif
+
+    // this is some debug check code!
+    printf("Ids: ");
+    for(int n = 0; n < nLocalIds; ++n) {
+      printf("(%d,%d) ", gids[n], kokkos_gids_(n));
+    }
+    printf("\n");
+
+    
     gids_ = arcp(gids, 0, nLocalIds, false);
 
+#ifdef HAVE_ZOLTAN2_OMP
+  //  ia->getCoordinatesKokkosView(kokkos_xyz_);
+//#else
     for (int dim=0; dim < coordinateDim_; dim++){
       int stride;
       const scalar_t *coords=NULL;
@@ -302,6 +336,13 @@ void CoordinateModel<Adapter>::sharedConstructor(
     }
 
     for (int idx=0; idx < userNumWeights_; idx++){
+#endif
+
+#ifdef HAVE_ZOLTAN2_OMP
+      if(userNumWeights_ > 0) {
+        ia->getWeightsKokkosView(kokkos_weights_);
+      }
+//#else
       int stride;
       const scalar_t *weights;
       try{
@@ -311,6 +352,15 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
       ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds*stride, false);
       weightArray[idx] = input_t(wArray, stride);
+#endif
+
+      // this is some debug check code!
+      throw std::logic_error("Return to me - no weights yet - need to fix the getLocalView to use index!");
+      printf("Wgts for idx %d: ", idx);
+      for(int n = 0; n < nLocalIds; ++n) {
+        printf("(%d,%d) ", weights[n], kokkos_weights_(n));
+      }
+      printf("\n");
     }
   }
 

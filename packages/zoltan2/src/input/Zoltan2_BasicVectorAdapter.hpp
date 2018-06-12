@@ -238,6 +238,18 @@ public:
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
+  void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
+    // TODO: The BasicUserTypes don't support the node type and are set to
+    // default. Howveer I wasn't sure yet where/when we wanted to upgrade
+    // things as we add Kokkos support. So hard coding OpenMP node type right
+    // now. We may not end up running this under OpenMP anyways as we're sort
+    // of hacking the node list back into a kokkos view anyways.
+    // Note - why can't I do Tpetra::Map<>::node_type here? It doesn't work...
+    typedef Kokkos::OpenMP kokkos_node_t;
+    ids = Kokkos::View<const gno_t*, kokkos_node_t,
+      Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
+  }
+  
   int getNumWeightsPerID() const { return numWeights_;}
 
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
@@ -268,6 +280,22 @@ public:
     }
     size_t length;
     entries_[idx].getStridedList(length, entries, stride);
+  }
+
+  void getEntriesKokkosView(Kokkos::View<scalar_t *> & entries, int idx = 0) const
+  {
+    // TODO: The BasicUserTypes don't support the node type and are set to
+    // default. Howveer I wasn't sure yet where/when we wanted to upgrade
+    // things as we add Kokkos support. So hard coding OpenMP node type right
+    // now. We may not end up running this under OpenMP anyways as we're sort
+    // of hacking the node list back into a kokkos view anyways.
+    // Note - why can't I do Tpetra::Map<>::node_type here? It doesn't work...
+    
+    // TODO ... bother with this adapter for Kokkos?
+    // Not sure what to do with stride - copy the whole thing?
+    //typedef Kokkos::OpenMP kokkos_node_t;
+    //entries = Kokkos::View<const scalar_t*, kokkos_node_t,
+    //  Kokkos::MemoryTraits<Kokkos::Unmanaged> >(&entries_[idx].get(), numIds_);
   }
 
 private:

@@ -114,7 +114,7 @@ public:
 
   size_t getLocalNumIDs() const { return idsView_.extent(0); }
 
-  void getIDsKokkosView(Kokkos::View<gno_t *> &ids) const {ids = idsView_;}
+  void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {ids = idsView_;}
 
   int getNumWeightsPerID() const { return weightsView_.extent(1); }
 
@@ -129,7 +129,7 @@ public:
   }
 
 private:
-  Kokkos::View<gno_t *> idsView_;
+  Kokkos::View<const gno_t *> idsView_;
   Kokkos::View<scalar_t **, weight_layout_t> weightsView_;
 };
 

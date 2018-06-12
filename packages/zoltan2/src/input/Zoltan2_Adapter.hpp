@@ -121,7 +121,7 @@ public:
         this process.
    */
   virtual void getIDsView(const gno_t *&ids) const {
-    Kokkos::View<gno_t *> kokkosIds;
+    Kokkos::View<const gno_t *> kokkosIds;
     getIDsKokkosView(kokkosIds);
     ids = kokkosIds.data();
   }
@@ -131,7 +131,7 @@ public:
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
-  virtual void getIDsKokkosView(Kokkos::View<gno_t *> &ids) const {
+  virtual void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 

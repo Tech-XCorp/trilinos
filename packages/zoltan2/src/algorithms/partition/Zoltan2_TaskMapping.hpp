@@ -1339,6 +1339,7 @@ public:
     //do the partitioning and renumber the parts.
     env->timerStart(MACRO_TIMERS, "Mapping - Proc Partitioning");
 
+/*
     AlgMJ<pcoord_t, part_t, part_t, part_t> mj_partitioner;
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1356,6 +1357,9 @@ public:
         ,num_ranks_per_node
         ,divide_to_prime_first
     );
+*/
+throw std::logic_error("TEMP DISAbLED DURING REFACTOR - fix me!");
+
     env->timerStop(MACRO_TIMERS, "Mapping - Proc Partitioning");
     //comm_->barrier();
     //std::cout << "mj_partitioner.for procs over" << std::endl;
@@ -1381,6 +1385,7 @@ public:
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
     //partitioning of tasks
+  /*
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_tasks,
@@ -1399,6 +1404,7 @@ public:
         //,"task_partitioning"
         //, false//(myRank == 6)
     );
+  */
     env->timerStop(MACRO_TIMERS, "Mapping - Task Partitioning");
 
     //std::cout << "myrank:" << myRank << std::endl;
