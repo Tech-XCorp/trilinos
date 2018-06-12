@@ -324,17 +324,16 @@ void CoordinateModel<Adapter>::sharedConstructor(
   
 #ifdef HAVE_ZOLTAN2_OMP
     ia->getIDsKokkosView(kokkos_gids_);
-#else
+#endif
+
     const gno_t *gids=NULL;
     ia->getIDsView(gids);
     gids_ = arcp(gids, 0, nLocalIds, false);
-#endif
-    
-
 
 #ifdef HAVE_ZOLTAN2_OMP
   //  ia->getCoordinatesKokkosView(kokkos_xyz_);
-#else
+#endif
+
     for (int dim=0; dim < coordinateDim_; dim++){
       int stride;
       const scalar_t *coords=NULL;
@@ -346,14 +345,14 @@ void CoordinateModel<Adapter>::sharedConstructor(
       ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds*stride, false);
       coordArray[dim] = input_t(cArray, stride);
     }
-#endif
 
     for (int idx=0; idx < userNumWeights_; idx++){
 #ifdef HAVE_ZOLTAN2_OMP
       if(userNumWeights_ > 0) {
         ia->getWeightsKokkosView(kokkos_weights_);
       }
-#else
+#endif
+
       int stride;
       const scalar_t *weights;
       try{
@@ -363,7 +362,6 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
       ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds*stride, false);
       weightArray[idx] = input_t(wArray, stride);
-#endif
 
 /*
       // this is some debug check code!

@@ -49,6 +49,14 @@
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
+// A temporary define which turns back on old code to get things compiling
+// and working. This is to make the development process in steps and maintain
+// working checkpoints. Also this macro can be used to search for all the
+// temporary hacks.
+#ifdef HAVE_ZOLTAN2_OMP    // only for HAVE_ZOLTAN2_OMP
+#define RESTORE_NO_OMP_CODE
+#endif
+
 #include <Zoltan2_MultiJagged_ReductionOps.hpp>
 #include <Zoltan2_CoordinateModel.hpp>
 #include <Zoltan2_Parameters.hpp>
@@ -2476,7 +2484,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     }
         this->mj_weights = weights;
-#ifndef HAVE_ZOLTAN2_OMP
+
+#ifdef HAVE_ZOLTAN2_OMP
+   this->kokkos_current_mj_gnos =
+     Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
+#else
     this->current_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
 #endif
 
@@ -6717,6 +6729,9 @@ private:
     //coordinate_rcp_holder will hold that data, and release it when MJ is deleted.
     ArrayRCP<const mj_scalar_t> * coordinate_ArrayRCP_holder;
 #endif
+#ifdef RESTORE_NO_OMP_CODE 
+    ArrayRCP<const mj_scalar_t> * coordinate_ArrayRCP_holder;
+#endif
 
     void set_up_partitioning_data(
       const RCP<PartitioningSolution<Adapter> >&solution);
@@ -6782,6 +6797,9 @@ public:
 #ifndef HAVE_ZOLTAN2_OMP                        
                         ,coordinate_ArrayRCP_holder (NULL)
 #endif
+#ifdef RESTORE_NO_OMP_CODE
+                        ,coordinate_ArrayRCP_holder (NULL)
+#endif
     {}
     ~Zoltan2_AlgMJ(){
 #ifndef HAVE_ZOLTAN2_OMP  
@@ -6790,6 +6808,14 @@ public:
         this->coordinate_ArrayRCP_holder = NULL;
       }
 #endif
+
+#ifdef RESTORE_NO_OMP_CODE
+      if (coordinate_ArrayRCP_holder != NULL){
+        delete [] this->coordinate_ArrayRCP_holder;
+        this->coordinate_ArrayRCP_holder = NULL;
+      }
+#endif
+
     }
 
     /*! \brief Set up validators specific to this algorithm
@@ -7374,6 +7400,12 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         Kokkos::View<const mj_gno_t *> kokkos_gnos;
         Kokkos::View<mj_scalar_t *> kokkos_xyz;
         Kokkos::View<mj_scalar_t *> kokkos_wgts;
+        
+        #ifdef RESTORE_NO_OMP_CODE
+        ArrayView<const mj_gno_t> gnos;
+        ArrayView<input_t> xyz;
+        ArrayView<input_t> wgts;
+        #endif
 #else
         ArrayView<const mj_gno_t> gnos;
         ArrayView<input_t> xyz;
@@ -7384,8 +7416,16 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         this->coordinate_ArrayRCP_holder = new ArrayRCP<const mj_scalar_t> [this->coord_dim + this->num_weights_per_coord];
 #endif
 
+#ifdef RESTORE_NO_OMP_CODE
+        this->coordinate_ArrayRCP_holder = new ArrayRCP<const mj_scalar_t> [this->coord_dim + this->num_weights_per_coord];
+#endif
+
 #ifdef HAVE_ZOLTAN2_OMP
         this->mj_coords->getCoordinates(kokkos_gnos, kokkos_xyz, kokkos_wgts);
+        
+        #ifdef RESTORE_NO_OMP_CODE
+        this->mj_coords->getCoordinates(gnos, xyz, wgts);
+        #endif
 #else
         this->mj_coords->getCoordinates(gnos, xyz, wgts);
 #endif
@@ -7414,6 +7454,16 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
 #ifdef HAVE_ZOLTAN2_OMP
                // this->kokkos_mj_coordinates = kokkos_xyz;
+               
+               #ifdef RESTORE_NO_OMP_CODE
+                ArrayRCP<const mj_scalar_t> ar;
+                xyz[dim].getInputArray(ar);
+                this->coordinate_ArrayRCP_holder[dim] = ar;
+
+                //multiJagged coordinate values assignment
+                this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();               
+               #endif
+               
 #else
                 ArrayRCP<const mj_scalar_t> ar;
                 xyz[dim].getInputArray(ar);
