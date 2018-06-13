@@ -141,9 +141,14 @@ public:
   }
 
   void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
-    // use our invector_ which is Tpetra to access our Tpetra::Map so we can
-    // get a direct view of the global indices
-    ids = invector_->getMap()->getMyGlobalIndices();
+    if (map_->lib() == Xpetra::UseTpetra) {
+      const xt_mvector_t *tvector =
+        dynamic_cast<const xt_mvector_t *>(vector_.get());
+      ids = tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+    }
+    else {
+      throw std::logic_error("getIDsKokkosView called but not on Tpetra!");
+    }
   }
 
   int getNumWeightsPerID() const { return numWeights_;}
@@ -163,10 +168,17 @@ public:
   }
 
   void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx = 0) const {
-    typedef Kokkos::LayoutLeft weight_layout_t;  // TODO: Better place
-    Kokkos::View<scalar_t **, weight_layout_t> view2d =
-      invector_->template getLocalView<node_t>();
-    wgt = Kokkos::subview(view2d, Kokkos::ALL, idx);
+    if (map_->lib() == Xpetra::UseTpetra) {
+      const xt_mvector_t *tvector =
+        dynamic_cast<const xt_mvector_t *>(vector_.get());
+      typedef Kokkos::LayoutLeft weight_layout_t;  // TODO: Better place
+      Kokkos::View<scalar_t **, weight_layout_t> view2d =
+        tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
+      wgt = Kokkos::subview(view2d, Kokkos::ALL, idx);
+    }
+    else {
+      throw std::logic_error("getWeightsKokkosView called but not Tpetra!");
+    }
   }
   
   ////////////////////////////////////////////////////
@@ -298,12 +310,11 @@ template <typename User>
     Kokkos::View<scalar_t *> & elements, int idx) const
 {
   if (map_->lib() == Xpetra::UseTpetra){
-    const xt_mvector_t *tvector =
-      dynamic_cast<const xt_mvector_t *>(vector_.get());
-
     typedef Kokkos::LayoutLeft entries_layout_t;  // TODO: Better place
+      const xt_mvector_t *tvector =
+        dynamic_cast<const xt_mvector_t *>(vector_.get());
     Kokkos::View<scalar_t **, entries_layout_t> view2d =
-      invector_->template getLocalView<node_t>();
+      tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
     elements = Kokkos::subview(view2d, Kokkos::ALL, idx);
   }
   else {

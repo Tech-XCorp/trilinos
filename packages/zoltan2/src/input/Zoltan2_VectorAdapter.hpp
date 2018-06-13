@@ -147,6 +147,14 @@ public:
                               int idx = 0) const {
     throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");                         
   }
+  
+  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, 
+                              int idx = 0) const {
+    // TODO ....
+    // #ifdef RESTORE_NO_OMP_CODE
+    //  ... doing nothing to be implemented or refactor
+    // #endif
+  }
 
   ////////////////////////////////////////////////////////////////
   // Handy pseudonyms, since vectors are often used as coordinates

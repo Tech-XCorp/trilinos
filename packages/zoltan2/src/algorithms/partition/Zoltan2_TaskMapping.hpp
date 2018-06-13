@@ -862,7 +862,7 @@ void fillContinousArray(T *arr, size_t arrSize, T *val){
 
 /*! \brief CommunicationModel Base Class that performs mapping between the coordinate partitioning result.
  */
-template <typename part_t, typename pcoord_t>
+template <typename part_t, typename pcoord_t, typename node_t>
 class CommunicationModel{
 protected:
   double commCost;
@@ -954,8 +954,8 @@ public:
 /*! \brief CoordinateModelInput Class that performs mapping between the coordinate partitioning result and mpi ranks
  * base on the coordinate results and mpi physical coordinates.
  */
-template <typename pcoord_t,  typename tcoord_t, typename part_t>
-class CoordinateCommunicationModel:public CommunicationModel<part_t, pcoord_t> {
+template <typename pcoord_t,  typename tcoord_t, typename part_t, typename node_t>
+class CoordinateCommunicationModel:public CommunicationModel<part_t, pcoord_t, node_t> {
 public:
   //private:
   int proc_coord_dim; //dimension of the processors
@@ -974,7 +974,7 @@ public:
 
   //public:
   CoordinateCommunicationModel():
-    CommunicationModel<part_t, pcoord_t>(),
+    CommunicationModel<part_t, pcoord_t, node_t>(),
     proc_coord_dim(0),
     proc_coords(0),
     task_coord_dim(0),
@@ -1008,7 +1008,7 @@ public:
       bool *machine_extent_wrap_around_,
       const MachineRepresentation<pcoord_t,part_t> *machine_ = NULL
   ):
-    CommunicationModel<part_t, pcoord_t>(no_procs_, no_tasks_),
+    CommunicationModel<part_t, pcoord_t, node_t>(no_procs_, no_tasks_),
     proc_coord_dim(pcoord_dim_), proc_coords(pcoords_),
     task_coord_dim(tcoord_dim_), task_coords(tcoords_),
     partArraySize(-1),
@@ -1339,8 +1339,10 @@ public:
     //do the partitioning and renumber the parts.
     env->timerStart(MACRO_TIMERS, "Mapping - Proc Partitioning");
 
-/*
-    AlgMJ<pcoord_t, part_t, part_t, part_t> mj_partitioner;
+    typedef typename node_t::execution_space execution_space;
+    typedef typename node_t::memory_space memory_space;
+    AlgMJ<pcoord_t, part_t, part_t, part_t,
+      execution_space, memory_space> mj_partitioner;
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_procs,
@@ -1357,9 +1359,6 @@ public:
         ,num_ranks_per_node
         ,divide_to_prime_first
     );
-*/
-throw std::logic_error("TEMP DISAbLED DURING REFACTOR - fix me!");
-
     env->timerStop(MACRO_TIMERS, "Mapping - Proc Partitioning");
     //comm_->barrier();
     //std::cout << "mj_partitioner.for procs over" << std::endl;
@@ -1385,7 +1384,6 @@ throw std::logic_error("TEMP DISAbLED DURING REFACTOR - fix me!");
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
     //partitioning of tasks
-  /*
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_tasks,
@@ -1404,7 +1402,6 @@ throw std::logic_error("TEMP DISAbLED DURING REFACTOR - fix me!");
         //,"task_partitioning"
         //, false//(myRank == 6)
     );
-  */
     env->timerStop(MACRO_TIMERS, "Mapping - Task Partitioning");
 
     //std::cout << "myrank:" << myRank << std::endl;
@@ -1531,6 +1528,7 @@ protected:
   typedef typename Adapter::scalar_t tcoord_t;
   typedef typename Adapter::scalar_t scalar_t;
   typedef typename Adapter::lno_t lno_t;
+  typedef typename Adapter::node_t node_t;
 
 #endif
 
@@ -1541,7 +1539,7 @@ protected:
   ArrayRCP<part_t> local_task_to_rank; //allocMemory<part_t>(this->no_procs); //holds the processors mapped to tasks.
 
   bool isOwnerofModel;
-  CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t> *proc_task_comm;
+  CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t,node_t> *proc_task_comm;
   part_t nprocs;
   part_t ntasks;
   ArrayRCP<part_t> task_communication_xadj;
@@ -1725,8 +1723,8 @@ protected:
     std::string outF = gnuPlots + rankStr+ extentionS;
     std::ofstream gnuPlotCode ( outF.c_str(), std::ofstream::out);
 
-    CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t> *tmpproc_task_comm =
-        static_cast <CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t> * > (proc_task_comm);
+    CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t, node_t> *tmpproc_task_comm =
+        static_cast <CoordinateCommunicationModel<pcoord_t, tcoord_t, part_t, node_t> * > (proc_task_comm);
     //int mindim = MINOF(tmpproc_task_comm->proc_coord_dim, tmpproc_task_comm->task_coord_dim);
     int mindim = tmpproc_task_comm->proc_coord_dim;
     if (mindim != 3) {
@@ -2089,7 +2087,7 @@ public:
 
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             procDim,
             procCoordinates,
             coordDim,
@@ -2354,7 +2352,7 @@ public:
     envConst->timerStart(MACRO_TIMERS, "CoordinateCommunicationModel Create");
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             procDim,
             procCoordinates,
             coordDim,
@@ -2561,7 +2559,7 @@ public:
 
     //create coordinate communication model.
     this->proc_task_comm =
-        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t>(
+        new Zoltan2::CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t, node_t>(
             proc_dim,
             virtual_machine_coordinates,
             coordDim,

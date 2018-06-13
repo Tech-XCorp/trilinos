@@ -49,14 +49,6 @@
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
-// A temporary define which turns back on old code to get things compiling
-// and working. This is to make the development process in steps and maintain
-// working checkpoints. Also this macro can be used to search for all the
-// temporary hacks.
-#ifdef HAVE_ZOLTAN2_OMP    // only for HAVE_ZOLTAN2_OMP
-#define RESTORE_NO_OMP_CODE
-#endif
-
 #include <Zoltan2_MultiJagged_ReductionOps.hpp>
 #include <Zoltan2_CoordinateModel.hpp>
 #include <Zoltan2_Parameters.hpp>
@@ -114,6 +106,13 @@
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
+// A temporary define which turns back on old code to get things compiling
+// and working. This is to make the development process in steps and maintain
+// working checkpoints. Also this macro can be used to search for all the
+// temporary hacks.
+#ifdef HAVE_ZOLTAN2_OMP    // only for HAVE_ZOLTAN2_OMP
+#define RESTORE_NO_OMP_CODE
+#endif
 
 namespace Teuchos{
 
@@ -1468,14 +1467,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     ////temporary memory. It is not used here, but the functions require these to be allocated.
     ////will copy the memory to this->current_mj_gnos[j].
-#ifndef HAVE_ZOLTAN2_OMP
-    this->initial_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
-#endif
-
 #ifdef HAVE_ZOLTAN2_OMP
-    // TODO Delete me - I think we won't ever need to allocate anything for this? ...
-    //this->kokkos_initial_mj_gnos = Kokkos::View<const mj_scalar_t*, Kokkos::OpenMP,
-    //  Kokkos::MemoryTraits<Kokkos::Unmanaged> > (this->initial_mj_gnos, this->num_local_coords);
+    this->kokkos_initial_mj_gnos =
+      Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
+#else
+    this->initial_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
 #endif
 
     this->num_weights_per_coord = 0;
@@ -1920,9 +1916,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     
 #ifndef HAVE_ZOLTAN2_OMP
     freeArray<mj_gno_t>(this->initial_mj_gnos);
+    freeArray<mj_gno_t>(this->current_mj_gnos);
 #endif
 
-    freeArray<mj_gno_t>(this->current_mj_gnos);
     freeArray<bool>(tmp_mj_uniform_weights);
     freeArray<bool>(tmp_mj_uniform_parts);
     freeArray<mj_scalar_t *>(tmp_mj_weights);
@@ -5131,7 +5127,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //migrate gnos.
                 ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
         #ifdef HAVE_ZOLTAN2_OMP
-          throw std::logic_error("Restore me!");
+          throw std::logic_error("Restore me This will cause the parallel tests to fail if OpenMP is on!");
         #else
                 ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
                 distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
@@ -5909,7 +5905,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         ArrayRCP<mj_gno_t> received_gnos(incoming);
 
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me!");
+        throw std::logic_error("Restore me! This will cause the parallel tests to fail if OpenMP is on!");
 #else
         ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
@@ -7453,15 +7449,17 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 */
 
 #ifdef HAVE_ZOLTAN2_OMP
-               // this->kokkos_mj_coordinates = kokkos_xyz;
-               
+               // this->kokkos_mj_coordinates = kokkos_xyz;   
+
                #ifdef RESTORE_NO_OMP_CODE
                 ArrayRCP<const mj_scalar_t> ar;
                 xyz[dim].getInputArray(ar);
                 this->coordinate_ArrayRCP_holder[dim] = ar;
 
                 //multiJagged coordinate values assignment
-                this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();               
+                this->mj_coordinates[dim] =  (mj_scalar_t *)ar.getRawPtr();  
+                
+                std::cout << "Did read coordinates...." << std::endl;
                #endif
                
 #else
@@ -7483,7 +7481,15 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
                 //if weights are provided get weights for all weight indices
                 for (int wdim = 0; wdim < this->num_weights_per_coord; wdim++){
                 #ifdef HAVE_ZOLTAN2_OMP
-                        throw std::logic_error("Punted on this - kokkos refactor in progress....");
+                
+                   #ifdef RESTORE_NO_OMP_CODE
+                        ArrayRCP<const mj_scalar_t> ar;
+                        wgts[wdim].getInputArray(ar);
+                        this->coordinate_ArrayRCP_holder[this->coord_dim + wdim] = ar;
+                        this->mj_uniform_weights[wdim] = false;
+                        this->mj_weights[wdim] = (mj_scalar_t *) ar.getRawPtr();
+                   #endif
+
                 #else
                         ArrayRCP<const mj_scalar_t> ar;
                         wgts[wdim].getInputArray(ar);

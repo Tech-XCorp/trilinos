@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
   // Check and print the solution.
   // Count number of IDs assigned to each part; compare to targetCount
 
-  Kokkos::View<globalId_t *> ids;
+  Kokkos::View<const globalId_t *> ids;
   ia.getIDsKokkosView(ids);
 
   Kokkos::View<int*> partCounts("partCounts", nprocs, 0);
