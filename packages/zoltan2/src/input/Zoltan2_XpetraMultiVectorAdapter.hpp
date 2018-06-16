@@ -167,20 +167,29 @@ public:
     weights_[idx].getStridedList(length, weights, stride);
   }
 
-  void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx = 0) const {
+  void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
+    // now we'd like to make a Kokkos::View<scalar_t **> form from the
+    // weights_ list. Note that in BasicKokkosIdentifierInput.cpp we use
+    // Kokkos::View<scalar_t *> weightIn[N] to store the dimensions so that
+    // all need to be sorted out so convetions are consistent.
     if (map_->lib() == Xpetra::UseTpetra) {
-      const xt_mvector_t *tvector =
-        dynamic_cast<const xt_mvector_t *>(vector_.get());
-      typedef Kokkos::LayoutLeft weight_layout_t;  // TODO: Better place
-      Kokkos::View<scalar_t **, weight_layout_t> view2d =
-        tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
-      wgt = Kokkos::subview(view2d, Kokkos::ALL, idx);
+      wgt = Kokkos::View<scalar_t**, execution_space_t>("wgts", vector_->getLocalLength(), numWeights_);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        const scalar_t * weights;
+        size_t length;
+        int stride;
+        weights_[idx].getStridedList(length, weights, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          wgt(fill_index++,idx) = weights[n];
+        }
+      }
     }
     else {
-      throw std::logic_error("getWeightsKokkosView called but not Tpetra!");
+      throw std::logic_error("getWeightsKokkos2dView called but not Tpetra!");
     }
   }
-  
+
   ////////////////////////////////////////////////////
   // The VectorAdapter interface.
   ////////////////////////////////////////////////////
@@ -189,7 +198,8 @@ public:
 
   void getEntriesView(const scalar_t *&elements, int &stride, int idx=0) const;
 
-  void getEntriesKokkosView(Kokkos::View<scalar_t *> & elements, int idx=0) const;
+  void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const;
 
   template <typename Adapter>
     void applyPartitioningSolution(const User &in, User *&out,
@@ -307,15 +317,18 @@ template <typename User>
 ////////////////////////////////////////////////////////////////////////////
 template <typename User>
   void XpetraMultiVectorAdapter<User>::getEntriesKokkosView(
-    Kokkos::View<scalar_t *> & elements, int idx) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const
 {
   if (map_->lib() == Xpetra::UseTpetra){
-    typedef Kokkos::LayoutLeft entries_layout_t;  // TODO: Better place
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
-    Kokkos::View<scalar_t **, entries_layout_t> view2d =
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> view2d =
       tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
-    elements = Kokkos::subview(view2d, Kokkos::ALL, idx);
+
+    elements = view2d;
+
+    // TODO: Delete later ... keeping in case we end up switching back
+    // elements = Kokkos::subview(view2d, Kokkos::ALL, idx);
   }
   else {
     throw std::logic_error("getEntriesKokkosView called but not using Tpetra!");

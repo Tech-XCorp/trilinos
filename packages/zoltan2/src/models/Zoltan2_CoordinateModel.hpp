@@ -110,7 +110,7 @@ public:
                   coordinateDim_(),
 #ifndef HAVE_ZOLTAN2_OMP
                   gids_(),
-#endif 
+#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -237,9 +237,10 @@ public:
   }
 
 #ifdef HAVE_ZOLTAN2_OMP
-  size_t getCoordinates(Kokkos::View<const gno_t *> & Ids,
-                        Kokkos::View<scalar_t *> & xyz,
-                        Kokkos::View<scalar_t *> & wgts) const
+  size_t getCoordinatesKokkos(
+    Kokkos::View<const gno_t *> &Ids,
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> &xyz,
+    Kokkos::View<scalar_t **> &wgts) const
   {
     Ids = kokkos_gids_;
     xyz = kokkos_xyz_;
@@ -272,10 +273,10 @@ private:
   ArrayRCP<const gno_t> gids_;
   Kokkos::View<const gno_t *> kokkos_gids_; // TODO: Clean this up with  non kokkos version
   ArrayRCP<input_t> xyz_;
-  Kokkos::View<scalar_t *> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
   int userNumWeights_;
   ArrayRCP<input_t> weights_;
-  Kokkos::View<scalar_t *> kokkos_weights_; // TODO: Clean this up with  non kokkos version
+  Kokkos::View<scalar_t **> kokkos_weights_; // TODO: Clean this up with  non kokkos version
 
   template <typename AdapterWithCoords>
   void sharedConstructor(const AdapterWithCoords *ia,
@@ -321,18 +322,15 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
 
   if (nLocalIds){
-  
+
 #ifdef HAVE_ZOLTAN2_OMP
     ia->getIDsKokkosView(kokkos_gids_);
+    ia->getCoordinatesKokkosView(kokkos_xyz_);
 #endif
 
     const gno_t *gids=NULL;
     ia->getIDsView(gids);
     gids_ = arcp(gids, 0, nLocalIds, false);
-
-#ifdef HAVE_ZOLTAN2_OMP
-  //  ia->getCoordinatesKokkosView(kokkos_xyz_);
-#endif
 
     for (int dim=0; dim < coordinateDim_; dim++){
       int stride;
@@ -346,13 +344,11 @@ void CoordinateModel<Adapter>::sharedConstructor(
       coordArray[dim] = input_t(cArray, stride);
     }
 
-    for (int idx=0; idx < userNumWeights_; idx++){
 #ifdef HAVE_ZOLTAN2_OMP
-      if(userNumWeights_ > 0) {
-        ia->getWeightsKokkosView(kokkos_weights_);
-      }
+      ia->getWeightsKokkos2dView(kokkos_weights_);
 #endif
 
+    for (int idx=0; idx < userNumWeights_; idx++){
       int stride;
       const scalar_t *weights;
       try{

@@ -122,6 +122,8 @@ int checkBasicVector(
 
 int main(int argc, char *argv[])
 {
+  Kokkos::initialize(argc, argv);
+
   Teuchos::GlobalMPISession session(&argc, &argv);
   RCP<const Comm<int> > comm = DefaultComm<int>::getComm();
   int rank = comm->getRank();
@@ -300,6 +302,8 @@ int main(int argc, char *argv[])
   delete [] mv_values;
   delete [] valueStrides;
   delete [] valuePtrs;
+
+  Kokkos::finalize();
 
   return fail;
 }

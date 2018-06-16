@@ -243,9 +243,7 @@ public:
     // TODO: The BasicUserTypes don't support the node type and are set to
     // default. Howveer I wasn't sure yet where/when we wanted to upgrade
     // things as we add Kokkos support. So hard coding OpenMP node type right
-    // now. We may not end up running this under OpenMP anyways as we're sort
-    // of hacking the node list back into a kokkos view anyways.
-    // Note - why can't I do Tpetra::Map<>::node_type here? It doesn't work...
+    // now... but need to decide if and how we will support kokkos here.
     typedef Kokkos::OpenMP kokkos_node_t;
     ids = Kokkos::View<const gno_t*, kokkos_node_t,
       Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
@@ -284,21 +282,13 @@ public:
     entries_[idx].getStridedList(length, entries, stride);
   }
 
-  void getEntriesKokkosView(Kokkos::View<scalar_t *> & entries, int idx = 0) const
+#ifdef HAVE_ZOLTAN2_OMP
+  void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & entries) const
   {
-    // TODO: The BasicUserTypes don't support the node type and are set to
-    // default. Howveer I wasn't sure yet where/when we wanted to upgrade
-    // things as we add Kokkos support. So hard coding OpenMP node type right
-    // now. We may not end up running this under OpenMP anyways as we're sort
-    // of hacking the node list back into a kokkos view anyways.
-    // Note - why can't I do Tpetra::Map<>::node_type here? It doesn't work...
-    
-    // TODO ... bother with this adapter for Kokkos?
-    // Not sure what to do with stride - copy the whole thing?
-    //typedef Kokkos::OpenMP kokkos_node_t;
-    //entries = Kokkos::View<const scalar_t*, kokkos_node_t,
-    //  Kokkos::MemoryTraits<Kokkos::Unmanaged> >(&entries_[idx].get(), numIds_);
+    entries = kokkos_entries_;
   }
+#endif
 
 private:
 
@@ -307,6 +297,10 @@ private:
 
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
+
+#ifdef HAVE_ZOLTAN2_OMP
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_entries_;
+#endif
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
@@ -325,7 +319,28 @@ private:
         ArrayRCP<const scalar_t> eltV(entries[v], 0, stride*numIds_, false);
         entries_[v] = input_t(eltV, stride);
       }
+
+#ifdef HAVE_ZOLTAN2_OMP
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft>(
+        "entries", numIds_, numEntriesPerID_);
+#endif
+
+      for (int v=0; v < numEntriesPerID_; v++) {
+        size_t length;
+        int stride;
+        const scalar_t * entries;
+        entries_[v].getStridedList(length, entries, stride);
+
+#ifdef HAVE_ZOLTAN2_OMP
+        // TODO - optimize - if we can? Need this into Kokkos view ...
+        int fill_index = 0;
+        for(int n = 0; n < length; n += stride) {
+          kokkos_entries_(fill_index++,v) = entries[n];
+        }
+#endif
+      }
     }
+
 
     if (numWeights_) {
       int stride = 1;

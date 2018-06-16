@@ -143,13 +143,12 @@ public:
   virtual void getEntriesView(const scalar_t *&elements, int &stride,
                               int idx = 0) const = 0;
 
-  virtual void getEntriesKokkosView(Kokkos::View<scalar_t *> & elements,
-                              int idx = 0) const {
-    throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");                         
+  virtual void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const {
+    throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");
   }
-  
-  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, 
-                              int idx = 0) const {
+
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
     // TODO ....
     // #ifdef RESTORE_NO_OMP_CODE
     //  ... doing nothing to be implemented or refactor
@@ -169,9 +168,10 @@ public:
     getEntriesView(elements, stride, idx);
   }
 
-  inline void getCoordinatesKokkosView(Kokkos::View<scalar_t *> & elements, int idx = 0) const
+  inline void getCoordinatesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const
   {
-    getEntriesKokkosView(elements, idx);
+    getEntriesKokkosView(elements);
   }
 };
 

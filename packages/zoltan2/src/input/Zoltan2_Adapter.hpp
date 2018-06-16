@@ -159,8 +159,13 @@ public:
   // *   getNumWeightsPerID > 0.
   // *   This function should not be called if getNumWeightsPerID is zero.
   // */ 
-  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, 
-                              int idx = 0) const {
+  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx) const {
+    Z2_THROW_NOT_IMPLEMENTED
+  }
+
+  // 2nd form returns the 2darray - still need to decide how this will all sort
+  // out but they should all be made consistent.
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> & wgt) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 

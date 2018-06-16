@@ -206,7 +206,7 @@ void getArgVals(
 int main(int argc, char *argv[]){
 
     Kokkos::initialize(argc, argv);
-  
+
     typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
     typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     typedef inputAdapter_t::part_t part_t;
@@ -450,7 +450,7 @@ int main(int argc, char *argv[]){
     catch(char * s){
         cerr << s << endl;
     }
-   
+
     Kokkos::finalize();
 
 }

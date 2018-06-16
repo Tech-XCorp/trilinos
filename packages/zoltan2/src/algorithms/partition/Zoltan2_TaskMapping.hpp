@@ -1343,6 +1343,7 @@ public:
     typedef typename node_t::memory_space memory_space;
     AlgMJ<pcoord_t, part_t, part_t, part_t,
       execution_space, memory_space> mj_partitioner;
+
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_procs,
@@ -1350,7 +1351,11 @@ public:
         num_parts,
         procdim,
         //minCoordDim,
+    #ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<pcoord_t**, Kokkos::LayoutLeft>(pcoords[0], used_num_procs, procdim),
+    #else
         pcoords,//this->proc_coords,
+    #endif
         proc_adjList,
         proc_xadj,
         recursion_depth,
@@ -1391,7 +1396,11 @@ public:
         num_parts,
         this->task_coord_dim,
         //minCoordDim,
+    #ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<pcoord_t**, Kokkos::LayoutLeft>(tcoords[0], used_num_procs, procdim),
+    #else
         tcoords, //this->task_coords,
+    #endif
         task_adjList,
         task_xadj,
         recursion_depth,
