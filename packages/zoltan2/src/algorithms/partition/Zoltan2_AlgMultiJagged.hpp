@@ -6886,9 +6886,6 @@ private:
     //coordinate_rcp_holder will hold that data, and release it when MJ is deleted.
     ArrayRCP<const mj_scalar_t> * coordinate_ArrayRCP_holder;
 #endif
-#ifdef RESTORE_NO_OMP_CODE
-    ArrayRCP<const mj_scalar_t> * coordinate_ArrayRCP_holder;
-#endif
 
     void set_up_partitioning_data(
       const RCP<PartitioningSolution<Adapter> >&solution);
@@ -6965,19 +6962,9 @@ public:
 #ifndef HAVE_ZOLTAN2_OMP
                         ,coordinate_ArrayRCP_holder (NULL)
 #endif
-#ifdef RESTORE_NO_OMP_CODE
-                        ,coordinate_ArrayRCP_holder (NULL)
-#endif
     {}
     ~Zoltan2_AlgMJ(){
 #ifndef HAVE_ZOLTAN2_OMP
-      if (coordinate_ArrayRCP_holder != NULL){
-        delete [] this->coordinate_ArrayRCP_holder;
-        this->coordinate_ArrayRCP_holder = NULL;
-      }
-#endif
-
-#ifdef RESTORE_NO_OMP_CODE
       if (coordinate_ArrayRCP_holder != NULL){
         delete [] this->coordinate_ArrayRCP_holder;
         this->coordinate_ArrayRCP_holder = NULL;
@@ -7615,10 +7602,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 #endif
 
 #ifndef HAVE_ZOLTAN2_OMP
-        this->coordinate_ArrayRCP_holder = new ArrayRCP<const mj_scalar_t> [this->coord_dim + this->num_weights_per_coord];
-#endif
-
-#ifdef RESTORE_NO_OMP_CODE
         this->coordinate_ArrayRCP_holder = new ArrayRCP<const mj_scalar_t> [this->coord_dim + this->num_weights_per_coord];
 #endif
 
