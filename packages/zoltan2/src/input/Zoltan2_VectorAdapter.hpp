@@ -148,13 +148,6 @@ public:
     throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");
   }
 
-  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
-    // TODO ....
-    // #ifdef RESTORE_NO_OMP_CODE
-    //  ... doing nothing to be implemented or refactor
-    // #endif
-  }
-
   ////////////////////////////////////////////////////////////////
   // Handy pseudonyms, since vectors are often used as coordinates
   // User should not implement these methods.

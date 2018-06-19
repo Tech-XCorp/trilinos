@@ -252,6 +252,26 @@ public:
 
   int getNumWeightsPerID() const { return numWeights_;}
 
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
+
+    if(numWeights_ > 0) {
+      int stride;
+      size_t length;
+      const scalar_t * weights;
+
+      // call just to get length for 2d setup
+      weights_[0].getStridedList(length, weights, stride);
+      wgt = Kokkos::View<scalar_t**>("wgts", length, numWeights_);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        weights_[idx].getStridedList(length, weights, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          wgt(fill_index++,idx) = weights[n];
+        }
+      }
+    }
+  }
+
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
   {
     if (idx < 0 || idx >= numWeights_) {

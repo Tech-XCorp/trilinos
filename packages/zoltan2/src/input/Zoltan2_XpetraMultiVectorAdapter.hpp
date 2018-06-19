@@ -173,7 +173,7 @@ public:
     // Kokkos::View<scalar_t *> weightIn[N] to store the dimensions so that
     // all need to be sorted out so convetions are consistent.
     if (map_->lib() == Xpetra::UseTpetra) {
-      wgt = Kokkos::View<scalar_t**, execution_space_t>("wgts", vector_->getLocalLength(), numWeights_);
+      wgt = Kokkos::View<scalar_t**>("wgts", vector_->getLocalLength(), numWeights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
         const scalar_t * weights;
         size_t length;

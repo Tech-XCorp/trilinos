@@ -559,11 +559,12 @@ private:
 
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_mj_coordinates; //two dimension coordinate array
+    Kokkos::View<mj_scalar_t **> kokkos_mj_weights; //two dimension weight array
 #else
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
+    mj_scalar_t **mj_weights; //two dimension weight array
 #endif
 
-    mj_scalar_t **mj_weights; //two dimension weight array
     bool *mj_uniform_parts; //if the target parts are uniform
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
@@ -1315,10 +1316,14 @@ public:
                 mj_scalar_t **mj_coordinates,
 #endif
 
-
                 int num_weights_per_coord,
                 bool *mj_uniform_weights,
+
+#ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_scalar_t**> kokkos_mj_weights,
+#else
                 mj_scalar_t **mj_weights,
+#endif
                 bool *mj_uniform_parts,
                 mj_scalar_t **mj_part_sizes,
 
@@ -1499,8 +1504,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->mj_uniform_weights = tmp_mj_uniform_weights ;
     this->mj_uniform_weights[0] = true;
 
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_weights("weights", 1); // TODO - is just placeholder like below but need to clean this up
+    this->kokkos_mj_weights = kokkos_tmp_mj_weights;
+#else
     mj_scalar_t **tmp_mj_weights = new mj_scalar_t *[1];
     this->mj_weights = tmp_mj_weights; //will copy the memory to this->mj_weights
+#endif
 
     bool *tmp_mj_uniform_parts = new bool[1];
     this->mj_uniform_parts = tmp_mj_uniform_parts;
@@ -1962,7 +1972,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     freeArray<bool>(tmp_mj_uniform_weights);
     freeArray<bool>(tmp_mj_uniform_parts);
+
+#ifndef HAVE_ZOLTAN2_OMP
     freeArray<mj_scalar_t *>(tmp_mj_weights);
+#endif
+
     freeArray<mj_scalar_t *>(tmp_mj_part_sizes);
 
     this->free_work_memory();
@@ -1987,8 +2001,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         num_local_coords(0), num_global_coords(0),
 #ifndef HAVE_ZOLTAN2_OMP
         mj_coordinates(NULL),
+        mj_weights(NULL),
 #endif
-        mj_weights(NULL), mj_uniform_parts(NULL), mj_part_sizes(NULL),
+        mj_uniform_parts(NULL), mj_part_sizes(NULL),
         mj_uniform_weights(NULL), mj_gnos(), num_global_parts(1),
 #ifndef HAVE_ZOLTAN2_OMP
         initial_mj_gnos(NULL),
@@ -2495,31 +2510,46 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->global_total_part_weight_left_right_closests = allocMemory<mj_scalar_t>((this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
 #ifdef HAVE_ZOLTAN2_OMP
-   Kokkos::View<mj_scalar_t**,Kokkos::LayoutLeft> coord(
-     "coord", this->num_local_coords, this->coord_dim);
+    Kokkos::View<mj_scalar_t**,Kokkos::LayoutLeft> coord(
+      "coord", this->num_local_coords, this->coord_dim);
 
     for (int i=0; i < this->coord_dim; i++){
 // to kokkify ...
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel for // Refactor in progress - will convert to Kokkos
 #endif
-        for (mj_lno_t j=0; j < this->num_local_coords; j++)
-          coord(j,i) = this->kokkos_mj_coordinates(j,i);
+      for (mj_lno_t j=0; j < this->num_local_coords; j++)
+                coord(j,i) = this->kokkos_mj_coordinates(j,i);
     }
     this->kokkos_mj_coordinates = coord;
 #else
     mj_scalar_t **coord = allocMemory<mj_scalar_t *>(this->coord_dim);
     for (int i=0; i < this->coord_dim; i++){
-        coord[i] = allocMemory<mj_scalar_t>(this->num_local_coords);
+      coord[i] = allocMemory<mj_scalar_t>(this->num_local_coords);
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel for
 #endif
-        for (mj_lno_t j=0; j < this->num_local_coords; j++)
+      for (mj_lno_t j=0; j < this->num_local_coords; j++)
                 coord[i][j] = this->mj_coordinates[i][j];
     }
     this->mj_coordinates = coord;
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t**> weights(
+      "weights", this->num_local_coords, this->num_weights_per_coord);
+  for (int i=0; i < this->num_weights_per_coord; i++){
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
+        for (mj_lno_t j=0; j < this->num_local_coords; j++)
+        {
+            weights(j,i) = this->kokkos_mj_weights(j,i);
+        }
+
+    }
+    this->kokkos_mj_weights = weights;
+#else
     int criteria_dim = (this->num_weights_per_coord ? this->num_weights_per_coord : 1);
     mj_scalar_t **weights = allocMemory<mj_scalar_t *>(criteria_dim);
 
@@ -2535,7 +2565,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 weights[i][j] = this->mj_weights[i][j];
 
     }
-        this->mj_weights = weights;
+    this->mj_weights = weights;
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
    this->kokkos_current_mj_gnos =
@@ -2701,7 +2732,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
                 for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
                     int i = mj_current_coordinate_permutations[ii];
+#ifdef HAVE_ZOLTAN2_OMP
+                    my_total_weight += this->kokkos_mj_weights(i,0);
+#else
                     my_total_weight += this->mj_weights[0][i];
+#endif
                 }
             }
 
@@ -3292,7 +3327,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t lower_cut_index = 0;
                 mj_part_t upper_cut_index = num_cuts - 1;
 
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(i,0);
+#else
                 mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
+#endif
                 bool is_inserted = false;
                 bool is_on_left_of_cut = false;
                 bool is_on_right_of_cut = false;
@@ -3709,7 +3748,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii){
 
                         mj_lno_t coordinate_index = this->coordinate_permutations[ii];
+#ifdef HAVE_ZOLTAN2_OMP
+                        mj_scalar_t coordinate_weight = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(coordinate_index,0);
+#else
                         mj_scalar_t coordinate_weight = this->mj_uniform_weights[0]? 1:this->mj_weights[0][coordinate_index];
+#endif
                         mj_part_t coordinate_assigned_place = this->assigned_part_ids[coordinate_index];
                         mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
                         if(coordinate_assigned_place % 2 == 1){
@@ -5211,7 +5254,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //migrate coordinates
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me This will cause the parallel tests to fail if OpenMP is on!");
+        throw std::logic_error("Restore me for coords. This will cause the parallel tests to fail if OpenMP is on!");
 #else
         for (int i = 0; i < this->coord_dim; ++i){
 
@@ -5228,6 +5271,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
         //migrate weights.
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("Restore me for weights. This will cause the parallel tests to fail if OpenMP is on!");
+#else
         for (int i = 0; i < this->num_weights_per_coord; ++i){
 
                 ArrayView<mj_scalar_t> sent_weight(this->mj_weights[i], this->num_local_coords);
@@ -5240,6 +5286,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 received_weight.getRawPtr(),
                                 num_incoming_gnos * sizeof(mj_scalar_t));
         }
+#endif
 
         {
                 //migrate the owners of the coordinates
@@ -5764,8 +5811,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_end];
                         //multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_begin];
                         mj_lno_t i = t.index;
+#ifdef HAVE_ZOLTAN2_OMP
+                        mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(i,0);
+#else
                         mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
-
+#endif
 
                         //part p has enough space for point i, then put it to point i.
                         if(     my_local_thread_cut_weights_to_put_left[p] + weight_stolen_from_previous_part> this->sEpsilon &&
@@ -6049,12 +6099,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 freeArray<mj_scalar_t>(this->mj_coordinates[i]);
         }
         freeArray<mj_scalar_t *>(this->mj_coordinates);
-#endif
 
         for (int i=0; i < this->num_weights_per_coord; i++){
                 freeArray<mj_scalar_t>(this->mj_weights[i]);
         }
         freeArray<mj_scalar_t *>(this->mj_weights);
+#endif
 
         freeArray<int>(this->owner_of_coordinate);
 
@@ -6203,7 +6253,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         int num_weights_per_coord_,
         bool *mj_uniform_weights_,
+
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_scalar_t**> kokkos_mj_weights_,
+#else
         mj_scalar_t **mj_weights_,
+#endif
         bool *mj_uniform_parts_,
         mj_scalar_t **mj_part_sizes_,
 
@@ -6264,17 +6319,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->num_local_coords = num_local_coords_;
         this->num_global_coords = num_global_coords_;
 
-  #ifdef HAVE_ZOLTAN2_OMP
+#ifdef HAVE_ZOLTAN2_OMP
         this->kokkos_mj_coordinates = kokkos_mj_coordinates_; //will copy the memory to this->mj_coordinates.
         this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_; // see note below ... was original copying? seems cannot be...
-  #else
+#else
         this->mj_coordinates = mj_coordinates_; //will copy the memory to this->mj_coordinates.
         this->initial_mj_gnos = (mj_gno_t *) initial_mj_gnos_; //will copy the memory to this->current_mj_gnos[j].
-  #endif
+#endif
 
         this->num_weights_per_coord = num_weights_per_coord_;
         this->mj_uniform_weights = mj_uniform_weights_;
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
+#else
         this->mj_weights = mj_weights_; //will copy the memory to this->mj_weights
+#endif
         this->mj_uniform_parts = mj_uniform_parts_;
         this->mj_part_sizes = mj_part_sizes_;
 
@@ -6792,7 +6851,13 @@ private:
 
     int num_weights_per_coord; // number of weights per coordinate
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
+
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t**> kokkos_mj_weights; //two dimensional weight array.
+#else
     mj_scalar_t **mj_weights; //two dimensional weight array
+#endif
+
     bool *mj_uniform_parts; //if the target parts are uniform
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
 
@@ -6848,19 +6913,24 @@ private:
         mj_scalar_t **mj_coordinates_,
 #endif
         int num_weights_per_coord_,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_scalar_t**> &kokkos_mj_weights_,
+#else
         mj_scalar_t **mj_weights_,
+#endif
         //results
         RCP<const Comm<int> > &result_problemComm_,
         mj_lno_t & result_num_local_coords_,
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
         Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_result_mj_coordinates_,
+        Kokkos::View<mj_scalar_t**> &kokkos_result_mj_weights_,
 #else
         mj_gno_t * &result_initial_mj_gnos_,
         mj_scalar_t ** &result_mj_coordinates_,
+        mj_scalar_t ** &result_mj_weights_,
 #endif
 
-        mj_scalar_t ** &result_mj_weights_,
         int * &result_actual_owner_rank_);
 
 public:
@@ -6880,7 +6950,10 @@ public:
                         mj_coordinates(NULL),
 #endif
                         num_weights_per_coord(0),
-                        mj_uniform_weights(NULL), mj_weights(NULL),
+                        mj_uniform_weights(NULL),
+#ifndef HAVE_ZOLTAN2_OMP
+                        mj_weights(NULL),
+#endif
                         mj_uniform_parts(NULL),
                         mj_part_sizes(NULL),
                         distribute_points_on_cut_lines(true),
@@ -7016,18 +7089,24 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
                                  mj_scalar_t **mj_coordinates_,
 #endif
                                  int num_weights_per_coord_,
+#ifdef HAVE_ZOLTAN2_OMP
+                                 Kokkos::View<mj_scalar_t**> &kokkos_mj_weights_,
+#else
                                  mj_scalar_t **mj_weights_,
+#endif
                                  //results
                                  RCP<const Comm<int> > &result_problemComm_,
                                  mj_lno_t &result_num_local_coords_,
 #ifdef HAVE_ZOLTAN2_OMP
                                  Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
                                  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_result_mj_coordinates_,
+                                 Kokkos::View<mj_scalar_t**> &kokkos_result_mj_weights_,
 #else
                                  mj_gno_t * &result_initial_mj_gnos_,
                                  mj_scalar_t ** &result_mj_coordinates_,
-#endif
                                  mj_scalar_t ** &result_mj_weights_,
+#endif
+
                                  int * &result_actual_owner_rank_){
   mj_env_->timerStart(MACRO_TIMERS, "MultiJagged - PreMigration DistributorPlanCreating");
 
@@ -7114,6 +7193,10 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   }
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+  kokkos_result_mj_weights_ = Kokkos::View<mj_scalar_t **>("weights", num_weights_per_coord_);
+  throw std::logic_error("distributor not implemented for weights! refactor in progress.");
+#else
   result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
   //migrate weights.
   for (int i = 0; i < num_weights_per_coord_; ++i){
@@ -7126,6 +7209,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 	  received_weight.getRawPtr(),
 	  num_incoming_gnos * sizeof(mj_scalar_t));
   }
+#endif
                 
   //migrate the owners of the coordinates
   { 
@@ -7185,7 +7269,12 @@ void Zoltan2_AlgMJ<Adapter>::partition(
    mj_scalar_t **result_mj_coordinates = this->mj_coordinates;
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+   Kokkos::View<mj_scalar_t**> kokkos_result_mj_weights = this->kokkos_mj_weights;
+#else
    mj_scalar_t **result_mj_weights = this->mj_weights;
+#endif
+
    int *result_actual_owner_rank = NULL;
 
 #ifdef HAVE_ZOLTAN2_OMP
@@ -7226,7 +7315,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
      }
      int used_num_ranks = int (this->num_global_coords / float (threshold_num_local_coords) + 0.5);
      if (used_num_ranks == 0) used_num_ranks = 1;
-
      am_i_in_subset = this->mj_premigrate_to_subset(
    	 used_num_ranks,
          migration_selection_option,
@@ -7244,18 +7332,23 @@ void Zoltan2_AlgMJ<Adapter>::partition(
          this->mj_coordinates,
 #endif
          this->num_weights_per_coord,
+#ifdef HAVE_ZOLTAN2_OMP
+         this->kokkos_mj_weights,
+#else
          this->mj_weights,
+#endif
          //results
          result_problemComm,
          result_num_local_coords,
 #ifdef HAVE_ZOLTAN2_OMP
          kokkos_result_initial_mj_gnos,
          kokkos_result_mj_coordinates,
+         kokkos_result_mj_weights,
 #else
          result_initial_mj_gnos,
          result_mj_coordinates,
-#endif
          result_mj_weights,
+#endif
          result_actual_owner_rank);
 #ifdef HAVE_ZOLTAN2_OMP
          kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
@@ -7297,7 +7390,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
           this->num_weights_per_coord,
           this->mj_uniform_weights,
+#ifdef HAVE_ZOLTAN2_OMP
+          kokkos_result_mj_weights, //this->mj_weights,
+#else
           result_mj_weights, //this->mj_weights,
+#endif
           this->mj_uniform_parts,
           this->mj_part_sizes,
 
@@ -7433,18 +7530,21 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       }
 
       {
-  #ifndef HAVE_ZOLTAN2_OMP
+#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_gno_t> (result_initial_mj_gnos);
         for (int i = 0; i < this->coord_dim; ++i){
           freeArray<mj_scalar_t> (result_mj_coordinates[i]);
         }
         freeArray<mj_scalar_t *> (result_mj_coordinates);
-  #endif
+#endif
 
+#ifndef HAVE_ZOLTAN2_OMP
         for (int i = 0; i < this->num_weights_per_coord; ++i){
           freeArray<mj_scalar_t> (result_mj_weights[i]);
         }
         freeArray<mj_scalar_t *> (result_mj_weights);
+#endif
+
         freeArray<int> (result_actual_owner_rank);
       }
       mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
@@ -7461,8 +7561,9 @@ template <typename Adapter>
 void Zoltan2_AlgMJ<Adapter>::free_work_memory(){
 #ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_scalar_t *>(this->mj_coordinates);
-#endif
         freeArray<mj_scalar_t *>(this->mj_weights);
+#endif
+
         freeArray<bool>(this->mj_uniform_parts);
         freeArray<mj_scalar_t *>(this->mj_part_sizes);
         freeArray<bool>(this->mj_uniform_weights);
@@ -7490,8 +7591,8 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         //raw pointer addresess will be obtained from multivector.
 #ifndef HAVE_ZOLTAN2_OMP
         this->mj_coordinates = allocMemory<mj_scalar_t *>(this->coord_dim);
-#endif
         this->mj_weights = allocMemory<mj_scalar_t *>(criteria_dim);
+#endif
 
         //if the partitioning results are to be uniform.
         this->mj_uniform_parts = allocMemory< bool >(criteria_dim);
@@ -7507,12 +7608,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         Kokkos::View<const mj_gno_t *> kokkos_gnos;
         Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_xyz;
         Kokkos::View<mj_scalar_t **> kokkos_wgts;
-
-        #ifdef RESTORE_NO_OMP_CODE
-        ArrayView<const mj_gno_t> gnos;
-        ArrayView<input_t> xyz;
-        ArrayView<input_t> wgts;
-        #endif
 #else
         ArrayView<const mj_gno_t> gnos;
         ArrayView<input_t> xyz;
@@ -7529,13 +7624,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
 #ifdef HAVE_ZOLTAN2_OMP
         this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
-
-        #ifdef RESTORE_NO_OMP_CODE
-        this->mj_coords->getCoordinates(gnos, xyz, wgts);
-        gnos = Teuchos::null; // Purpose is to validate this is not actually being used - in mid refactor here
-        //wgts = Teuchos::null; // Purpose is to validate
-        xyz = Teuchos::null;
-        #endif
 #else
         this->mj_coords->getCoordinates(gnos, xyz, wgts);
 #endif
@@ -7566,29 +7654,25 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         //if no weights are provided set uniform weight.
         if (this->num_weights_per_coord == 0){
                 this->mj_uniform_weights[0] = true;
+#ifdef HAVE_ZOLTAN2_OMP
+                this->kokkos_mj_weights = Kokkos::View<mj_scalar_t **>(); // TODO: better way to 'clear' a view?
+#else
                 this->mj_weights[0] = NULL;
+#endif
         }
         else{
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_mj_weights = kokkos_wgts;
+#else
                 //if weights are provided get weights for all weight indices
                 for (int wdim = 0; wdim < this->num_weights_per_coord; wdim++){
-                #ifdef HAVE_ZOLTAN2_OMP
-
-                   #ifdef RESTORE_NO_OMP_CODE
                         ArrayRCP<const mj_scalar_t> ar;
                         wgts[wdim].getInputArray(ar);
                         this->coordinate_ArrayRCP_holder[this->coord_dim + wdim] = ar;
                         this->mj_uniform_weights[wdim] = false;
                         this->mj_weights[wdim] = (mj_scalar_t *) ar.getRawPtr();
-                   #endif
-
-                #else
-                        ArrayRCP<const mj_scalar_t> ar;
-                        wgts[wdim].getInputArray(ar);
-                        this->coordinate_ArrayRCP_holder[this->coord_dim + wdim] = ar;
-                        this->mj_uniform_weights[wdim] = false;
-                        this->mj_weights[wdim] = (mj_scalar_t *) ar.getRawPtr();
-                #endif
                 }
+#endif
         }
 
         for (int wdim = 0; wdim < criteria_dim; wdim++){

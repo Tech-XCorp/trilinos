@@ -345,7 +345,9 @@ void CoordinateModel<Adapter>::sharedConstructor(
     }
 
 #ifdef HAVE_ZOLTAN2_OMP
+    if(userNumWeights_ > 0) {
       ia->getWeightsKokkos2dView(kokkos_weights_);
+    }
 #endif
 
     for (int idx=0; idx < userNumWeights_; idx++){
@@ -358,16 +360,6 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
       ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds*stride, false);
       weightArray[idx] = input_t(wArray, stride);
-
-/*
-      // this is some debug check code!
-      throw std::logic_error("Return to me - no weights yet - need to fix the getLocalView to use index!");
-      printf("Wgts for idx %d: ", idx);
-      for(int n = 0; n < nLocalIds; ++n) {
-        printf("(%d,%d) ", weights[n], (int)kokkos_weights_(n));
-      }
-      printf("\n");
-*/
     }
   }
 
