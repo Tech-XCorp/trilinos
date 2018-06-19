@@ -245,9 +245,7 @@ public:
     Ids = kokkos_gids_;
     xyz = kokkos_xyz_;
     wgts = kokkos_weights_;
-
-    size_t nCoord = getLocalNumCoordinates();
-    return nCoord;
+    return getLocalNumCoordinates();
   }
 #endif
 
@@ -326,6 +324,9 @@ void CoordinateModel<Adapter>::sharedConstructor(
 #ifdef HAVE_ZOLTAN2_OMP
     ia->getIDsKokkosView(kokkos_gids_);
     ia->getCoordinatesKokkosView(kokkos_xyz_);
+    if(userNumWeights_ > 0) {
+      ia->getWeightsKokkos2dView(kokkos_weights_);
+    }
 #endif
 
     const gno_t *gids=NULL;
@@ -343,12 +344,6 @@ void CoordinateModel<Adapter>::sharedConstructor(
       ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds*stride, false);
       coordArray[dim] = input_t(cArray, stride);
     }
-
-#ifdef HAVE_ZOLTAN2_OMP
-    if(userNumWeights_ > 0) {
-      ia->getWeightsKokkos2dView(kokkos_weights_);
-    }
-#endif
 
     for (int idx=0; idx < userNumWeights_; idx++){
       int stride;

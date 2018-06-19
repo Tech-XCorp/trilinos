@@ -560,12 +560,14 @@ private:
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_mj_coordinates; //two dimension coordinate array
     Kokkos::View<mj_scalar_t **> kokkos_mj_weights; //two dimension weight array
+    Kokkos::View<bool *> kokkos_mj_uniform_parts; //if the target parts are uniform
 #else
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
     mj_scalar_t **mj_weights; //two dimension weight array
+    bool *mj_uniform_parts; //if the target parts are uniform
 #endif
 
-    bool *mj_uniform_parts; //if the target parts are uniform
+
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
 
@@ -1321,10 +1323,12 @@ public:
 
 #ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t**> kokkos_mj_weights,
+                Kokkos::View<bool*> kokkos_mj_uniform_parts,
 #else
                 mj_scalar_t **mj_weights,
-#endif
                 bool *mj_uniform_parts,
+#endif
+
                 mj_scalar_t **mj_part_sizes,
 
                 mj_part_t *&result_assigned_part_ids,
@@ -1505,16 +1509,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->mj_uniform_weights[0] = true;
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_weights("weights", 1); // TODO - is just placeholder like below but need to clean this up
+    Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_weights("weights", 1);
     this->kokkos_mj_weights = kokkos_tmp_mj_weights;
 #else
     mj_scalar_t **tmp_mj_weights = new mj_scalar_t *[1];
     this->mj_weights = tmp_mj_weights; //will copy the memory to this->mj_weights
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<bool*> kokkos_tmp_mj_uniform_parts("uniform parts", 1);
+    this->kokkos_mj_uniform_parts = kokkos_tmp_mj_uniform_parts;
+    this->kokkos_mj_uniform_parts(0) = true;
+#else
     bool *tmp_mj_uniform_parts = new bool[1];
     this->mj_uniform_parts = tmp_mj_uniform_parts;
     this->mj_uniform_parts[0] = true;
+#endif
 
     mj_scalar_t **tmp_mj_part_sizes = new mj_scalar_t * [1];
     this->mj_part_sizes = tmp_mj_part_sizes;
@@ -1971,12 +1981,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
     freeArray<bool>(tmp_mj_uniform_weights);
-    freeArray<bool>(tmp_mj_uniform_parts);
 
 #ifndef HAVE_ZOLTAN2_OMP
+    freeArray<bool>(tmp_mj_uniform_parts);
     freeArray<mj_scalar_t *>(tmp_mj_weights);
 #endif
-
     freeArray<mj_scalar_t *>(tmp_mj_part_sizes);
 
     this->free_work_memory();
@@ -2002,8 +2011,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifndef HAVE_ZOLTAN2_OMP
         mj_coordinates(NULL),
         mj_weights(NULL),
+        mj_uniform_parts(NULL),
 #endif
-        mj_uniform_parts(NULL), mj_part_sizes(NULL),
+        mj_part_sizes(NULL),
         mj_uniform_weights(NULL), mj_gnos(), num_global_parts(1),
 #ifndef HAVE_ZOLTAN2_OMP
         initial_mj_gnos(NULL),
@@ -2873,7 +2883,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 ){
 
     mj_scalar_t coord_range = max_coord - min_coord;
-    if(this->mj_uniform_parts[0]){
+#ifdef HAVE_ZOLTAN2_OMP
+    if(this->kokkos_mj_uniform_parts(0))
+#else
+    if(this->mj_uniform_parts[0])
+#endif
+    {
         {
             mj_part_t cumulative = 0;
             //how many total future parts the part will be partitioned into.
@@ -6256,10 +6271,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<mj_scalar_t**> kokkos_mj_weights_,
+        Kokkos::View<bool*> kokkos_mj_uniform_parts_,
 #else
         mj_scalar_t **mj_weights_,
-#endif
         bool *mj_uniform_parts_,
+#endif
+
         mj_scalar_t **mj_part_sizes_,
 
         mj_part_t *&result_assigned_part_ids_,
@@ -6331,10 +6348,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->mj_uniform_weights = mj_uniform_weights_;
 #ifdef HAVE_ZOLTAN2_OMP
         this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
+        this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
 #else
         this->mj_weights = mj_weights_; //will copy the memory to this->mj_weights
-#endif
         this->mj_uniform_parts = mj_uniform_parts_;
+#endif
+
         this->mj_part_sizes = mj_part_sizes_;
 
         this->num_threads = 1;
@@ -6854,11 +6873,12 @@ private:
 
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t**> kokkos_mj_weights; //two dimensional weight array.
+    Kokkos::View<bool*> kokkos_mj_uniform_parts; //if the target parts are uniform
 #else
     mj_scalar_t **mj_weights; //two dimensional weight array
+    bool *mj_uniform_parts; //if the target parts are uniform
 #endif
 
-    bool *mj_uniform_parts; //if the target parts are uniform
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
 
     bool distribute_points_on_cut_lines; //if partitioning can distribute points on same coordiante to different parts.
@@ -6950,8 +6970,8 @@ public:
                         mj_uniform_weights(NULL),
 #ifndef HAVE_ZOLTAN2_OMP
                         mj_weights(NULL),
-#endif
                         mj_uniform_parts(NULL),
+#endif
                         mj_part_sizes(NULL),
                         distribute_points_on_cut_lines(true),
                         max_concurrent_part_calculation(1),
@@ -7378,11 +7398,13 @@ void Zoltan2_AlgMJ<Adapter>::partition(
           this->num_weights_per_coord,
           this->mj_uniform_weights,
 #ifdef HAVE_ZOLTAN2_OMP
-          kokkos_result_mj_weights, //this->mj_weights,
+          kokkos_result_mj_weights,
+          this->kokkos_mj_uniform_parts,
 #else
           result_mj_weights, //this->mj_weights,
-#endif
           this->mj_uniform_parts,
+#endif
+
           this->mj_part_sizes,
 
           result_assigned_part_ids,
@@ -7446,7 +7468,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     delete [] result_mj_gnos;
 #endif
     delete [] result_assigned_part_ids;
-
 
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
@@ -7549,9 +7570,9 @@ void Zoltan2_AlgMJ<Adapter>::free_work_memory(){
 #ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_scalar_t *>(this->mj_coordinates);
         freeArray<mj_scalar_t *>(this->mj_weights);
+        freeArray<bool>(this->mj_uniform_parts);
 #endif
 
-        freeArray<bool>(this->mj_uniform_parts);
         freeArray<mj_scalar_t *>(this->mj_part_sizes);
         freeArray<bool>(this->mj_uniform_weights);
 
@@ -7576,13 +7597,15 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         this->num_global_parts = solution->getTargetGlobalNumberOfParts();
         //allocate only two dimensional pointer.
         //raw pointer addresess will be obtained from multivector.
-#ifndef HAVE_ZOLTAN2_OMP
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_mj_uniform_parts = Kokkos::View<bool *>("uniform parts", criteria_dim);
+#else
         this->mj_coordinates = allocMemory<mj_scalar_t *>(this->coord_dim);
         this->mj_weights = allocMemory<mj_scalar_t *>(criteria_dim);
-#endif
-
         //if the partitioning results are to be uniform.
         this->mj_uniform_parts = allocMemory< bool >(criteria_dim);
+#endif
+
         //if in a criteria dimension, uniform part is false this shows ratios of
         //the target part weights.
         this->mj_part_sizes =  allocMemory<mj_scalar_t *>(criteria_dim);
@@ -7660,7 +7683,11 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
         for (int wdim = 0; wdim < criteria_dim; wdim++){
                 if (solution->criteriaHasUniformPartSizes(wdim)){
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_mj_uniform_parts(wdim) = true;
+#else
                         this->mj_uniform_parts[wdim] = true;
+#endif
                         this->mj_part_sizes[wdim] = NULL;
                 }
                 else{
