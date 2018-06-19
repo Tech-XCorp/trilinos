@@ -562,14 +562,14 @@ private:
     Kokkos::View<mj_scalar_t **> kokkos_mj_weights; //two dimension weight array
     Kokkos::View<bool *> kokkos_mj_uniform_parts; //if the target parts are uniform
     Kokkos::View<mj_scalar_t **> kokkos_mj_part_sizes; //target part weight sizes.
+    Kokkos::View<bool *> kokkos_mj_uniform_weights; //if the coordinates have uniform weights
 #else
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
     mj_scalar_t **mj_weights; //two dimension weight array
     bool *mj_uniform_parts; //if the target parts are uniform
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
-#endif
-
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
+#endif
 
     ArrayView<const mj_gno_t> mj_gnos; //global ids of the coordinates, comes from the input
     size_t num_global_parts; //the targeted number of parts
@@ -1319,13 +1319,14 @@ public:
 #endif
 
                 int num_weights_per_coord,
-                bool *mj_uniform_weights,
 
 #ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<bool*> kokkos_mj_uniform_weights,
                 Kokkos::View<mj_scalar_t**> kokkos_mj_weights,
                 Kokkos::View<bool*> kokkos_mj_uniform_parts,
                 Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes,
 #else
+                bool *mj_uniform_weights,
                 mj_scalar_t **mj_weights,
                 bool *mj_uniform_parts,
                 mj_scalar_t **mj_part_sizes,
@@ -1504,9 +1505,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
     this->num_weights_per_coord = 0;
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<bool*> kokkos_tmp_mj_uniform_weights("uniform weights", 1);
+    this->kokkos_mj_uniform_weights = kokkos_tmp_mj_uniform_weights;
+    this->kokkos_mj_uniform_weights(0) = true;
+#else
     bool *tmp_mj_uniform_weights = new bool[1];
-    this->mj_uniform_weights = tmp_mj_uniform_weights ;
+    this->mj_uniform_weights = tmp_mj_uniform_weights;
     this->mj_uniform_weights[0] = true;
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_weights("weights", 1);
@@ -1979,11 +1986,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifndef HAVE_ZOLTAN2_OMP
     freeArray<mj_gno_t>(this->initial_mj_gnos);
     freeArray<mj_gno_t>(this->current_mj_gnos);
-#endif
-
     freeArray<bool>(tmp_mj_uniform_weights);
-
-#ifndef HAVE_ZOLTAN2_OMP
     freeArray<bool>(tmp_mj_uniform_parts);
     freeArray<mj_scalar_t *>(tmp_mj_weights);
     freeArray<mj_scalar_t *>(tmp_mj_part_sizes);
@@ -2014,8 +2017,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_weights(NULL),
         mj_uniform_parts(NULL),
         mj_part_sizes(NULL),
+        mj_uniform_weights(NULL),
 #endif
-        mj_uniform_weights(NULL), mj_gnos(), num_global_parts(1),
+        mj_gnos(), num_global_parts(1),
 #ifndef HAVE_ZOLTAN2_OMP
         initial_mj_gnos(NULL),
         current_mj_gnos(NULL),
@@ -2727,7 +2731,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
         {
             //if uniform weights are used, then weight is equal to count.
-            if (this->mj_uniform_weights[0]) {
+#ifdef HAVE_ZOLTAN2_OMP
+            if (this->kokkos_mj_uniform_weights(0))
+#else
+            if (this->mj_uniform_weights[0])
+#endif
+            {
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
 #endif
@@ -2922,7 +2931,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
 
         //round the target part weights.
-        if (this->mj_uniform_weights[0]){
+#ifdef HAVE_ZOLTAN2_OMP
+        if (this->kokkos_mj_uniform_weights(0))
+#else
+        if (this->mj_uniform_weights[0])
+#endif
+        {
                 for(mj_part_t i = 0; i < num_cuts + 1; ++i){
 
                 current_target_part_weights[i] = long(current_target_part_weights[i] + 0.5);
@@ -3344,7 +3358,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t upper_cut_index = num_cuts - 1;
 
 #ifdef HAVE_ZOLTAN2_OMP
-                mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(i,0);
+                mj_scalar_t w = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(i,0);
 #else
                 mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
 #endif
@@ -3765,7 +3779,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                         mj_lno_t coordinate_index = this->coordinate_permutations[ii];
 #ifdef HAVE_ZOLTAN2_OMP
-                        mj_scalar_t coordinate_weight = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(coordinate_index,0);
+                        mj_scalar_t coordinate_weight = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(coordinate_index,0);
 #else
                         mj_scalar_t coordinate_weight = this->mj_uniform_weights[0]? 1:this->mj_weights[0][coordinate_index];
 #endif
@@ -5828,7 +5842,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         //multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_begin];
                         mj_lno_t i = t.index;
 #ifdef HAVE_ZOLTAN2_OMP
-                        mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->kokkos_mj_weights(i,0);
+                        mj_scalar_t w = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(i,0);
 #else
                         mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
 #endif
@@ -6268,13 +6282,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
         int num_weights_per_coord_,
-        bool *mj_uniform_weights_,
+
 
 #ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<bool*> kokkos_mj_uniform_weights_,
         Kokkos::View<mj_scalar_t**> kokkos_mj_weights_,
         Kokkos::View<bool*> kokkos_mj_uniform_parts_,
         Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes_,
 #else
+        bool *mj_uniform_weights_,
         mj_scalar_t **mj_weights_,
         bool *mj_uniform_parts_,
         mj_scalar_t **mj_part_sizes_,
@@ -6348,12 +6364,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
         this->num_weights_per_coord = num_weights_per_coord_;
-        this->mj_uniform_weights = mj_uniform_weights_;
+
 #ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_mj_uniform_weights = kokkos_mj_uniform_weights_;
         this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
         this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
 #else
+        this->mj_uniform_weights = mj_uniform_weights_;
         this->mj_weights = mj_weights_; //will copy the memory to this->mj_weights
         this->mj_uniform_parts = mj_uniform_parts_;
         this->mj_part_sizes = mj_part_sizes_;
@@ -6873,13 +6891,14 @@ private:
 #endif
 
     int num_weights_per_coord; // number of weights per coordinate
-    bool *mj_uniform_weights; //if the coordinates have uniform weights.
 
 #ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<bool*> kokkos_mj_uniform_weights; //if the target parts are uniform.
     Kokkos::View<mj_scalar_t**> kokkos_mj_weights; //two dimensional weight array.
     Kokkos::View<bool*> kokkos_mj_uniform_parts; //if the target parts are uniform
     Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes; //target part weight sizes.
 #else
+    bool *mj_uniform_weights; //if the coordinates have uniform weights.
     mj_scalar_t **mj_weights; //two dimensional weight array
     bool *mj_uniform_parts; //if the target parts are uniform
     mj_scalar_t **mj_part_sizes; //target part weight sizes.
@@ -6971,8 +6990,8 @@ public:
                         mj_coordinates(NULL),
 #endif
                         num_weights_per_coord(0),
-                        mj_uniform_weights(NULL),
 #ifndef HAVE_ZOLTAN2_OMP
+                        mj_uniform_weights(NULL),
                         mj_weights(NULL),
                         mj_uniform_parts(NULL),
                         mj_part_sizes(NULL),
@@ -7400,12 +7419,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 #endif
 
           this->num_weights_per_coord,
-          this->mj_uniform_weights,
+
 #ifdef HAVE_ZOLTAN2_OMP
+          this->kokkos_mj_uniform_weights,
           kokkos_result_mj_weights,
           this->kokkos_mj_uniform_parts,
           this->kokkos_mj_part_sizes,
 #else
+          this->mj_uniform_weights,
           result_mj_weights, //this->mj_weights,
           this->mj_uniform_parts,
           this->mj_part_sizes,
@@ -7576,9 +7597,8 @@ void Zoltan2_AlgMJ<Adapter>::free_work_memory(){
         freeArray<mj_scalar_t *>(this->mj_weights);
         freeArray<bool>(this->mj_uniform_parts);
         freeArray<mj_scalar_t *>(this->mj_part_sizes);
-#endif
-
         freeArray<bool>(this->mj_uniform_weights);
+#endif
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
@@ -7603,6 +7623,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 #ifdef HAVE_ZOLTAN2_OMP
         this->kokkos_mj_uniform_parts = Kokkos::View<bool *>("uniform parts", criteria_dim);
         this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **>("part sizes", criteria_dim);
+        this->kokkos_mj_uniform_weights = Kokkos::View<bool *>("uniform weights", criteria_dim);
 #else
         this->mj_coordinates = allocMemory<mj_scalar_t *>(this->coord_dim);
         this->mj_weights = allocMemory<mj_scalar_t *>(criteria_dim);
@@ -7611,19 +7632,16 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         //if in a criteria dimension, uniform part is false this shows ratios of
         //the target part weights.
         this->mj_part_sizes =  allocMemory<mj_scalar_t *>(criteria_dim);
-#endif
-
-
         //if the weights of coordinates are uniform in a criteria dimension.
         this->mj_uniform_weights = allocMemory< bool >(criteria_dim);
-
-        typedef StridedData<mj_lno_t, mj_scalar_t> input_t;
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<const mj_gno_t *> kokkos_gnos;
         Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_xyz;
         Kokkos::View<mj_scalar_t **> kokkos_wgts;
 #else
+        typedef StridedData<mj_lno_t, mj_scalar_t> input_t;
         ArrayView<const mj_gno_t> gnos;
         ArrayView<input_t> xyz;
         ArrayView<input_t> wgts;
@@ -7664,26 +7682,33 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
         //if no weights are provided set uniform weight.
         if (this->num_weights_per_coord == 0){
-                this->mj_uniform_weights[0] = true;
+
 #ifdef HAVE_ZOLTAN2_OMP
+                this->kokkos_mj_uniform_weights(0) = true;
                 this->kokkos_mj_weights = Kokkos::View<mj_scalar_t **>(); // TODO: better way to 'clear' a view?
 #else
+                this->mj_uniform_weights[0] = true;
                 this->mj_weights[0] = NULL;
 #endif
         }
         else{
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_mj_weights = kokkos_wgts;
-#else
+                this->kokkos_mj_weights = kokkos_wgts;
+#endif
+
                 //if weights are provided get weights for all weight indices
                 for (int wdim = 0; wdim < this->num_weights_per_coord; wdim++){
+
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_mj_uniform_weights(wdim) = false;
+#else
+                        this->mj_uniform_weights[wdim] = false;
                         ArrayRCP<const mj_scalar_t> ar;
                         wgts[wdim].getInputArray(ar);
                         this->coordinate_ArrayRCP_holder[this->coord_dim + wdim] = ar;
-                        this->mj_uniform_weights[wdim] = false;
                         this->mj_weights[wdim] = (mj_scalar_t *) ar.getRawPtr();
-                }
 #endif
+                }
         }
 
         for (int wdim = 0; wdim < criteria_dim; wdim++){
