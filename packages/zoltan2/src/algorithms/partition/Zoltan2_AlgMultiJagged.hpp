@@ -582,12 +582,12 @@ private:
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
     Kokkos::View<mj_gno_t*> kokkos_current_mj_gnos; //current global ids of the coordinates, might change during migration.
+    Kokkos::View<int*> kokkos_owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
 #else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
     mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
-#endif
-
     int *owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
+#endif
 
     mj_lno_t *coordinate_permutations; //permutation of coordinates, for partitioning.
     mj_lno_t *new_coordinate_permutations; //permutation work array.
@@ -2050,8 +2050,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifndef HAVE_ZOLTAN2_OMP
         initial_mj_gnos(NULL),
         current_mj_gnos(NULL),
-#endif
         owner_of_coordinate(NULL),
+#endif
+
         coordinate_permutations(NULL), new_coordinate_permutations(NULL),
         assigned_part_ids(NULL), part_xadj(NULL), new_part_xadj(NULL),
         distribute_points_on_cut_lines(true), max_concurrent_part_calculation(1),
@@ -2470,7 +2471,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           execution_space, memory_space>::allocate_set_work_memory(){
 
         //points to process that initially owns the coordinate.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_owner_of_coordinate  = Kokkos::View<int*>("empty"); // TODO decide if this is ok
+#else
         this->owner_of_coordinate  = NULL;
+#endif
 
         //Throughout the partitioning execution,
         //instead of the moving the coordinates, hold a permutation array for parts.
@@ -2653,13 +2658,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->current_mj_gnos[j] = this->initial_mj_gnos[j];
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+    this->kokkos_owner_of_coordinate = Kokkos::View<int*>("num local coords", this->num_local_coords);
+#else
     this->owner_of_coordinate = allocMemory<int>(this->num_local_coords);
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel for
 #endif
     for (mj_lno_t j=0; j < this->num_local_coords; j++)
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_owner_of_coordinate(j) = this->myActualRank;
+#else
         this->owner_of_coordinate[j] = this->myActualRank;
+#endif
 }
 
 /* \brief compute the global bounding box
@@ -5270,6 +5283,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
         //migrate owners.
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("migrate owners not implemented for kokkos yet.");
+#else
         int *coord_own = allocMemory<int>(num_incoming_gnos);
         message_tag++;
         ierr = Zoltan_Comm_Do(
@@ -5280,7 +5296,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
         freeArray<int>(this->owner_of_coordinate);
         this->owner_of_coordinate = coord_own;
-
+#endif
 
         //if num procs is less than num parts,
         //we need the part assigment arrays as well, since
@@ -5370,6 +5386,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("Restore me for migrate the owners. This will cause the parallel tests to fail if OpenMP is on!");
+#else
         {
                 //migrate the owners of the coordinates
                 ArrayView<int> sent_owners(this->owner_of_coordinate, this->num_local_coords);
@@ -5382,6 +5401,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 received_owners.getRawPtr(),
                                                 num_incoming_gnos * sizeof(int));
         }
+#endif
 
         //if num procs is less than num parts,
         //we need the part assigment arrays as well, since
@@ -6113,6 +6133,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif  // !ENABLE_ZOLTAN_MIGRATION
       {
         //if data is migrated, then send part numbers to the original owners.
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("Restore me for owners! This will cause the parallel tests to fail if OpenMP is on!");
+#else
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating");
         Tpetra::Distributor distributor(this->mj_problemComm);
         ArrayView<const mj_part_t> owners_of_coords(this->owner_of_coordinate, this->num_local_coords);
@@ -6122,6 +6145,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
         //migrate gnos to actual owners.
         ArrayRCP<mj_gno_t> received_gnos(incoming);
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
         throw std::logic_error("Restore me! This will cause the parallel tests to fail if OpenMP is on!");
@@ -6135,6 +6159,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 incoming * sizeof(mj_gno_t));
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+        throw std::logic_error("Restore me for owners! This will cause the parallel tests to fail if OpenMP is on!");
+#else
                 //migrate part ids to actual owners.
         ArrayView<mj_part_t> sent_partids(this->assigned_part_ids, this->num_local_coords);
         ArrayRCP<mj_part_t> received_partids(incoming);
@@ -6147,7 +6174,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         this->num_local_coords = incoming;
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
-
+#endif
       }
     }
 
@@ -6186,9 +6213,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 freeArray<mj_scalar_t>(this->mj_weights[i]);
         }
         freeArray<mj_scalar_t *>(this->mj_weights);
+        freeArray<int>(this->owner_of_coordinate);
 #endif
 
-        freeArray<int>(this->owner_of_coordinate);
 
         for(int i = 0; i < this->num_threads; ++i){
                 freeArray<mj_lno_t>(this->thread_point_counts[i]);
@@ -7297,7 +7324,6 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-  kokkos_result_mj_weights_ = Kokkos::View<mj_scalar_t **>("weights", num_weights_per_coord_);
   throw std::logic_error("distributor not implemented for weights! refactor in progress.");
 #else
   result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
@@ -7313,7 +7339,10 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 	  num_incoming_gnos * sizeof(mj_scalar_t));
   }
 #endif
-                
+
+#ifdef HAVE_ZOLTAN2_OMP
+  throw std::logic_error("distributor not implemented for owners! refactor in progress.");
+#else
   //migrate the owners of the coordinates
   { 
     std::vector<int> owner_of_coordinate(num_local_coords_, myRank);
@@ -7326,6 +7355,8 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 	  received_owners.getRawPtr(),
 	  num_incoming_gnos * sizeof(int));
   }
+#endif
+
   mj_env_->timerStop(MACRO_TIMERS, "MultiJagged - PreMigration DistributorMigration");
   return am_i_a_reciever;
 }
