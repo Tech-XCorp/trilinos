@@ -963,7 +963,12 @@ public:
   int task_coord_dim; //dimension of the tasks coordinates.
   tcoord_t **task_coords; //the task coordinates allocated outside of the class.
   int partArraySize;
+
+#ifdef HAVE_ZOLTAN2_OMP
+  Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
+#else
   part_t *partNoArray;
+#endif
 
   int *machine_extent;
   bool *machine_extent_wrap_around;
@@ -980,7 +985,9 @@ public:
     task_coord_dim(0),
     task_coords(0),
     partArraySize(-1),
+#ifndef HAVE_ZOLTAN2_OMP
     partNoArray(NULL),
+#endif
     machine_extent(NULL),
     machine_extent_wrap_around(NULL),
     machine(NULL),
@@ -1012,7 +1019,9 @@ public:
     proc_coord_dim(pcoord_dim_), proc_coords(pcoords_),
     task_coord_dim(tcoord_dim_), task_coords(tcoords_),
     partArraySize(-1),
+#ifndef HAVE_ZOLTAN2_OMP
     partNoArray(NULL),
+#endif
     machine_extent(machine_extent_),
     machine_extent_wrap_around(machine_extent_wrap_around_),
     machine(machine_),
@@ -1024,9 +1033,16 @@ public:
   void setPartArraySize(int psize){
     this->partArraySize = psize;
   }
+
+#ifdef HAVE_ZOLTAN2_OMP
+  void setPartArray(Kokkos::View<part_t *> pNo){
+    this->kokkos_partNoArray = pNo;
+  }
+#else
   void setPartArray(part_t *pNo){
     this->partNoArray = pNo;
   }
+#endif
 
   /*! \brief Function is called whenever nprocs > no_task.
    * Function returns only the subset of processors that are closest to each other.
@@ -1359,7 +1375,11 @@ public:
         proc_adjList,
         proc_xadj,
         recursion_depth,
+    #ifdef HAVE_ZOLTAN2_OMP
+        kokkos_partNoArray,
+    #else
         partNoArray,
+    #endif
         proc_partition_along_longest_dim//, false
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -1404,7 +1424,11 @@ public:
         task_adjList,
         task_xadj,
         recursion_depth,
+    #ifdef HAVE_ZOLTAN2_OMP
+        kokkos_partNoArray,
+    #else
         partNoArray,
+    #endif
         task_partition_along_longest_dim
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -2528,7 +2552,12 @@ public:
       ArrayRCP<part_t>task_comm_adj,
       pcoord_t *task_communication_edge_weight_,
       int recursion_depth,
+#ifdef HAVE_ZOLTAN2_OMP
+      Kokkos::View<part_t *> kokkos_part_no_array,
+#else
       part_t *part_no_array,
+#endif
+
       const part_t *machine_dimensions,
       int num_ranks_per_node = 1,
       bool divide_to_prime_first = false, bool reduce_best_mapping = true
@@ -2581,7 +2610,12 @@ public:
     this->proc_task_comm->divide_to_prime_first = divide_to_prime_first;
 
     this->proc_task_comm->setPartArraySize(recursion_depth);
+
+#ifdef HAVE_ZOLTAN2_OMP
+    this->proc_task_comm->setPartArray(kokkos_part_no_array);
+#else
     this->proc_task_comm->setPartArray(part_no_array);
+#endif
 
     int myRank = problemComm->getRank();
 
@@ -2876,7 +2910,13 @@ void coordinateTaskMapperInterface(
     part_t *proc_to_task_xadj, /*output*/
     part_t *proc_to_task_adj, /*output*/
     int recursion_depth,
+
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<part_t *> kokkos_part_no_array,
+#else
     part_t *part_no_array,
+#endif
+
     const part_t *machine_dimensions,
     int num_ranks_per_node = 1,
     bool divide_to_prime_first = false
@@ -2915,7 +2955,12 @@ void coordinateTaskMapperInterface(
       task_communication_adj,
       task_communication_edge_weight_,
       recursion_depth,
+#ifdef HAVE_ZOLTAN2_OMP
+      kokkos_part_no_array,
+#else
       part_no_array,
+#endif
+
       machine_dimensions,
       num_ranks_per_node,
       divide_to_prime_first

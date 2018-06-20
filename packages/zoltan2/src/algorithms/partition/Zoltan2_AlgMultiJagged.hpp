@@ -547,7 +547,12 @@ private:
     RCP<const Comm<int> > mj_problemComm; //initial comm object
 
     double imbalance_tolerance; //input imbalance tolerance.
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_part_t *> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
+#else
     mj_part_t *part_no_array; //input part array specifying num part to divide along each dim.
+#endif
+
     int recursion_depth; //the number of steps that partitioning will be solved in.
     int coord_dim, num_weights_per_coord; //coordinate dim and # of weights per coord
 
@@ -580,7 +585,6 @@ private:
 #else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
     mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
-
 #endif
 
     int *owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
@@ -1304,7 +1308,11 @@ public:
 
                 double imbalance_tolerance,
                 size_t num_global_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_part_t*> kokkos_part_no_array,
+#else
                 mj_part_t *part_no_array,
+#endif
                 int recursion_depth,
 
                 int coord_dim,
@@ -1406,7 +1414,12 @@ public:
         mj_lno_t *initial_selected_coords_output_permutation,
         mj_lno_t *output_xadj,
         int recursion_depth,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_part_t *> kokkos_part_no_array,
+#else
         const mj_part_t *part_no_array,
+#endif
+
         bool partition_along_longest_dim,
         int num_ranks_per_node,
         bool divide_to_prime_first_);
@@ -1455,7 +1468,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t *inital_adjList_output_adjlist,
     mj_lno_t *output_xadj,
     int rd,
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_part_t *> kokkos_part_no_array_,
+#else
     const mj_part_t *part_no_array_,
+#endif
     bool partition_along_longest_dim,
     int num_ranks_per_node,
     bool divide_to_prime_first_
@@ -1482,7 +1499,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     //as input indices.
     this->imbalance_tolerance = 0;
     this->num_global_parts = num_target_part;
+
+#ifdef HAVE_ZOLTAN2_OMP
+std::cout << "size: " << kokkos_part_no_array_.size() << std::endl;
+    this->kokkos_part_no_array = kokkos_part_no_array_;
+#else
     this->part_no_array = (mj_part_t *)part_no_array_;
+#endif
+
     this->recursion_depth = rd;
 
     this->coord_dim = coord_dim_;
@@ -2008,7 +2032,10 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         execution_space, memory_space>::AlgMJ():
         mj_env(), mj_problemComm(), imbalance_tolerance(0),
-        part_no_array(NULL), recursion_depth(0), coord_dim(0),
+#ifndef HAVE_ZOLTAN2_OMP
+        part_no_array(NULL),
+ #endif
+        recursion_depth(0), coord_dim(0),
         num_weights_per_coord(0), initial_num_loc_coords(0),
         initial_num_glob_coords(0),
         num_local_coords(0), num_global_coords(0),
@@ -2104,16 +2131,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->max_num_cut_along_dim = 0;
         this->max_num_total_part_along_dim = 0;
 
-        if (this->part_no_array){
+#ifdef HAVE_ZOLTAN2_OMP
+        if (this->kokkos_part_no_array.size()) // TODO - is size() going to work as NULL did?
+#else
+        if (this->part_no_array)
+#endif
+        {
                 //if user provided part array, traverse the array and set variables.
                 for (int i = 0; i < this->recursion_depth; ++i){
                         this->total_dim_num_reduce_all += this->total_num_part;
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->total_num_part *= this->kokkos_part_no_array(i);
+                        if(this->kokkos_part_no_array(i) > this->max_num_part_along_dim) {
+                                this->max_num_part_along_dim = this->kokkos_part_no_array(i);
+                        }
+#else
                         this->total_num_part *= this->part_no_array[i];
                         if(this->part_no_array[i] > this->max_num_part_along_dim) {
                                 this->max_num_part_along_dim = this->part_no_array[i];
                         }
+#endif
+
                 }
+#ifdef HAVE_ZOLTAN2_OMP
+                this->last_dim_num_part = this->total_num_part / this->kokkos_part_no_array(recursion_depth-1);
+#else
                 this->last_dim_num_part = this->total_num_part / this->part_no_array[recursion_depth-1];
+#endif
                 this->num_global_parts = this->total_num_part;
         } else {
                 mj_part_t future_num_parts = this->num_global_parts;
@@ -2232,12 +2276,20 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 ){
         //how many parts that will be obtained after this dimension.
     mj_part_t output_num_parts = 0;
-    if(this->part_no_array){
+#ifdef HAVE_ZOLTAN2_OMP
+    if(this->kokkos_part_no_array.size()) // TODO can this work as NULL did?
+#else
+    if(this->part_no_array)
+#endif
+    {
         //when the partNo array is provided as input,
         //each current partition will be partition to the same number of parts.
         //we dont need to use the future_num_part_in_parts vector in this case.
-
+#ifdef HAVE_ZOLTAN2_OMP
+        mj_part_t p = this->kokkos_part_no_array(current_iteration);
+#else
         mj_part_t p = this->part_no_array[current_iteration];
+#endif
         if (p < 1){
             std::cout << "i:" << current_iteration << " p is given as:" << p << std::endl;
             exit(1);
@@ -6266,7 +6318,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         double imbalance_tolerance_,
         size_t num_global_parts_,
+
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_part_t*> kokkos_part_no_array_,
+#else
         mj_part_t *part_no_array_,
+#endif
+
         int recursion_depth_,
 
         int coord_dim_,
@@ -6348,7 +6406,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     {
         this->imbalance_tolerance = imbalance_tolerance_;
         this->num_global_parts = num_global_parts_;
-        this->part_no_array =  part_no_array_;
+
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_part_no_array = kokkos_part_no_array_;
+#else
+        this->part_no_array = part_no_array_;
+#endif
+
         this->recursion_depth = recursion_depth_;
 
         this->coord_dim = coord_dim_;
@@ -6875,7 +6939,13 @@ private:
     //PARAMETERS
     double imbalance_tolerance; //input imbalance tolerance.
     size_t num_global_parts; //the targeted number of parts
+
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_part_t*> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
+#else
     mj_part_t *part_no_array; //input part array specifying num part to divide along each dim.
+#endif
+
     int recursion_depth; //the number of steps that partitioning will be solved in.
 
     int coord_dim; // coordinate dimension.
@@ -6982,7 +7052,10 @@ public:
                         mj_problemComm(problemComm),
                         mj_coords(coords),
                         imbalance_tolerance(0),
-                        num_global_parts(1), part_no_array(NULL),
+                        num_global_parts(1),
+#ifndef HAVE_ZOLTAN2_OMP
+                        part_no_array(NULL),
+#endif
                         recursion_depth(0),
                         coord_dim(0),num_local_coords(0), num_global_coords(0),
 #ifndef HAVE_ZOLTAN2_OMP
@@ -7404,7 +7477,12 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
           this->imbalance_tolerance,
           this->num_global_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+          this->kokkos_part_no_array,
+#else
           this->part_no_array,
+#endif
+
           this->recursion_depth,
 
           this->coord_dim,
@@ -7746,12 +7824,24 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 this->imbalance_tolerance= 10e-4;
 
         //if an input partitioning array is provided.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_part_no_array = Kokkos::View<mj_part_t*>("empty");
+#else
         this->part_no_array = NULL;
+#endif
+
         //the length of the input partitioning array.
         this->recursion_depth = 0;
 
         if (pl.getPtr<Array <mj_part_t> >("mj_parts")){
+#ifdef HAVE_ZOLTAN2_OMP
+                this->kokkos_part_no_array =
+                  Kokkos::View<mj_part_t*, Kokkos::MemoryUnmanaged>(
+                    (mj_part_t *) pl.getPtr<Array <mj_part_t> >("mj_parts")->getRawPtr(),
+                    pl.getPtr<Array <mj_part_t> >("mj_parts")->size() );
+#else
                 this->part_no_array = (mj_part_t *) pl.getPtr<Array <mj_part_t> >("mj_parts")->getRawPtr();
+#endif
                 this->recursion_depth = pl.getPtr<Array <mj_part_t> >("mj_parts")->size() - 1;
                 this->mj_env->debug(2, "mj_parts provided by user");
         }
