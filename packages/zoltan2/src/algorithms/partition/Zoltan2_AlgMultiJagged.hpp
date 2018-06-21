@@ -1779,7 +1779,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   */
 
 #ifdef HAVE_ZOLTAN2_OMP
-                  Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+                  kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 #else
                   mj_current_dim_coords = this->mj_coordinates[coordInd];
 #endif
