@@ -1360,6 +1360,21 @@ public:
     AlgMJ<pcoord_t, part_t, part_t, part_t,
       execution_space, memory_space> mj_partitioner;
 
+
+#ifdef HAVE_ZOLTAN2_OMP
+    // pcoords was allocated as an array of arrays - each made individually
+    // so memory is not contiguous and cannot be directly passed to an unmanaged view
+    // eventually this should be built from the start as a Kokkos::View but I'm
+    // trying to restrict the scope of the refactoring so it can be done in steps.
+    // Make the 2d kokkos view and manually copy in the pieces for now
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_pcoords("pcoords", used_num_procs, procdim);
+    for(int i = 0; i < procdim; ++i) {
+      for(int j = 0; j < used_num_procs; ++j) {
+        make_kokkos_pcoords(j,i) = pcoords[i][j];
+      }
+    }
+#endif
+
     mj_partitioner.sequential_task_partitioning(
         env,
         this->no_procs,
@@ -1367,19 +1382,20 @@ public:
         num_parts,
         procdim,
         //minCoordDim,
-    #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<pcoord_t**, Kokkos::LayoutLeft>(pcoords[0], used_num_procs, procdim),
-    #else
+#ifdef HAVE_ZOLTAN2_OMP
+        make_kokkos_pcoords, // see note above - eventually this will be prebuilt already as kokkos
+        Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(proc_adjList, this->no_procs),
+#else
         pcoords,//this->proc_coords,
-    #endif
         proc_adjList,
+#endif
         proc_xadj,
         recursion_depth,
-    #ifdef HAVE_ZOLTAN2_OMP
+#ifdef HAVE_ZOLTAN2_OMP
         kokkos_partNoArray,
-    #else
+#else
         partNoArray,
-    #endif
+#endif
         proc_partition_along_longest_dim//, false
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -1408,6 +1424,21 @@ public:
 
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
+
+#ifdef HAVE_ZOLTAN2_OMP
+    // tcoords was allocated as an array of arrays - each made individually
+    // so memory is not contiguous and cannot be directly passed to an unmanaged view
+    // eventually this should be built from the start as a Kokkos::View but I'm
+    // trying to restrict the scope of the refactoring so it can be done in steps.
+    // Make the 2d kokkos view and manually copy in the pieces for now
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_tcoords("pcoords", used_num_procs, procdim);
+    for(int i = 0; i < procdim; ++i) {
+      for(int j = 0; j < used_num_procs; ++j) {
+        make_kokkos_tcoords(j,i) = tcoords[i][j];
+      }
+    }
+#endif
+
     //partitioning of tasks
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1417,11 +1448,12 @@ public:
         this->task_coord_dim,
         //minCoordDim,
     #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<pcoord_t**, Kokkos::LayoutLeft>(tcoords[0], used_num_procs, procdim),
+        make_kokkos_tcoords,
+        Kokkos::View<part_t*>(task_adjList, this->no_procs),
     #else
         tcoords, //this->task_coords,
-    #endif
         task_adjList,
+    #endif
         task_xadj,
         recursion_depth,
     #ifdef HAVE_ZOLTAN2_OMP
