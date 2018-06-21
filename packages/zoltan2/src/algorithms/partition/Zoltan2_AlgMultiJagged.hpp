@@ -7022,7 +7022,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         mj_lno_t part_size = coordinate_end - coordinate_begin;
                         *(this->new_part_xadj + output_part_index + output_array_shift) = part_size;
 #ifdef HAVE_ZOLTAN2_OMP
-                        throw std::logic_error("not sure what to do yet ...");
+                        for(int n = 0; n < part_size; ++n) {
+                          this->kokkos_new_coordinate_permutations(n+coordinate_begin) =
+                            this->kokkos_coordinate_permutations(n+coordinate_begin);
+                        }
 #else
                         memcpy(
                                 this->new_coordinate_permutations + coordinate_begin,
