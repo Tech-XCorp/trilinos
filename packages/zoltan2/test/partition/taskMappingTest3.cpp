@@ -204,13 +204,6 @@ void getArgVals(
 
 }
 int main(int argc, char *argv[]){
-
-// TEMPORARY TEST JUST A SINGLE THREAD FOR DEBUGGING
-#ifdef HAVE_ZOLTAN2_OMP
-///omp_set_dynamic(0);     // Explicitly disable dynamic teams
-///omp_set_num_threads(1); // Use 4 threads for all consecutive parallel regions
-#endif
-
     Kokkos::initialize(argc, argv);
 
     typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
