@@ -576,6 +576,7 @@ private:
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
 #endif
 
+    // TODO: Currently this could be eliminated?
     ArrayView<const mj_gno_t> mj_gnos; //global ids of the coordinates, comes from the input
     size_t num_global_parts; //the targeted number of parts
 
@@ -586,6 +587,8 @@ private:
     Kokkos::View<mj_lno_t*> kokkos_coordinate_permutations; //permutation of coordinates, for partitioning.
     Kokkos::View<mj_lno_t*> kokkos_new_coordinate_permutations; //permutation work array.
     Kokkos::View<mj_part_t*> kokkos_assigned_part_ids; //the part ids assigned to coordinates.
+    Kokkos::View<mj_lno_t *> kokkos_part_xadj; //beginning and end of each part.
+    Kokkos::View<mj_lno_t *> kokkos_new_part_xadj; // work array for beginning and end of each part.
 #else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
     mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
@@ -593,11 +596,9 @@ private:
     mj_lno_t *coordinate_permutations; //permutation of coordinates, for partitioning.
     mj_lno_t *new_coordinate_permutations; //permutation work array.
     mj_part_t *assigned_part_ids; //the part ids assigned to coordinates.
-#endif
-
-
     mj_lno_t *part_xadj; //beginning and end of each part.
     mj_lno_t *new_part_xadj; // work array for beginning and end of each part.
+#endif
 
     //get mj specific parameters.
     bool distribute_points_on_cut_lines; //if partitioning can distribute points on same coordiante to different parts.
@@ -1010,7 +1011,12 @@ private:
         mj_lno_t coordinate_end,
         mj_scalar_t *used_local_cut_line_weight_to_left,
         double **used_thread_part_weight_work,
-        mj_lno_t *out_part_xadj);
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_lno_t *> kokkos_out_part_xadj
+#else
+        mj_lno_t *out_part_xadj
+#endif
+    );
 
     /*! \brief Function checks if should do migration or not.
      * It returns true to point that migration should be done when
@@ -1275,7 +1281,11 @@ private:
         mj_lno_t coordinate_begin,
         mj_lno_t coordinate_end,
         mj_scalar_t *used_local_cut_line_weight_to_left,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_lno_t *> kokkos_out_part_xadj,
+#else
         mj_lno_t *out_part_xadj,
+#endif
         int coordInd, bool longest_dim_part, uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted);
 
     /*!
@@ -1600,7 +1610,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     this->allocate_set_work_memory();
     //the end of the initial partition is the end of coordinates.
+#ifdef HAVE_ZOLTAN2_OMP
+    this->kokkos_part_xadj(0) = static_cast<mj_lno_t>(num_selected_coords);
+#else
     this->part_xadj[0] = static_cast<mj_lno_t>(num_selected_coords);
+#endif
+
     for(size_t i = 0; i < static_cast<size_t>(num_total_coords); ++i){
 #ifdef HAVE_ZOLTAN2_OMP
         this->kokkos_coordinate_permutations(i) = kokkos_inital_adjList_output_adjlist(i);
@@ -1682,7 +1697,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //alloc Memory to point the indices
         //of the parts in the permutation array.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("new part xadj", output_part_count_in_dimension);
+#else
         this->new_part_xadj = allocMemory<mj_lno_t>(output_part_count_in_dimension);
+#endif
 
         //the index where in the outtotalCounts will be written.
         mj_part_t output_part_index = 0;
@@ -1725,8 +1744,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     continue;
                 }
                 ++actual_work_part_count;
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_lno_t coordinate_end_index= this->kokkos_part_xadj(current_work_part_in_concurrent_parts);
+                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->kokkos_part_xadj(current_work_part_in_concurrent_parts -1);
+#else
                 mj_lno_t coordinate_end_index= this->part_xadj[current_work_part_in_concurrent_parts];
                 mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->part_xadj[current_work_part_in_concurrent_parts -1];
+#endif
 
                 /*
                 std::cout << "i:" << i << " j:" << current_work_part + kk
@@ -1873,8 +1897,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             concurrent_current_part_index,
                             obtained_part_index);
 
+#ifdef HAVE_ZOLTAN2_OMP
+                        mj_lno_t coordinate_end_index= this->kokkos_part_xadj(concurrent_current_part_index);
+                        mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: this->kokkos_part_xadj[concurrent_current_part_index -1];
+#else
                         mj_lno_t coordinate_end_index= this->part_xadj[concurrent_current_part_index];
                         mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: this->part_xadj[concurrent_current_part_index -1];
+#endif
 
                         //get the initial estimated part assignments of the coordinates.
                         this->set_initial_coordinate_parts(
@@ -1940,7 +1969,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                              this->global_min_max_coord_total_weight[kk + current_concurrent_num_parts]) {
 
                         for(mj_part_t jj = 0; jj < num_parts; ++jj){
+#ifdef HAVE_ZOLTAN2_OMP
+                            this->kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
+#else
                             this->new_part_xadj[output_part_index + output_array_shift + jj] = 0;
+#endif
                         }
                         cut_shift += num_parts - 1;
                         tlr_shift += (4 *(num_parts - 1) + 1);
@@ -1949,12 +1982,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         continue;
                     }
 
+#ifdef HAVE_ZOLTAN2_OMP
+                    mj_lno_t coordinate_end =
+                      this->kokkos_part_xadj(current_concurrent_work_part);
+                    mj_lno_t coordinate_begin =
+                      current_concurrent_work_part==0 ? 0 :
+                        this->kokkos_part_xadj(current_concurrent_work_part-1);
+#else
                     mj_lno_t coordinate_end = this->part_xadj[current_concurrent_work_part];
-                    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0: this->part_xadj[current_concurrent_work_part
-                                                             -1];
+                    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0: this->part_xadj[current_concurrent_work_part-1];
+#endif
+
                     mj_scalar_t *current_concurrent_cut_coordinate = current_cut_coordinates + cut_shift;
-                    mj_scalar_t *used_local_cut_line_weight_to_left = this->process_cut_line_weight_to_put_left +
-                                                         cut_shift;
+                    mj_scalar_t *used_local_cut_line_weight_to_left = this->process_cut_line_weight_to_put_left + cut_shift;
 
                     for(int ii = 0; ii < this->num_threads; ++ii){
                         this->thread_part_weight_work[ii] = this->thread_part_weights[ii] +  partweight_array_shift;
@@ -1973,7 +2013,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             coordinate_begin,
                             coordinate_end,
                             used_local_cut_line_weight_to_left,
+#ifdef HAVE_ZOLTAN2_OMP
+                            Kokkos::subview(this->kokkos_new_part_xadj,
+                              std::pair<mj_lno_t, mj_lno_t>(
+                                output_part_index + output_array_shift,
+                                this->kokkos_new_part_xadj.size())),
+#else
                             this->new_part_xadj + output_part_index + output_array_shift,
+#endif
                             coordInd,
                             partition_along_longest_dim,
                             p_coord_dimension_range_sorted);
@@ -1982,14 +2029,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         //if this part is partitioned into 1 then just copy
                         //the old values.
                         mj_lno_t part_size = coordinate_end - coordinate_begin;
-                        *(this->new_part_xadj + output_part_index + output_array_shift) = part_size;
 #ifdef HAVE_ZOLTAN2_OMP
-   throw std::logic_error("need to figure this out... refactor in progress");
-   /*
-                        memcpy(this->kokkos_new_coordinate_permutations + coordinate_begin,
-                        this->kokkos_coordinate_permutations + coordinate_begin,
-                        part_size * sizeof(mj_lno_t));
-                        */
+                        this->kokkos_new_part_xadj(output_part_index + output_array_shift) = part_size;
+#else
+                        *(this->new_part_xadj + output_part_index + output_array_shift) = part_size;
+#endif
+
+#ifdef HAVE_ZOLTAN2_OMP
+                        // TODO optimize
+                        for(int n = 0; n < part_size; ++n) {
+                          this->kokkos_new_coordinate_permutations(n+coordinate_begin) =
+                            this->kokkos_coordinate_permutations(n+coordinate_begin);
+                        }
 #else
                         memcpy(this->new_coordinate_permutations + coordinate_begin,
                         this->coordinate_permutations + coordinate_begin,
@@ -2015,10 +2066,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_part_t num_parts = num_partitioning_in_current_dim[ current_work_part + kk];
                     for (mj_part_t ii = 0;ii < num_parts ; ++ii){
                         //shift it by previousCount
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_new_part_xadj(output_part_index+ii) += output_coordinate_end_index;
+#else
                         this->new_part_xadj[output_part_index+ii] += output_coordinate_end_index;
+#endif
                         if (ii % 2 == 1){
+#ifdef HAVE_ZOLTAN2_OMP
+                          mj_lno_t coordinate_end = this->kokkos_new_part_xadj(output_part_index+ii);
+                          mj_lno_t coordinate_begin = this->kokkos_new_part_xadj(output_part_index);
+#else
                           mj_lno_t coordinate_end = this->new_part_xadj[output_part_index+ii];
                           mj_lno_t coordinate_begin = this->new_part_xadj[output_part_index];
+#endif
 
                           for (mj_lno_t task_traverse = coordinate_begin; task_traverse < coordinate_end; ++task_traverse){
 #ifdef HAVE_ZOLTAN2_OMP
@@ -2037,7 +2097,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                     }
                     //increase the previous count by current end.
+#ifdef HAVE_ZOLTAN2_OMP
+                    output_coordinate_end_index = this->kokkos_new_part_xadj(output_part_index + num_parts - 1);
+#else
                     output_coordinate_end_index = this->new_part_xadj[output_part_index + num_parts - 1];
+#endif
                     //increase the current out.
                     output_part_index += num_parts ;
                 }
@@ -2053,14 +2117,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_lno_t *> tmp = this->kokkos_coordinate_permutations;
         this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
         this->kokkos_new_coordinate_permutations = tmp;
+        this->kokkos_part_xadj = this->kokkos_new_part_xadj;
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
 #else
         mj_lno_t * tmp = this->coordinate_permutations;
         this->coordinate_permutations = this->new_coordinate_permutations;
         this->new_coordinate_permutations = tmp;
-#endif
         freeArray<mj_lno_t>(this->part_xadj);
         this->part_xadj = this->new_part_xadj;
         this->new_part_xadj = NULL;
+#endif
+
     }
 
 #ifdef HAVE_ZOLTAN2_OMP
@@ -2076,7 +2143,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     // Return output_xadj in CSR format
     output_xadj[0] = 0;
     for(size_t i = 0; i < this->num_global_parts ; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+        output_xadj[i+1] = this->kokkos_part_xadj(i);
+#else
         output_xadj[i+1] = this->part_xadj[i];
+#endif
     }
 
     delete future_num_part_in_parts;
@@ -2130,8 +2201,8 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         owner_of_coordinate(NULL),
         coordinate_permutations(NULL), new_coordinate_permutations(NULL),
         assigned_part_ids(NULL),
-#endif
         part_xadj(NULL), new_part_xadj(NULL),
+#endif
         distribute_points_on_cut_lines(true), max_concurrent_part_calculation(1),
         mj_run_as_rcb(false), mj_user_recursion_depth(0), mj_keep_part_boxes(false),
         check_migrate_avoid_migration_option(0), migration_type(0), minimum_migration_imbalance(0.30),
@@ -2595,10 +2666,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //single partition starts at index-0, and ends at numLocalCoords
         //inTotalCounts array holds the end points in coordinate_permutations array
         //for each partition. Initially sized 1, and single element is set to numLocalCoords.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_part_xadj = Kokkos::View<mj_lno_t*>("part xadj", 1);
+        this->kokkos_part_xadj(0) = static_cast<mj_lno_t>(this->num_local_coords);//the end of the initial partition is the end of coordinates.
+        //the ends points of the output, this is allocated later.
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
+#else
         this->part_xadj = allocMemory<mj_lno_t>(1);
         this->part_xadj[0] = static_cast<mj_lno_t>(this->num_local_coords);//the end of the initial partition is the end of coordinates.
         //the ends points of the output, this is allocated later.
         this->new_part_xadj = NULL;
+#endif
 
         // only store this much if cuts are needed to be stored.
         //this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
@@ -3304,8 +3382,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_scalar_t *my_current_right_closest = my_thread_right_closest + concurrent_cut_shifts;
 
                     mj_part_t conccurent_current_part = current_work_part + kk;
-                    mj_lno_t coordinate_begin_index = conccurent_current_part ==0 ? 0: this->part_xadj[conccurent_current_part -1];
+
+#ifdef HAVE_ZOLTAN2_OMP
+                    mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->kokkos_part_xadj(conccurent_current_part -1);
+                    mj_lno_t coordinate_end_index = this->kokkos_part_xadj(conccurent_current_part);
+#else
+                    mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->part_xadj[conccurent_current_part -1];
                     mj_lno_t coordinate_end_index = this->part_xadj[conccurent_current_part];
+#endif
+
                     mj_scalar_t *temp_current_cut_coords = temp_cut_coords + concurrent_cut_shifts;
 
                     mj_scalar_t min_coord = global_min_max_coord_total_weight[kk];
@@ -3942,7 +4027,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t coordinate_end,
     mj_scalar_t *used_local_cut_line_weight_to_left,
     double **used_thread_part_weight_work,
-    mj_lno_t *out_part_xadj){
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_lno_t *> kokkos_out_part_xadj
+#else
+    mj_lno_t *out_part_xadj
+#endif
+
+    ){
 
         mj_part_t num_cuts = num_parts - 1;
 
@@ -4116,7 +4207,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
 
                         }
+#ifdef HAVE_ZOLTAN2_OMP
+                        kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
+#else
                         out_part_xadj[j] = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
+#endif
                 }
 
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
@@ -4126,14 +4221,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 {
                         //perform prefix sum for num_points in parts.
                         for(mj_part_t j = 1; j < num_parts; ++j){
+#ifdef HAVE_ZOLTAN2_OMP
+                                kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
+#else
                                 out_part_xadj[j] += out_part_xadj[j - 1];
+#endif
                         }
                 }
 
                 //shift the num points in threads thread to obtain the
                 //beginning index of each thread's private space.
                 for(mj_part_t j = 1; j < num_parts; ++j){
-                        thread_num_points_in_parts[j] += out_part_xadj[j - 1] ;
+#ifdef HAVE_ZOLTAN2_OMP
+                        thread_num_points_in_parts[j] += kokkos_out_part_xadj(j - 1);
+#else
+                        thread_num_points_in_parts[j] += out_part_xadj[j - 1];
+#endif
                 }
 
 
@@ -4594,9 +4697,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         for (mj_part_t i = 0; i < num_parts; ++i){
                 mj_lno_t part_begin_index = 0;
                 if (i > 0){
+#ifdef HAVE_ZOLTAN2_OMP
+                        part_begin_index = this->kokkos_new_part_xadj(i - 1);
+#else
                         part_begin_index = this->new_part_xadj[i - 1];
+#endif
                 }
+
+
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_lno_t part_end_index = this->kokkos_new_part_xadj(i);
+#else
                 mj_lno_t part_end_index = this->new_part_xadj[i];
+#endif
+
                 my_local_points_to_reduce_sum[i] = part_end_index - part_begin_index;
         }
 
@@ -4713,9 +4827,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     for (mj_part_t p = 0; p < num_parts; ++p){
         mj_lno_t part_begin = 0;
+#ifdef HAVE_ZOLTAN2_OMP
+        if (p > 0) part_begin = this->kokkos_new_part_xadj(p - 1);
+        mj_lno_t part_end = this->kokkos_new_part_xadj(p);
+#else
         if (p > 0) part_begin = this->new_part_xadj[p - 1];
         mj_lno_t part_end = this->new_part_xadj[p];
-
+#endif
         //get the first part that current processor will send its part-p.
         mj_part_t proc_to_sent = part_assignment_proc_begin_indices[p];
         //initialize how many point I sent to this processor.
@@ -5120,8 +5238,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_part_t p = sort_item_part_to_proc_assignment[i].id;
         //assigned processors are sorted.
         mj_lno_t part_begin_index = 0;
+
+#ifdef HAVE_ZOLTAN2_OMP
+        if (p > 0) part_begin_index = this->kokkos_new_part_xadj(p - 1);
+        mj_lno_t part_end_index = this->kokkos_new_part_xadj(p);
+#else
         if (p > 0) part_begin_index = this->new_part_xadj[p - 1];
         mj_lno_t part_end_index = this->new_part_xadj[p];
+#endif
 
         mj_part_t assigned_proc = sort_item_part_to_proc_assignment[i].val;
         if (this->myRank == assigned_proc && previous_processor != assigned_proc){
@@ -5683,7 +5807,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->new_coordinate_permutations[i] = i;
 #endif
         }
+
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_new_part_xadj(0) = this->num_local_coords;
+#else
         this->new_part_xadj[0] = this->num_local_coords;
+#endif
+
     }
     else {
 
@@ -5710,7 +5840,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_lno_t prev_index = 0;
         for(mj_part_t i = 0; i < num_parts; ++i){
             if(num_points_in_parts[i] > 0)  {
+#ifdef HAVE_ZOLTAN2_OMP
+                this->kokkos_new_part_xadj(p) =  prev_index + num_points_in_parts[i];
+#else
                 this->new_part_xadj[p] =  prev_index + num_points_in_parts[i];
+#endif
                 prev_index += num_points_in_parts[i];
                 part_shifts[i] = p++;
             }
@@ -5719,10 +5853,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //for the rest of the parts write the end index as end point.
         mj_part_t assigned_num_parts = p - 1;
         for (;p < num_parts; ++p){
+#ifdef HAVE_ZOLTAN2_OMP
+            this->kokkos_new_part_xadj(p) =  this->kokkos_new_part_xadj(assigned_num_parts);
+#else
             this->new_part_xadj[p] =  this->new_part_xadj[assigned_num_parts];
+#endif
         }
         for(mj_part_t i = 0; i < output_num_parts; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+            num_points_in_parts[i] = this->kokkos_new_part_xadj(i);
+#else
             num_points_in_parts[i] = this->new_part_xadj[i];
+#endif
         }
 
         //write the permutation array here.
@@ -5941,7 +6083,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t coordinate_begin,
     mj_lno_t coordinate_end,
     mj_scalar_t *used_local_cut_line_weight_to_left,
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_lno_t *> kokkos_out_part_xadj,
+#else
     mj_lno_t *out_part_xadj,
+#endif
     int coordInd, bool longest_dim_part, uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted){
 
         //mj_lno_t numCoordsInPart =  coordinateEnd - coordinateBegin;
@@ -6258,19 +6404,31 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
 
                 }
+#ifdef HAVE_ZOLTAN2_OMP
+                kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
+#else
                 out_part_xadj[j] = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
+#endif
         }
 
         //perform prefix sum for num_points in parts.
         for(mj_part_t j = 1; j < num_parts; ++j){
+#ifdef HAVE_ZOLTAN2_OMP
+                kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
+#else
                 out_part_xadj[j] += out_part_xadj[j - 1];
+#endif
         }
 
 
         //shift the num points in threads thread to obtain the
         //beginning index of each thread's private space.
         for(mj_part_t j = 1; j < num_parts; ++j){
-                thread_num_points_in_parts[j] += out_part_xadj[j - 1] ;
+#ifdef HAVE_ZOLTAN2_OMP
+                thread_num_points_in_parts[j] += kokkos_out_part_xadj(j - 1);
+#else
+                thread_num_points_in_parts[j] += out_part_xadj[j - 1];
+#endif
         }
 
         //now thread gets the coordinate and writes the index of coordinate to the permutation array
@@ -6325,9 +6483,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     for(mj_part_t i = 0; i < current_num_parts;++i){
 
         mj_lno_t begin = 0;
+#ifdef HAVE_ZOLTAN2_OMP
+        mj_lno_t end = this->kokkos_part_xadj(i);
+        if(i > 0) begin = this->kokkos_part_xadj(i-1);
+#else
         mj_lno_t end = this->part_xadj[i];
-
         if(i > 0) begin = this->part_xadj[i -1];
+#endif
+
         mj_part_t part_to_set_index = i + output_part_begin_index;
         if (this->mj_keep_part_boxes){
                 (*output_part_boxes)[i].setpId(part_to_set_index);
@@ -6513,9 +6676,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         freeArray<mj_scalar_t>(this->max_min_coords);
 
+#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_lno_t>(this->part_xadj);
 
-#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_lno_t>(this->coordinate_permutations);
 
         freeArray<mj_lno_t>(this->new_coordinate_permutations);
@@ -6860,7 +7023,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //alloc Memory to point the indices
         //of the parts in the permutation array.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("new part xadj", output_part_count_in_dimension);
+#else
         this->new_part_xadj = allocMemory<mj_lno_t>(output_part_count_in_dimension);
+#endif
 
         //the index where in the new_part_xadj will be written.
         mj_part_t output_part_index = 0;
@@ -6894,8 +7061,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     continue;
                 }
                 ++actual_work_part_count;
+
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_lno_t coordinate_end_index= this->kokkos_part_xadj(current_work_part_in_concurrent_parts);
+                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
+#else
                 mj_lno_t coordinate_end_index= this->part_xadj[current_work_part_in_concurrent_parts];
-                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->part_xadj[current_work_part_in_concurrent_parts -1];
+                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->part_xadj[current_work_part_in_concurrent_parts-1];
+#endif
+
+
 
 /*
                 cout << "i:" << i << " j:" << current_work_part + kk
@@ -6981,8 +7156,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         concurrent_current_part_index,
                                         obtained_part_index);
 
+#ifdef HAVE_ZOLTAN2_OMP
+                        mj_lno_t coordinate_end_index= this->kokkos_part_xadj(concurrent_current_part_index);
+                        mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: this->kokkos_part_xadj(concurrent_current_part_index -1);
+#else
                         mj_lno_t coordinate_end_index= this->part_xadj[concurrent_current_part_index];
                         mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: this->part_xadj[concurrent_current_part_index -1];
+#endif
 
                         //get the initial estimated part assignments of the
                         //coordinates.
@@ -7052,7 +7232,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         //we still need to write the begin and end point of the
                         //empty part. simply set it zero, the array indices will be shifted later.
                         for(mj_part_t jj = 0; jj < num_parts; ++jj){
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
+#else
                                 this->new_part_xadj[output_part_index + output_array_shift + jj] = 0;
+#endif
+
                         }
                         cut_shift += num_parts - 1;
                         tlr_shift += (4 *(num_parts - 1) + 1);
@@ -7061,9 +7246,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         continue;
                     }
 
+#ifdef HAVE_ZOLTAN2_OMP
+                    mj_lno_t coordinate_end= this->kokkos_part_xadj[current_concurrent_work_part];
+                    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0: this->kokkos_part_xadj(
+                                                                current_concurrent_work_part -1);
+#else
                     mj_lno_t coordinate_end= this->part_xadj[current_concurrent_work_part];
                     mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0: this->part_xadj[
                                                                 current_concurrent_work_part -1];
+#endif
+
                     mj_scalar_t *current_concurrent_cut_coordinate = current_cut_coordinates + cut_shift;
                     mj_scalar_t *used_local_cut_line_weight_to_left = this->process_cut_line_weight_to_put_left +
                                                             cut_shift;
@@ -7101,7 +7293,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             coordinate_end,
                             used_local_cut_line_weight_to_left,
                             this->thread_part_weight_work,
+#ifdef HAVE_ZOLTAN2_OMP
+                            Kokkos::subview(this->kokkos_new_part_xadj,
+                              std::pair<mj_lno_t, mj_lno_t>(
+                                output_part_index + output_array_shift,
+                                this->kokkos_new_part_xadj.size()))
+#else
                             this->new_part_xadj + output_part_index + output_array_shift
+#endif
                             );
 
                     }
@@ -7109,13 +7308,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         //if this part is partitioned into 1 then just copy
                         //the old values.
                         mj_lno_t part_size = coordinate_end - coordinate_begin;
-                        *(this->new_part_xadj + output_part_index + output_array_shift) = part_size;
 #ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_new_part_xadj(output_part_index + output_array_shift) = part_size;
                         for(int n = 0; n < part_size; ++n) {
                           this->kokkos_new_coordinate_permutations(n+coordinate_begin) =
                             this->kokkos_coordinate_permutations(n+coordinate_begin);
                         }
 #else
+                        *(this->new_part_xadj + output_part_index + output_array_shift) = part_size;
                         memcpy(
                                 this->new_coordinate_permutations + coordinate_begin,
                             this->coordinate_permutations + coordinate_begin,
@@ -7139,10 +7339,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_part_t num_parts = num_partitioning_in_current_dim[ current_work_part + kk];
                     for (mj_part_t ii = 0;ii < num_parts ; ++ii){
                         //shift it by previousCount
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_new_part_xadj(output_part_index+ii) += output_coordinate_end_index;
+#else
                         this->new_part_xadj[output_part_index+ii] += output_coordinate_end_index;
+#endif
                     }
                     //increase the previous count by current end.
+#ifdef HAVE_ZOLTAN2_OMP
+                    output_coordinate_end_index = this->kokkos_new_part_xadj(output_part_index + num_parts - 1);
+#else
                     output_coordinate_end_index = this->new_part_xadj[output_part_index + num_parts - 1];
+#endif
                     //increase the current out.
                     output_part_index += num_parts ;
                 }
@@ -7203,9 +7411,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->total_dim_num_reduce_all -= current_num_parts;
             current_num_parts = output_part_count_in_dimension;
         }
+#ifdef HAVE_ZOLTAN2_OMP
+        this->kokkos_part_xadj = this->kokkos_new_part_xadj;
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
+#else
         freeArray<mj_lno_t>(this->part_xadj);
         this->part_xadj = this->new_part_xadj;
         this->new_part_xadj = NULL;
+#endif
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
     }
 
@@ -7873,11 +8086,9 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
 #ifdef HAVE_ZOLTAN2_OMP
       mj_lno_t origLID = localGidToLid[kokkos_result_mj_gnos(i)];
-      std::cout << "size: " << kokkos_result_assigned_part_ids.size() << " i: " << i << std::endl;
       partId[origLID] = kokkos_result_assigned_part_ids(i);
 #else
       mj_lno_t origLID = localGidToLid[result_mj_gnos[i]];
-      std::cout << " i: " << i << std::endl;
       partId[origLID] = result_assigned_part_ids[i];
 #endif
     }
