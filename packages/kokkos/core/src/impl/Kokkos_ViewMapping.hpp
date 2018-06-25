@@ -3188,6 +3188,7 @@ struct OperatorBoundsErrorOnDevice< MapType, false > {
 KOKKOS_INLINE_FUNCTION
 static void run(MapType const&) {
   Kokkos::abort("View bounds error");
+      Debugger();
 }
 };
 
@@ -3201,6 +3202,7 @@ static void run(MapType const& map) {
   enum { LEN = 128 };
   char msg[LEN];
   char const* const first_part = "View bounds error of view ";
+      Debugger();
   char* p = msg;
   char* const end = msg + LEN - 1;
   for (char const* p2 = first_part; (*p2 != '\0') && (p < end); ++p, ++p2) {
@@ -3233,6 +3235,7 @@ void operator_bounds_error_on_device(
     MapType const&,
     std::false_type) {
   Kokkos::abort("View bounds error");
+      Debugger();
 }
 
 template< class MapType >
@@ -3258,7 +3261,8 @@ void view_verify_operator_bounds
     const std::string label = tracker.template get_label<MemorySpace>();
     int n = snprintf(buffer,LEN,"View bounds error of view %s (",label.c_str());
     view_error_operator_bounds<0>( buffer + n , LEN - n , map , args ... );
-    Kokkos::Impl::throw_runtime_exception(std::string(buffer));
+   // Kokkos::Impl::throw_runtime_exception(std::string(buffer));
+    std::abort();
 #else
     /* Check #1: is there a SharedAllocationRecord?
        (we won't use it, but if its not there then there isn't
@@ -3268,8 +3272,11 @@ void view_verify_operator_bounds
     if (tracker.has_record()) {
       operator_bounds_error_on_device<MapType>(
           map, has_printable_label_typedef<MapType>());
+    Debugger();
     } else {
-      Kokkos::abort("View bounds error");
+    //  Kokkos::abort("View bounds error");
+    std::abort();
+
     }
 #endif
   }

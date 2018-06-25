@@ -295,7 +295,8 @@ void dyn_rank_view_verify_operator_bounds
   , const MapType & map , Args ... args )
 {
   if ( static_cast<iType0>(rank) > op_rank ) {
-    Kokkos::abort( "DynRankView Bounds Checking Error: Need at least rank arguments to the operator()" );
+    //Kokkos::abort( "DynRankView Bounds Checking Error: Need at least rank arguments to the operator()" );
+      std::abort();
   }
 
   if ( ! dyn_rank_view_verify_operator_bounds<0>( rank , map , args ... ) ) {
@@ -305,9 +306,11 @@ void dyn_rank_view_verify_operator_bounds
     const std::string label = tracker.template get_label<MemorySpace>();
     int n = snprintf(buffer,LEN,"DynRankView bounds error of view %s (", label.c_str());
     dyn_rank_view_error_operator_bounds<0>( buffer + n , LEN - n , map , args ... );
-    Kokkos::Impl::throw_runtime_exception(std::string(buffer));
+   // Kokkos::Impl::throw_runtime_exception(std::string(buffer));
+      std::abort();
 #else
-    Kokkos::abort("DynRankView bounds error");
+   // Kokkos::abort("DynRankView bounds error");
+      std::abort();
 #endif
   }
 }
