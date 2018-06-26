@@ -656,7 +656,11 @@ private:
 #endif
 
     //cumulative part weight array.
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t *> kokkos_target_part_weights;
+#else
     mj_scalar_t *target_part_weights;
+#endif
 
     mj_scalar_t *cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
     mj_scalar_t *cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
@@ -823,10 +827,11 @@ private:
         mj_scalar_t global_weight,
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<mj_scalar_t *> kokkos_initial_cut_coords,
+        Kokkos::View<mj_scalar_t *> kokkos_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
 #else
         mj_scalar_t *initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
-#endif
         mj_scalar_t *target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
+#endif
 
         std::vector <mj_part_t> *future_num_part_in_parts, //the vecto
         std::vector <mj_part_t> *next_future_num_parts_in_parts,
@@ -978,7 +983,11 @@ private:
         const mj_scalar_t &used_imbalance_tolerance,
         mj_scalar_t * current_global_part_weights,
         const mj_scalar_t * current_local_part_weights,
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_scalar_t *> kokkos_current_part_target_weights,
+#else
         const mj_scalar_t *current_part_target_weights,
+#endif
         bool *current_cut_line_determined,
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
@@ -1911,12 +1920,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_cut_shift,
                           kokkos_current_cut_coordinates.size()));
+                    Kokkos::View<mj_scalar_t *> kokkos_current_target_part_weights =
+                      Kokkos::subview(kokkos_target_part_weights,
+                        std::pair<mj_lno_t, mj_lno_t>(
+                          concurrent_part_part_shift,
+                          kokkos_target_part_weights.size()));
 #else
                     mj_scalar_t *usedCutCoordinate = current_cut_coordinates + concurrent_part_cut_shift;
-#endif
-
                     mj_scalar_t *current_target_part_weights = this->target_part_weights +
                                                                      concurrent_part_part_shift;
+#endif
+
                     //shift the usedCutCoordinate array as noCuts.
                     concurrent_part_cut_shift += partition_count - 1;
                     //shift the partRatio array as noParts.
@@ -1941,10 +1955,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             global_total_weight,
 #ifdef HAVE_ZOLTAN2_OMP
                             kokkos_usedCutCoordinate,
+                            kokkos_current_target_part_weights,
 #else
                             usedCutCoordinate,
-#endif
                             current_target_part_weights,
+#endif
                             future_num_part_in_parts,
                             next_future_num_parts_in_parts,
                             concurrent_current_part_index,
@@ -2289,8 +2304,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         process_cut_line_weight_to_put_left(NULL),
         thread_cut_line_weight_to_put_left(NULL),
         cut_coordinates_work_array(NULL),
+        target_part_weights(NULL),
 #endif
-        target_part_weights(NULL), cut_upper_bound_coordinates(NULL), cut_lower_bound_coordinates(NULL),
+        cut_upper_bound_coordinates(NULL), cut_lower_bound_coordinates(NULL),
         cut_lower_bound_weights(NULL), cut_upper_bound_weights(NULL),
         process_local_min_max_coord_total_weight(NULL), global_min_max_coord_total_weight(NULL),
         is_cut_line_determined(NULL), my_incomplete_cut_count(NULL),
@@ -2803,16 +2819,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *>(
          "kokkos_cut_coordinates_work_array",
            this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+        //cumulative part weight array.
+        this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*>(
+          "kokkos_target_part_weights",
+          this->max_num_part_along_dim * this->max_concurrent_part_calculation);
 #else
         this->cut_coordinates_work_array = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim *
                         this->max_concurrent_part_calculation);
-#endif
-
         //cumulative part weight array.
         this->target_part_weights = allocMemory<mj_scalar_t>(
-                                        this->max_num_part_along_dim * this->max_concurrent_part_calculation);
-        // the weight from left to write.
+          this->max_num_part_along_dim * this->max_concurrent_part_calculation);
+#endif
 
+    // the weight from left to write.
     this->cut_upper_bound_coordinates = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
     this->cut_lower_bound_coordinates = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound coordinate of a cut line
     this->cut_lower_bound_weights = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound weight of a cut line
@@ -3266,10 +3285,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_scalar_t global_weight,
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *> kokkos_initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
+    Kokkos::View<mj_scalar_t *> current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
 #else
     mj_scalar_t *initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
-#endif
     mj_scalar_t *current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
+#endif
 
     std::vector <mj_part_t> *future_num_part_in_parts, //the vecto
     std::vector <mj_part_t> *next_future_num_parts_in_parts,
@@ -3623,15 +3643,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_scalar_t *current_global_part_weights = current_global_tlr;
                 bool *current_cut_line_determined = this->is_cut_line_determined + cut_shift;
 
-                mj_scalar_t *current_part_target_weights = this->target_part_weights + cut_shift + kk;
-
 #ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_scalar_t *> kokkos_current_part_target_weights =
+                  Kokkos::subview(kokkos_target_part_weights,
+                    std::pair<mj_lno_t, mj_lno_t>(
+                      cut_shift + kk,
+                      kokkos_target_part_weights.size()));
                 Kokkos::View<mj_scalar_t *> kokkos_current_part_cut_line_weight_to_put_left =
                   Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_process_cut_line_weight_to_put_left.size()));
 #else
+                mj_scalar_t *current_part_target_weights = this->target_part_weights + cut_shift + kk;
                 mj_scalar_t *current_part_cut_line_weight_to_put_left = this->process_cut_line_weight_to_put_left + cut_shift;
 #endif
 
@@ -3655,7 +3679,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 used_imbalance_tolerance,
                                 current_global_part_weights,
                                 current_local_part_weights,
+#ifdef HAVE_ZOLTAN2_OMP
+                                kokkos_current_part_target_weights,
+#else
                                 current_part_target_weights,
+#endif
                                 current_cut_line_determined,
 #ifdef HAVE_ZOLTAN2_OMP
                                 Kokkos::subview(kokkos_temp_cut_coords,
@@ -4605,7 +4633,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 const mj_scalar_t &used_imbalance_tolerance,
                 mj_scalar_t * current_global_part_weights,
                 const mj_scalar_t * current_local_part_weights,
+#ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_scalar_t *> kokkos_current_part_target_weights,
+#else
                 const mj_scalar_t *current_part_target_weights,
+#endif
                 bool *current_cut_line_determined,
 #ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
@@ -4686,7 +4718,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << endl;
                */
                 //expected ratio
+#ifdef HAVE_ZOLTAN2_OMP
+                expected_weight_in_part = kokkos_current_part_target_weights(i);
+#else
                 expected_weight_in_part = current_part_target_weights[i];
+#endif
                 //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
                 imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
                 //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
@@ -4993,7 +5029,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 //if cut line weight to be distributed.
                                 if(this->global_rectilinear_cut_weight[i] > 0) {
                                         //expected weight to go to left of the cut.
+#ifdef HAVE_ZOLTAN2_OMP
+                                        mj_scalar_t expected_part_weight = kokkos_current_part_target_weights(i);
+#else
                                         mj_scalar_t expected_part_weight = current_part_target_weights[i];
+#endif
                                         //the weight that should be put to left of the cut.
                                         mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - current_global_part_weights[i * 2];
                                         //the weight of the cut in the process
@@ -7160,9 +7200,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_scalar_t>(this->cut_coordinates_work_array);
-#endif
 
         freeArray<mj_scalar_t>(this->target_part_weights);
+#endif
 
         freeArray<mj_scalar_t>(this->cut_upper_bound_coordinates);
 
@@ -7604,12 +7644,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_cut_shift,
                           kokkos_current_cut_coordinates.size()));
+                    Kokkos::View<mj_scalar_t *> kokkos_current_target_part_weights =
+                      Kokkos::subview(kokkos_target_part_weights,
+                        std::pair<mj_lno_t, mj_lno_t>(
+                          concurrent_part_part_shift,
+                          kokkos_target_part_weights.size()));
 #else
-                    mj_scalar_t *usedCutCoordinate = current_cut_coordinates + concurrent_part_cut_shift;
+                    mj_scalar_t *usedCutCoordinate =
+                      current_cut_coordinates + concurrent_part_cut_shift;
+                    mj_scalar_t *current_target_part_weights =
+                      this->target_part_weights + concurrent_part_part_shift;
 #endif
-
-                    mj_scalar_t *current_target_part_weights = this->target_part_weights +
-                                                        concurrent_part_part_shift;
                     //shift the usedCutCoordinate array as noCuts.
                     concurrent_part_cut_shift += partition_count - 1;
                     //shift the partRatio array as noParts.
@@ -7635,10 +7680,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         global_total_weight,
 #ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_usedCutCoordinate,
+                                        kokkos_current_target_part_weights,
 #else
                                         usedCutCoordinate,
-#endif
                                         current_target_part_weights,
+#endif
                                         future_num_part_in_parts,
                                         next_future_num_parts_in_parts,
                                         concurrent_current_part_index,
