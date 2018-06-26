@@ -635,11 +635,12 @@ private:
 
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *> kokkos_all_cut_coordinates;
+    Kokkos::View<mj_scalar_t *> kokkos_max_min_coords;
 #else
     mj_scalar_t *all_cut_coordinates;
+    mj_scalar_t *max_min_coords;
 #endif
 
-    mj_scalar_t *max_min_coords;
     mj_scalar_t *process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
     mj_scalar_t **thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
 
@@ -2271,8 +2272,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         last_dim_num_part(0), comm(), fEpsilon(0), sEpsilon(0), maxScalar_t(0), minScalar_t(0),
 #ifndef HAVE_ZOLTAN2_OMP
         all_cut_coordinates(NULL),
+        max_min_coords(NULL),
 #endif
-        max_min_coords(NULL), process_cut_line_weight_to_put_left(NULL),
+        process_cut_line_weight_to_put_left(NULL),
         thread_cut_line_weight_to_put_left(NULL),
 #ifndef HAVE_ZOLTAN2_OMP
         cut_coordinates_work_array(NULL),
@@ -2751,10 +2753,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_all_cut_coordinates = Kokkos::View< mj_scalar_t*>(
           "all cut coordinates",
           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+        this->kokkos_max_min_coords =  Kokkos::View< mj_scalar_t *>("max min coords", this->num_threads * 2);
 #else
         this->all_cut_coordinates  = allocMemory< mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-#endif
         this->max_min_coords =  allocMemory< mj_scalar_t>(this->num_threads * 2);
+#endif
 
         this->process_cut_line_weight_to_put_left = NULL; //how much weight percentage should a MPI put left side of the each cutline
         this->thread_cut_line_weight_to_put_left = NULL; //how much weight percentage should each thread in MPI put left side of the each outline
@@ -3110,8 +3113,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     my_thread_min_coord = mj_current_dim_coords[i];
 #endif
             }
+
+#ifdef HAVE_ZOLTAN2_OMP
+            this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
+            this->kokkos_max_min_coords(my_thread_id + this->num_threads) = my_thread_max_coord;
+#else
             this->max_min_coords[my_thread_id] = my_thread_min_coord;
             this->max_min_coords[my_thread_id + this->num_threads] = my_thread_max_coord;
+
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
 //we need a barrier here, because max_min_array might not be filled by some of the threads.
@@ -3119,10 +3129,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #pragma omp single nowait
 #endif
             {
+#ifdef HAVE_ZOLTAN2_OMP
+                min_coordinate = this->kokkos_max_min_coords(0);
+#else
                 min_coordinate = this->max_min_coords[0];
+#endif
                 for(int i = 1; i < this->num_threads; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+                    if(this->kokkos_max_min_coords(i) < min_coordinate)
+                        min_coordinate = this->kokkos_max_min_coords(i);
+#else
                     if(this->max_min_coords[i] < min_coordinate)
                         min_coordinate = this->max_min_coords[i];
+#endif
                 }
             }
 
@@ -3130,10 +3149,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #pragma omp single nowait
 #endif
             {
+#ifdef HAVE_ZOLTAN2_OMP
+                max_coordinate = this->kokkos_max_min_coords(this->num_threads);
+#else
                 max_coordinate = this->max_min_coords[this->num_threads];
+#endif
                 for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+                    if(this->kokkos_max_min_coords(i) > max_coordinate)
+                        max_coordinate = this->kokkos_max_min_coords(i);
+#else
                     if(this->max_min_coords[i] > max_coordinate)
                         max_coordinate = this->max_min_coords[i];
+#endif
                 }
             }
         }
@@ -6945,9 +6973,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         freeArray<mj_part_t>(this->my_incomplete_cut_count);
 
+#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_scalar_t>(this->max_min_coords);
 
-#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_lno_t>(this->part_xadj);
 
         freeArray<mj_lno_t>(this->coordinate_permutations);
