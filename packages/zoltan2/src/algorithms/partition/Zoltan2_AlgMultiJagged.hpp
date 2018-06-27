@@ -688,7 +688,12 @@ private:
 
     //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
     //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_part_t *> kokkos_my_incomplete_cut_count;
+#else
     mj_part_t *my_incomplete_cut_count;
+#endif
+
     //local part weights of each thread.
     double **thread_part_weights;
     //the work manupulation array for partweights.
@@ -1990,8 +1995,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         total_incomplete_cut_count += partition_count - 1;
                         //set the number of cut lines that should be determined
                         //for this part.
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
+#else
                         this->my_incomplete_cut_count[kk] = partition_count - 1;
-
+#endif
                         //get the target weights of the parts.
                         this->mj_get_initial_cut_coords_target_weights(
                             min_coordinate,
@@ -2038,7 +2046,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     }
                     else {
                         // e.g., if have fewer coordinates than parts, don't need to do next dim.
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_my_incomplete_cut_count(kk) = 0;
+#else
                         this->my_incomplete_cut_count[kk] = 0;
+#endif
                     }
                     obtained_part_index += partition_count;
                 }
@@ -2358,8 +2370,8 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         cut_lower_bound_weights(NULL), cut_upper_bound_weights(NULL),
         process_local_min_max_coord_total_weight(NULL), global_min_max_coord_total_weight(NULL),
         is_cut_line_determined(NULL),
-#endif
         my_incomplete_cut_count(NULL),
+#endif
         thread_part_weights(NULL), thread_part_weight_work(NULL),
         thread_cut_left_closest_point(NULL), thread_cut_right_closest_point(NULL),
         thread_point_counts(NULL), process_rectilinear_cut_weight(NULL),
@@ -2894,6 +2906,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_is_cut_line_determined = Kokkos::View<bool *>(
       "kokkos_is_cut_line_determined",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+    //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
+    //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
+    this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *>(
+      "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
 #else
     this->cut_coordinates_work_array = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim *
                     this->max_concurrent_part_calculation);
@@ -2911,10 +2927,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     //is_cut_line_determined is used to determine if a cutline is determined already.
     //If a cut line is already determined, the next iterations will skip this cut line.
     this->is_cut_line_determined = allocMemory<bool>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-#endif
     //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
     //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
     this->my_incomplete_cut_count =  allocMemory<mj_part_t>(this->max_concurrent_part_calculation);
+#endif
     //local part weights of each thread.
     this->thread_part_weights = allocMemory<double *>(this->num_threads);
     //the work manupulation array for partweights.
@@ -3633,8 +3649,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 mj_part_t num_cuts = num_parts - 1;
                 size_t total_part_count = num_parts + size_t (num_cuts) ;
-                if (this->my_incomplete_cut_count[kk] > 0){
 #ifdef HAVE_ZOLTAN2_OMP
+                if (this->kokkos_my_incomplete_cut_count(kk) > 0){
                     //although isDone shared, currentDone is private and same for all.
                     Kokkos::View<bool *> kokkos_current_cut_status =
                       Kokkos::subview(this->kokkos_is_cut_line_determined,
@@ -3642,6 +3658,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                           concurrent_cut_shifts,
                           this->kokkos_is_cut_line_determined.size()));
 #else
+                if (this->my_incomplete_cut_count[kk] > 0){
                     bool *current_cut_status = this->is_cut_line_determined + concurrent_cut_shifts;
 #endif
                     double *my_current_part_weights = my_thread_part_weights + total_part_shift;
@@ -3734,7 +3751,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //if the cuts of this cut has already been completed.
                 //nothing to do for this part.
                 //just update the shift amount and proceed.
+#ifdef HAVE_ZOLTAN2_OMP
+                if (this->kokkos_my_incomplete_cut_count(kk) == 0) {
+#else
                 if (this->my_incomplete_cut_count[kk] == 0) {
+#endif
                         cut_shift += num_cuts;
                         tlr_shift += (num_total_part + 2 * num_cuts);
                         continue;
@@ -3804,14 +3825,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_cut_lower_bound_coordinates.size()));
+
+                mj_part_t initial_incomplete_cut_count = this->kokkos_my_incomplete_cut_count(kk);
 #else
                 mj_scalar_t *current_cut_lower_bound_weights = this->cut_lower_bound_weights + cut_shift;
                 mj_scalar_t *current_cut_upper_weights = this->cut_upper_bound_weights + cut_shift;
                 mj_scalar_t *current_cut_upper_bounds = this->cut_upper_bound_coordinates + cut_shift;
                 mj_scalar_t *current_cut_lower_bounds = this->cut_lower_bound_coordinates + cut_shift;
-#endif
 
                 mj_part_t initial_incomplete_cut_count = this->my_incomplete_cut_count[kk];
+#endif
 
                 // Now compute the new cut coordinates.
                 this->mj_get_new_cut_coordinates(
@@ -3865,11 +3888,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 current_part_cut_line_weight_to_put_left,
 #endif
                                 &rectilinear_cut_count,
+
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_my_incomplete_cut_count(kk));
+#else
                                 this->my_incomplete_cut_count[kk]);
+#endif
 
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->kokkos_my_incomplete_cut_count(kk);
+#else
                 mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->my_incomplete_cut_count[kk];
+#endif
+
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
 #endif
@@ -7454,9 +7487,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 freeArray<mj_scalar_t>(this->global_rectilinear_cut_weight);
         }
 
-        freeArray<mj_part_t>(this->my_incomplete_cut_count);
-
 #ifndef HAVE_ZOLTAN2_OMP
+        freeArray<mj_part_t>(this->my_incomplete_cut_count);
         freeArray<mj_scalar_t>(this->max_min_coords);
         freeArray<mj_lno_t>(this->part_xadj);
         freeArray<mj_lno_t>(this->coordinate_permutations);
@@ -7949,8 +7981,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         total_incomplete_cut_count += partition_count - 1;
                         //set the number of cut lines that should be determined
                         //for this part.
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
+#else
                         this->my_incomplete_cut_count[kk] = partition_count - 1;
-
+#endif
                         //get the target weights of the parts.
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
@@ -7998,7 +8033,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     }
                     else {
                         // e.g., if have fewer coordinates than parts, don't need to do next dim.
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_my_incomplete_cut_count(kk) = 0;
+#else
                         this->my_incomplete_cut_count[kk] = 0;
+#endif
                     }
                     obtained_part_index += partition_count;
                 }
