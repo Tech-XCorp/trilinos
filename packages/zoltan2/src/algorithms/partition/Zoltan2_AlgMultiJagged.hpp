@@ -667,15 +667,17 @@ private:
     Kokkos::View<mj_scalar_t *> kokkos_cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
     Kokkos::View<mj_scalar_t *> kokkos_cut_lower_bound_weights ;  //lower bound weight of a cut line
     Kokkos::View<mj_scalar_t *> kokkos_cut_upper_bound_weights ;  //upper bound weight of a cut line
+    Kokkos::View<mj_scalar_t *> kokkos_process_local_min_max_coord_total_weight; //combined array to exchange the min and max coordinate, and total weight of part.
+    Kokkos::View<mj_scalar_t *> kokkos_global_min_max_coord_total_weight;//global combined array with the results for min, max and total weight.
 #else
     mj_scalar_t *cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
     mj_scalar_t *cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
     mj_scalar_t *cut_lower_bound_weights ;  //lower bound weight of a cut line
     mj_scalar_t *cut_upper_bound_weights ;  //upper bound weight of a cut line
-#endif
-
     mj_scalar_t *process_local_min_max_coord_total_weight ; //combined array to exchange the min and max coordinate, and total weight of part.
     mj_scalar_t *global_min_max_coord_total_weight ;//global combined array with the results for min, max and total weight.
+#endif
+
 
     //isDone is used to determine if a cutline is determined already.
     //If a cut line is already determined, the next iterations will skip this cut line.
@@ -806,8 +808,14 @@ private:
      */
     void mj_get_global_min_max_coord_totW(
         mj_part_t current_concurrent_num_parts,
+
+#ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_scalar_t *> kokkos_local_min_max_total,
+        Kokkos::View<mj_scalar_t *> kokkos_global_min_max_total);
+#else
         mj_scalar_t *local_min_max_total,
         mj_scalar_t *global_min_max_total);
+#endif
 
     /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
      * \param min_coord minimum coordinate in the range.
@@ -1868,14 +1876,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                   kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+                  this->kokkos_process_local_min_max_coord_total_weight(kk) = coord_dim_mins[coordInd];
+                  this->kokkos_process_local_min_max_coord_total_weight(kk+ current_concurrent_num_parts) = coord_dim_maxs[coordInd];
+                  this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = best_weight_coord;
 #else
                   mj_current_dim_coords = this->mj_coordinates[coordInd];
-#endif
-
-
                   this->process_local_min_max_coord_total_weight[kk] = coord_dim_mins[coordInd];
                   this->process_local_min_max_coord_total_weight[kk+ current_concurrent_num_parts] = coord_dim_maxs[coordInd];
                   this->process_local_min_max_coord_total_weight[kk + 2*current_concurrent_num_parts] = best_weight_coord;
+#endif
 
                 }
                 else{
@@ -1885,13 +1894,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
                                   this->kokkos_coordinate_permutations,
                                   kokkos_mj_current_dim_coords,
+                                  this->kokkos_process_local_min_max_coord_total_weight(kk), //min coordinate
+                                  this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max coordinate
+                                  this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) //total weight);
 #else
                                   this->coordinate_permutations,
                                   mj_current_dim_coords,
-#endif
                                   this->process_local_min_max_coord_total_weight[kk], //min coordinate
-                          this->process_local_min_max_coord_total_weight[kk + current_concurrent_num_parts], //max coordinate
-                          this->process_local_min_max_coord_total_weight[kk + 2*current_concurrent_num_parts] //total weight);
+                                  this->process_local_min_max_coord_total_weight[kk + current_concurrent_num_parts], //max coordinate
+                                  this->process_local_min_max_coord_total_weight[kk + 2*current_concurrent_num_parts] //total weight);
+#endif
                   );
                 }
             }
@@ -1901,8 +1913,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //obtain global Min max of the part.
                 this->mj_get_global_min_max_coord_totW(
                                 current_concurrent_num_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_process_local_min_max_coord_total_weight,
+                                this->kokkos_global_min_max_coord_total_weight);
+#else
                                 this->process_local_min_max_coord_total_weight,
                                 this->global_min_max_coord_total_weight);
+#endif
 
                 //represents the total number of cutlines
                 //whose coordinate should be determined.
@@ -1916,13 +1933,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+#ifdef HAVE_ZOLTAN2_OMP
+                    mj_scalar_t min_coordinate = this->kokkos_global_min_max_coord_total_weight(kk);
+                    mj_scalar_t max_coordinate = this->kokkos_global_min_max_coord_total_weight(kk +
+                                                     current_concurrent_num_parts);
+                    mj_scalar_t global_total_weight =
+                                                        this->kokkos_global_min_max_coord_total_weight(kk +
+                                                     2 * current_concurrent_num_parts);
+#else
                     mj_scalar_t min_coordinate = this->global_min_max_coord_total_weight[kk];
                     mj_scalar_t max_coordinate = this->global_min_max_coord_total_weight[kk +
                                                      current_concurrent_num_parts];
                     mj_scalar_t global_total_weight =
                                                         this->global_min_max_coord_total_weight[kk +
                                                      2 * current_concurrent_num_parts];
-
+#endif
                     mj_part_t concurrent_current_part_index = current_work_part + kk;
 
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
@@ -2050,9 +2075,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_part_t num_parts = num_partitioning_in_current_dim[current_concurrent_work_part];
 
                     //if the part is empty, skip the part.
+#ifdef HAVE_ZOLTAN2_OMP
+                    if((num_parts != 1  ) && this->kokkos_global_min_max_coord_total_weight(kk) >
+                             this->kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts)) {
+#else
                     if((num_parts != 1  ) && this->global_min_max_coord_total_weight[kk] >
                              this->global_min_max_coord_total_weight[kk + current_concurrent_num_parts]) {
-
+#endif
                         for(mj_part_t jj = 0; jj < num_parts; ++jj){
 #ifdef HAVE_ZOLTAN2_OMP
                             this->kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
@@ -2320,8 +2349,8 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         target_part_weights(NULL),
         cut_upper_bound_coordinates(NULL), cut_lower_bound_coordinates(NULL),
         cut_lower_bound_weights(NULL), cut_upper_bound_weights(NULL),
-#endif
         process_local_min_max_coord_total_weight(NULL), global_min_max_coord_total_weight(NULL),
+#endif
         is_cut_line_determined(NULL), my_incomplete_cut_count(NULL),
         thread_part_weights(NULL), thread_part_weight_work(NULL),
         thread_cut_left_closest_point(NULL), thread_cut_right_closest_point(NULL),
@@ -2829,41 +2858,44 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //the next cutline information. therefore, cannot update the cut work array
         //until all cutlines are determined.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *>(
-         "kokkos_cut_coordinates_work_array",
-           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-        //cumulative part weight array.
-        this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*>(
-          "kokkos_target_part_weights",
-          this->max_num_part_along_dim * this->max_concurrent_part_calculation);
+    this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *>(
+     "kokkos_cut_coordinates_work_array",
+       this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+    //cumulative part weight array.
+    this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*>(
+      "kokkos_target_part_weights",
+      this->max_num_part_along_dim * this->max_concurrent_part_calculation);
 
-        // the weight from left to write.
-        this->kokkos_cut_upper_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_coordinates",
-          this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
-        this->kokkos_cut_lower_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_coordinates",
-          this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound coordinate of a cut line
-        this->kokkos_cut_lower_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_weights",
-          this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound weight of a cut line
-        this->kokkos_cut_upper_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_weights",
-          this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //upper bound weight of a cut line
+    // the weight from left to write.
+    this->kokkos_cut_upper_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_coordinates",
+      this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
+    this->kokkos_cut_lower_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_coordinates",
+      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound coordinate of a cut line
+    this->kokkos_cut_lower_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_weights",
+      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound weight of a cut line
+    this->kokkos_cut_upper_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_weights",
+      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //upper bound weight of a cut line
+    this->kokkos_process_local_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*>(
+      "kokkos_process_local_min_max_coord_total_weight",
+      3 * this->max_concurrent_part_calculation); //combined array to exchange the min and max coordinate, and total weight of part.
+    this->kokkos_global_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*>(
+      "kokkos_global_min_max_coord_total_weight",
+      3 * this->max_concurrent_part_calculation);//global combined array with the results for min, max and total weight.
 #else
-        this->cut_coordinates_work_array = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim *
-                        this->max_concurrent_part_calculation);
-        //cumulative part weight array.
-        this->target_part_weights = allocMemory<mj_scalar_t>(
-          this->max_num_part_along_dim * this->max_concurrent_part_calculation);
+    this->cut_coordinates_work_array = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim *
+                    this->max_concurrent_part_calculation);
+    //cumulative part weight array.
+    this->target_part_weights = allocMemory<mj_scalar_t>(
+      this->max_num_part_along_dim * this->max_concurrent_part_calculation);
 
     // the weight from left to write.
     this->cut_upper_bound_coordinates = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
     this->cut_lower_bound_coordinates = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound coordinate of a cut line
     this->cut_lower_bound_weights = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound weight of a cut line
     this->cut_upper_bound_weights = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //upper bound weight of a cut line
-#endif
-
-
-
     this->process_local_min_max_coord_total_weight = allocMemory<mj_scalar_t>(3 * this->max_concurrent_part_calculation); //combined array to exchange the min and max coordinate, and total weight of part.
     this->global_min_max_coord_total_weight = allocMemory<mj_scalar_t>(3 * this->max_concurrent_part_calculation);//global combined array with the results for min, max and total weight.
+#endif
 
     //is_cut_line_determined is used to determine if a cutline is determined already.
     //If a cut line is already determined, the next iterations will skip this cut line.
@@ -3249,9 +3281,13 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           execution_space, memory_space>::mj_get_global_min_max_coord_totW(
     mj_part_t current_concurrent_num_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t *> kokkos_local_min_max_total,
+    Kokkos::View<mj_scalar_t *> kokkos_global_min_max_total){
+#else
     mj_scalar_t *local_min_max_total,
     mj_scalar_t *global_min_max_total){
-
+#endif
         //reduce min for first current_concurrent_num_parts elements, reduce max for next
         //concurrentPartCount elements,
         //reduce sum for the last concurrentPartCount elements.
@@ -3261,6 +3297,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         current_concurrent_num_parts,
                                         current_concurrent_num_parts,
                                         current_concurrent_num_parts);
+#ifdef HAVE_ZOLTAN2_OMP
+                throw std::logic_error("To do - refactor in progresss - convert to kokkos");
+#else
                 try{
                         reduceAll<int, mj_scalar_t>(
                                         *(this->comm),
@@ -3270,11 +3309,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         global_min_max_total);
                 }
                 Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
+#endif
         }
         else {
                 mj_part_t s = 3 * current_concurrent_num_parts;
                 for (mj_part_t i = 0; i < s; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+                        kokkos_global_min_max_total(i) = kokkos_local_min_max_total(i);
+#else
                         global_min_max_total[i] = local_min_max_total[i];
+#endif
                 }
         }
 }
@@ -3533,10 +3577,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         this->is_cut_line_determined[next] = false;
 
 #ifdef HAVE_ZOLTAN2_OMP
-                        this->kokkos_cut_lower_bound_coordinates(next) = global_min_max_coord_total_weight[i]; //min coordinate
-                        this->kokkos_cut_upper_bound_coordinates(next) = global_min_max_coord_total_weight[i + current_concurrent_num_parts]; //max coordinate
+                        this->kokkos_cut_lower_bound_coordinates(next) = kokkos_global_min_max_coord_total_weight(i); //min coordinate
+                        this->kokkos_cut_upper_bound_coordinates(next) = kokkos_global_min_max_coord_total_weight(i + current_concurrent_num_parts); //max coordinate
 
-                        this->kokkos_cut_upper_bound_weights(next) = global_min_max_coord_total_weight[i + 2 * current_concurrent_num_parts]; //total weight
+                        this->kokkos_cut_upper_bound_weights(next) = kokkos_global_min_max_coord_total_weight(i + 2 * current_concurrent_num_parts); //total weight
                         this->kokkos_cut_lower_bound_weights(next) = 0;
 #else
                         this->cut_lower_bound_coordinates[next] = global_min_max_coord_total_weight[i]; //min coordinate
@@ -3590,14 +3634,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_cut_shifts,
                           kokkos_temp_cut_coords.size()));
+                    mj_scalar_t min_coord = kokkos_global_min_max_coord_total_weight(kk);
+                    mj_scalar_t max_coord = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
 #else
                     mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->part_xadj[conccurent_current_part -1];
                     mj_lno_t coordinate_end_index = this->part_xadj[conccurent_current_part];
                     mj_scalar_t *temp_current_cut_coords = temp_cut_coords + concurrent_cut_shifts;
-#endif
-
                     mj_scalar_t min_coord = global_min_max_coord_total_weight[kk];
                     mj_scalar_t max_coord = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
+#endif
 
                     // compute part weights using existing cuts
                     this->mj_1D_part_get_thread_part_weights(
@@ -3693,9 +3738,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_scalar_t *current_part_cut_line_weight_to_put_left = this->process_cut_line_weight_to_put_left + cut_shift;
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+                mj_scalar_t min_coordinate = kokkos_global_min_max_coord_total_weight(kk);
+                mj_scalar_t max_coordinate = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+                mj_scalar_t global_total_weight = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts * 2);
+#else
                 mj_scalar_t min_coordinate = global_min_max_coord_total_weight[kk];
                 mj_scalar_t max_coordinate = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
                 mj_scalar_t global_total_weight = global_min_max_coord_total_weight[kk + current_concurrent_num_parts * 2];
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bound_weights =
@@ -7337,12 +7388,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         freeArray<mj_lno_t>(this->coordinate_permutations);
         freeArray<mj_lno_t>(this->new_coordinate_permutations);
         freeArray<mj_scalar_t>(this->all_cut_coordinates);
-#endif
-
         freeArray<mj_scalar_t> (this->process_local_min_max_coord_total_weight);
         freeArray<mj_scalar_t> (this->global_min_max_coord_total_weight);
-
-#ifndef HAVE_ZOLTAN2_OMP
         freeArray<mj_scalar_t>(this->cut_coordinates_work_array);
         freeArray<mj_scalar_t>(this->target_part_weights);
         freeArray<mj_scalar_t>(this->cut_upper_bound_coordinates);
@@ -7735,18 +7782,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 << " total:" << coordinate_end_index - coordinate_begin_index<< endl;
                                 */
                 this->mj_get_local_min_max_coord_totW(
-                                coordinate_begin_index,
-                                coordinate_end_index,
+                            coordinate_begin_index,
+                            coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-                                this->kokkos_coordinate_permutations,
-                                kokkos_mj_current_dim_coords,
+                            this->kokkos_coordinate_permutations,
+                            kokkos_mj_current_dim_coords,
+                            this->kokkos_process_local_min_max_coord_total_weight(kk), //min_coordinate
+                            this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max_coordinate
+                            this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts)); //total_weight
 #else
-                                this->coordinate_permutations,
-                                mj_current_dim_coords,
-#endif
+                            this->coordinate_permutations,
+                            mj_current_dim_coords,
                             this->process_local_min_max_coord_total_weight[kk], //min_coordinate
                             this->process_local_min_max_coord_total_weight[kk + current_concurrent_num_parts], //max_coordinate
                             this->process_local_min_max_coord_total_weight[kk + 2*current_concurrent_num_parts]); //total_weight
+#endif
+
 
             }
 
@@ -7755,8 +7806,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //obtain global Min max of the part.
                 this->mj_get_global_min_max_coord_totW(
                                 current_concurrent_num_parts,
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_process_local_min_max_coord_total_weight,
+                                this->kokkos_global_min_max_coord_total_weight);
+#else
                                 this->process_local_min_max_coord_total_weight,
                                 this->global_min_max_coord_total_weight);
+#endif
 
                 //represents the total number of cutlines
                 //whose coordinate should be determined.
@@ -7768,13 +7824,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t concurrent_part_cut_shift = 0;
                 mj_part_t concurrent_part_part_shift = 0;
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+#ifdef HAVE_ZOLTAN2_OMP
+                    mj_scalar_t min_coordinate = this->kokkos_global_min_max_coord_total_weight(kk);
+                    mj_scalar_t max_coordinate = this->kokkos_global_min_max_coord_total_weight(kk +
+                                                     current_concurrent_num_parts);
+
+                    mj_scalar_t global_total_weight = this->kokkos_global_min_max_coord_total_weight(kk +
+                                                        2 * current_concurrent_num_parts);
+#else
                     mj_scalar_t min_coordinate = this->global_min_max_coord_total_weight[kk];
                     mj_scalar_t max_coordinate = this->global_min_max_coord_total_weight[kk +
                                                      current_concurrent_num_parts];
 
                     mj_scalar_t global_total_weight = this->global_min_max_coord_total_weight[kk +
                                                         2 * current_concurrent_num_parts];
-
+#endif
                     mj_part_t concurrent_current_part_index = current_work_part + kk;
 
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
@@ -7905,8 +7969,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     //if the part is empty, skip the part.
                     if((num_parts != 1  )
                                 &&
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_global_min_max_coord_total_weight(kk) >
+                             this->kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts)) {
+#else
                                 this->global_min_max_coord_total_weight[kk] >
                              this->global_min_max_coord_total_weight[kk + current_concurrent_num_parts]) {
+
+#endif
 
                         //we still need to write the begin and end point of the
                         //empty part. simply set it zero, the array indices will be shifted later.
