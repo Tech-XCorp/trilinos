@@ -112,6 +112,7 @@
 // temporary hacks.
 #ifdef HAVE_ZOLTAN2_OMP    // only for HAVE_ZOLTAN2_OMP
 #define RESTORE_NO_OMP_CODE
+#define REFACTOR_OMP_TO_KOKKOS // Temporary keep old omp loops and new code
 #endif
 
 namespace Teuchos{
@@ -2844,6 +2845,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->coordinate_permutations =  allocMemory< mj_lno_t>(this->num_local_coords);
 #endif
         //initial configuration, set each pointer-i to i.
+
+#ifdef REFACTOR_OMP_TO_KOKKOS
+
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+    KOKKOS_LAMBDA (const int i) {
+      this->kokkos_coordinate_permutations(i) = i;
+    }
+  );
+
+#else // REFACTOR_OMP_TO_KOKKOS
+
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel for
 #endif
@@ -2854,6 +2867,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 this->coordinate_permutations[i] = i;
 #endif
         }
+
+#endif // REFACTOR_OMP_TO_KOKKOS
 
         //new_coordinate_permutations holds the current permutation.
 #ifdef HAVE_ZOLTAN2_OMP
