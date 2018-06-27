@@ -725,9 +725,13 @@ private:
 #endif
 
 
-
+#ifdef HAVE_ZOLTAN2_OMP
+    Kokkos::View<mj_scalar_t *> kokkos_process_rectilinear_cut_weight;
+    Kokkos::View<mj_scalar_t *> kokkos_global_rectilinear_cut_weight;
+#else
     mj_scalar_t *process_rectilinear_cut_weight;
     mj_scalar_t *global_rectilinear_cut_weight;
+#endif
 
     //for faster communication, concatanation of
     //totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
@@ -2181,7 +2185,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(0, this->num_threads));
 #else
                     for(int ii = 0; ii < this->num_threads; ++ii){
-                        this->thread_part_weight_work[ii] = this->thread_part_weights(ii) + partweight_array_shift;
+                        this->thread_part_weight_work[ii] = this->thread_part_weights[ii] + partweight_array_shift;
                     }
 #endif
 
@@ -2413,9 +2417,10 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         thread_part_weight_work(NULL),
         thread_cut_left_closest_point(NULL), thread_cut_right_closest_point(NULL),
         thread_point_counts(NULL),
-#endif
         process_rectilinear_cut_weight(NULL),
-        global_rectilinear_cut_weight(NULL),total_part_weight_left_right_closests(NULL),
+        global_rectilinear_cut_weight(NULL),
+#endif
+        total_part_weight_left_right_closests(NULL),
         global_total_part_weight_left_right_closests(NULL),
         kept_boxes(),global_box(),
         myRank(0), myActualRank(0), divide_to_prime_first(false)
@@ -2896,20 +2901,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //distribute_points_on_cut_lines = false;
         if(this->distribute_points_on_cut_lines){
 #ifdef HAVE_ZOLTAN2_OMP
-                this->kokkos_process_cut_line_weight_to_put_left =
-                  Kokkos::View<mj_scalar_t *>("kokkos_process_cut_line_weight_to_put_left",
-                    this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-                this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **>(
-                  "kokkos_thread_cut_line_weight_to_put_left", this->max_num_cut_along_dim, this->num_threads);
+            this->kokkos_process_cut_line_weight_to_put_left =
+              Kokkos::View<mj_scalar_t *>("kokkos_process_cut_line_weight_to_put_left",
+                this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+            this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **>(
+              "kokkos_thread_cut_line_weight_to_put_left", this->max_num_cut_along_dim, this->num_threads);
+            this->kokkos_process_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *>(
+              "kokkos_process_rectilinear_cut_weight", this->max_num_cut_along_dim);
+            this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *>(
+              "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
 #else
-                this->process_cut_line_weight_to_put_left = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-                this->thread_cut_line_weight_to_put_left = allocMemory<mj_scalar_t *>(this->num_threads);
-                for(int i = 0; i < this->num_threads; ++i){
-                        this->thread_cut_line_weight_to_put_left[i] = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim);
-                }
-#endif
+            this->process_cut_line_weight_to_put_left = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+            this->thread_cut_line_weight_to_put_left = allocMemory<mj_scalar_t *>(this->num_threads);
+            for(int i = 0; i < this->num_threads; ++i){
+                    this->thread_cut_line_weight_to_put_left[i] = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim);
+            }
             this->process_rectilinear_cut_weight = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim);
             this->global_rectilinear_cut_weight = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim);
+#endif
         }
 
 
@@ -4390,10 +4399,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
                                 //update the left closest point of last compared cut.
+#ifdef HAVE_ZOLTAN2_OMP
                                 if(coord - kokkos_my_current_left_closest(last_compared_part) > this->sEpsilon){
                                         kokkos_my_current_left_closest(last_compared_part) = coord;
                                 }
-
+#else
+                                if(coord - my_current_left_closest[last_compared_part] > this->sEpsilon){
+                                        my_current_left_closest[last_compared_part] = coord;
+                                }
+#endif
                                 //update the right closest point of the cut on the left of the last compared cut.
                                 if(last_compared_part-1 >= 0){
 #ifdef HAVE_ZOLTAN2_OMP
@@ -4915,7 +4929,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
                                 mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
 #else
-                                mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
+                                mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i][j];
 #endif
                                 //prefix sum to thread point counts, so that each will have private space to write.
 #ifdef HAVE_ZOLTAN2_OMP
@@ -5095,8 +5109,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 if(this->distribute_points_on_cut_lines){
                         //init the weight on the cut.
+#ifdef HAVE_ZOLTAN2_OMP
+                        this->kokkos_global_rectilinear_cut_weight(i) = 0;
+                        this->kokkos_process_rectilinear_cut_weight(i) = 0;
+#else
                         this->global_rectilinear_cut_weight[i] = 0;
                         this->process_rectilinear_cut_weight[i] = 0;
+#endif
                 }
                 //if already determined at previous iterations,
                 //then just write the coordinate to new array, and proceed.
@@ -5209,11 +5228,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         my_num_incomplete_cut -= 1;
 #ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                                        this->kokkos_process_rectilinear_cut_weight[i] = current_local_part_weights[i * 2 + 1] -
+                                                        current_local_part_weights[i * 2];
 #else
                                         new_current_cut_coordinates[i] = current_cut_coordinates[i];
-#endif
                                         this->process_rectilinear_cut_weight[i] = current_local_part_weights[i * 2 + 1] -
                                                         current_local_part_weights[i * 2];
+#endif
                                         continue;
                                 }
                         }
@@ -5513,20 +5534,30 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
         {
                 if(*rectilinear_cut_count > 0){
-
                         try{
                                 Teuchos::scan<int,mj_scalar_t>(
                                                 *comm, Teuchos::REDUCE_SUM,
                                                 num_cuts,
+#ifdef HAVE_ZOLTAN2_OMP
+                                                // Note this is refactored but needs to be improved
+                                                // to avoid the use of direct data() ptr completely.
+                                                this->kokkos_process_rectilinear_cut_weight.data(),
+                                                this->kokkos_global_rectilinear_cut_weight.data()
+#else
                                                 this->process_rectilinear_cut_weight,
                                                 this->global_rectilinear_cut_weight
+#endif
                                 );
                         }
                         Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
 
                         for (mj_part_t i = 0; i < num_cuts; ++i){
                                 //if cut line weight to be distributed.
+#ifdef HAVE_ZOLTAN2_OMP
+                                if(this->kokkos_global_rectilinear_cut_weight(i) > 0) {
+#else
                                 if(this->global_rectilinear_cut_weight[i] > 0) {
+#endif
                                         //expected weight to go to left of the cut.
 #ifdef HAVE_ZOLTAN2_OMP
                                         mj_scalar_t expected_part_weight = kokkos_current_part_target_weights(i);
@@ -5536,9 +5567,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         //the weight that should be put to left of the cut.
                                         mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - current_global_part_weights[i * 2];
                                         //the weight of the cut in the process
+#ifdef HAVE_ZOLTAN2_OMP
+                                        mj_scalar_t my_weight_on_line = this->kokkos_process_rectilinear_cut_weight(i);
+#else
                                         mj_scalar_t my_weight_on_line = this->process_rectilinear_cut_weight[i];
+#endif
+
                                         //the sum of the cut weights upto this process, including the weight of this process.
+#ifdef HAVE_ZOLTAN2_OMP
+                                        mj_scalar_t weight_on_line_upto_process_inclusive = this->kokkos_global_rectilinear_cut_weight(i);
+#else
                                         mj_scalar_t weight_on_line_upto_process_inclusive = this->global_rectilinear_cut_weight[i];
+#endif
                                         //the space on the left side of the cut after all processes before this process (including this process)
                                         //puts their weights on cut to left.
                                         mj_scalar_t space_to_put_left = necessary_weight_on_line_for_left - weight_on_line_upto_process_inclusive;
@@ -7426,7 +7466,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
                         this->kokkos_thread_point_counts(j,i) = num_points_in_part_j_upto_thread_i;
 #else
-                        mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i,j];
+                        mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i][j];
                         this->thread_point_counts[i][j] = num_points_in_part_j_upto_thread_i;
 #endif
                         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
@@ -7696,9 +7736,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         freeArray<mj_scalar_t>(this->thread_cut_line_weight_to_put_left[i]);
                 }
                 freeArray<mj_scalar_t *>(this->thread_cut_line_weight_to_put_left);
-#endif
                 freeArray<mj_scalar_t>(this->process_rectilinear_cut_weight);
                 freeArray<mj_scalar_t>(this->global_rectilinear_cut_weight);
+#endif
         }
 
 #ifndef HAVE_ZOLTAN2_OMP
