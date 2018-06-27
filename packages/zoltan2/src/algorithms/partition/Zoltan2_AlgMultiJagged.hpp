@@ -106,15 +106,6 @@
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
-// A temporary define which turns back on old code to get things compiling
-// and working. This is to make the development process in steps and maintain
-// working checkpoints. Also this macro can be used to search for all the
-// temporary hacks.
-#ifdef HAVE_ZOLTAN2_OMP    // only for HAVE_ZOLTAN2_OMP
-#define RESTORE_NO_OMP_CODE
-#define REFACTOR_OMP_TO_KOKKOS // Temporary keep old omp loops and new code
-#endif
-
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -2845,30 +2836,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->coordinate_permutations =  allocMemory< mj_lno_t>(this->num_local_coords);
 #endif
         //initial configuration, set each pointer-i to i.
-
-#ifdef REFACTOR_OMP_TO_KOKKOS
-
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
-    KOKKOS_LAMBDA (const int i) {
-      this->kokkos_coordinate_permutations(i) = i;
-    }
-  );
-
-#else // REFACTOR_OMP_TO_KOKKOS
-
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-        for(mj_lno_t i = 0; i < this->num_local_coords; ++i){
-#ifdef HAVE_ZOLTAN2_OMP
-                this->kokkos_coordinate_permutations(i) = i;
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+          KOKKOS_LAMBDA (const int i) {
+            this->kokkos_coordinate_permutations(i) = i;
+          }
+        );
 #else
+        for(mj_lno_t i = 0; i < this->num_local_coords; ++i){
                 this->coordinate_permutations[i] = i;
-#endif
         }
-
-#endif // REFACTOR_OMP_TO_KOKKOS
+#endif
 
         //new_coordinate_permutations holds the current permutation.
 #ifdef HAVE_ZOLTAN2_OMP
@@ -3058,23 +3037,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t**,Kokkos::LayoutLeft> coord(
       "coord", this->num_local_coords, this->coord_dim);
-
     for (int i=0; i < this->coord_dim; i++){
-// to kokkify ...
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for // Refactor in progress - will convert to Kokkos
-#endif
-      for (mj_lno_t j=0; j < this->num_local_coords; j++)
-        coord(j,i) = this->kokkos_mj_coordinates(j,i);
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+        KOKKOS_LAMBDA (const int j) {
+          coord(j,i) = this->kokkos_mj_coordinates(j,i);
+        }
+      );
     }
     this->kokkos_mj_coordinates = coord;
 #else
     mj_scalar_t **coord = allocMemory<mj_scalar_t *>(this->coord_dim);
     for (int i=0; i < this->coord_dim; i++){
       coord[i] = allocMemory<mj_scalar_t>(this->num_local_coords);
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
       for (mj_lno_t j=0; j < this->num_local_coords; j++)
                 coord[i][j] = this->mj_coordinates[i][j];
     }
@@ -3084,17 +3059,30 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t**> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
-  for (int i=0; i < this->num_weights_per_coord; i++){
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-        for (mj_lno_t j=0; j < this->num_local_coords; j++)
-        {
-            weights(j,i) = this->kokkos_mj_weights(j,i);
+    for (int i=0; i < this->num_weights_per_coord; i++){
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+        KOKKOS_LAMBDA (const int j) {
+          weights(j,i) = this->kokkos_mj_weights(j,i);
         }
-
+      );
     }
     this->kokkos_mj_weights = weights;
+    this->kokkos_current_mj_gnos =
+      Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+      KOKKOS_LAMBDA (const int j) {
+        this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
+      }
+    );
+    this->kokkos_owner_of_coordinate = Kokkos::View<int*>("num local coords", this->num_local_coords);
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+      KOKKOS_LAMBDA (const int j) {
+        this->kokkos_owner_of_coordinate(j) = this->myActualRank;
+      }
+    );
 #else
     int criteria_dim = (this->num_weights_per_coord ? this->num_weights_per_coord : 1);
     mj_scalar_t **weights = allocMemory<mj_scalar_t *>(criteria_dim);
@@ -3104,48 +3092,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     for (int i=0; i < this->num_weights_per_coord; i++){
         weights[i] = allocMemory<mj_scalar_t>(this->num_local_coords);
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
         for (mj_lno_t j=0; j < this->num_local_coords; j++)
                 weights[i][j] = this->mj_weights[i][j];
 
     }
     this->mj_weights = weights;
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
-   this->kokkos_current_mj_gnos =
-     Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
-#else
     this->current_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-    for (mj_lno_t j=0; j < this->num_local_coords; j++)
-#ifdef HAVE_ZOLTAN2_OMP
-        // TODO optimize
-        this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
-#else
+    for (mj_lno_t j=0; j < this->num_local_coords; j++) {
         this->current_mj_gnos[j] = this->initial_mj_gnos[j];
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
-    this->kokkos_owner_of_coordinate = Kokkos::View<int*>("num local coords", this->num_local_coords);
-#else
+    }
     this->owner_of_coordinate = allocMemory<int>(this->num_local_coords);
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-    for (mj_lno_t j=0; j < this->num_local_coords; j++)
-#ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_owner_of_coordinate(j) = this->myActualRank;
-#else
-        this->owner_of_coordinate[j] = this->myActualRank;
+    for (mj_lno_t j=0; j < this->num_local_coords; j++) {
+      this->owner_of_coordinate[j] = this->myActualRank;
+    }
 #endif
 }
 
