@@ -708,13 +708,23 @@ private:
     double **thread_part_weight_work;
 #endif
 
+#ifdef HAVE_ZOLTAN2_OMP
+    //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
+    Kokkos::View<mj_scalar_t **> kokkos_thread_cut_left_closest_point;
+    //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
+    Kokkos::View<mj_scalar_t **> kokkos_thread_cut_right_closest_point;
+    //to store how many points in each part a thread has.
+    Kokkos::View<mj_lno_t **> kokkos_thread_point_counts;
+#else
     //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
     mj_scalar_t **thread_cut_left_closest_point;
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
     mj_scalar_t **thread_cut_right_closest_point;
-
     //to store how many points in each part a thread has.
     mj_lno_t **thread_point_counts;
+#endif
+
+
 
     mj_scalar_t *process_rectilinear_cut_weight;
     mj_scalar_t *global_rectilinear_cut_weight;
@@ -958,14 +968,16 @@ private:
         Kokkos::View<mj_scalar_t *> kokkos_temp_current_cut_coords,
         Kokkos::View<bool *> kokkos_current_cut_status,
         Kokkos::View<double *> kokkos_my_current_part_weights,
+        Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest,
+        Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest);
 #else
         mj_scalar_t *mj_current_dim_coords,
         mj_scalar_t *temp_current_cut_coords,
         bool *current_cut_status,
         double *my_current_part_weights,
-#endif
         mj_scalar_t *my_current_left_closest,
         mj_scalar_t *my_current_right_closest);
+#endif
 
     /*! \brief Function that reduces the result of multiple threads
      * for left and right closest points and part weights in a single mpi process.
@@ -2399,9 +2411,10 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         my_incomplete_cut_count(NULL),
         thread_part_weights(NULL),
         thread_part_weight_work(NULL),
-#endif
         thread_cut_left_closest_point(NULL), thread_cut_right_closest_point(NULL),
-        thread_point_counts(NULL), process_rectilinear_cut_weight(NULL),
+        thread_point_counts(NULL),
+#endif
+        process_rectilinear_cut_weight(NULL),
         global_rectilinear_cut_weight(NULL),total_part_weight_left_right_closests(NULL),
         global_total_part_weight_left_right_closests(NULL),
         kept_boxes(),global_box(),
@@ -2941,6 +2954,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_thread_part_weights = Kokkos::View<double **>("thread_part_weights",
       this->max_num_total_part_along_dim * this->max_concurrent_part_calculation,
       this->num_threads);
+    this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t **>(
+      "kokkos_thread_cut_left_closest_point",
+      this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
+    //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
+    this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t **>(
+      "kokkos_thread_cut_right_closest_point",
+      this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
+    //to store how many points in each part a thread has.
+    this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t **>(
+      "kokkos_thread_point_counts",
+      this->max_num_part_along_dim, this->num_threads);
 #else
     this->cut_coordinates_work_array = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim *
                     this->max_concurrent_part_calculation);
@@ -2969,22 +2993,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     //the work manupulation array for partweights.
     this->thread_part_weight_work = allocMemory<double *>(this->num_threads);
-#endif
-
     //r to hold the closest coordinate to a cutline from left (for each thread).
     this->thread_cut_left_closest_point = allocMemory<mj_scalar_t *>(this->num_threads);
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
     this->thread_cut_right_closest_point = allocMemory<mj_scalar_t *>(this->num_threads);
-
     //to store how many points in each part a thread has.
     this->thread_point_counts = allocMemory<mj_lno_t *>(this->num_threads);
-
     for(int i = 0; i < this->num_threads; ++i){
         //partWeights[i] = allocMemory<mj_scalar_t>(maxTotalPartCount);
         this->thread_cut_right_closest_point[i] = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
         this->thread_cut_left_closest_point[i] = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
         this->thread_point_counts[i] =  allocMemory<mj_lno_t>(this->max_num_part_along_dim);
     }
+#endif
+
     //for faster communication, concatanation of
     //totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
     //leftClosest distances sized P-1, since P-1 cut lines
@@ -3619,13 +3641,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         int me = omp_get_thread_num();
         Kokkos::View<double *> kokkos_my_thread_part_weights =
           Kokkos::subview(this->kokkos_thread_part_weights, Kokkos::ALL, me);
+
+        Kokkos::View<double *> kokkos_my_thread_left_closest =
+          Kokkos::subview(this->kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
+        Kokkos::View<double *> kokkos_my_thread_right_closest =
+          Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
 #else
         int me = 0;
         double *my_thread_part_weights = this->thread_part_weights[me];
-#endif
 
         mj_scalar_t *my_thread_left_closest = this->thread_cut_left_closest_point[me];
         mj_scalar_t *my_thread_right_closest = this->thread_cut_right_closest_point[me];
+#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
@@ -3700,13 +3727,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           total_part_shift,
                           kokkos_my_thread_part_weights.size()));
+
+                    Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest =
+                    Kokkos::subview(kokkos_my_thread_left_closest,
+                      std::pair<mj_lno_t, mj_lno_t>(
+                        concurrent_cut_shifts,
+                        kokkos_my_thread_left_closest.size()));
+                    Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest =
+                    Kokkos::subview(kokkos_my_thread_right_closest,
+                      std::pair<mj_lno_t, mj_lno_t>(
+                        concurrent_cut_shifts,
+                        kokkos_my_thread_right_closest.size()));
 #else
                 if (this->my_incomplete_cut_count[kk] > 0){
                     bool *current_cut_status = this->is_cut_line_determined + concurrent_cut_shifts;
                     double *my_current_part_weights = my_thread_part_weights + total_part_shift;
-#endif
                     mj_scalar_t *my_current_left_closest = my_thread_left_closest + concurrent_cut_shifts;
                     mj_scalar_t *my_current_right_closest = my_thread_right_closest + concurrent_cut_shifts;
+#endif
+
 
                     mj_part_t conccurent_current_part = current_work_part + kk;
 
@@ -3741,14 +3780,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         kokkos_temp_current_cut_coords,
                         kokkos_current_cut_status,
                         kokkos_my_current_part_weights,
+                        kokkos_my_current_left_closest,
+                        kokkos_my_current_right_closest);
 #else
                         mj_current_dim_coords,
                         temp_current_cut_coords,
                         current_cut_status,
                         my_current_part_weights,
-#endif
                         my_current_left_closest,
                         my_current_right_closest);
+#endif
                 }
 
                 concurrent_cut_shifts += num_cuts;
@@ -4058,14 +4099,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *> kokkos_temp_current_cut_coords,
     Kokkos::View<bool *> kokkos_current_cut_status,
     Kokkos::View<double *> kokkos_my_current_part_weights,
+    Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest,
+    Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest){
 #else
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *temp_current_cut_coords,
     bool *current_cut_status,
     double *my_current_part_weights,
-#endif
     mj_scalar_t *my_current_left_closest,
     mj_scalar_t *my_current_right_closest){
+#endif
         // initializations for part weights, left/right closest
         for (size_t i = 0; i < total_part_count; ++i){
 #ifdef HAVE_ZOLTAN2_OMP
@@ -4078,8 +4121,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //initialize the left and right closest coordinates
         //to their max value.
         for(mj_part_t i = 0; i < num_cuts; ++i){
+#ifdef HAVE_ZOLTAN2_OMP
+                kokkos_my_current_left_closest(i) = min_coord - 1;
+                kokkos_my_current_right_closest(i) = max_coord + 1;
+#else
                 my_current_left_closest[i] = min_coord - 1;
                 my_current_right_closest[i] = max_coord + 1;
+#endif
         }
         //mj_lno_t comparison_count = 0;
         mj_scalar_t minus_EPSILON = -this->sEpsilon;
@@ -4147,13 +4195,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_my_current_part_weights(j * 2 + 1) += w;
                                 this->kokkos_assigned_part_ids(i) = j * 2 + 1;
+                                //assign left and right closest point to cut as the point is on the cut.
+                                kokkos_my_current_left_closest(j) = coord;
+                                kokkos_my_current_right_closest(j) = coord;
 #else
                                 my_current_part_weights[j * 2 + 1] += w;
                                 this->assigned_part_ids[i] = j * 2 + 1;
-#endif
                                 //assign left and right closest point to cut as the point is on the cut.
                                 my_current_left_closest[j] = coord;
                                 my_current_right_closest[j] = coord;
+#endif
+
                                 //now we need to check if there are other cuts on the same cut coordinate.
                                 //if there are, then we add the weight of the cut to all cuts in the same coordinate.
                                 mj_part_t kk = j + 1;
@@ -4167,18 +4219,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         if(distance_to_cut < this->sEpsilon){
 #ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_my_current_part_weights(2 * kk + 1) += w;
+                                                kokkos_my_current_left_closest(kk) = coord;
+                                                kokkos_my_current_right_closest(kk) = coord;
 #else
                                                 my_current_part_weights[2 * kk + 1] += w;
-#endif
                                                 my_current_left_closest[kk] = coord;
                                                 my_current_right_closest[kk] = coord;
+#endif
                                                 kk++;
                                         }
                                         else{
                                                 //cut is far away.
                                                 //just check the left closest point for the next cut.
+#ifdef HAVE_ZOLTAN2_OMP
+                                                if(coord - kokkos_my_current_left_closest(kk) > this->sEpsilon){
+                                                        kokkos_my_current_left_closest(kk) = coord;
+#else
                                                 if(coord - my_current_left_closest[kk] > this->sEpsilon){
                                                         my_current_left_closest[kk] = coord;
+#endif
                                                 }
                                                 break;
                                         }
@@ -4203,18 +4262,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                                                 this->kokkos_assigned_part_ids(i) = kk * 2 + 1;
+                                                kokkos_my_current_left_closest(kk) = coord;
+                                                kokkos_my_current_right_closest(kk) = coord;
 #else
                                                 this->assigned_part_ids[i] = kk * 2 + 1;
-#endif
                                                 my_current_left_closest[kk] = coord;
                                                 my_current_right_closest[kk] = coord;
+#endif
                                                 kk--;
                                         }
                                         else{
                                                 //if cut is far away on the left of the point.
                                                 //then just compare for right closest point.
+#ifdef HAVE_ZOLTAN2_OMP
+                                                if(kokkos_my_current_right_closest(kk) - coord > this->sEpsilon){
+                                                        kokkos_my_current_right_closest(kk) = coord;
+#else
                                                 if(my_current_right_closest[kk] - coord > this->sEpsilon){
                                                         my_current_right_closest[kk] = coord;
+#endif
                                                 }
                                                 break;
                                         }
@@ -4289,15 +4355,26 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
                                 //update the right closest point of last compared cut.
+#ifdef HAVE_ZOLTAN2_OMP
+                                if(kokkos_my_current_right_closest(last_compared_part) - coord > this->sEpsilon){
+                                        kokkos_my_current_right_closest(last_compared_part) = coord;
+                                }
+#else
                                 if(my_current_right_closest[last_compared_part] - coord > this->sEpsilon){
                                         my_current_right_closest[last_compared_part] = coord;
                                 }
+#endif
                                 //update the left closest point of the cut on the right of the last compared cut.
                                 if(last_compared_part+1 < num_cuts){
-
+#ifdef HAVE_ZOLTAN2_OMP
+                                        if(coord - kokkos_my_current_left_closest(last_compared_part + 1) > this->sEpsilon){
+                                                kokkos_my_current_left_closest(last_compared_part + 1) = coord;
+                                        }
+#else
                                         if(coord - my_current_left_closest[last_compared_part + 1] > this->sEpsilon){
                                                 my_current_left_closest[last_compared_part + 1] = coord;
                                         }
+#endif
                                 }
 
                         }
@@ -4313,15 +4390,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
                                 //update the left closest point of last compared cut.
-                                if(coord - my_current_left_closest[last_compared_part] > this->sEpsilon){
-                                        my_current_left_closest[last_compared_part] = coord;
+                                if(coord - kokkos_my_current_left_closest(last_compared_part) > this->sEpsilon){
+                                        kokkos_my_current_left_closest(last_compared_part) = coord;
                                 }
 
                                 //update the right closest point of the cut on the left of the last compared cut.
                                 if(last_compared_part-1 >= 0){
+#ifdef HAVE_ZOLTAN2_OMP
+                                        if(kokkos_my_current_right_closest(last_compared_part -1) - coord > this->sEpsilon){
+                                                kokkos_my_current_right_closest(last_compared_part -1) = coord;
+                                        }
+#else
                                         if(my_current_right_closest[last_compared_part -1] - coord > this->sEpsilon){
                                                 my_current_right_closest[last_compared_part -1] = coord;
                                         }
+#endif
                                 }
                         }
                 }
@@ -4402,21 +4485,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                                 if(this->kokkos_is_cut_line_determined(cut_index)) continue;
+                                mj_scalar_t left_closest_in_process = this->kokkos_thread_cut_left_closest_point(cut_index,0);
+                                mj_scalar_t right_closest_in_process = this->kokkos_thread_cut_right_closest_point(cut_index,0);
 #else
                                 if(this->is_cut_line_determined[cut_index]) continue;
-#endif
-
                                 mj_scalar_t left_closest_in_process = this->thread_cut_left_closest_point[0][cut_index];
                                 mj_scalar_t right_closest_in_process = this->thread_cut_right_closest_point[0][cut_index];
+#endif
+
 
                                 //find the closest points from left and right for the cut in the process.
                                 for (int j = 1; j < this->num_threads; ++j){
+#ifdef HAVE_ZOLTAN2_OMP
+                                        if (this->kokkos_thread_cut_right_closest_point(cut_index,j) < right_closest_in_process ){
+                                                right_closest_in_process = this->kokkos_thread_cut_right_closest_point(cut_index,j);
+                                        }
+                                        if (this->kokkos_thread_cut_left_closest_point(cut_index,j) > left_closest_in_process ){
+                                                left_closest_in_process = this->kokkos_thread_cut_left_closest_point(cut_index,j);
+                                        }
+#else
                                         if (this->thread_cut_right_closest_point[j][cut_index] < right_closest_in_process ){
                                                 right_closest_in_process = this->thread_cut_right_closest_point[j][cut_index];
                                         }
                                         if (this->thread_cut_left_closest_point[j][cut_index] > left_closest_in_process ){
                                                 left_closest_in_process = this->thread_cut_left_closest_point[j][cut_index];
                                         }
+#endif
                                 }
                                 //store the left and right closes points.
                                 this->total_part_weight_left_right_closests[num_total_part_in_part +
@@ -4574,11 +4668,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 me = omp_get_thread_num();
 #endif
 
-                mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
+
 
 #ifdef HAVE_ZOLTAN2_OMP
+                Kokkos::View<mj_lno_t *> kokkos_thread_num_points_in_parts =
+                  Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
                 Kokkos::View<mj_scalar_t *> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
+                mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
                 mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
 #endif
                 //now if the rectilinear partitioning is allowed we decide how
@@ -4660,7 +4757,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
 
                 for(mj_part_t ii = 0; ii < num_parts; ++ii){
+#ifdef HAVE_ZOLTAN2_OMP
+                        kokkos_thread_num_points_in_parts(ii) = 0;
+#else
                         thread_num_points_in_parts[ii] = 0;
+#endif
                 }
 
 
@@ -4717,10 +4818,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 my_local_thread_cut_weights_to_put_left[coordinate_assigned_part + 1] += my_local_thread_cut_weights_to_put_left[coordinate_assigned_part];
                                         }
 #endif
-                                        ++thread_num_points_in_parts[coordinate_assigned_part];
+
 #ifdef HAVE_ZOLTAN2_OMP
+                                        ++kokkos_thread_num_points_in_parts(coordinate_assigned_part);
                                         this->kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
 #else
+                                        ++thread_num_points_in_parts[coordinate_assigned_part];
                                         this->assigned_part_ids[coordinate_index] = coordinate_assigned_part;
 #endif
                                 }
@@ -4777,20 +4880,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 }
                                                 ++coordinate_assigned_part;
                                         }
-                                        ++thread_num_points_in_parts[coordinate_assigned_part];
 #ifdef HAVE_ZOLTAN2_OMP
+                                        ++kokkos_thread_num_points_in_parts(coordinate_assigned_part);
                                         this->kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
 #else
+                                        ++thread_num_points_in_parts[coordinate_assigned_part];
                                         this->assigned_part_ids[coordinate_index] = coordinate_assigned_part;
 #endif
                                 }
                         }
                         else {
                                 //if it is already assigned to a part, then just put it to the corresponding part.
-                                ++thread_num_points_in_parts[coordinate_assigned_part];
 #ifdef HAVE_ZOLTAN2_OMP
+                                ++kokkos_thread_num_points_in_parts(coordinate_assigned_part);
                                 this->kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
 #else
+                                ++thread_num_points_in_parts[coordinate_assigned_part];
                                 this->assigned_part_ids[coordinate_index] = coordinate_assigned_part;
 #endif
                         }
@@ -4807,9 +4912,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 for(mj_part_t j = 0; j < num_parts; ++j){
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
                         for (int i = 0; i < this->num_threads; ++i){
-                                mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i][j];
+#ifdef HAVE_ZOLTAN2_OMP
+                                mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
+#else
+                                mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
+#endif
                                 //prefix sum to thread point counts, so that each will have private space to write.
+#ifdef HAVE_ZOLTAN2_OMP
+                                this->kokkos_thread_point_counts(j,i) = num_points_in_part_j_upto_thread_i;
+#else
                                 this->thread_point_counts[i][j] = num_points_in_part_j_upto_thread_i;
+#endif
                                 num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
 
                         }
@@ -4839,7 +4952,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //beginning index of each thread's private space.
                 for(mj_part_t j = 1; j < num_parts; ++j){
 #ifdef HAVE_ZOLTAN2_OMP
-                        thread_num_points_in_parts[j] += kokkos_out_part_xadj(j - 1);
+                        kokkos_thread_num_points_in_parts(j) += kokkos_out_part_xadj(j - 1);
 #else
                         thread_num_points_in_parts[j] += out_part_xadj[j - 1];
 #endif
@@ -4862,7 +4975,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                         this->kokkos_new_coordinate_permutations(coordinate_begin +
-                                                          thread_num_points_in_parts[p]++) = i;
+                                                          kokkos_thread_num_points_in_parts(p)++) = i;
 #else
                         this->new_coordinate_permutations[coordinate_begin +
                                                           thread_num_points_in_parts[p]++] = i;
@@ -6921,11 +7034,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
         int me = 0;
-        mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
 
 #ifdef HAVE_ZOLTAN2_OMP
+        Kokkos::View<mj_lno_t *> kokkos_thread_num_points_in_parts =
+          Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
         Kokkos::View<mj_scalar_t *> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
+        mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
         mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
 #endif
 
@@ -7000,7 +7115,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
 
         for(mj_part_t ii = 0; ii < num_parts; ++ii){
+#ifdef HAVE_ZOLTAN2_OMP
+                kokkos_thread_num_points_in_parts(ii) = 0;
+#else
                 thread_num_points_in_parts[ii] = 0;
+#endif
         }
 
         //for this specific case we dont want to distribute the points along the cut position
@@ -7109,10 +7228,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
                 else {
                         //if it is not on the cut, simple sorting.
-                        ++thread_num_points_in_parts[p];
 #ifdef HAVE_ZOLTAN2_OMP
+                        ++kokkos_thread_num_points_in_parts(p);
                             this->kokkos_assigned_part_ids(i) = p;
 #else
+                        ++thread_num_points_in_parts[p];
                             this->assigned_part_ids[i] = p;
 #endif
                 }
@@ -7145,10 +7265,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         for (; sort_vector_end >= 0; --sort_vector_end){
                                 multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
                                 mj_lno_t i = t.index;
-                                ++thread_num_points_in_parts[p];
 #ifdef HAVE_ZOLTAN2_OMP
+                                ++kokkos_thread_num_points_in_parts(p);
                                 this->kokkos_assigned_part_ids(i) = p;
 #else
+                                ++thread_num_points_in_parts[p];
                                 this->assigned_part_ids[i] = p;
 #endif
                         }
@@ -7187,10 +7308,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
                                 sort_vector_points_on_cut[mapped_cut].pop_back();
-                                ++thread_num_points_in_parts[p];
+
 #ifdef HAVE_ZOLTAN2_OMP
+                                ++kokkos_thread_num_points_in_parts(p);
                                 this->kokkos_assigned_part_ids(i) = p;
 #else
+                                ++thread_num_points_in_parts[p];
                                 this->assigned_part_ids[i] = p;
 #endif
                                 //if putting this weight to left overweights the left cut, then
@@ -7277,10 +7400,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
                 //multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_begin];
                 mj_lno_t i = t.index;
-                ++thread_num_points_in_parts[no_cuts];
+
 #ifdef HAVE_ZOLTAN2_OMP
+                ++kokkos_thread_num_points_in_parts(no_cuts);
                 this->kokkos_assigned_part_ids(i) = no_cuts;
 #else
+                ++thread_num_points_in_parts[no_cuts];
                 this->assigned_part_ids[i] = no_cuts;
 #endif
         }
@@ -7297,8 +7422,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         for(mj_part_t j = 0; j < num_parts; ++j){
                 mj_lno_t num_points_in_part_j_upto_thread_i = 0;
                 for (int i = 0; i < this->num_threads; ++i){
-                        mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i][j];
+#ifdef HAVE_ZOLTAN2_OMP
+                        mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
+                        this->kokkos_thread_point_counts(j,i) = num_points_in_part_j_upto_thread_i;
+#else
+                        mj_lno_t thread_num_points_in_part_j = this->thread_point_counts[i,j];
                         this->thread_point_counts[i][j] = num_points_in_part_j_upto_thread_i;
+#endif
                         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
 
                 }
@@ -7323,7 +7453,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //beginning index of each thread's private space.
         for(mj_part_t j = 1; j < num_parts; ++j){
 #ifdef HAVE_ZOLTAN2_OMP
-                thread_num_points_in_parts[j] += kokkos_out_part_xadj(j - 1);
+                kokkos_thread_num_points_in_parts(j) += kokkos_out_part_xadj(j - 1);
 #else
                 thread_num_points_in_parts[j] += out_part_xadj[j - 1];
 #endif
@@ -7342,7 +7472,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                 this->kokkos_new_coordinate_permutations(coordinate_begin +
-                                                  thread_num_points_in_parts[p]++) = i;
+                                                  kokkos_thread_num_points_in_parts(p)++) = i;
 #else
                 this->new_coordinate_permutations[coordinate_begin +
                                                   thread_num_points_in_parts[p]++] = i;
@@ -7548,14 +7678,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
         freeArray<mj_scalar_t *>(this->mj_weights);
         freeArray<int>(this->owner_of_coordinate);
-#endif
-
-
         for(int i = 0; i < this->num_threads; ++i){
                 freeArray<mj_lno_t>(this->thread_point_counts[i]);
         }
 
         freeArray<mj_lno_t *>(this->thread_point_counts);
+#endif
 
 #ifndef HAVE_ZOLTAN2_OMP
         freeArray<double *> (this->thread_part_weight_work);
@@ -7598,6 +7726,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         freeArray<mj_scalar_t>(this->total_part_weight_left_right_closests);
         freeArray<mj_scalar_t>(this->global_total_part_weight_left_right_closests);
 
+#ifndef HAVE_ZOLTAN2_OMP
         for(int i = 0; i < this->num_threads; ++i){
                 freeArray<mj_scalar_t>(this->thread_cut_right_closest_point[i]);
                 freeArray<mj_scalar_t>(this->thread_cut_left_closest_point[i]);
@@ -7605,6 +7734,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         freeArray<mj_scalar_t *>(this->thread_cut_left_closest_point);
         freeArray<mj_scalar_t *>(this->thread_cut_right_closest_point);
+#endif
 
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Free");
 }
