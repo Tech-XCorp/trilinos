@@ -3094,7 +3094,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         weights[i] = allocMemory<mj_scalar_t>(this->num_local_coords);
         for (mj_lno_t j=0; j < this->num_local_coords; j++)
                 weights[i][j] = this->mj_weights[i][j];
-
     }
     this->mj_weights = weights;
     this->current_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
@@ -3550,15 +3549,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     //set initial part to 0 for all.
     if(ZOLTAN2_ABS(coordinate_range) < this->sEpsilon ){
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-        for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
-                kokkos_mj_part_ids(mj_current_coordinate_permutations[ii]) = 0;
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<Kokkos::OpenMP, int> (coordinate_begin_index, coordinate_end_index),
+          KOKKOS_LAMBDA (const int ii) {
+            kokkos_mj_part_ids(mj_current_coordinate_permutations[ii]) = 0;
+          }
+        );
 #else
-                mj_part_ids[mj_current_coordinate_permutations[ii]] = 0;
-#endif
+        for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
+          mj_part_ids[mj_current_coordinate_permutations[ii]] = 0;
         }
+#endif
     }
     else{
 
@@ -3567,18 +3568,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_scalar_t slice = coordinate_range / partition_count;
 
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-        for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
-
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<Kokkos::OpenMP, int> (coordinate_begin_index, coordinate_end_index),
+          KOKKOS_LAMBDA (const int ii) {
             mj_lno_t iii = mj_current_coordinate_permutations[ii];
             mj_part_t pp = mj_part_t((mj_current_dim_coords[iii] - min_coordinate) / slice);
-#ifdef HAVE_ZOLTAN2_OMP
             kokkos_mj_part_ids[iii] = 2 * pp;
+          }
+        );
 #else
+        for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
+            mj_lno_t iii = mj_current_coordinate_permutations[ii];
+            mj_part_t pp = mj_part_t((mj_current_dim_coords[iii] - min_coordinate) / slice);
             mj_part_ids[iii] = 2 * pp;
-#endif
         }
+#endif
     }
 }
 
@@ -7620,33 +7624,37 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Part_Assignment");
 
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
-    for(mj_part_t i = 0; i < current_num_parts;++i){
-
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, current_num_parts),
+      KOKKOS_LAMBDA (const int i) {
         mj_lno_t begin = 0;
-#ifdef HAVE_ZOLTAN2_OMP
         mj_lno_t end = this->kokkos_part_xadj(i);
         if(i > 0) begin = this->kokkos_part_xadj(i-1);
-#else
-        mj_lno_t end = this->part_xadj[i];
-        if(i > 0) begin = this->part_xadj[i -1];
-#endif
-
         mj_part_t part_to_set_index = i + output_part_begin_index;
         if (this->mj_keep_part_boxes){
                 (*output_part_boxes)[i].setpId(part_to_set_index);
         }
         for (mj_lno_t ii = begin; ii < end; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
-                mj_lno_t k = this->kokkos_coordinate_permutations(ii);
-                this->kokkos_assigned_part_ids(k) = part_to_set_index;
-#else
-                mj_lno_t k = this->coordinate_permutations[ii];
-                this->assigned_part_ids[k] = part_to_set_index;
-#endif
+          mj_lno_t k = this->kokkos_coordinate_permutations(ii);
+          this->kokkos_assigned_part_ids(k) = part_to_set_index;
         }
+      }
+    );
+#else
+    for(mj_part_t i = 0; i < current_num_parts;++i){
+      mj_lno_t begin = 0;
+      mj_lno_t end = this->part_xadj[i];
+      if(i > 0) begin = this->part_xadj[i -1];
+      mj_part_t part_to_set_index = i + output_part_begin_index;
+      if (this->mj_keep_part_boxes){
+        (*output_part_boxes)[i].setpId(part_to_set_index);
+      }
+      for (mj_lno_t ii = begin; ii < end; ++ii){
+        mj_lno_t k = this->coordinate_permutations[ii];
+        this->assigned_part_ids[k] = part_to_set_index;
+      }
     }
+#endif
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
