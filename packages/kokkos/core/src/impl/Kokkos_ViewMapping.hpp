@@ -610,6 +610,7 @@ private:
 
       const int n = snprintf(buffer,LEN,"Kokkos::subview bounds error (");
       error( buffer+n , LEN-n , 0 , 0 , dim , args... );
+std::cout << "Buffer: " << buffer << std::endl;
 std::abort();
       Kokkos::Impl::throw_runtime_exception(std::string(buffer));
 #else

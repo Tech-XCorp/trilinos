@@ -629,7 +629,7 @@ private:
     Kokkos::View<mj_scalar_t *> kokkos_all_cut_coordinates;
     Kokkos::View<mj_scalar_t *> kokkos_max_min_coords;
     Kokkos::View<mj_scalar_t *> kokkos_process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
-    Kokkos::View<mj_scalar_t **> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
 #else
     mj_scalar_t *all_cut_coordinates;
     mj_scalar_t *max_min_coords;
@@ -688,25 +688,25 @@ private:
 
 //local part weights of each thread.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<double **> kokkos_thread_part_weights;
+    Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_thread_part_weights;
 #else
     double **thread_part_weights;
 #endif
 
     //the work manupulation array for partweights.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<double **> kokkos_thread_part_weight_work;
+    Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_thread_part_weight_work;
 #else
     double **thread_part_weight_work;
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
     //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
-    Kokkos::View<mj_scalar_t **> kokkos_thread_cut_left_closest_point;
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_left_closest_point;
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
-    Kokkos::View<mj_scalar_t **> kokkos_thread_cut_right_closest_point;
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_right_closest_point;
     //to store how many points in each part a thread has.
-    Kokkos::View<mj_lno_t **> kokkos_thread_point_counts;
+    Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft> kokkos_thread_point_counts;
 #else
     //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
     mj_scalar_t **thread_cut_left_closest_point;
@@ -1114,7 +1114,7 @@ private:
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<double **> used_thread_part_weight_work,
+        Kokkos::View<double **,Kokkos::LayoutLeft> used_thread_part_weight_work,
 #else
         double **used_thread_part_weight_work,
 #endif
@@ -2891,7 +2891,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
         this->kokkos_max_min_coords =  Kokkos::View< mj_scalar_t *>("max min coords", this->num_threads * 2);
         this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*>("empty"); //how much weight percentage should a MPI put left side of the each cutline
-        this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t**>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
+        this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
 
 #else
         this->all_cut_coordinates  = allocMemory< mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -2906,7 +2906,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->kokkos_process_cut_line_weight_to_put_left =
               Kokkos::View<mj_scalar_t *>("kokkos_process_cut_line_weight_to_put_left",
                 this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-            this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **>(
+            this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
               "kokkos_thread_cut_line_weight_to_put_left", this->max_num_cut_along_dim, this->num_threads);
             this->kokkos_process_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *>(
               "kokkos_process_rectilinear_cut_weight", this->max_num_cut_along_dim);
@@ -2962,18 +2962,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *>(
       "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
     //local part weights of each thread.
-    this->kokkos_thread_part_weights = Kokkos::View<double **>("thread_part_weights",
+    this->kokkos_thread_part_weights = Kokkos::View<double **,Kokkos::LayoutLeft>("thread_part_weights",
       this->max_num_total_part_along_dim * this->max_concurrent_part_calculation,
       this->num_threads);
-    this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t **>(
+    this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
       "kokkos_thread_cut_left_closest_point",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
-    this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t **>(
+    this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
       "kokkos_thread_cut_right_closest_point",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
     //to store how many points in each part a thread has.
-    this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t **>(
+    this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft>(
       "kokkos_thread_point_counts",
       this->max_num_part_along_dim, this->num_threads);
     //for faster communication, concatanation of
@@ -3646,9 +3646,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<double *> kokkos_my_thread_part_weights =
           Kokkos::subview(this->kokkos_thread_part_weights, Kokkos::ALL, me);
 
-        Kokkos::View<double *> kokkos_my_thread_left_closest =
+        Kokkos::View<double *, Kokkos::LayoutLeft> kokkos_my_thread_left_closest =
           Kokkos::subview(this->kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
-        Kokkos::View<double *> kokkos_my_thread_right_closest =
+        Kokkos::View<double *, Kokkos::LayoutLeft> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
 #else
         int me = 0;
@@ -4709,7 +4709,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<double **> kokkos_used_thread_part_weight_work,
+        Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_used_thread_part_weight_work,
 #else
         double **used_thread_part_weight_work,
 #endif
@@ -4736,7 +4736,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_lno_t *> kokkos_thread_num_points_in_parts =
+                Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft> kokkos_thread_num_points_in_parts =
                   Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
                 Kokkos::View<mj_scalar_t *> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
@@ -7158,7 +7158,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::View<mj_lno_t *> kokkos_thread_num_points_in_parts =
           Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
-        Kokkos::View<mj_scalar_t *> kokkos_my_local_thread_cut_weights_to_put_left;
+        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
         mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
         mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
@@ -8052,11 +8052,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->mj_part_sizes = mj_part_sizes_;
 #endif
 
-
         this->num_threads = 1;
 #ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel
-
         {
                 this->num_threads = omp_get_num_threads();
         }
@@ -8478,12 +8476,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                     //mj_scalar_t *used_tlr_array =  this->total_part_weight_left_right_closests + tlr_shift;
 #ifdef HAVE_ZOLTAN2_OMP
+std::cout << "kokkos_thread_part_weights size: " << kokkos_thread_part_weights.size() << std::endl;
+
                     this->kokkos_thread_part_weight_work =
                       Kokkos::subview(
                         this->kokkos_thread_part_weights,
                         std::pair<mj_lno_t, mj_lno_t>(
                           partweight_array_shift,
-                          this->kokkos_thread_part_weights.size()),
+                          this->kokkos_thread_part_weights.extent(0)),
                         std::pair<mj_lno_t, mj_lno_t>(0, this->num_threads));
 #else
                     for(int ii = 0; ii < this->num_threads; ++ii){
