@@ -3200,6 +3200,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * \param max_coordinate is the output to represent the local maximum coordinate in the given range of coordinates.
  * \param total_weight is the output to represent the local total weight in the coordinate in the given range of coordinates.
  */
+#ifdef HAVE_ZOLTAN2_OMP
+
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename execution_space, typename memory_space>
@@ -3207,13 +3209,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           execution_space, memory_space>::mj_get_local_min_max_coord_totW(
                 mj_lno_t coordinate_begin_index,
                 mj_lno_t coordinate_end_index,
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_lno_t *> kokkos_mj_current_coordinate_permutations,
                 Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-#else
-                mj_lno_t *mj_current_coordinate_permutations,
-                mj_scalar_t *mj_current_dim_coords,
-#endif
                 mj_scalar_t &min_coordinate,
                 mj_scalar_t &max_coordinate,
                 mj_scalar_t &total_weight){
@@ -3228,20 +3225,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     else {
         mj_scalar_t my_total_weight = 0;
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel num_threads(this->num_threads)
-#endif
         {
             //if uniform weights are used, then weight is equal to count.
-#ifdef HAVE_ZOLTAN2_OMP
             if (this->kokkos_mj_uniform_weights(0))
-#else
-            if (this->mj_uniform_weights[0])
-#endif
             {
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp single
-#endif
                 {
                     my_total_weight = coordinate_end_index - coordinate_begin_index;
                 }
@@ -3249,100 +3236,215 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
             else {
                 //if not uniform, then weights are reducted from threads.
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for reduction(+:my_total_weight)
-#endif
                 for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
                     int i = kokkos_mj_current_coordinate_permutations(ii);
                     my_total_weight += this->kokkos_mj_weights(i,0);
-#else
-                    int i = mj_current_coordinate_permutations[ii];
-                    my_total_weight += this->mj_weights[0][i];
-#endif
                 }
             }
 
             int my_thread_id = 0;
-#ifdef HAVE_ZOLTAN2_OMP
-            my_thread_id = omp_get_thread_num();
-#endif
             mj_scalar_t my_thread_min_coord, my_thread_max_coord;
-#ifdef HAVE_ZOLTAN2_OMP
             my_thread_min_coord=my_thread_max_coord
-                =kokkos_mj_current_dim_coords(kokkos_mj_current_coordinate_permutations(coordinate_begin_index));
-#else
+                = kokkos_mj_current_dim_coords(kokkos_mj_current_coordinate_permutations(coordinate_begin_index));
+
+            for(mj_lno_t j = coordinate_begin_index + 1; j < coordinate_end_index; ++j){
+                int i = kokkos_mj_current_coordinate_permutations(j);
+                if(kokkos_mj_current_dim_coords[i] > my_thread_max_coord)
+                    my_thread_max_coord = kokkos_mj_current_dim_coords[i];
+                if(kokkos_mj_current_dim_coords[i] < my_thread_min_coord)
+                    my_thread_min_coord = kokkos_mj_current_dim_coords[i];
+            }
+
+            this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
+            this->kokkos_max_min_coords(my_thread_id + this->num_threads) = my_thread_max_coord;
+
+            {
+                min_coordinate = this->kokkos_max_min_coords(0);
+                for(int i = 1; i < this->num_threads; ++i){
+                    if(this->kokkos_max_min_coords(i) < min_coordinate)
+                        min_coordinate = this->kokkos_max_min_coords(i);
+                }
+            }
+
+            {
+                max_coordinate = this->kokkos_max_min_coords(this->num_threads);
+                for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i){
+                    if(this->kokkos_max_min_coords(i) > max_coordinate)
+                        max_coordinate = this->kokkos_max_min_coords(i);
+                }
+            }
+        }
+        total_weight = my_total_weight;
+    }
+
+    /*
+    //if the part is empty.
+    //set the min and max coordinates as reverse.
+    if(coordinate_begin_index >= coordinate_end_index)
+    {
+        min_coordinate = this->maxScalar_t;
+        max_coordinate = this->minScalar_t;
+        total_weight = 0;
+    }
+    else {
+        // TODO: How do we make Kokkos::single work with a single variable like
+        // this? Can't make it work unless as a view with N = 1 which feels kludgy.
+        // For example can it work if I just declare as follows:
+        //    mj_scalar_t my_total_weight;
+        // Then not sure what the pattern is to make things compile.
+        Kokkos::View<mj_scalar_t*> my_total_weight("my_total_weight",1);
+        Kokkos::View<mj_scalar_t*> min_coordinate_view("min_coordinate_view",1);
+        Kokkos::View<mj_scalar_t*> max_coordinate_view("max_coordinate_view",1);
+
+
+        my_total_weight(0) = 0.0;
+
+        typedef typename Kokkos::TeamPolicy<execution_space>::member_type member_type;
+        Kokkos::TeamPolicy<execution_space> policy (1, this->num_threads);
+
+if (this->kokkos_mj_uniform_weights(0)) {
+        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+        {
+			        Kokkos::single(Kokkos::PerThread(team_member),[=] () {
+					      my_total_weight(0) = coordinate_end_index - coordinate_begin_index;
+              });
+        });
+}
+else {
+
+              //if not uniform, then weights are reduced from threads.
+              mj_scalar_t sum_value = 0;
+        //      Kokkos::RangePolicy<Kokkos::OpenMP, int> range_policy(coordinate_begin_index, coordinate_end_index);
+        //      Kokkos::parallel_reduce(range_policy, KOKKOS_LAMBDA(const int ii,  mj_scalar_t &sum) {
+        for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
+                int i = kokkos_mj_current_coordinate_permutations(ii);
+                my_total_weight(0) += this->kokkos_mj_weights(i,0);
+        }
+       //       }, sum_value);
+       //       my_total_weight(0) = sum_value;
+}
+
+            // Kokkos::TeamPolicy<execution_space> team_policy (1, this->num_threads);
+        //    Kokkos::RangePolicy<Kokkos::OpenMP, int> range_policy(coordinate_begin_index + 1, coordinate_end_index);
+        //    Kokkos::parallel_for(range_policy, KOKKOS_LAMBDA(const int j) {
+
+       for(int j = coordinate_begin_index+1; j < coordinate_end_index; ++j) {
+              int my_thread_id = omp_get_thread_num();
+              mj_scalar_t my_thread_min_coord, my_thread_max_coord;
+              my_thread_min_coord=my_thread_max_coord
+                  =kokkos_mj_current_dim_coords(kokkos_mj_current_coordinate_permutations(coordinate_begin_index));
+              int i = kokkos_mj_current_coordinate_permutations(j);
+              if(kokkos_mj_current_dim_coords(i) > my_thread_max_coord)
+                  my_thread_max_coord = kokkos_mj_current_dim_coords(i);
+              if(kokkos_mj_current_dim_coords(i) < my_thread_min_coord)
+                  my_thread_min_coord = kokkos_mj_current_dim_coords(i);
+              this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
+              this->kokkos_max_min_coords(my_thread_id + this->num_threads) = my_thread_max_coord;
+        }
+         //   });
+
+            // we need a barrier here, because max_min_array might not be filled by some of the threads.
+            Kokkos::fence();
+
+        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+        {
+            Kokkos::single (Kokkos::PerTeam (team_member), [=] () {
+                min_coordinate_view(0) = this->kokkos_max_min_coords(0);
+                for(int i = 1; i < this->num_threads; ++i){
+                    if(this->kokkos_max_min_coords(i) < min_coordinate_view(0))
+                        min_coordinate_view(0) = this->kokkos_max_min_coords(i);
+                }
+            });
+
+            Kokkos::single (Kokkos::PerTeam (team_member), [=] () {
+                max_coordinate_view(0) = this->kokkos_max_min_coords(this->num_threads);
+                for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i){
+                    if(this->kokkos_max_min_coords(i) > max_coordinate_view(0))
+                        max_coordinate_view(0) = this->kokkos_max_min_coords(i);
+                }
+            });
+        });
+
+        Kokkos::fence();
+
+        min_coordinate = min_coordinate_view(0);
+        max_coordinate = max_coordinate_view(0);
+        total_weight = my_total_weight(0);
+    }
+    */
+}
+
+#else // HAVE_ZOLTAN2_IMP
+
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+          typename mj_part_t,
+          typename execution_space, typename memory_space>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          execution_space, memory_space>::mj_get_local_min_max_coord_totW(
+                mj_lno_t coordinate_begin_index,
+                mj_lno_t coordinate_end_index,
+                mj_lno_t *mj_current_coordinate_permutations,
+                mj_scalar_t *mj_current_dim_coords,
+                mj_scalar_t &min_coordinate,
+                mj_scalar_t &max_coordinate,
+                mj_scalar_t &total_weight){
+
+    //if the part is empty.
+    //set the min and max coordinates as reverse.
+    if(coordinate_begin_index >= coordinate_end_index)
+    {
+        min_coordinate = this->maxScalar_t;
+        max_coordinate = this->minScalar_t;
+        total_weight = 0;
+    }
+    else {
+        mj_scalar_t my_total_weight = 0;
+        {
+            //if uniform weights are used, then weight is equal to count.
+            if (this->mj_uniform_weights[0])
+            {
+                {
+                    my_total_weight = coordinate_end_index - coordinate_begin_index;
+                }
+
+            }
+            else {
+                //if not uniform, then weights are reducted from threads.
+                for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
+                    int i = mj_current_coordinate_permutations[ii];
+                    my_total_weight += this->mj_weights[0][i];
+                }
+            }
+
+            int my_thread_id = 0;
+            mj_scalar_t my_thread_min_coord, my_thread_max_coord;
             my_thread_min_coord=my_thread_max_coord
                 =mj_current_dim_coords[mj_current_coordinate_permutations[coordinate_begin_index]];
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
-#endif
             for(mj_lno_t j = coordinate_begin_index + 1; j < coordinate_end_index; ++j){
-#ifdef HAVE_ZOLTAN2_OMP
-                int i = kokkos_mj_current_coordinate_permutations(j);
-                if(kokkos_mj_current_dim_coords(i) > my_thread_max_coord)
-                    my_thread_max_coord = kokkos_mj_current_dim_coords(i);
-                if(kokkos_mj_current_dim_coords(i) < my_thread_min_coord)
-                    my_thread_min_coord = kokkos_mj_current_dim_coords(i);
-#else
                 int i = mj_current_coordinate_permutations[j];
                 if(mj_current_dim_coords[i] > my_thread_max_coord)
                     my_thread_max_coord = mj_current_dim_coords[i];
                 if(mj_current_dim_coords[i] < my_thread_min_coord)
                     my_thread_min_coord = mj_current_dim_coords[i];
-#endif
             }
 
-#ifdef HAVE_ZOLTAN2_OMP
-            this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
-            this->kokkos_max_min_coords(my_thread_id + this->num_threads) = my_thread_max_coord;
-#else
             this->max_min_coords[my_thread_id] = my_thread_min_coord;
             this->max_min_coords[my_thread_id + this->num_threads] = my_thread_max_coord;
 
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
-//we need a barrier here, because max_min_array might not be filled by some of the threads.
-#pragma omp barrier
-#pragma omp single nowait
-#endif
             {
-#ifdef HAVE_ZOLTAN2_OMP
-                min_coordinate = this->kokkos_max_min_coords(0);
-#else
                 min_coordinate = this->max_min_coords[0];
-#endif
                 for(int i = 1; i < this->num_threads; ++i){
-#ifdef HAVE_ZOLTAN2_OMP
-                    if(this->kokkos_max_min_coords(i) < min_coordinate)
-                        min_coordinate = this->kokkos_max_min_coords(i);
-#else
                     if(this->max_min_coords[i] < min_coordinate)
                         min_coordinate = this->max_min_coords[i];
-#endif
                 }
             }
 
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp single nowait
-#endif
             {
-#ifdef HAVE_ZOLTAN2_OMP
-                max_coordinate = this->kokkos_max_min_coords(this->num_threads);
-#else
                 max_coordinate = this->max_min_coords[this->num_threads];
-#endif
                 for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i){
-#ifdef HAVE_ZOLTAN2_OMP
-                    if(this->kokkos_max_min_coords(i) > max_coordinate)
-                        max_coordinate = this->kokkos_max_min_coords(i);
-#else
                     if(this->max_min_coords[i] > max_coordinate)
                         max_coordinate = this->max_min_coords[i];
-#endif
                 }
             }
         }
@@ -3350,6 +3452,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
 }
 
+#endif // HAVE_ZOLTAN2_OMP
 
 /*! \brief Function that reduces global minimum and maximum coordinates with global total weight from given local arrays.
  * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
@@ -8054,10 +8157,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         this->num_threads = 1;
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel
-        {
-                this->num_threads = omp_get_num_threads();
-        }
+        this->num_threads = execution_space::thread_pool_size();
 #endif
     }
     //this->set_input_data();
@@ -8476,8 +8576,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                     //mj_scalar_t *used_tlr_array =  this->total_part_weight_left_right_closests + tlr_shift;
 #ifdef HAVE_ZOLTAN2_OMP
-std::cout << "kokkos_thread_part_weights size: " << kokkos_thread_part_weights.size() << std::endl;
-
                     this->kokkos_thread_part_weight_work =
                       Kokkos::subview(
                         this->kokkos_thread_part_weights,
@@ -9762,10 +9860,9 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
 
         this->num_threads = 1;
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel
-        {
-                this->num_threads = omp_get_num_threads();
-        }
+#ifdef HAVE_ZOLTAN2_OMP
+        this->num_threads = execution_space::thread_pool_size();
+#endif
 #endif
 
 }
