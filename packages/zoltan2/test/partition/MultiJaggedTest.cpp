@@ -1289,7 +1289,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-int main(int argc, char *argv[])
+int main_repeat(int argc, char *argv[])
 {
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
@@ -1407,5 +1407,17 @@ int main(int argc, char *argv[])
     }
 
     Kokkos::finalize ();
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    for(int loop = 0; loop < 10000; ++loop) {
+      int return_code = main_repeat(argc, argv);
+      if(return_code != 0) {
+        throw std::logic_error("Failed");
+      }
+      printf("COMPLETED LOOP: %d\n", loop);
+    }
     return 0;
 }
