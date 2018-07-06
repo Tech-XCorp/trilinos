@@ -1412,7 +1412,7 @@ int main_repeat(int argc, char *argv[])
 
 int main(int argc, char *argv[])
 {
-    for(int loop = 0; loop < 10000; ++loop) {
+    for(int loop = 0; loop < 100; ++loop) {
       int return_code = main_repeat(argc, argv);
       if(return_code != 0) {
         throw std::logic_error("Failed");
