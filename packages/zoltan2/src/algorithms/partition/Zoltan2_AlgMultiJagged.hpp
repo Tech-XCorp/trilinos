@@ -528,7 +528,7 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr){
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 class AlgMJ
 {
 private:
@@ -540,7 +540,7 @@ private:
 
     double imbalance_tolerance; //input imbalance tolerance.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_part_t *> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
+    Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
 #else
     mj_part_t *part_no_array; //input part array specifying num part to divide along each dim.
 #endif
@@ -555,11 +555,11 @@ private:
     mj_gno_t num_global_coords; //number of global coords.
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_mj_coordinates; //two dimension coordinate array
-    Kokkos::View<mj_scalar_t **> kokkos_mj_weights; //two dimension weight array
-    Kokkos::View<bool *> kokkos_mj_uniform_parts; //if the target parts are uniform
-    Kokkos::View<mj_scalar_t **> kokkos_mj_part_sizes; //target part weight sizes.
-    Kokkos::View<bool *> kokkos_mj_uniform_weights; //if the coordinates have uniform weights
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_mj_coordinates; //two dimension coordinate array
+    Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_mj_weights; //two dimension weight array
+    Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_mj_uniform_parts; //if the target parts are uniform
+    Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_mj_part_sizes; //target part weight sizes.
+    Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_mj_uniform_weights; //if the coordinates have uniform weights
 #else
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
     mj_scalar_t **mj_weights; //two dimension weight array
@@ -573,14 +573,14 @@ private:
     size_t num_global_parts; //the targeted number of parts
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
-    Kokkos::View<mj_gno_t*> kokkos_current_mj_gnos; //current global ids of the coordinates, might change during migration.
-    Kokkos::View<int*> kokkos_owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
-    Kokkos::View<mj_lno_t*> kokkos_coordinate_permutations; //permutation of coordinates, for partitioning.
-    Kokkos::View<mj_lno_t*> kokkos_new_coordinate_permutations; //permutation work array.
-    Kokkos::View<mj_part_t*> kokkos_assigned_part_ids; //the part ids assigned to coordinates.
-    Kokkos::View<mj_lno_t *> kokkos_part_xadj; //beginning and end of each part.
-    Kokkos::View<mj_lno_t *> kokkos_new_part_xadj; // work array for beginning and end of each part.
+    Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
+    Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> kokkos_current_mj_gnos; //current global ids of the coordinates, might change during migration.
+    Kokkos::View<int*, typename mj_node_t::device_type> kokkos_owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
+    Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> kokkos_coordinate_permutations; //permutation of coordinates, for partitioning.
+    Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> kokkos_new_coordinate_permutations; //permutation work array.
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> kokkos_assigned_part_ids; //the part ids assigned to coordinates.
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_part_xadj; //beginning and end of each part.
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_new_part_xadj; // work array for beginning and end of each part.
 #else
     mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
     mj_gno_t *current_mj_gnos; //current global ids of the coordinates, might change during migration.
@@ -626,10 +626,10 @@ private:
     mj_scalar_t minScalar_t; //min scalar
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_all_cut_coordinates;
-    Kokkos::View<mj_scalar_t *> kokkos_max_min_coords;
-    Kokkos::View<mj_scalar_t *> kokkos_process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
-    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_all_cut_coordinates;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_max_min_coords;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
 #else
     mj_scalar_t *all_cut_coordinates;
     mj_scalar_t *max_min_coords;
@@ -642,25 +642,25 @@ private:
     //the next cutline information. therefore, cannot update the cut work array
     //until all cutlines are determined.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_cut_coordinates_work_array;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_cut_coordinates_work_array;
 #else
     mj_scalar_t *cut_coordinates_work_array;
 #endif
 
     //cumulative part weight array.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_target_part_weights;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_target_part_weights;
 #else
     mj_scalar_t *target_part_weights;
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
-    Kokkos::View<mj_scalar_t *> kokkos_cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
-    Kokkos::View<mj_scalar_t *> kokkos_cut_lower_bound_weights ;  //lower bound weight of a cut line
-    Kokkos::View<mj_scalar_t *> kokkos_cut_upper_bound_weights ;  //upper bound weight of a cut line
-    Kokkos::View<mj_scalar_t *> kokkos_process_local_min_max_coord_total_weight; //combined array to exchange the min and max coordinate, and total weight of part.
-    Kokkos::View<mj_scalar_t *> kokkos_global_min_max_coord_total_weight;//global combined array with the results for min, max and total weight.
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_cut_lower_bound_weights ;  //lower bound weight of a cut line
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_cut_upper_bound_weights ;  //upper bound weight of a cut line
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_process_local_min_max_coord_total_weight; //combined array to exchange the min and max coordinate, and total weight of part.
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_global_min_max_coord_total_weight;//global combined array with the results for min, max and total weight.
 #else
     mj_scalar_t *cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
     mj_scalar_t *cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
@@ -673,7 +673,7 @@ private:
     //isDone is used to determine if a cutline is determined already.
     //If a cut line is already determined, the next iterations will skip this cut line.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<bool *> kokkos_is_cut_line_determined;
+    Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_is_cut_line_determined;
 #else
     bool *is_cut_line_determined;
 #endif
@@ -681,32 +681,32 @@ private:
     //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
     //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_part_t *> kokkos_my_incomplete_cut_count;
+    Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_my_incomplete_cut_count;
 #else
     mj_part_t *my_incomplete_cut_count;
 #endif
 
 //local part weights of each thread.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_thread_part_weights;
+    Kokkos::View<double **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_part_weights;
 #else
     double **thread_part_weights;
 #endif
 
     //the work manupulation array for partweights.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_thread_part_weight_work;
+    Kokkos::View<double **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_part_weight_work;
 #else
     double **thread_part_weight_work;
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
     //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
-    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_left_closest_point;
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_cut_left_closest_point;
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
-    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_thread_cut_right_closest_point;
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_cut_right_closest_point;
     //to store how many points in each part a thread has.
-    Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft> kokkos_thread_point_counts;
+    Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_point_counts;
 #else
     //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
     mj_scalar_t **thread_cut_left_closest_point;
@@ -718,8 +718,8 @@ private:
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_process_rectilinear_cut_weight;
-    Kokkos::View<mj_scalar_t *> kokkos_global_rectilinear_cut_weight;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_process_rectilinear_cut_weight;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_global_rectilinear_cut_weight;
 #else
     mj_scalar_t *process_rectilinear_cut_weight;
     mj_scalar_t *global_rectilinear_cut_weight;
@@ -730,8 +730,8 @@ private:
     //leftClosest distances sized P-1, since P-1 cut lines
     //rightClosest distances size P-1, since P-1 cut lines.
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_total_part_weight_left_right_closests;
-    Kokkos::View<mj_scalar_t *> kokkos_global_total_part_weight_left_right_closests;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_total_part_weight_left_right_closests;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_global_total_part_weight_left_right_closests;
 #else
     mj_scalar_t *total_part_weight_left_right_closests;
     mj_scalar_t *global_total_part_weight_left_right_closests;
@@ -818,8 +818,8 @@ private:
                 mj_lno_t coordinate_begin_index,
                 mj_lno_t coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_lno_t *> kokkos_mj_current_coordinate_permutations,
-                Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
+                Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_mj_current_coordinate_permutations,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
 #else
                 mj_lno_t *mj_current_coordinate_permutations,
                 mj_scalar_t *mj_current_dim_coords,
@@ -839,8 +839,8 @@ private:
         mj_part_t current_concurrent_num_parts,
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_local_min_max_total,
-        Kokkos::View<mj_scalar_t *> kokkos_global_min_max_total);
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_local_min_max_total,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_global_min_max_total);
 #else
         mj_scalar_t *local_min_max_total,
         mj_scalar_t *global_min_max_total);
@@ -870,8 +870,8 @@ private:
         mj_part_t num_cuts/*p-1*/ ,
         mj_scalar_t global_weight,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_initial_cut_coords,
-        Kokkos::View<mj_scalar_t *> kokkos_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_initial_cut_coords,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
 #else
         mj_scalar_t *initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
         mj_scalar_t *target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
@@ -901,9 +901,9 @@ private:
         mj_lno_t coordinate_begin_index,
         mj_lno_t coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_lno_t *> kokkos_mj_current_coordinate_permutations,
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_part_t *> kokkos_mj_part_ids,
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_mj_current_coordinate_permutations,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_mj_part_ids,
 #else
         mj_lno_t *mj_current_coordinate_permutations,
         mj_scalar_t *mj_current_dim_coords,
@@ -923,7 +923,7 @@ private:
      */
     void mj_1D_part(
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
 #else
         mj_scalar_t *mj_current_dim_coords,
 #endif
@@ -931,7 +931,7 @@ private:
         mj_part_t current_work_part,
         mj_part_t current_concurrent_num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
 #else
         mj_scalar_t *current_cut_coordinates,
 #endif
@@ -965,12 +965,12 @@ private:
         mj_lno_t coordinate_begin_index,
         mj_lno_t coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_scalar_t *> kokkos_temp_current_cut_coords,
-        Kokkos::View<bool *> kokkos_current_cut_status,
-        Kokkos::View<double *> kokkos_my_current_part_weights,
-        Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest,
-        Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest);
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords,
+        Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status,
+        Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest);
 #else
         mj_scalar_t *mj_current_dim_coords,
         mj_scalar_t *temp_current_cut_coords,
@@ -1030,10 +1030,10 @@ private:
         const mj_scalar_t &global_total_weight,
         const mj_scalar_t &used_imbalance_tolerance,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_current_global_part_weights,
-        Kokkos::View<const mj_scalar_t *> kokkos_current_local_part_weights,
-        Kokkos::View<const mj_scalar_t *> kokkos_current_part_target_weights,
-        Kokkos::View<bool *> kokkos_current_cut_line_determined,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights,
+        Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights,
+        Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_target_weights,
+        Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined,
 #else
         mj_scalar_t * current_global_part_weights,
         const mj_scalar_t * current_local_part_weights,
@@ -1042,11 +1042,11 @@ private:
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_bounds,
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bounds,
-        Kokkos::View<mj_scalar_t *> current_global_left_closest_points,
-        Kokkos::View<mj_scalar_t *> current_global_right_closest_points,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_bounds,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bounds,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_global_left_closest_points,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_global_right_closest_points,
 #else
         mj_scalar_t *current_cut_coordinates,
         mj_scalar_t *current_cut_upper_bounds,
@@ -1056,10 +1056,10 @@ private:
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bound_weights,
-        Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_weights,
-        Kokkos::View<mj_scalar_t *> kokkos_new_current_cut_coordinates,
-        Kokkos::View<mj_scalar_t *> current_part_cut_line_weight_to_put_left,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_new_current_cut_coordinates,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_part_cut_line_weight_to_put_left,
 #else
         mj_scalar_t * current_cut_lower_bound_weights,
         mj_scalar_t * current_cut_upper_weights,
@@ -1099,8 +1099,8 @@ private:
     void mj_create_new_partitions(
         mj_part_t num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_scalar_t *> kokkos_current_concurrent_cut_coordinate,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate,
 #else
         mj_scalar_t *mj_current_dim_coords,
         mj_scalar_t *current_concurrent_cut_coordinate,
@@ -1108,19 +1108,19 @@ private:
         mj_lno_t coordinate_begin,
         mj_lno_t coordinate_end,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_used_local_cut_line_weight_to_left,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left,
 #else
         mj_scalar_t *used_local_cut_line_weight_to_left,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<double **,Kokkos::LayoutLeft> used_thread_part_weight_work,
+        Kokkos::View<double **, Kokkos::LayoutLeft, typename mj_node_t::device_type> used_thread_part_weight_work,
 #else
         double **used_thread_part_weight_work,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_lno_t *> kokkos_out_part_xadj
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj
 #else
         mj_lno_t *out_part_xadj
 #endif
@@ -1381,8 +1381,8 @@ private:
     void create_consistent_chunks(
         mj_part_t num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_scalar_t *> current_concurrent_cut_coordinate,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_concurrent_cut_coordinate,
 #else
         mj_scalar_t *mj_current_dim_coords,
         mj_scalar_t *current_concurrent_cut_coordinate,
@@ -1390,8 +1390,8 @@ private:
         mj_lno_t coordinate_begin,
         mj_lno_t coordinate_end,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> used_local_cut_line_weight_to_left,
-        Kokkos::View<mj_lno_t *> kokkos_out_part_xadj,
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> used_local_cut_line_weight_to_left,
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj,
 #else
         mj_scalar_t *used_local_cut_line_weight_to_left,
         mj_lno_t *out_part_xadj,
@@ -1459,7 +1459,7 @@ public:
                 double imbalance_tolerance,
                 size_t num_global_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_part_t*> kokkos_part_no_array,
+                Kokkos::View<mj_part_t*, typename mj_node_t::device_type> kokkos_part_no_array,
 #else
                 mj_part_t *part_no_array,
 #endif
@@ -1469,8 +1469,8 @@ public:
                 mj_lno_t num_local_coords,
                 mj_gno_t num_global_coords,
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos,
-                Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> kokkos_mj_coordinates,
+                Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_initial_mj_gnos,
+                Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_mj_coordinates,
 #else
                 const mj_gno_t *initial_mj_gnos,
                 mj_scalar_t **mj_coordinates,
@@ -1479,10 +1479,10 @@ public:
                 int num_weights_per_coord,
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<bool*> kokkos_mj_uniform_weights,
-                Kokkos::View<mj_scalar_t**> kokkos_mj_weights,
-                Kokkos::View<bool*> kokkos_mj_uniform_parts,
-                Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes,
+                Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_weights,
+                Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_weights,
+                Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_parts,
+                Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_part_sizes,
 #else
                 bool *mj_uniform_weights,
                 mj_scalar_t **mj_weights,
@@ -1491,8 +1491,8 @@ public:
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_part_t*> &kokkos_result_assigned_part_ids,
-                Kokkos::View<mj_gno_t*> &kokkos_result_mj_gnos
+                Kokkos::View<mj_part_t*, typename mj_node_t::device_type> &kokkos_result_assigned_part_ids,
+                Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos
 #else
                 mj_part_t *&result_assigned_part_ids,
                 mj_gno_t *&result_mj_gnos
@@ -1557,8 +1557,8 @@ public:
         size_t num_target_part,
         int coord_dim,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t **,Kokkos::LayoutLeft> mj_coordinates_,
-        Kokkos::View<mj_lno_t *> kokkos_initial_selected_coords_output_permutation,
+        Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> mj_coordinates_,
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_initial_selected_coords_output_permutation,
 #else
         mj_scalar_t **mj_coordinates_,
         mj_lno_t *initial_selected_coords_output_permutation,
@@ -1567,7 +1567,7 @@ public:
         mj_lno_t *output_xadj,
         int recursion_depth,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_part_t *> kokkos_part_no_array,
+        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_part_no_array,
 #else
         const mj_part_t *part_no_array,
 #endif
@@ -1604,17 +1604,17 @@ public:
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::sequential_task_partitioning(
+          mj_node_t>::sequential_task_partitioning(
     const RCP<const Environment> &env,
     mj_lno_t num_total_coords,
     mj_lno_t num_selected_coords,
     size_t num_target_part,
     int coord_dim_,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t **,Kokkos::LayoutLeft> kokkos_mj_coordinates_,
-    Kokkos::View<mj_lno_t *> kokkos_inital_adjList_output_adjlist,
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_mj_coordinates_,
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_inital_adjList_output_adjlist,
 #else
     mj_scalar_t **mj_coordinates_,
     mj_lno_t *inital_adjList_output_adjlist,
@@ -1623,7 +1623,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t *output_xadj,
     int rd,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_part_t *> kokkos_part_no_array_,
+    Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_part_no_array_,
 #else
     const mj_part_t *part_no_array_,
 #endif
@@ -1676,14 +1676,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     ////will copy the memory to this->current_mj_gnos[j].
 #ifdef HAVE_ZOLTAN2_OMP
     this->kokkos_initial_mj_gnos =
-      Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
+      Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
 #else
     this->initial_mj_gnos = allocMemory<mj_gno_t>(this->num_local_coords);
 #endif
 
     this->num_weights_per_coord = 0;
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<bool*> kokkos_tmp_mj_uniform_weights("uniform weights", 1);
+    Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_tmp_mj_uniform_weights("uniform weights", 1);
     this->kokkos_mj_uniform_weights = kokkos_tmp_mj_uniform_weights;
     this->kokkos_mj_uniform_weights(0) = true;
 #else
@@ -1693,7 +1693,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_weights("weights", 1);
+    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_tmp_mj_weights("weights", 1);
     this->kokkos_mj_weights = kokkos_tmp_mj_weights;
 #else
     mj_scalar_t **tmp_mj_weights = new mj_scalar_t *[1];
@@ -1701,10 +1701,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<bool*> kokkos_tmp_mj_uniform_parts("uniform parts", 1);
+    Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_tmp_mj_uniform_parts("uniform parts", 1);
     this->kokkos_mj_uniform_parts = kokkos_tmp_mj_uniform_parts;
     this->kokkos_mj_uniform_parts(0) = true;
-    Kokkos::View<mj_scalar_t**> kokkos_tmp_mj_part_sizes("part sizes", 1);
+    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_tmp_mj_part_sizes("part sizes", 1);
     this->kokkos_mj_part_sizes = kokkos_tmp_mj_part_sizes;
 #else
     bool *tmp_mj_uniform_parts = new bool[1];
@@ -1737,7 +1737,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t current_num_parts = 1;
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
 #else
     mj_scalar_t *current_cut_coordinates = this->all_cut_coordinates;
 #endif
@@ -1812,7 +1812,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //alloc Memory to point the indices
         //of the parts in the permutation array.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("new part xadj", output_part_count_in_dimension);
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("new part xadj", output_part_count_in_dimension);
 #else
         this->new_part_xadj = allocMemory<mj_lno_t>(output_part_count_in_dimension);
 #endif
@@ -1832,7 +1832,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         int coordInd = i % this->coord_dim;
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 #else
         mj_scalar_t * mj_current_dim_coords = this->mj_coordinates[coordInd];
 #endif
@@ -1997,12 +1997,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
 
 #ifdef HAVE_ZOLTAN2_OMP
-                    Kokkos::View<mj_scalar_t *> kokkos_usedCutCoordinate =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_usedCutCoordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_cut_shift,
                           kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *> kokkos_current_target_part_weights =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_target_part_weights =
                       Kokkos::subview(kokkos_target_part_weights,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_part_shift,
@@ -2159,12 +2159,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-                    Kokkos::View<mj_scalar_t *> kokkos_current_concurrent_cut_coordinate =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
                           cut_shift,
                           kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *> kokkos_used_local_cut_line_weight_to_left =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left =
                       Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
                         std::pair<mj_lno_t, mj_lno_t>(
                           cut_shift,
@@ -2306,11 +2306,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //swap the coordinate permutations for the next dimension.
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_lno_t *> tmp = this->kokkos_coordinate_permutations;
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> tmp = this->kokkos_coordinate_permutations;
         this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
         this->kokkos_new_coordinate_permutations = tmp;
         this->kokkos_part_xadj = this->kokkos_new_part_xadj;
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
 #else
         mj_lno_t * tmp = this->coordinate_permutations;
         this->coordinate_permutations = this->new_coordinate_permutations;
@@ -2368,9 +2368,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-        execution_space, memory_space>::AlgMJ():
+        mj_node_t>::AlgMJ():
         mj_env(), mj_problemComm(), imbalance_tolerance(0),
 #ifndef HAVE_ZOLTAN2_OMP
         part_no_array(NULL),
@@ -2438,11 +2438,11 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::mj_partBox_t>
+          mj_node_t>::mj_partBox_t>
 AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::get_global_box() const
+          mj_node_t>::get_global_box() const
 {
   return this->global_box;
 }
@@ -2452,9 +2452,9 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::set_to_keep_part_boxes(){
+          mj_node_t>::set_to_keep_part_boxes(){
   this->mj_keep_part_boxes = true;
 }
 
@@ -2468,9 +2468,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::set_part_specifications(){
+          mj_node_t>::set_part_specifications(){
 
         this->total_num_cut = 0; //how many cuts will be totally
         this->total_num_part = 1;    //how many parts will be totally
@@ -2580,9 +2580,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::get_part_count(
+          mj_node_t>::get_part_count(
                 mj_part_t num_total_future,
                 double root)
 {
@@ -2612,9 +2612,9 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::update_part_num_arrays(
+          mj_node_t>::update_part_num_arrays(
         std::vector <mj_part_t> &num_partitioning_in_current_dim, //assumes this vector is empty.
     std::vector<mj_part_t> *future_num_part_in_parts,
     std::vector<mj_part_t> *next_future_num_parts_in_parts, //assumes this vector is empty.
@@ -2816,13 +2816,13 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::allocate_set_work_memory(){
+          mj_node_t>::allocate_set_work_memory(){
 
         //points to process that initially owns the coordinate.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_owner_of_coordinate  = Kokkos::View<int*>("empty"); // TODO decide if this is ok
+        this->kokkos_owner_of_coordinate  = Kokkos::View<int*, typename mj_node_t::device_type>("empty"); // TODO decide if this is ok
 #else
         this->owner_of_coordinate  = NULL;
 #endif
@@ -2831,7 +2831,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*>("num local coords", this->num_local_coords);
+        this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
 #else
         this->coordinate_permutations =  allocMemory< mj_lno_t>(this->num_local_coords);
 #endif
@@ -2851,8 +2851,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //new_coordinate_permutations holds the current permutation.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_new_coordinate_permutations = Kokkos::View< mj_lno_t*>("num_local_coords", this->num_local_coords);
-        this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*>("assigned parts"); // TODO empty is ok for NULL replacement?
+        this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_local_coords", this->num_local_coords);
+        this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned parts"); // TODO empty is ok for NULL replacement?
 #else
         this->new_coordinate_permutations = allocMemory< mj_lno_t>(this->num_local_coords);
         this->assigned_part_ids = NULL;
@@ -2861,7 +2861,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         if(this->num_local_coords > 0){
 #ifdef HAVE_ZOLTAN2_OMP
-                this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*>("assigned part ids", this->num_local_coords);
+                this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned part ids", this->num_local_coords);
 #else
                 this->assigned_part_ids = allocMemory<mj_part_t>(this->num_local_coords);
 #endif
@@ -2871,10 +2871,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //inTotalCounts array holds the end points in coordinate_permutations array
         //for each partition. Initially sized 1, and single element is set to numLocalCoords.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_part_xadj = Kokkos::View<mj_lno_t*>("part xadj", 1);
+        this->kokkos_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("part xadj", 1);
         this->kokkos_part_xadj(0) = static_cast<mj_lno_t>(this->num_local_coords);//the end of the initial partition is the end of coordinates.
         //the ends points of the output, this is allocated later.
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
 #else
         this->part_xadj = allocMemory<mj_lno_t>(1);
         this->part_xadj[0] = static_cast<mj_lno_t>(this->num_local_coords);//the end of the initial partition is the end of coordinates.
@@ -2886,12 +2886,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
 
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_all_cut_coordinates = Kokkos::View< mj_scalar_t*>(
+        this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
           "all cut coordinates",
           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-        this->kokkos_max_min_coords =  Kokkos::View< mj_scalar_t *>("max min coords", this->num_threads * 2);
-        this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*>("empty"); //how much weight percentage should a MPI put left side of the each cutline
-        this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
+        this->kokkos_max_min_coords =  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>("max min coords", this->num_threads * 2);
+        this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("empty"); //how much weight percentage should a MPI put left side of the each cutline
+        this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
 
 #else
         this->all_cut_coordinates  = allocMemory< mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -2904,13 +2904,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if(this->distribute_points_on_cut_lines){
 #ifdef HAVE_ZOLTAN2_OMP
             this->kokkos_process_cut_line_weight_to_put_left =
-              Kokkos::View<mj_scalar_t *>("kokkos_process_cut_line_weight_to_put_left",
+              Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>("kokkos_process_cut_line_weight_to_put_left",
                 this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-            this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
+            this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>(
               "kokkos_thread_cut_line_weight_to_put_left", this->max_num_cut_along_dim, this->num_threads);
-            this->kokkos_process_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *>(
+            this->kokkos_process_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
               "kokkos_process_rectilinear_cut_weight", this->max_num_cut_along_dim);
-            this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *>(
+            this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
               "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
 #else
             this->process_cut_line_weight_to_put_left = allocMemory<mj_scalar_t>(this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -2929,61 +2929,61 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //the next cutline information. therefore, cannot update the cut work array
         //until all cutlines are determined.
 #ifdef HAVE_ZOLTAN2_OMP
-    this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *>(
+    this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
      "kokkos_cut_coordinates_work_array",
        this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     //cumulative part weight array.
-    this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*>(
+    this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "kokkos_target_part_weights",
       this->max_num_part_along_dim * this->max_concurrent_part_calculation);
 
     // the weight from left to write.
-    this->kokkos_cut_upper_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_coordinates",
+    this->kokkos_cut_upper_bound_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("kokkos_cut_upper_bound_coordinates",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
-    this->kokkos_cut_lower_bound_coordinates = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_coordinates",
+    this->kokkos_cut_lower_bound_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("kokkos_cut_lower_bound_coordinates",
       this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound coordinate of a cut line
-    this->kokkos_cut_lower_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_lower_bound_weights",
+    this->kokkos_cut_lower_bound_weights = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("kokkos_cut_lower_bound_weights",
       this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //lower bound weight of a cut line
-    this->kokkos_cut_upper_bound_weights = Kokkos::View<mj_scalar_t*>("kokkos_cut_upper_bound_weights",
+    this->kokkos_cut_upper_bound_weights = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("kokkos_cut_upper_bound_weights",
       this->max_num_cut_along_dim* this->max_concurrent_part_calculation);  //upper bound weight of a cut line
-    this->kokkos_process_local_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*>(
+    this->kokkos_process_local_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "kokkos_process_local_min_max_coord_total_weight",
       3 * this->max_concurrent_part_calculation); //combined array to exchange the min and max coordinate, and total weight of part.
-    this->kokkos_global_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*>(
+    this->kokkos_global_min_max_coord_total_weight = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "kokkos_global_min_max_coord_total_weight",
       3 * this->max_concurrent_part_calculation);//global combined array with the results for min, max and total weight.
     //is_cut_line_determined is used to determine if a cutline is determined already.
     //If a cut line is already determined, the next iterations will skip this cut line.
-    this->kokkos_is_cut_line_determined = Kokkos::View<bool *>(
+    this->kokkos_is_cut_line_determined = Kokkos::View<bool *, typename mj_node_t::device_type>(
       "kokkos_is_cut_line_determined",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
     //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
-    this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *>(
+    this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, typename mj_node_t::device_type>(
       "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
     //local part weights of each thread.
-    this->kokkos_thread_part_weights = Kokkos::View<double **,Kokkos::LayoutLeft>("thread_part_weights",
+    this->kokkos_thread_part_weights = Kokkos::View<double **, Kokkos::LayoutLeft, typename mj_node_t::device_type>("thread_part_weights",
       this->max_num_total_part_along_dim * this->max_concurrent_part_calculation,
       this->num_threads);
-    this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
+    this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>(
       "kokkos_thread_cut_left_closest_point",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
     //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
-    this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>(
+    this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>(
       "kokkos_thread_cut_right_closest_point",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation, this->num_threads);
     //to store how many points in each part a thread has.
-    this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft>(
+    this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>(
       "kokkos_thread_point_counts",
       this->max_num_part_along_dim, this->num_threads);
     //for faster communication, concatanation of
     //totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
     //leftClosest distances sized P-1, since P-1 cut lines
     //rightClosest distances size P-1, since P-1 cut lines.
-    this->kokkos_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*>(
+    this->kokkos_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
-    this->kokkos_global_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*>(
+    this->kokkos_global_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "global_total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 #else
@@ -3035,7 +3035,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t**,Kokkos::LayoutLeft> coord(
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
     for (int i=0; i < this->coord_dim; i++){
       Kokkos::parallel_for(
@@ -3057,7 +3057,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t**> weights(
+    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
     for (int i=0; i < this->num_weights_per_coord; i++){
       Kokkos::parallel_for(
@@ -3069,14 +3069,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     this->kokkos_mj_weights = weights;
     this->kokkos_current_mj_gnos =
-      Kokkos::View<mj_gno_t*>("gids", this->num_local_coords);
+      Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
     Kokkos::parallel_for(
       Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
       }
     );
-    this->kokkos_owner_of_coordinate = Kokkos::View<int*>("num local coords", this->num_local_coords);
+    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
     Kokkos::parallel_for(
       Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
       KOKKOS_LAMBDA (const int j) {
@@ -3111,9 +3111,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::compute_global_box()
+          mj_node_t>::compute_global_box()
 {
     //local min coords
     mj_scalar_t *mins = allocMemory<mj_scalar_t>(this->coord_dim);
@@ -3180,9 +3180,9 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::init_part_boxes(
+          mj_node_t>::init_part_boxes(
                 RCP<mj_partBoxVector_t> & initial_partitioning_boxes
 )
 {
@@ -3204,13 +3204,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_get_local_min_max_coord_totW(
+          mj_node_t>::mj_get_local_min_max_coord_totW(
                 mj_lno_t coordinate_begin_index,
                 mj_lno_t coordinate_end_index,
-                Kokkos::View<mj_lno_t *> kokkos_mj_current_coordinate_permutations,
-                Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
+                Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_mj_current_coordinate_permutations,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
                 mj_scalar_t &min_coordinate,
                 mj_scalar_t &max_coordinate,
                 mj_scalar_t &total_weight){
@@ -3273,8 +3273,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     total_weight = my_total_weight;
 
-    typedef typename Kokkos::TeamPolicy<execution_space>::member_type member_type;
-    Kokkos::TeamPolicy<execution_space> policy (1, this->num_threads);
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
       int my_thread_id = omp_get_thread_num();
       this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
@@ -3302,9 +3302,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_get_local_min_max_coord_totW(
+          mj_node_t>::mj_get_local_min_max_coord_totW(
                 mj_lno_t coordinate_begin_index,
                 mj_lno_t coordinate_end_index,
                 mj_lno_t *mj_current_coordinate_permutations,
@@ -3387,13 +3387,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_get_global_min_max_coord_totW(
+          mj_node_t>::mj_get_global_min_max_coord_totW(
     mj_part_t current_concurrent_num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_local_min_max_total,
-    Kokkos::View<mj_scalar_t *> kokkos_global_min_max_total){
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_local_min_max_total,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_global_min_max_total){
 #else
     mj_scalar_t *local_min_max_total,
     mj_scalar_t *global_min_max_total){
@@ -3455,16 +3455,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_get_initial_cut_coords_target_weights(
+          mj_node_t>::mj_get_initial_cut_coords_target_weights(
     mj_scalar_t min_coord,
     mj_scalar_t max_coord,
     mj_part_t num_cuts/*p-1*/ ,
     mj_scalar_t global_weight,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
-    Kokkos::View<mj_scalar_t *> current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
 #else
     mj_scalar_t *initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
     mj_scalar_t *current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
@@ -3551,18 +3551,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::set_initial_coordinate_parts(
+          mj_node_t>::set_initial_coordinate_parts(
     mj_scalar_t &max_coordinate,
     mj_scalar_t &min_coordinate,
     mj_part_t &concurrent_current_part_index,
     mj_lno_t coordinate_begin_index,
     mj_lno_t coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_lno_t *> mj_current_coordinate_permutations,
-    Kokkos::View<mj_scalar_t *> mj_current_dim_coords,
-    Kokkos::View<mj_part_t *> kokkos_mj_part_ids,
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> mj_current_coordinate_permutations,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> mj_current_dim_coords,
+    Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_mj_part_ids,
 #else
     mj_lno_t *mj_current_coordinate_permutations,
     mj_scalar_t *mj_current_dim_coords,
@@ -3626,11 +3626,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_1D_part(
+          mj_node_t>::mj_1D_part(
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
 #else
     mj_scalar_t *mj_current_dim_coords,
 #endif
@@ -3638,7 +3638,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
 #else
     mj_scalar_t *current_cut_coordinates,
 #endif
@@ -3650,7 +3650,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t rectilinear_cut_count = 0;
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 #else
     mj_scalar_t *temp_cut_coords = current_cut_coordinates;
 #endif
@@ -3670,12 +3670,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     {
 #ifdef HAVE_ZOLTAN2_OMP
         int me = omp_get_thread_num();
-        Kokkos::View<double *> kokkos_my_thread_part_weights =
+        Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_thread_part_weights =
           Kokkos::subview(this->kokkos_thread_part_weights, Kokkos::ALL, me);
 
-        Kokkos::View<double *, Kokkos::LayoutLeft> kokkos_my_thread_left_closest =
+        Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_left_closest =
           Kokkos::subview(this->kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
-        Kokkos::View<double *, Kokkos::LayoutLeft> kokkos_my_thread_right_closest =
+        Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
 #else
         int me = 0;
@@ -3748,23 +3748,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
                 if (this->kokkos_my_incomplete_cut_count(kk) > 0){
                     //although isDone shared, currentDone is private and same for all.
-                    Kokkos::View<bool *> kokkos_current_cut_status =
+                    Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status =
                       Kokkos::subview(this->kokkos_is_cut_line_determined,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_cut_shifts,
                           this->kokkos_is_cut_line_determined.size()));
-                    Kokkos::View<double *> kokkos_my_current_part_weights =
+                    Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights =
                       Kokkos::subview(kokkos_my_thread_part_weights,
                         std::pair<mj_lno_t, mj_lno_t>(
                           total_part_shift,
                           kokkos_my_thread_part_weights.size()));
 
-                    Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest =
                     Kokkos::subview(kokkos_my_thread_left_closest,
                       std::pair<mj_lno_t, mj_lno_t>(
                         concurrent_cut_shifts,
                         kokkos_my_thread_left_closest.size()));
-                    Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest =
                     Kokkos::subview(kokkos_my_thread_right_closest,
                       std::pair<mj_lno_t, mj_lno_t>(
                         concurrent_cut_shifts,
@@ -3783,7 +3783,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef HAVE_ZOLTAN2_OMP
                     mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->kokkos_part_xadj(conccurent_current_part -1);
                     mj_lno_t coordinate_end_index = this->kokkos_part_xadj(conccurent_current_part);
-                    Kokkos::View<mj_scalar_t *> kokkos_temp_current_cut_coords =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords =
                       Kokkos::subview(kokkos_temp_cut_coords,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_cut_shifts,
@@ -3888,31 +3888,31 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_local_part_weights =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights =
                   Kokkos::subview(this->kokkos_total_part_weight_left_right_closests,
                     std::pair<mj_lno_t, mj_lno_t>(
                       tlr_shift,
                       this->kokkos_total_part_weight_left_right_closests.size()));
 
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_tlr =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_tlr =
                   Kokkos::subview(this->kokkos_global_total_part_weight_left_right_closests,
                     std::pair<mj_lno_t, mj_lno_t>(
                       tlr_shift,
                       this->kokkos_global_total_part_weight_left_right_closests.size()));
 
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_left_closest_points =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_left_closest_points =
                   Kokkos::subview(kokkos_current_global_tlr,
                     std::pair<mj_lno_t, mj_lno_t>(
                       num_total_part,
                       kokkos_current_global_tlr.size()));
 
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_right_closest_points =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_right_closest_points =
                   Kokkos::subview(kokkos_current_global_tlr,
                     std::pair<mj_lno_t, mj_lno_t>(
                       num_total_part + num_cuts,
                       kokkos_current_global_tlr.size()));
 
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_part_weights = kokkos_current_global_tlr;
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights = kokkos_current_global_tlr;
 #else
                 mj_scalar_t *current_local_part_weights = this->total_part_weight_left_right_closests + tlr_shift;
                 mj_scalar_t *current_global_tlr = this->global_total_part_weight_left_right_closests + tlr_shift;
@@ -3923,7 +3923,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                 //although isDone shared, currentDone is private and same for all.
-                Kokkos::View<bool *> kokkos_current_cut_line_determined =
+                Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined =
                   Kokkos::subview(this->kokkos_is_cut_line_determined,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
@@ -3934,12 +3934,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_part_target_weights =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_target_weights =
                   Kokkos::subview(kokkos_target_part_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift + kk,
                       kokkos_target_part_weights.size()));
-                Kokkos::View<mj_scalar_t *> kokkos_current_part_cut_line_weight_to_put_left =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_cut_line_weight_to_put_left =
                   Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
@@ -3960,22 +3960,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bound_weights =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights =
                   Kokkos::subview(kokkos_cut_lower_bound_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_cut_lower_bound_weights.size()));
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_weights =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights =
                   Kokkos::subview(kokkos_cut_upper_bound_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_cut_upper_bound_weights.size()));
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_bounds =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_bounds =
                   Kokkos::subview(kokkos_cut_upper_bound_coordinates,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_cut_upper_bound_coordinates.size()));
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bounds =
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bounds =
                   Kokkos::subview(kokkos_cut_lower_bound_coordinates,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
@@ -4079,7 +4079,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             {
                 //swap the cut coordinates for next iteration.
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> t = kokkos_temp_cut_coords;
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = kokkos_temp_cut_coords;
                 kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
                 this->kokkos_cut_coordinates_work_array = t;
 #else
@@ -4161,9 +4161,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_1D_part_get_thread_part_weights(
+          mj_node_t>::mj_1D_part_get_thread_part_weights(
     size_t total_part_count,
     mj_part_t num_cuts,
     mj_scalar_t max_coord,
@@ -4171,12 +4171,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t coordinate_begin_index,
     mj_lno_t coordinate_end_index,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *> kokkos_temp_current_cut_coords,
-    Kokkos::View<bool *> kokkos_current_cut_status,
-    Kokkos::View<double *> kokkos_my_current_part_weights,
-    Kokkos::View<mj_scalar_t *> kokkos_my_current_left_closest,
-    Kokkos::View<mj_scalar_t *> kokkos_my_current_right_closest){
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords,
+    Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status,
+    Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest){
 #else
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *temp_current_cut_coords,
@@ -4535,9 +4535,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_accumulate_thread_results(
+          mj_node_t>::mj_accumulate_thread_results(
     const std::vector <mj_part_t> &num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts){
@@ -4672,9 +4672,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_calculate_new_cut_position (
+          mj_node_t>::mj_calculate_new_cut_position (
         mj_scalar_t cut_upper_bound,
     mj_scalar_t cut_lower_bound,
     mj_scalar_t cut_upper_weight,
@@ -4716,13 +4716,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_create_new_partitions(
+          mj_node_t>::mj_create_new_partitions(
     mj_part_t num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *> kokkos_current_concurrent_cut_coordinate,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate,
 #else
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *current_concurrent_cut_coordinate,
@@ -4730,19 +4730,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t coordinate_begin,
     mj_lno_t coordinate_end,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_used_local_cut_line_weight_to_left,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left,
 #else
     mj_scalar_t *used_local_cut_line_weight_to_left,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<double **,Kokkos::LayoutLeft> kokkos_used_thread_part_weight_work,
+        Kokkos::View<double **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_used_thread_part_weight_work,
 #else
         double **used_thread_part_weight_work,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_lno_t *> kokkos_out_part_xadj
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj
 #else
     mj_lno_t *out_part_xadj
 #endif
@@ -4763,9 +4763,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft> kokkos_thread_num_points_in_parts =
+                Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_num_points_in_parts =
                   Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
-                Kokkos::View<mj_scalar_t *> kokkos_my_local_thread_cut_weights_to_put_left;
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
                 mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
                 mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
@@ -5108,9 +5108,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_get_new_cut_coordinates(
+          mj_node_t>::mj_get_new_cut_coordinates(
                 const size_t &num_total_part,
                 const mj_part_t &num_cuts,
                 const mj_scalar_t &max_coordinate,
@@ -5118,10 +5118,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 const mj_scalar_t &global_total_weight,
                 const mj_scalar_t &used_imbalance_tolerance,
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_part_weights,
-                Kokkos::View<const mj_scalar_t *> kokkos_current_local_part_weights,
-                Kokkos::View<const mj_scalar_t *> kokkos_current_part_target_weights,
-                Kokkos::View<bool *> kokkos_current_cut_line_determined,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights,
+                Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights,
+                Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_target_weights,
+                Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined,
 #else
                 mj_scalar_t * current_global_part_weights,
                 const mj_scalar_t * current_local_part_weights,
@@ -5130,11 +5130,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates,
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_bounds,
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bounds,
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_left_closest_points,
-                Kokkos::View<mj_scalar_t *> kokkos_current_global_right_closest_points,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_bounds,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bounds,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_left_closest_points,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_right_closest_points,
 #else
                 mj_scalar_t *current_cut_coordinates,
                 mj_scalar_t *current_cut_upper_bounds,
@@ -5145,10 +5145,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_lower_bound_weights,
-                Kokkos::View<mj_scalar_t *> kokkos_current_cut_upper_weights,
-                Kokkos::View<mj_scalar_t *> kokkos_new_current_cut_coordinates,
-                Kokkos::View<mj_scalar_t *> kokkos_current_part_cut_line_weight_to_put_left,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_new_current_cut_coordinates,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_cut_line_weight_to_put_left,
 #else
                 mj_scalar_t * current_cut_lower_bound_weights,
                 mj_scalar_t * current_cut_upper_weights,
@@ -5748,9 +5748,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::get_processor_num_points_in_parts(
+          mj_node_t>::get_processor_num_points_in_parts(
     mj_part_t num_procs,
     mj_part_t num_parts,
     mj_gno_t *&num_points_in_all_processor_parts){
@@ -5836,9 +5836,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_check_to_migrate(
+          mj_node_t>::mj_check_to_migrate(
     size_t migration_reduce_all_population,
     mj_lno_t num_coords_for_last_dim_part,
     mj_part_t num_procs,
@@ -5899,9 +5899,9 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::assign_send_destinations(
+          mj_node_t>::assign_send_destinations(
     mj_part_t num_parts,
     mj_part_t *part_assignment_proc_begin_indices,
     mj_part_t *processor_chains_in_parts,
@@ -5960,9 +5960,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_assign_proc_to_parts(
+          mj_node_t>::mj_assign_proc_to_parts(
                 mj_gno_t * num_points_in_all_processor_parts,
                 mj_part_t num_parts,
                 mj_part_t num_procs,
@@ -6306,9 +6306,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::assign_send_destinations2(
+          mj_node_t>::assign_send_destinations2(
     mj_part_t num_parts,
     uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment, //input sorted wrt processors
     int *coordinate_destinations,
@@ -6367,9 +6367,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_assign_parts_to_procs(
+          mj_node_t>::mj_assign_parts_to_procs(
     mj_gno_t * num_points_in_all_processor_parts,
     mj_part_t num_parts,
     mj_part_t num_procs,
@@ -6532,9 +6532,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_migration_part_proc_assignment(
+          mj_node_t>::mj_migration_part_proc_assignment(
     mj_gno_t * num_points_in_all_processor_parts,
     mj_part_t num_parts,
     mj_part_t num_procs,
@@ -6608,9 +6608,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_migrate_coords(
+          mj_node_t>::mj_migrate_coords(
     mj_part_t num_procs,
     mj_lno_t &num_new_local_points,
     std::string iteration,
@@ -6855,9 +6855,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm){
+          mj_node_t>::create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm){
     mj_part_t group_size = processor_ranks_for_subcomm.size();
     mj_part_t *ids = allocMemory<mj_part_t>(group_size);
     for(mj_part_t i = 0; i < group_size; ++i) {
@@ -6876,9 +6876,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::fill_permutation_array(
+          mj_node_t>::fill_permutation_array(
     mj_part_t output_num_parts,
     mj_part_t num_parts){
         //if there is single output part, then simply fill the permutation array.
@@ -6993,9 +6993,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::mj_perform_migration(
+          mj_node_t>::mj_perform_migration(
     mj_part_t input_num_parts, //current umb parts
     mj_part_t &output_num_parts, //output umb parts.
     std::vector<mj_part_t> *next_future_num_parts_in_parts,
@@ -7112,8 +7112,8 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         if(this->num_local_coords != num_new_local_points){
 #ifdef HAVE_ZOLTAN2_OMP
-                this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*>("num_new_local_points", num_new_local_points);
-                this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*>("num_new_local_points", num_new_local_points);
+                this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_new_local_points", num_new_local_points);
+                this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_new_local_points", num_new_local_points);
 #else
                 freeArray<mj_lno_t>(this->new_coordinate_permutations);
                 freeArray<mj_lno_t>(this->coordinate_permutations);
@@ -7153,13 +7153,13 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::create_consistent_chunks(
+          mj_node_t>::create_consistent_chunks(
     mj_part_t num_parts,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *> kokkos_current_concurrent_cut_coordinate,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> mj_current_dim_coords,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate,
 #else
     mj_scalar_t *mj_current_dim_coords,
     mj_scalar_t *current_concurrent_cut_coordinate,
@@ -7167,8 +7167,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_lno_t coordinate_begin,
     mj_lno_t coordinate_end,
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_used_local_cut_line_weight_to_left,
-    Kokkos::View<mj_lno_t *> kokkos_out_part_xadj,
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left,
+    Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj,
 #else
     mj_scalar_t *used_local_cut_line_weight_to_left,
     mj_lno_t *out_part_xadj,
@@ -7183,9 +7183,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         int me = 0;
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_lno_t *> kokkos_thread_num_points_in_parts =
+        Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_thread_num_points_in_parts =
           Kokkos::subview(this->kokkos_thread_point_counts, Kokkos::ALL, me);
-        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft> kokkos_my_local_thread_cut_weights_to_put_left;
+        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_local_thread_cut_weights_to_put_left;
 #else
         mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
         mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
@@ -7640,9 +7640,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::set_final_parts(
+          mj_node_t>::set_final_parts(
                 mj_part_t current_num_parts,
                 mj_part_t output_part_begin_index,
                 RCP<mj_partBoxVector_t> &output_part_boxes,
@@ -7812,9 +7812,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::free_work_memory(){
+          mj_node_t>::free_work_memory(){
 
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Free");
 
@@ -7900,9 +7900,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::set_partitioning_parameters(
+          mj_node_t>::set_partitioning_parameters(
                 bool distribute_points_on_cut_lines_,
                 int max_concurrent_part_calculation_,
                 int check_migrate_avoid_migration_option_,
@@ -7949,9 +7949,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          execution_space, memory_space>::multi_jagged_part(
+          mj_node_t>::multi_jagged_part(
 
         const RCP<const Environment> &env,
         RCP<const Comm<int> > &problemComm,
@@ -7960,7 +7960,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         size_t num_global_parts_,
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_part_t*> kokkos_part_no_array_,
+        Kokkos::View<mj_part_t*, typename mj_node_t::device_type> kokkos_part_no_array_,
 #else
         mj_part_t *part_no_array_,
 #endif
@@ -7972,8 +7972,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_gno_t num_global_coords_,
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> kokkos_mj_coordinates_,
+        Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_initial_mj_gnos_,
+        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_mj_coordinates_,
 #else
         const mj_gno_t *initial_mj_gnos_,
         mj_scalar_t **mj_coordinates_,
@@ -7983,10 +7983,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<bool*> kokkos_mj_uniform_weights_,
-        Kokkos::View<mj_scalar_t**> kokkos_mj_weights_,
-        Kokkos::View<bool*> kokkos_mj_uniform_parts_,
-        Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes_,
+        Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_weights_,
+        Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_weights_,
+        Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_parts_,
+        Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_part_sizes_,
 #else
         bool *mj_uniform_weights_,
         mj_scalar_t **mj_weights_,
@@ -7995,8 +7995,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_part_t *> &kokkos_result_assigned_part_ids_,
-        Kokkos::View<mj_gno_t*> &kokkos_result_mj_gnos_
+        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> &kokkos_result_assigned_part_ids_,
+        Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 #else
         mj_part_t *&result_assigned_part_ids_,
         mj_gno_t *&result_mj_gnos_
@@ -8081,7 +8081,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         this->num_threads = 1;
 #ifdef HAVE_ZOLTAN2_OMP
-        this->num_threads = execution_space::thread_pool_size();
+        this->num_threads = mj_node_t::execution_space::thread_pool_size();
 #endif
     }
     //this->set_input_data();
@@ -8097,7 +8097,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t current_num_parts = 1;
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_scalar_t *> kokkos_current_cut_coordinates =  this->kokkos_all_cut_coordinates;
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates =  this->kokkos_all_cut_coordinates;
 #else
     mj_scalar_t *current_cut_coordinates =  this->all_cut_coordinates;
 #endif
@@ -8191,7 +8191,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t *> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 #else
         mj_scalar_t * mj_current_dim_coords = this->mj_coordinates[coordInd];
 #endif
@@ -8203,7 +8203,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //alloc Memory to point the indices
         //of the parts in the permutation array.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("new part xadj", output_part_count_in_dimension);
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("new part xadj", output_part_count_in_dimension);
 #else
         this->new_part_xadj = allocMemory<mj_lno_t>(output_part_count_in_dimension);
 #endif
@@ -8320,12 +8320,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
 
 #ifdef HAVE_ZOLTAN2_OMP
-                    Kokkos::View<mj_scalar_t *> kokkos_usedCutCoordinate =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_usedCutCoordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_cut_shift,
                           kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *> kokkos_current_target_part_weights =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_target_part_weights =
                       Kokkos::subview(kokkos_target_part_weights,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_part_shift,
@@ -8489,12 +8489,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-                    Kokkos::View<mj_scalar_t *> kokkos_current_concurrent_cut_coordinate =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
                           cut_shift,
                           kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *> kokkos_used_local_cut_line_weight_to_left =
+                    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left =
                       Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
                         std::pair<mj_lno_t, mj_lno_t>(
                           cut_shift,
@@ -8666,7 +8666,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //swap the coordinate permutations for the next dimension.
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_lno_t*> tmp = this->kokkos_coordinate_permutations;
+        Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> tmp = this->kokkos_coordinate_permutations;
         this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
         this->kokkos_new_coordinate_permutations = tmp;
 #else
@@ -8681,7 +8681,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
 #ifdef HAVE_ZOLTAN2_OMP
         this->kokkos_part_xadj = this->kokkos_new_part_xadj;
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*>("empty");
+        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
 #else
         freeArray<mj_lno_t>(this->part_xadj);
         this->part_xadj = this->new_part_xadj;
@@ -8742,13 +8742,11 @@ private:
     typedef typename Adapter::lno_t mj_lno_t;
     typedef typename Adapter::node_t mj_node_t;
     typedef typename Adapter::part_t mj_part_t;
-    typedef typename Adapter::node_t::memory_space memory_space;
-    typedef typename Adapter::node_t::execution_space execution_space;
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
     typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
 #endif
     AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-       execution_space, memory_space> mj_partitioner;
+       mj_node_t> mj_partitioner;
 
     RCP<const Environment> mj_env; //the environment object
     RCP<const Comm<int> > mj_problemComm; //initial comm object
@@ -8759,7 +8757,7 @@ private:
     size_t num_global_parts; //the targeted number of parts
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_part_t*> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
 #else
     mj_part_t *part_no_array; //input part array specifying num part to divide along each dim.
 #endif
@@ -8771,8 +8769,8 @@ private:
     mj_gno_t num_global_coords; //number of global coords.
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<const mj_gno_t*> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> kokkos_mj_coordinates; //two dimension coordinate array.
+    Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_mj_coordinates; //two dimension coordinate array.
 #else
     const mj_gno_t *initial_mj_gnos; //initial global ids of the coordinates.
     mj_scalar_t **mj_coordinates; //two dimension coordinate array
@@ -8781,10 +8779,10 @@ private:
     int num_weights_per_coord; // number of weights per coordinate
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<bool*> kokkos_mj_uniform_weights; //if the target parts are uniform.
-    Kokkos::View<mj_scalar_t**> kokkos_mj_weights; //two dimensional weight array.
-    Kokkos::View<bool*> kokkos_mj_uniform_parts; //if the target parts are uniform
-    Kokkos::View<mj_scalar_t**> kokkos_mj_part_sizes; //target part weight sizes.
+    Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_weights; //if the target parts are uniform.
+    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_weights; //two dimensional weight array.
+    Kokkos::View<bool*, typename mj_node_t::device_type> kokkos_mj_uniform_parts; //if the target parts are uniform
+    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_mj_part_sizes; //target part weight sizes.
 #else
     bool *mj_uniform_weights; //if the coordinates have uniform weights.
     mj_scalar_t **mj_weights; //two dimensional weight array
@@ -8834,15 +8832,15 @@ private:
         mj_lno_t num_local_coords_,
         mj_gno_t num_global_coords_,  size_t num_global_parts_,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<const mj_gno_t*> &kokkos_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_mj_coordinates_,
+        Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> &kokkos_initial_mj_gnos_,
+        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> &kokkos_mj_coordinates_,
 #else
         const mj_gno_t *initial_mj_gnos_,
         mj_scalar_t **mj_coordinates_,
 #endif
         int num_weights_per_coord_,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_scalar_t**> &kokkos_mj_weights_,
+        Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> &kokkos_mj_weights_,
 #else
         mj_scalar_t **mj_weights_,
 #endif
@@ -8850,9 +8848,9 @@ private:
         RCP<const Comm<int> > &result_problemComm_,
         mj_lno_t & result_num_local_coords_,
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_result_mj_coordinates_,
-        Kokkos::View<mj_scalar_t**> &kokkos_result_mj_weights_,
+        Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_initial_mj_gnos_,
+        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> &kokkos_result_mj_coordinates_,
+        Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> &kokkos_result_mj_weights_,
 #else
         mj_gno_t * &result_initial_mj_gnos_,
         mj_scalar_t ** &result_mj_coordinates_,
@@ -9003,15 +9001,15 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
                                  mj_lno_t num_local_coords_,
                                  mj_gno_t num_global_coords_, size_t num_global_parts_,
 #ifdef HAVE_ZOLTAN2_OMP
-                                 Kokkos::View<const mj_gno_t*> &kokkos_initial_mj_gnos_,
-                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_mj_coordinates_,
+                                 Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> &kokkos_initial_mj_gnos_,
+                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> &kokkos_mj_coordinates_,
 #else
                                  const mj_gno_t *initial_mj_gnos_,
                                  mj_scalar_t **mj_coordinates_,
 #endif
                                  int num_weights_per_coord_,
 #ifdef HAVE_ZOLTAN2_OMP
-                                 Kokkos::View<mj_scalar_t**> &kokkos_mj_weights_,
+                                 Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> &kokkos_mj_weights_,
 #else
                                  mj_scalar_t **mj_weights_,
 #endif
@@ -9019,9 +9017,9 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
                                  RCP<const Comm<int> > &result_problemComm_,
                                  mj_lno_t &result_num_local_coords_,
 #ifdef HAVE_ZOLTAN2_OMP
-                                 Kokkos::View<mj_gno_t*> &kokkos_result_initial_mj_gnos_,
-                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> &kokkos_result_mj_coordinates_,
-                                 Kokkos::View<mj_scalar_t**> &kokkos_result_mj_weights_,
+                                 Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_initial_mj_gnos_,
+                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> &kokkos_result_mj_coordinates_,
+                                 Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> &kokkos_result_mj_weights_,
 #else
                                  mj_gno_t * &result_initial_mj_gnos_,
                                  mj_scalar_t ** &result_mj_coordinates_,
@@ -9081,7 +9079,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 
 
 #ifdef HAVE_ZOLTAN2_OMP
-    kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *>("gids", num_incoming_gnos);
+    kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *, typename mj_node_t::device_type>("gids", num_incoming_gnos);
     for(int n = 0; n < num_incoming_gnos; ++n) {
       kokkos_result_initial_mj_gnos_(n) = received_gnos[n]; // TODO - fix to a single call
     }
@@ -9097,7 +9095,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   }
       
 #ifdef HAVE_ZOLTAN2_OMP
-  kokkos_result_mj_coordinates_ = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft>("coords", num_local_coords_);
+  kokkos_result_mj_coordinates_ = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>("coords", num_local_coords_);
   throw std::logic_error("distributor not implemented for coords! refactor in progress.");
 #else
   //migrate coordinates
@@ -9189,15 +9187,15 @@ void Zoltan2_AlgMJ<Adapter>::partition(
    RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
    mj_lno_t result_num_local_coords = this->num_local_coords;
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<mj_gno_t*> kokkos_result_initial_mj_gnos;
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft> kokkos_result_mj_coordinates = this->kokkos_mj_coordinates;
+    Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> kokkos_result_initial_mj_gnos;
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_result_mj_coordinates = this->kokkos_mj_coordinates;
 #else
    mj_gno_t * result_initial_mj_gnos = NULL;
    mj_scalar_t **result_mj_coordinates = this->mj_coordinates;
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-   Kokkos::View<mj_scalar_t**> kokkos_result_mj_weights = this->kokkos_mj_weights;
+   Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_result_mj_weights = this->kokkos_mj_weights;
 #else
    mj_scalar_t **result_mj_weights = this->mj_weights;
 #endif
@@ -9205,7 +9203,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
    int *result_actual_owner_rank = NULL;
 
 #ifdef HAVE_ZOLTAN2_OMP
-    Kokkos::View<const mj_gno_t*> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
+    Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
 #else
    const mj_gno_t * result_initial_mj_gnos_ = this->initial_mj_gnos;
 #endif
@@ -9285,8 +9283,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
    }
 
 #ifdef HAVE_ZOLTAN2_OMP
-  Kokkos::View<mj_part_t *> kokkos_result_assigned_part_ids;
-  Kokkos::View<mj_gno_t*> kokkos_result_mj_gnos;
+  Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_result_assigned_part_ids;
+  Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> kokkos_result_mj_gnos;
 #else
   mj_part_t *result_assigned_part_ids = NULL;
   mj_gno_t *result_mj_gnos = NULL;
@@ -9535,9 +9533,9 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         //allocate only two dimensional pointer.
         //raw pointer addresess will be obtained from multivector.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_mj_uniform_parts = Kokkos::View<bool *>("uniform parts", criteria_dim);
-        this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **>("part sizes", criteria_dim);
-        this->kokkos_mj_uniform_weights = Kokkos::View<bool *>("uniform weights", criteria_dim);
+        this->kokkos_mj_uniform_parts = Kokkos::View<bool *, typename mj_node_t::device_type>("uniform parts", criteria_dim);
+        this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type>("part sizes", criteria_dim);
+        this->kokkos_mj_uniform_weights = Kokkos::View<bool *, typename mj_node_t::device_type>("uniform weights", criteria_dim);
 #else
         this->mj_coordinates = allocMemory<mj_scalar_t *>(this->coord_dim);
         this->mj_weights = allocMemory<mj_scalar_t *>(criteria_dim);
@@ -9551,9 +9549,9 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        Kokkos::View<const mj_gno_t *> kokkos_gnos;
-        Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft> kokkos_xyz;
-        Kokkos::View<mj_scalar_t **> kokkos_wgts;
+        Kokkos::View<const mj_gno_t *, typename mj_node_t::device_type> kokkos_gnos;
+        Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_xyz;
+        Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_wgts;
 #else
         typedef StridedData<mj_lno_t, mj_scalar_t> input_t;
         ArrayView<const mj_gno_t> gnos;
@@ -9599,7 +9597,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
 
 #ifdef HAVE_ZOLTAN2_OMP
                 this->kokkos_mj_uniform_weights(0) = true;
-                this->kokkos_mj_weights = Kokkos::View<mj_scalar_t **>(); // TODO: better way to 'clear' a view?
+                this->kokkos_mj_weights = Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type>(); // TODO: better way to 'clear' a view?
 #else
                 this->mj_uniform_weights[0] = true;
                 this->mj_weights[0] = NULL;
@@ -9661,7 +9659,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
 
         //if an input partitioning array is provided.
 #ifdef HAVE_ZOLTAN2_OMP
-        this->kokkos_part_no_array = Kokkos::View<mj_part_t*>("empty");
+        this->kokkos_part_no_array = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("empty");
 #else
         this->part_no_array = NULL;
 #endif
@@ -9672,7 +9670,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
         if (pl.getPtr<Array <mj_part_t> >("mj_parts")){
 #ifdef HAVE_ZOLTAN2_OMP
                 this->kokkos_part_no_array =
-                  Kokkos::View<mj_part_t*, Kokkos::MemoryUnmanaged>(
+                  Kokkos::View<mj_part_t*, typename mj_node_t::device_type, Kokkos::MemoryUnmanaged>(
                     (mj_part_t *) pl.getPtr<Array <mj_part_t> >("mj_parts")->getRawPtr(),
                     pl.getPtr<Array <mj_part_t> >("mj_parts")->size() );
 #else
@@ -9808,7 +9806,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
         this->num_threads = 1;
 #ifdef HAVE_ZOLTAN2_OMP
 #ifdef HAVE_ZOLTAN2_OMP
-        this->num_threads = execution_space::thread_pool_size();
+        this->num_threads = Adapter::node_t::execution_space::thread_pool_size();
 #endif
 #endif
 
@@ -10006,11 +10004,11 @@ Zoltan2_AlgMJ<Adapter>::getGlobalBoxBoundaries() const
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::mj_partBoxVector_t>
+          mj_node_t>::mj_partBoxVector_t>
 AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::get_kept_boxes() const
+          mj_node_t>::get_kept_boxes() const
 {
   if (this->mj_keep_part_boxes)
     return this->kept_boxes;
@@ -10020,11 +10018,11 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
-          typename execution_space, typename memory_space>
+          typename mj_node_t>
 RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::mj_partBoxVector_t>
+          mj_node_t>::mj_partBoxVector_t>
 AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          execution_space, memory_space>::compute_global_box_boundaries(
+          mj_node_t>::compute_global_box_boundaries(
   RCP<mj_partBoxVector_t> &localPartBoxes
 ) const
 {

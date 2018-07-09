@@ -76,6 +76,7 @@ public:
   typedef typename Adapter::scalar_t    scalar_t;
   typedef typename Adapter::gno_t       gno_t;
   typedef typename Adapter::lno_t       lno_t;
+  typedef typename Adapter::node_t      node_t;
   typedef typename Adapter::user_t      user_t;
   typedef typename Adapter::userCoord_t userCoord_t;
   typedef StridedData<lno_t, scalar_t>  input_t;
@@ -238,9 +239,9 @@ public:
 
 #ifdef HAVE_ZOLTAN2_OMP
   size_t getCoordinatesKokkos(
-    Kokkos::View<const gno_t *> &Ids,
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> &xyz,
-    Kokkos::View<scalar_t **> &wgts) const
+    Kokkos::View<const gno_t *, typename node_t::device_type> &Ids,
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
+    Kokkos::View<scalar_t **, typename node_t::device_type> &wgts) const
   {
     Ids = kokkos_gids_;
     xyz = kokkos_xyz_;
@@ -269,12 +270,12 @@ private:
   const RCP<const Comm<int> > comm_;
   int coordinateDim_;
   ArrayRCP<const gno_t> gids_;
-  Kokkos::View<const gno_t *> kokkos_gids_; // TODO: Clean this up with  non kokkos version
+  Kokkos::View<const gno_t *, typename node_t::device_type> kokkos_gids_; // TODO: Clean this up with  non kokkos version
   ArrayRCP<input_t> xyz_;
-  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;     // TODO: Clean this up with  non kokkos version
   int userNumWeights_;
   ArrayRCP<input_t> weights_;
-  Kokkos::View<scalar_t **> kokkos_weights_; // TODO: Clean this up with  non kokkos version
+  Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_; // TODO: Clean this up with  non kokkos version
 
   template <typename AdapterWithCoords>
   void sharedConstructor(const AdapterWithCoords *ia,

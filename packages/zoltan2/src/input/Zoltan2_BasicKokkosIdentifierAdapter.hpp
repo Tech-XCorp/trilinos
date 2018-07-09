@@ -114,7 +114,7 @@ public:
 
   size_t getLocalNumIDs() const { return idsView_.extent(0); }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {ids = idsView_;}
+  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {ids = idsView_;}
 
   int getNumWeightsPerID() const { return weightsView_.extent(1); }
 

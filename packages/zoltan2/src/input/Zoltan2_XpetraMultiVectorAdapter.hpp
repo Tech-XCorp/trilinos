@@ -140,7 +140,7 @@ public:
     ids = map_->getNodeElementList().getRawPtr();
   }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
+  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     if (map_->lib() == Xpetra::UseTpetra) {
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
@@ -167,7 +167,7 @@ public:
     weights_[idx].getStridedList(length, weights, stride);
   }
 
-  void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
+  void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
     // now we'd like to make a Kokkos::View<scalar_t **> form from the
     // weights_ list. Note that in BasicKokkosIdentifierInput.cpp we use
     // Kokkos::View<scalar_t *> weightIn[N] to store the dimensions so that
@@ -199,7 +199,7 @@ public:
   void getEntriesView(const scalar_t *&elements, int &stride, int idx=0) const;
 
   void getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const;
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const;
 
   template <typename Adapter>
     void applyPartitioningSolution(const User &in, User *&out,
@@ -317,12 +317,12 @@ template <typename User>
 ////////////////////////////////////////////////////////////////////////////
 template <typename User>
   void XpetraMultiVectorAdapter<User>::getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
 {
   if (map_->lib() == Xpetra::UseTpetra){
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> view2d =
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> view2d =
       tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
 
     elements = view2d;

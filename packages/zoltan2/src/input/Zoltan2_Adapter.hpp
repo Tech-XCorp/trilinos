@@ -104,6 +104,7 @@ public:
   typedef typename InputTraits<User>::lno_t lno_t;
   typedef typename InputTraits<User>::gno_t gno_t;
   typedef typename InputTraits<User>::scalar_t scalar_t;
+  typedef typename InputTraits<User>::node_t node_t;
   typedef typename InputTraits<User>::part_t part_t;  
   typedef typename InputTraits<User>::offset_t offset_t;
 
@@ -121,7 +122,7 @@ public:
         this process.
    */
   virtual void getIDsView(const gno_t *&ids) const {
-    Kokkos::View<const gno_t *> kokkosIds;
+    Kokkos::View<const gno_t *, typename node_t::device_type> kokkosIds;
     getIDsKokkosView(kokkosIds);
     ids = kokkosIds.data();
   }
@@ -131,7 +132,7 @@ public:
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
-  virtual void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
+  virtual void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 
@@ -165,7 +166,7 @@ public:
 
   // 2nd form returns the 2darray - still need to decide how this will all sort
   // out but they should all be made consistent.
-  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> & wgt) const {
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> & wgt) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 

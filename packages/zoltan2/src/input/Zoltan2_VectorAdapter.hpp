@@ -144,7 +144,7 @@ public:
                               int idx = 0) const = 0;
 
   virtual void getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const {
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const {
     throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");
   }
 
@@ -162,7 +162,7 @@ public:
   }
 
   inline void getCoordinatesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & elements) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
   {
     getEntriesKokkosView(elements);
   }

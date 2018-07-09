@@ -239,7 +239,7 @@ public:
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
 #ifdef HAVE_ZOLTAN2_OMP
-  void getIDsKokkosView(Kokkos::View<const gno_t *> &ids) const {
+  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     // TODO: The BasicUserTypes don't support the node type and are set to
     // default. Howveer I wasn't sure yet where/when we wanted to upgrade
     // things as we add Kokkos support. So hard coding OpenMP node type right
@@ -252,7 +252,7 @@ public:
 
   int getNumWeightsPerID() const { return numWeights_;}
 
-  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **> &wgt) const {
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
 
     if(numWeights_ > 0) {
       int stride;
@@ -304,7 +304,7 @@ public:
 
 #ifdef HAVE_ZOLTAN2_OMP
   void getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft> & entries) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & entries) const
   {
     entries = kokkos_entries_;
   }

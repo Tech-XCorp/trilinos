@@ -1355,10 +1355,7 @@ public:
     //do the partitioning and renumber the parts.
     env->timerStart(MACRO_TIMERS, "Mapping - Proc Partitioning");
 
-    typedef typename node_t::execution_space execution_space;
-    typedef typename node_t::memory_space memory_space;
-    AlgMJ<pcoord_t, part_t, part_t, part_t,
-      execution_space, memory_space> mj_partitioner;
+    AlgMJ<pcoord_t, part_t, part_t, part_t, node_t> mj_partitioner;
 
 
 #ifdef HAVE_ZOLTAN2_OMP
