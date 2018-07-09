@@ -205,6 +205,9 @@ int run_pointAssign_tests(
         }
         CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + ": pointAssign -- OwnedPoints");
 
+        // Temporarily delete this to make debugging runs with lots of points
+        // more efficient.
+/*
         std::cout << me << " Point " << localID
                   << " gid " << coords->getMap()->getGlobalElement(localID)
                   << " (" << pointDrop[0];
@@ -213,6 +216,7 @@ int run_pointAssign_tests(
         std::cout << ") in boxPart " << part
                   << "  in solnPart " << solnPart
                   << std::endl;
+*/
 
 // this error test does not work for points that fall on the cuts.
 // like Zoltan's RCB, pointAssign arbitrarily picks a part along the cut.
@@ -235,11 +239,13 @@ int run_pointAssign_tests(
       for (size_t i = 0; i < pBoxes.size(); i++) {
         zscalar_t *lmin = pBoxes[i].getlmins();
         zscalar_t *lmax = pBoxes[i].getlmaxs();;
+        /*
         std::cout << me << " pBox " << i << " pid " << pBoxes[i].getpId()
                   << " (" << lmin[0] << "," << lmin[1] << ","
                   << (coordDim > 2 ? lmin[2] : 0) << ") x "
                   << " (" << lmax[0] << "," << lmax[1] << ","
                   << (coordDim > 2 ? lmax[2] : 0) << ")" << std::endl;
+        */
       }
     }
 
@@ -566,7 +572,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         int migration_doMigration_type,
         bool test_boxes,
         bool rectilinear,
-        int  mj_premigration_option   
+        int  mj_premigration_option
 )
 {
     int ierr = 0;
@@ -681,6 +687,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
 
+
     // create metric object
 
     RCP<quality_t> metricObject =
@@ -728,8 +735,7 @@ int testFromDataFile(
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option, 
-	int mj_premigration_coordinate_cutoff
-
+	      int mj_premigration_coordinate_cutoff
 )
 {
     int ierr = 0;
@@ -801,8 +807,6 @@ int testFromDataFile(
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
 
     {
-    
-
     // Run a test with BasicVectorAdapter and xyzxyz format coordinates
     const int bvme = comm->getRank();
     const inputAdapter_t::lno_t bvlen =
@@ -945,7 +949,7 @@ int testFromSeparateDataFiles(
         int migration_doMigration_type,
         int test_boxes,
         bool rectilinear,
- 	int  mj_premigration_option
+        int  mj_premigration_option
 )
 {
     //std::string fname("simple");
@@ -1289,7 +1293,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-int main_repeat(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
@@ -1407,17 +1411,5 @@ int main_repeat(int argc, char *argv[])
     }
 
     Kokkos::finalize ();
-    return 0;
-}
-
-int main(int argc, char *argv[])
-{
-    for(int loop = 0; loop < 100; ++loop) {
-      int return_code = main_repeat(argc, argv);
-      if(return_code != 0) {
-        throw std::logic_error("Failed");
-      }
-      printf("COMPLETED LOOP: %d\n", loop);
-    }
     return 0;
 }

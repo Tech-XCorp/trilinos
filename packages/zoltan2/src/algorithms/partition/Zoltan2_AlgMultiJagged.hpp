@@ -3224,92 +3224,77 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     total_weight = 0;
   }
   else {
-    // TODO: How do we make Kokkos::single work with a single variable like
-      // this? Can't make it work unless as a view with N = 1 which feels kludgy.
-    // For example can it work if I just declare as follows:
-    //    mj_scalar_t my_total_weight;
-    // Then not sure what the pattern is to make things compile.
-    Kokkos::View<mj_scalar_t*> my_total_weight("my_total_weight",1);
-    Kokkos::View<mj_scalar_t*> min_coordinate_view("min_coordinate_view",1);
-    Kokkos::View<mj_scalar_t*> max_coordinate_view("max_coordinate_view",1);
-    Kokkos::View<mj_scalar_t*> my_thread_min_coord("my_thread_min_coord",1);
-    Kokkos::View<mj_scalar_t*> my_thread_max_coord("my_thread_max_coord",1);
+    // Don't initialize and then run the loop starting at index 1 for min and
+    // max. That leads to a rare race condition and failure. I think we have to
+    // loop over all the elements. TODO: Do we need to initialize at all?
+    // I think it might be ignored.
+    mj_scalar_t my_thread_min_coord;
+    mj_scalar_t my_thread_max_coord;
 
-    my_total_weight(0) = 0;
-    min_coordinate_view(0) = min_coordinate;
-    max_coordinate_view(0) = max_coordinate;
+    // get min
+    Kokkos::parallel_reduce("MinReduce",
+      coordinate_end_index - coordinate_begin_index,
+      KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_min) {
+        int i =
+          kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
+        if(kokkos_mj_current_dim_coords(i) < running_min)
+          running_min = kokkos_mj_current_dim_coords(i);
+      }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
+
+    // get max
+    Kokkos::parallel_reduce("MaxReduce",
+      coordinate_end_index - coordinate_begin_index,
+      KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_max) {
+        int i =
+          kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
+        if(kokkos_mj_current_dim_coords(i) > running_max)
+          running_max = kokkos_mj_current_dim_coords(i);
+      }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
+
+    mj_scalar_t my_total_weight = 0;
+    if (this->kokkos_mj_uniform_weights(0)) {
+      my_total_weight = coordinate_end_index - coordinate_begin_index;
+    }
+    else {
+      /*
+      Kokkos::parallel_reduce ("Sum weights",
+        coordinate_end_index - coordinate_begin_index,
+        KOKKOS_LAMBDA(int & ii, mj_scalar_t & lsum) {
+          int i =
+            kokkos_mj_current_coordinate_permutations(coordinate_begin_index+ii);
+          lsum += this->kokkos_mj_weights(i,0);
+      }, my_total_weight);
+      */
+
+      for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
+        int i = kokkos_mj_current_coordinate_permutations(ii);
+        my_total_weight += this->kokkos_mj_weights(i,0);
+      }
+    }
+    total_weight = my_total_weight;
 
     typedef typename Kokkos::TeamPolicy<execution_space>::member_type member_type;
     Kokkos::TeamPolicy<execution_space> policy (1, this->num_threads);
-    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
-    {
-      //if uniform weights are used, then weight is equal to count.
-      if (this->kokkos_mj_uniform_weights(0))
-      {
-        Kokkos::single(Kokkos::PerTeam(team_member),[=] () {
-          my_total_weight(0) = coordinate_end_index - coordinate_begin_index;
-        });
-      }
-      else {
-      /*
-        Kokkos::parallel_reduce (Kokkos::ThreadVectorRange (team_member,
-          coordinate_begin_index, coordinate_end_index),
-          [=] (int & ii, mj_scalar_t & lsum) {
-            int i = kokkos_mj_current_coordinate_permutations(ii);
-            lsum += this->kokkos_mj_weights(i,0);
-        }, my_total_weight(0));
-       */
-        // TODO: Get rid of this and use above reduce once it works for mjTest_geomgen_nomjparts...
-        Kokkos::single(Kokkos::PerTeam(team_member),[=] () {
-          for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
-            int i = kokkos_mj_current_coordinate_permutations(ii);
-            my_total_weight(0) += this->kokkos_mj_weights(i,0);
-          }
-        });
-      }
-
+    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
       int my_thread_id = omp_get_thread_num();
-
-      my_thread_min_coord(0) = my_thread_max_coord(0) =
-        kokkos_mj_current_dim_coords(kokkos_mj_current_coordinate_permutations(coordinate_begin_index));
-
-      Kokkos::RangePolicy<Kokkos::OpenMP, int> range_policy(coordinate_begin_index + 1, coordinate_end_index);
-      Kokkos::parallel_for(range_policy, KOKKOS_LAMBDA(const int j) {
-        int i = kokkos_mj_current_coordinate_permutations(j);
-        if(kokkos_mj_current_dim_coords(i) > my_thread_max_coord(0))
-          my_thread_max_coord(0) = kokkos_mj_current_dim_coords(i);
-        if(kokkos_mj_current_dim_coords(i) < my_thread_min_coord(0))
-          my_thread_min_coord(0) = kokkos_mj_current_dim_coords(i);
-      });
-
-      this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord(0);
-      this->kokkos_max_min_coords(my_thread_id + this->num_threads) = my_thread_max_coord(0);
-
-      //we need a barrier here, because max_min_array might not be filled by some of the threads.
-      Kokkos::fence();
-
-      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-        min_coordinate_view(0) = this->kokkos_max_min_coords(0);
-        for(int i = 1; i < this->num_threads; ++i) {
-          if(this->kokkos_max_min_coords(i) < min_coordinate_view(0)) {
-            min_coordinate_view(0) = this->kokkos_max_min_coords(i);
-          }
-        }
-      });
-
-      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-        max_coordinate_view(0) = this->kokkos_max_min_coords(this->num_threads);
-        for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i) {
-          if(this->kokkos_max_min_coords(i) > max_coordinate_view(0)) {
-            max_coordinate_view(0) = this->kokkos_max_min_coords(i);
-          }
-        }
-      });
+      this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
+      this->kokkos_max_min_coords(my_thread_id + this->num_threads) =
+        my_thread_max_coord;
     });
 
-    min_coordinate = min_coordinate_view(0);
-    max_coordinate = max_coordinate_view(0);
-    total_weight = my_total_weight(0);
+    min_coordinate = this->kokkos_max_min_coords(0);
+    for(int i = 1; i < this->num_threads; ++i) {
+      if(this->kokkos_max_min_coords(i) < min_coordinate) {
+        min_coordinate = this->kokkos_max_min_coords(i);
+      }
+    }
+
+    max_coordinate = this->kokkos_max_min_coords(this->num_threads);
+    for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i) {
+      if(this->kokkos_max_min_coords(i) > max_coordinate) {
+        max_coordinate = this->kokkos_max_min_coords(i);
+      }
+    }
   }
 }
 
@@ -8136,6 +8121,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
 
     for (int i = 0; i < this->recursion_depth; ++i){
+        //convert i to string to be used for debugging purposes.
+        std::string istring = Teuchos::toString<int>(i);
+        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - setup Problem_Partitioning_" + istring);
+
+
         //partitioning array. size will be as the number of current partitions and this
         //holds how many parts that each part will be in the current dimension partitioning.
         std::vector <mj_part_t> num_partitioning_in_current_dim;
@@ -8205,8 +8195,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #else
         mj_scalar_t * mj_current_dim_coords = this->mj_coordinates[coordInd];
 #endif
-        //convert i to string to be used for debugging purposes.
-        std::string istring = Teuchos::toString<int>(i);
+
+        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - setup Problem_Partitioning_" + istring);
+
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
 
         //alloc Memory to point the indices
@@ -8706,6 +8697,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
     /////////////////////////////End of the partitioning////////////////////////
 
+    this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - cleanup Problem_Partitioning");
 
     //get the final parts of each initial coordinate
     //the results will be written to
@@ -8725,6 +8717,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
     this->free_work_memory();
+
+    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - cleanup Problem_Partitioning");
+
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
 
@@ -9177,6 +9172,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
   const RCP<PartitioningSolution<Adapter> > &solution
 )
 {
+    this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
+
     this->set_up_partitioning_data(solution);
     this->set_input_parameters(this->mj_env->getParameters());
     if (this->mj_keep_part_boxes){
@@ -9295,6 +9292,10 @@ void Zoltan2_AlgMJ<Adapter>::partition(
   mj_gno_t *result_mj_gnos = NULL;
 #endif
 
+    this->mj_env->timerStop(MACRO_TIMERS, "partition() - setup");
+
+    this->mj_env->timerStart(MACRO_TIMERS, "partition() - call multi_jagged_part()");
+
     if (am_i_in_subset){
       this->mj_partitioner.multi_jagged_part(
           this->mj_env,
@@ -9345,6 +9346,10 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       );
 
     }
+
+    this->mj_env->timerStop(MACRO_TIMERS, "partition() - call multi_jagged_part()");
+
+    this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
 
     // Reorder results so that they match the order of the input
 
@@ -9492,6 +9497,9 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     solution->setParts(partId);
     this->free_work_memory();
+
+    this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
+
 }
 
 /* \brief Freeing the memory allocated.

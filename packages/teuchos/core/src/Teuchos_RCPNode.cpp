@@ -746,6 +746,9 @@ void RCPNodeHandle::unbindOneTotal()
 
 void Teuchos::throw_null_ptr_error( const std::string &type_name )
 {
+
+  std::abort(); // TEMP to make debugging easier ....
+
   TEUCHOS_TEST_FOR_EXCEPTION(
     true, NullReferenceError,
     type_name << " : You can not call operator->() or operator*()"

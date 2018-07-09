@@ -184,6 +184,13 @@ void Time::incrementNumCalls() {
 
 double Time::wallTime()
 {
+  // MDM - not for final commit
+  // Temporarily hacked this as the gettimeofday was not giving me reliable
+  // or useful results. This is ok:
+  // TEMP REMOVE THIS CODE FOR FINAL WORK!!!!
+  return( (double) clock() / CLOCKS_PER_SEC );
+  // TEMP REMOVE THIS CODE FOR FINAL WORK!!!!
+
   /* KL: warning: this code is probably not portable! */
   /* HT: have added some preprocessing to address problem compilers */
         /* RAB: I modifed so that timer will work if MPI support is compiled in but not initialized */
