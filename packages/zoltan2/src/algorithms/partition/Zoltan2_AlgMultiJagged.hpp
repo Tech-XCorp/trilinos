@@ -2092,6 +2092,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
                 // Determine cut lines for k parts here.
+                this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part B()");
                 this->mj_1D_part(
 #ifdef HAVE_ZOLTAN2_OMP
                     kokkos_mj_current_dim_coords,
@@ -2108,6 +2109,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
                     total_incomplete_cut_count,
                     num_partitioning_in_current_dim);
+                this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part B()");
             }
             else {
               obtained_part_index += current_concurrent_num_parts;
@@ -3298,7 +3300,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   }
 }
 
-#else // HAVE_ZOLTAN2_IMP
+#else // HAVE_ZOLTAN2_OMP
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
@@ -3624,36 +3626,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * \param num_partitioning_in_current_dim is the vector that holds how many parts each part will be divided into.
  *
  */
+
+#ifdef HAVE_ZOLTAN2_OMP
+
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::mj_1D_part(
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
-#else
-    mj_scalar_t *mj_current_dim_coords,
-#endif
     mj_scalar_t used_imbalance_tolerance,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
-#else
-    mj_scalar_t *current_cut_coordinates,
-#endif
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim
 ){
-
-
     mj_part_t rectilinear_cut_count = 0;
 
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
-#else
-    mj_scalar_t *temp_cut_coords = current_cut_coordinates;
-#endif
 
     Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
                  *reductionOp = NULL;
@@ -3664,11 +3655,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                  current_concurrent_num_parts);
 
     size_t total_reduction_size = 0;
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp parallel shared(total_incomplete_cut_count,  rectilinear_cut_count) num_threads(this->num_threads)
-#endif
     {
-#ifdef HAVE_ZOLTAN2_OMP
         int me = omp_get_thread_num();
         Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_thread_part_weights =
           Kokkos::subview(this->kokkos_thread_part_weights, Kokkos::ALL, me);
@@ -3677,17 +3665,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           Kokkos::subview(this->kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
-#else
-        int me = 0;
-        double *my_thread_part_weights = this->thread_part_weights[me];
 
-        mj_scalar_t *my_thread_left_closest = this->thread_cut_left_closest_point[me];
-        mj_scalar_t *my_thread_right_closest = this->thread_cut_right_closest_point[me];
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
-#endif
         {
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
@@ -3698,33 +3677,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             total_reduction_size += (4 * num_cut_in_dim + 1);
 
             for(mj_part_t ii = 0; ii < num_cut_in_dim; ++ii){
-
-#ifdef HAVE_ZOLTAN2_OMP
               this->kokkos_is_cut_line_determined(next) = false;
-#else
-              this->is_cut_line_determined[next] = false;
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
               this->kokkos_cut_lower_bound_coordinates(next) = kokkos_global_min_max_coord_total_weight(i); //min coordinate
               this->kokkos_cut_upper_bound_coordinates(next) = kokkos_global_min_max_coord_total_weight(i + current_concurrent_num_parts); //max coordinate
-
               this->kokkos_cut_upper_bound_weights(next) = kokkos_global_min_max_coord_total_weight(i + 2 * current_concurrent_num_parts); //total weight
               this->kokkos_cut_lower_bound_weights(next) = 0;
-#else
-              this->cut_lower_bound_coordinates[next] = global_min_max_coord_total_weight[i]; //min coordinate
-              this->cut_upper_bound_coordinates[next] = global_min_max_coord_total_weight[i + current_concurrent_num_parts]; //max coordinate
-
-              this->cut_upper_bound_weights[next] = global_min_max_coord_total_weight[i + 2 * current_concurrent_num_parts]; //total weight
-              this->cut_lower_bound_weights[next] = 0;
-#endif
-
               if(this->distribute_points_on_cut_lines){
-#ifdef HAVE_ZOLTAN2_OMP
                 this->kokkos_process_cut_line_weight_to_put_left(next) = 0;
-#else
-                this->process_cut_line_weight_to_put_left[next] = 0;
-#endif
               }
               ++next;
             }
@@ -3745,7 +3704,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 mj_part_t num_cuts = num_parts - 1;
                 size_t total_part_count = num_parts + size_t (num_cuts);
-#ifdef HAVE_ZOLTAN2_OMP
+
                 if (this->kokkos_my_incomplete_cut_count(kk) > 0){
                     //although isDone shared, currentDone is private and same for all.
                     Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status =
@@ -3769,18 +3728,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                       std::pair<mj_lno_t, mj_lno_t>(
                         concurrent_cut_shifts,
                         kokkos_my_thread_right_closest.size()));
-#else
-                if (this->my_incomplete_cut_count[kk] > 0){
-                    bool *current_cut_status = this->is_cut_line_determined + concurrent_cut_shifts;
-                    double *my_current_part_weights = my_thread_part_weights + total_part_shift;
-                    mj_scalar_t *my_current_left_closest = my_thread_left_closest + concurrent_cut_shifts;
-                    mj_scalar_t *my_current_right_closest = my_thread_right_closest + concurrent_cut_shifts;
-#endif
 
 
                     mj_part_t conccurent_current_part = current_work_part + kk;
-
-#ifdef HAVE_ZOLTAN2_OMP
                     mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->kokkos_part_xadj(conccurent_current_part -1);
                     mj_lno_t coordinate_end_index = this->kokkos_part_xadj(conccurent_current_part);
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords =
@@ -3790,13 +3740,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                           kokkos_temp_cut_coords.size()));
                     mj_scalar_t min_coord = kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-#else
-                    mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->part_xadj[conccurent_current_part -1];
-                    mj_lno_t coordinate_end_index = this->part_xadj[conccurent_current_part];
-                    mj_scalar_t *temp_current_cut_coords = temp_cut_coords + concurrent_cut_shifts;
-                    mj_scalar_t min_coord = global_min_max_coord_total_weight[kk];
-                    mj_scalar_t max_coord = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
-#endif
 
                     // compute part weights using existing cuts
                     this->mj_1D_part_get_thread_part_weights(
@@ -3806,21 +3749,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         min_coord,//globalMinMaxTotal[kk]//minScalar,
                         coordinate_begin_index,
                         coordinate_end_index,
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_mj_current_dim_coords,
                         kokkos_temp_current_cut_coords,
                         kokkos_current_cut_status,
                         kokkos_my_current_part_weights,
                         kokkos_my_current_left_closest,
                         kokkos_my_current_right_closest);
-#else
-                        mj_current_dim_coords,
-                        temp_current_cut_coords,
-                        current_cut_status,
-                        my_current_part_weights,
-                        my_current_left_closest,
-                        my_current_right_closest);
-#endif
                 }
 
                 concurrent_cut_shifts += num_cuts;
@@ -3834,33 +3768,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 current_concurrent_num_parts);
 
             //now sum up the results of mpi processors.
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
-#endif
             {
                 if(this->comm->getSize() > 1){
-#ifdef HAVE_ZOLTAN2_OMP
                         throw std::logic_error("Not refactored for global_total_part_weight_left_right_closests. TODO.");
-#else
-                        reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
-                                        total_reduction_size,
-                                        this->total_part_weight_left_right_closests,
-                                        this->global_total_part_weight_left_right_closests);
-#endif
                 }
                 else {
-#ifdef HAVE_ZOLTAN2_OMP
                         // TODO: Optimize
                         for(int n = 0; n < total_reduction_size; ++n) {
                           this->kokkos_global_total_part_weight_left_right_closests(n) =
                             this->kokkos_total_part_weight_left_right_closests(n);
                         }
-#else
-                        memcpy(
-                                this->global_total_part_weight_left_right_closests,
-                            this->total_part_weight_left_right_closests,
-                            total_reduction_size * sizeof(mj_scalar_t));
-#endif
                 }
             }
 
@@ -3877,17 +3795,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //if the cuts of this cut has already been completed.
                 //nothing to do for this part.
                 //just update the shift amount and proceed.
-#ifdef HAVE_ZOLTAN2_OMP
                 if (this->kokkos_my_incomplete_cut_count(kk) == 0) {
-#else
-                if (this->my_incomplete_cut_count[kk] == 0) {
-#endif
                         cut_shift += num_cuts;
                         tlr_shift += (num_total_part + 2 * num_cuts);
                         continue;
                 }
 
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights =
                   Kokkos::subview(this->kokkos_total_part_weight_left_right_closests,
                     std::pair<mj_lno_t, mj_lno_t>(
@@ -3913,27 +3826,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                       kokkos_current_global_tlr.size()));
 
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights = kokkos_current_global_tlr;
-#else
-                mj_scalar_t *current_local_part_weights = this->total_part_weight_left_right_closests + tlr_shift;
-                mj_scalar_t *current_global_tlr = this->global_total_part_weight_left_right_closests + tlr_shift;
-                mj_scalar_t *current_global_left_closest_points = current_global_tlr + num_total_part; //left closest points
-                mj_scalar_t *current_global_right_closest_points = current_global_tlr + num_total_part + num_cuts; //right closest points
-                mj_scalar_t *current_global_part_weights = current_global_tlr;
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                 //although isDone shared, currentDone is private and same for all.
                 Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined =
                   Kokkos::subview(this->kokkos_is_cut_line_determined,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       this->kokkos_is_cut_line_determined.size()));
-#else
-                bool *current_cut_line_determined = this->is_cut_line_determined + cut_shift;
-#endif
-
-
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_target_weights =
                   Kokkos::subview(kokkos_target_part_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
@@ -3944,22 +3842,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       kokkos_process_cut_line_weight_to_put_left.size()));
-#else
-                mj_scalar_t *current_part_target_weights = this->target_part_weights + cut_shift + kk;
-                mj_scalar_t *current_part_cut_line_weight_to_put_left = this->process_cut_line_weight_to_put_left + cut_shift;
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                 mj_scalar_t min_coordinate = kokkos_global_min_max_coord_total_weight(kk);
                 mj_scalar_t max_coordinate = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                 mj_scalar_t global_total_weight = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts * 2);
-#else
-                mj_scalar_t min_coordinate = global_min_max_coord_total_weight[kk];
-                mj_scalar_t max_coordinate = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
-                mj_scalar_t global_total_weight = global_min_max_coord_total_weight[kk + current_concurrent_num_parts * 2];
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights =
                   Kokkos::subview(kokkos_cut_lower_bound_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
@@ -3982,13 +3867,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                       kokkos_cut_lower_bound_coordinates.size()));
 
                 mj_part_t initial_incomplete_cut_count = this->kokkos_my_incomplete_cut_count(kk);
-#else
-                mj_scalar_t *current_cut_lower_bound_weights = this->cut_lower_bound_weights + cut_shift;
-                mj_scalar_t *current_cut_upper_weights = this->cut_upper_bound_weights + cut_shift;
-                mj_scalar_t *current_cut_upper_bounds = this->cut_upper_bound_coordinates + cut_shift;
-                mj_scalar_t *current_cut_lower_bounds = this->cut_lower_bound_coordinates + cut_shift;
-                mj_part_t initial_incomplete_cut_count = this->my_incomplete_cut_count[kk];
-#endif
 
                 // Now compute the new cut coordinates.
                 this->mj_get_new_cut_coordinates(
@@ -3998,95 +3876,44 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 min_coordinate,
                                 global_total_weight,
                                 used_imbalance_tolerance,
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_current_global_part_weights,
                                 kokkos_current_local_part_weights,
                                 kokkos_current_part_target_weights,
                                 kokkos_current_cut_line_determined,
-#else
-                                current_global_part_weights,
-                                current_local_part_weights,
-                                current_part_target_weights,
-                                current_cut_line_determined,
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                                 Kokkos::subview(kokkos_temp_cut_coords,
                                   std::pair<mj_lno_t, mj_lno_t>(
                                     cut_shift, kokkos_temp_cut_coords.size())),
-#else
-                                temp_cut_coords + cut_shift,
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_current_cut_upper_bounds,
                                 kokkos_current_cut_lower_bounds,
                                 kokkos_current_global_left_closest_points,
                                 kokkos_current_global_right_closest_points,
-#else
-                                current_cut_upper_bounds,
-                                current_cut_lower_bounds,
-                                current_global_left_closest_points,
-                                current_global_right_closest_points,
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_current_cut_lower_bound_weights,
                                 kokkos_current_cut_upper_weights,
-#else
-                                current_cut_lower_bound_weights,
-                                current_cut_upper_weights,
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                                 Kokkos::subview(kokkos_cut_coordinates_work_array,
                                   std::pair<mj_lno_t, mj_lno_t>(
                                     cut_shift, kokkos_cut_coordinates_work_array.size())),
                                 kokkos_current_part_cut_line_weight_to_put_left,
-#else
-                                this->cut_coordinates_work_array +cut_shift, //new cut coordinates
-                                current_part_cut_line_weight_to_put_left,
-#endif
                                 &rectilinear_cut_count,
-
-#ifdef HAVE_ZOLTAN2_OMP
                                 this->kokkos_my_incomplete_cut_count(kk));
-#else
-                                this->my_incomplete_cut_count[kk]);
-#endif
 
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
-#ifdef HAVE_ZOLTAN2_OMP
                 mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->kokkos_my_incomplete_cut_count(kk);
-#else
-                mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->my_incomplete_cut_count[kk];
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
-#endif
                 {
                         total_incomplete_cut_count -= iteration_complete_cut_count;
                 }
 
             }
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp barrier
 #pragma omp single
-#endif
             {
                 //swap the cut coordinates for next iteration.
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = kokkos_temp_cut_coords;
                 kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
                 this->kokkos_cut_coordinates_work_array = t;
-#else
-                mj_scalar_t *t = temp_cut_coords;
-                temp_cut_coords = this->cut_coordinates_work_array;
-                this->cut_coordinates_work_array = t;
-#endif
             }
             }
         }
@@ -4097,15 +3924,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // cutCoordinates and cutCoordinatesWork.
         // (at first iteration, cutCoordinates == cutCoorindates_tmp).
         // computed cuts must be in cutCoordinates.
-#ifdef HAVE_ZOLTAN2_OMP
         if (kokkos_current_cut_coordinates != kokkos_temp_cut_coords){
-#else
-        if (current_cut_coordinates != temp_cut_coords){
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
-#endif
                 {
                         mj_part_t next = 0;
                         for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
@@ -4114,30 +3935,264 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 mj_part_t num_cuts = num_parts - 1;
 
                                 for(mj_part_t ii = 0; ii < num_cuts; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_coordinates(next + ii) = kokkos_temp_cut_coords(next + ii);
-#else
-                                        current_cut_coordinates[next + ii] = temp_cut_coords[next + ii];
-#endif
                                 }
                                 next += num_cuts;
                         }
                 }
 
-#ifdef HAVE_ZOLTAN2_OMP
 #pragma omp single
-#endif
             {
-#ifdef HAVE_ZOLTAN2_OMP
                 this->kokkos_cut_coordinates_work_array = kokkos_temp_cut_coords;
-#else
-                this->cut_coordinates_work_array = temp_cut_coords;
-#endif
             }
         }
     }
     delete reductionOp;
 }
+
+#else // HAVE_ZOLTAN2_OMP
+
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+          typename mj_part_t,
+          typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          mj_node_t>::mj_1D_part(
+    mj_scalar_t *mj_current_dim_coords,
+    mj_scalar_t used_imbalance_tolerance,
+    mj_part_t current_work_part,
+    mj_part_t current_concurrent_num_parts,
+    mj_scalar_t *current_cut_coordinates,
+    mj_part_t total_incomplete_cut_count,
+    std::vector <mj_part_t> &num_partitioning_in_current_dim
+){
+    mj_part_t rectilinear_cut_count = 0;
+
+    mj_scalar_t *temp_cut_coords = current_cut_coordinates;
+
+    Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
+                 *reductionOp = NULL;
+    reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
+                     <mj_part_t, mj_scalar_t>(
+                                 &num_partitioning_in_current_dim ,
+                                 current_work_part ,
+                                 current_concurrent_num_parts);
+
+    size_t total_reduction_size = 0;
+    {
+        int me = 0;
+        double *my_thread_part_weights = this->thread_part_weights[me];
+        mj_scalar_t *my_thread_left_closest = this->thread_cut_left_closest_point[me];
+        mj_scalar_t *my_thread_right_closest = this->thread_cut_right_closest_point[me];
+        {
+          //initialize the lower and upper bounds of the cuts.
+          mj_part_t next = 0;
+          for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
+
+            mj_part_t num_part_in_dim =  num_partitioning_in_current_dim[current_work_part + i];
+            mj_part_t num_cut_in_dim = num_part_in_dim - 1;
+            total_reduction_size += (4 * num_cut_in_dim + 1);
+
+            for(mj_part_t ii = 0; ii < num_cut_in_dim; ++ii){
+              this->is_cut_line_determined[next] = false;
+              this->cut_lower_bound_coordinates[next] = global_min_max_coord_total_weight[i]; //min coordinate
+              this->cut_upper_bound_coordinates[next] = global_min_max_coord_total_weight[i + current_concurrent_num_parts]; //max coordinate
+              this->cut_upper_bound_weights[next] = global_min_max_coord_total_weight[i + 2 * current_concurrent_num_parts]; //total weight
+              this->cut_lower_bound_weights[next] = 0;
+              if(this->distribute_points_on_cut_lines){
+                this->process_cut_line_weight_to_put_left[next] = 0;
+              }
+              ++next;
+            }
+          }
+        }
+
+        //no need to have barrier here.
+        //pragma omp single have implicit barrier.
+
+        int iteration = 0;
+        while (total_incomplete_cut_count != 0){
+            iteration += 1;
+            mj_part_t concurrent_cut_shifts = 0;
+            size_t total_part_shift = 0;
+            for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
+                mj_part_t num_parts =  -1;
+                num_parts =  num_partitioning_in_current_dim[current_work_part + kk];
+
+                mj_part_t num_cuts = num_parts - 1;
+                size_t total_part_count = num_parts + size_t (num_cuts);
+                if (this->my_incomplete_cut_count[kk] > 0){
+                    bool *current_cut_status = this->is_cut_line_determined + concurrent_cut_shifts;
+                    double *my_current_part_weights = my_thread_part_weights + total_part_shift;
+                    mj_scalar_t *my_current_left_closest = my_thread_left_closest + concurrent_cut_shifts;
+                    mj_scalar_t *my_current_right_closest = my_thread_right_closest + concurrent_cut_shifts;
+                    mj_part_t conccurent_current_part = current_work_part + kk;
+                    mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->part_xadj[conccurent_current_part -1];
+                    mj_lno_t coordinate_end_index = this->part_xadj[conccurent_current_part];
+                    mj_scalar_t *temp_current_cut_coords = temp_cut_coords + concurrent_cut_shifts;
+                    mj_scalar_t min_coord = global_min_max_coord_total_weight[kk];
+                    mj_scalar_t max_coord = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
+
+                    // compute part weights using existing cuts
+                    this->mj_1D_part_get_thread_part_weights(
+                        total_part_count,
+                        num_cuts,
+                        max_coord,//globalMinMaxTotal[kk + concurrentPartCount],//maxScalar,
+                        min_coord,//globalMinMaxTotal[kk]//minScalar,
+                        coordinate_begin_index,
+                        coordinate_end_index,
+                        mj_current_dim_coords,
+                        temp_current_cut_coords,
+                        current_cut_status,
+                        my_current_part_weights,
+                        my_current_left_closest,
+                        my_current_right_closest);
+                }
+
+                concurrent_cut_shifts += num_cuts;
+                total_part_shift += total_part_count;
+            }
+
+            //sum up the results of threads
+            this->mj_accumulate_thread_results(
+                num_partitioning_in_current_dim,
+                current_work_part,
+                current_concurrent_num_parts);
+
+            //now sum up the results of mpi processors.
+            {
+                if(this->comm->getSize() > 1){
+                        reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
+                                        total_reduction_size,
+                                        this->total_part_weight_left_right_closests,
+                                        this->global_total_part_weight_left_right_closests);
+                }
+                else {
+                        memcpy(
+                                this->global_total_part_weight_left_right_closests,
+                            this->total_part_weight_left_right_closests,
+                            total_reduction_size * sizeof(mj_scalar_t));
+                }
+            }
+
+            //how much cut will be shifted for the next part in the concurrent part calculation.
+            mj_part_t cut_shift = 0;
+
+            //how much the concantaneted array will be shifted for the next part in concurrent part calculation.
+            size_t tlr_shift = 0;
+            for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
+                mj_part_t num_parts =  num_partitioning_in_current_dim[current_work_part + kk];
+                mj_part_t num_cuts = num_parts - 1;
+                size_t num_total_part = num_parts + size_t (num_cuts) ;
+
+                //if the cuts of this cut has already been completed.
+                //nothing to do for this part.
+                //just update the shift amount and proceed.
+                if (this->my_incomplete_cut_count[kk] == 0) {
+                        cut_shift += num_cuts;
+                        tlr_shift += (num_total_part + 2 * num_cuts);
+                        continue;
+                }
+
+                mj_scalar_t *current_local_part_weights = this->total_part_weight_left_right_closests + tlr_shift;
+                mj_scalar_t *current_global_tlr = this->global_total_part_weight_left_right_closests + tlr_shift;
+                mj_scalar_t *current_global_left_closest_points = current_global_tlr + num_total_part; //left closest points
+                mj_scalar_t *current_global_right_closest_points = current_global_tlr + num_total_part + num_cuts; //right closest points
+                mj_scalar_t *current_global_part_weights = current_global_tlr;
+
+                bool *current_cut_line_determined = this->is_cut_line_determined + cut_shift;
+
+                mj_scalar_t *current_part_target_weights = this->target_part_weights + cut_shift + kk;
+                mj_scalar_t *current_part_cut_line_weight_to_put_left = this->process_cut_line_weight_to_put_left + cut_shift;
+
+                mj_scalar_t min_coordinate = global_min_max_coord_total_weight[kk];
+                mj_scalar_t max_coordinate = global_min_max_coord_total_weight[kk + current_concurrent_num_parts];
+                mj_scalar_t global_total_weight = global_min_max_coord_total_weight[kk + current_concurrent_num_parts * 2];
+
+                mj_scalar_t *current_cut_lower_bound_weights = this->cut_lower_bound_weights + cut_shift;
+                mj_scalar_t *current_cut_upper_weights = this->cut_upper_bound_weights + cut_shift;
+                mj_scalar_t *current_cut_upper_bounds = this->cut_upper_bound_coordinates + cut_shift;
+                mj_scalar_t *current_cut_lower_bounds = this->cut_lower_bound_coordinates + cut_shift;
+                mj_part_t initial_incomplete_cut_count = this->my_incomplete_cut_count[kk];
+
+                // Now compute the new cut coordinates.
+                this->mj_get_new_cut_coordinates(
+                                num_total_part,
+                                num_cuts,
+                                max_coordinate,
+                                min_coordinate,
+                                global_total_weight,
+                                used_imbalance_tolerance,
+
+                                current_global_part_weights,
+                                current_local_part_weights,
+                                current_part_target_weights,
+                                current_cut_line_determined,
+
+                                temp_cut_coords + cut_shift,
+
+                                current_cut_upper_bounds,
+                                current_cut_lower_bounds,
+                                current_global_left_closest_points,
+                                current_global_right_closest_points,
+
+                                current_cut_lower_bound_weights,
+                                current_cut_upper_weights,
+
+                                this->cut_coordinates_work_array +cut_shift, //new cut coordinates
+                                current_part_cut_line_weight_to_put_left,
+                                &rectilinear_cut_count,
+
+                                this->my_incomplete_cut_count[kk]);
+
+                cut_shift += num_cuts;
+                tlr_shift += (num_total_part + 2 * num_cuts);
+                mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->my_incomplete_cut_count[kk];
+                {
+                        total_incomplete_cut_count -= iteration_complete_cut_count;
+                }
+
+            }
+            { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
+            {
+                //swap the cut coordinates for next iteration.
+                mj_scalar_t *t = temp_cut_coords;
+                temp_cut_coords = this->cut_coordinates_work_array;
+                this->cut_coordinates_work_array = t;
+            }
+            }
+        }
+
+        //if (myRank == 0)
+        //std::cout << "iteration:" << iteration << " partition:" << num_partitioning_in_current_dim[current_work_part] << std::endl;
+        // Needed only if keep_cuts; otherwise can simply swap array pointers
+        // cutCoordinates and cutCoordinatesWork.
+        // (at first iteration, cutCoordinates == cutCoorindates_tmp).
+        // computed cuts must be in cutCoordinates.
+        if (current_cut_coordinates != temp_cut_coords){
+
+                {
+                        mj_part_t next = 0;
+                        for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
+                                mj_part_t num_parts = -1;
+                                num_parts = num_partitioning_in_current_dim[current_work_part + i];
+                                mj_part_t num_cuts = num_parts - 1;
+
+                                for(mj_part_t ii = 0; ii < num_cuts; ++ii){
+                                        current_cut_coordinates[next + ii] = temp_cut_coords[next + ii];
+                                }
+                                next += num_cuts;
+                        }
+                }
+
+            {
+                this->cut_coordinates_work_array = temp_cut_coords;
+            }
+        }
+    }
+    delete reductionOp;
+}
+
+#endif // HAVE_ZOLTAN2_OMP
 
 
 /*! \brief Function that calculates the weights of each part according to given part cut coordinates.
@@ -8123,8 +8178,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     for (int i = 0; i < this->recursion_depth; ++i){
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - setup Problem_Partitioning_" + istring);
-
 
         //partitioning array. size will be as the number of current partitions and this
         //holds how many parts that each part will be in the current dimension partitioning.
@@ -8195,8 +8248,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #else
         mj_scalar_t * mj_current_dim_coords = this->mj_coordinates[coordInd];
 #endif
-
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - setup Problem_Partitioning_" + istring);
 
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
 
@@ -8384,6 +8435,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                         //get the initial estimated part assignments of the
                         //coordinates.
+                        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
                         this->set_initial_coordinate_parts(
                             max_coordinate,
                             min_coordinate,
@@ -8400,6 +8452,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             this->assigned_part_ids,
 #endif
                             partition_count);
+                            this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
                     }
                     else {
                         // e.g., if have fewer coordinates than parts, don't need to do next dim.
@@ -8420,6 +8473,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
                 // Determine cut lines for all concurrent parts parts here.
+                this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " mj_1D_part()");
+
                 this->mj_1D_part(
 #ifdef HAVE_ZOLTAN2_OMP
                     kokkos_mj_current_dim_coords,
@@ -8436,6 +8491,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
                     total_incomplete_cut_count,
                     num_partitioning_in_current_dim);
+                this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " mj_1D_part()");
             }
 
             //create new part chunks
@@ -8697,8 +8753,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
     /////////////////////////////End of the partitioning////////////////////////
 
-    this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - cleanup Problem_Partitioning");
-
     //get the final parts of each initial coordinate
     //the results will be written to
     //this->assigned_part_ids for gnos given in this->current_mj_gnos
@@ -8717,8 +8771,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
     this->free_work_memory();
-
-    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - cleanup Problem_Partitioning");
 
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
@@ -9170,6 +9222,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
   const RCP<PartitioningSolution<Adapter> > &solution
 )
 {
+    this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
+{
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
 
     this->set_up_partitioning_data(solution);
@@ -9497,7 +9551,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->free_work_memory();
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
-
+}
+    this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
 }
 
 /* \brief Freeing the memory allocated.
