@@ -1295,6 +1295,12 @@ void print_usage(char *executable){
 
 int main(int argc, char *argv[])
 {
+// TEMPORARY TEST JUST A SINGLE THREAD FOR DEBUGGING
+#ifdef HAVE_ZOLTAN2_OMP
+//omp_set_dynamic(0);     // Explicitly disable dynamic teams
+//omp_set_num_threads(1); // Use 1 threads for all consecutive parallel regions
+#endif
+
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
     //cout << argv << endl;
