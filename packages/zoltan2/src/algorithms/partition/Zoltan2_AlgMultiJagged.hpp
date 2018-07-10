@@ -532,6 +532,8 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 class AlgMJ
 {
 private:
+    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_cut_coords;
+
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
     typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
 
@@ -3644,7 +3646,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 ){
     mj_part_t rectilinear_cut_count = 0;
 
-    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
+    this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 
     Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
                  *reductionOp = NULL;
@@ -3654,9 +3656,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                  current_work_part ,
                                  current_concurrent_num_parts);
 
-    size_t total_reduction_size = 0;
+    // TODO: Determine why need view - how to do this elegantly?
+    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_incomplete_cut_count("view_total_incomplete_cut_count", 1);
+    view_total_incomplete_cut_count(0) = total_incomplete_cut_count;
+
+    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
+    view_total_reduction_size(0) = 0;
+
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
+
 #pragma omp parallel shared(total_incomplete_cut_count,  rectilinear_cut_count) num_threads(this->num_threads)
-    {
+{
+  //  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member){
         int me = omp_get_thread_num();
         Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_thread_part_weights =
           Kokkos::subview(this->kokkos_thread_part_weights, Kokkos::ALL, me);
@@ -3666,15 +3678,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
 
-#pragma omp single
-        {
+      #pragma omp single
+      {
+    //    Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
           for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
 
             mj_part_t num_part_in_dim =  num_partitioning_in_current_dim[current_work_part + i];
             mj_part_t num_cut_in_dim = num_part_in_dim - 1;
-            total_reduction_size += (4 * num_cut_in_dim + 1);
+            view_total_reduction_size(0) += (4 * num_cut_in_dim + 1);
 
             for(mj_part_t ii = 0; ii < num_cut_in_dim; ++ii){
               this->kokkos_is_cut_line_determined(next) = false;
@@ -3688,10 +3701,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               ++next;
             }
           }
-        }
-
-        //no need to have barrier here.
-        //pragma omp single have implicit barrier.
+        } // );
 
         int iteration = 0;
         while (total_incomplete_cut_count != 0){
@@ -3734,10 +3744,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : this->kokkos_part_xadj(conccurent_current_part -1);
                     mj_lno_t coordinate_end_index = this->kokkos_part_xadj(conccurent_current_part);
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords =
-                      Kokkos::subview(kokkos_temp_cut_coords,
+                      Kokkos::subview(this->kokkos_temp_cut_coords,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_cut_shifts,
-                          kokkos_temp_cut_coords.size()));
+                          this->kokkos_temp_cut_coords.size()));
                     mj_scalar_t min_coord = kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
 
@@ -3768,19 +3778,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 current_concurrent_num_parts);
 
             //now sum up the results of mpi processors.
-#pragma omp single
-            {
+      #pragma omp single
+      {
+          //  Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
                 if(this->comm->getSize() > 1){
                         throw std::logic_error("Not refactored for global_total_part_weight_left_right_closests. TODO.");
                 }
                 else {
                         // TODO: Optimize
-                        for(int n = 0; n < total_reduction_size; ++n) {
+                        for(int n = 0; n < view_total_reduction_size(0); ++n) {
                           this->kokkos_global_total_part_weight_left_right_closests(n) =
                             this->kokkos_total_part_weight_left_right_closests(n);
                         }
                 }
-            }
+            } // );
 
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
@@ -3869,6 +3880,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t initial_incomplete_cut_count = this->kokkos_my_incomplete_cut_count(kk);
 
                 // Now compute the new cut coordinates.
+                mj_part_t rectilinear_cut_count = 0; // moved this here - do we need it?
                 this->mj_get_new_cut_coordinates(
                                 num_total_part,
                                 num_cuts,
@@ -3880,9 +3892,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 kokkos_current_local_part_weights,
                                 kokkos_current_part_target_weights,
                                 kokkos_current_cut_line_determined,
-                                Kokkos::subview(kokkos_temp_cut_coords,
+                                Kokkos::subview(this->kokkos_temp_cut_coords,
                                   std::pair<mj_lno_t, mj_lno_t>(
-                                    cut_shift, kokkos_temp_cut_coords.size())),
+                                    cut_shift, this->kokkos_temp_cut_coords.size())),
                                 kokkos_current_cut_upper_bounds,
                                 kokkos_current_cut_lower_bounds,
                                 kokkos_current_global_left_closest_points,
@@ -3901,20 +3913,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->kokkos_my_incomplete_cut_count(kk);
 
 #pragma omp single
-                {
-                        total_incomplete_cut_count -= iteration_complete_cut_count;
-                }
-
+{
+              //  Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
+                  view_total_incomplete_cut_count(0) -= iteration_complete_cut_count;
+                } // );
             }
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
-#pragma omp barrier
-#pragma omp single
-            {
-                //swap the cut coordinates for next iteration.
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = kokkos_temp_cut_coords;
-                kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
-                this->kokkos_cut_coordinates_work_array = t;
-            }
+            
+            #pragma omp barrier
+            //  Kokkos::fence(); // TODO: determine if we really need this? Above bug is likely still and issue
+
+        #pragma omp single
+        {
+            //  Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
+                  //swap the cut coordinates for next iteration.
+                  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = this->kokkos_temp_cut_coords;
+                  this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
+                  this->kokkos_cut_coordinates_work_array = t;
+              } // );
             }
         }
 
@@ -3927,27 +3943,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if (kokkos_current_cut_coordinates != kokkos_temp_cut_coords){
 
 #pragma omp single
-                {
-                        mj_part_t next = 0;
-                        for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
-                                mj_part_t num_parts = -1;
-                                num_parts = num_partitioning_in_current_dim[current_work_part + i];
-                                mj_part_t num_cuts = num_parts - 1;
+{
+           // Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
+                    mj_part_t next = 0;
+                    for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
+                            mj_part_t num_parts = -1;
+                            num_parts = num_partitioning_in_current_dim[current_work_part + i];
+                            mj_part_t num_cuts = num_parts - 1;
 
-                                for(mj_part_t ii = 0; ii < num_cuts; ++ii){
-                                        kokkos_current_cut_coordinates(next + ii) = kokkos_temp_cut_coords(next + ii);
-                                }
-                                next += num_cuts;
-                        }
-                }
+                            for(mj_part_t ii = 0; ii < num_cuts; ++ii){
+                                    kokkos_current_cut_coordinates(next + ii) = kokkos_temp_cut_coords(next + ii);
+                            }
+                            next += num_cuts;
+                    }
+            } // );
 
 #pragma omp single
-            {
+{
+//            Kokkos::single(Kokkos::PerThread(team_member), KOKKOS_LAMBDA(){
                 this->kokkos_cut_coordinates_work_array = kokkos_temp_cut_coords;
-            }
+            } // );
         }
-    }
+    } // );
+
     delete reductionOp;
+
+    total_incomplete_cut_count = view_total_incomplete_cut_count(0);
 }
 
 #else // HAVE_ZOLTAN2_OMP
@@ -3965,8 +3986,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim
 ){
-    mj_part_t rectilinear_cut_count = 0;
-
     mj_scalar_t *temp_cut_coords = current_cut_coordinates;
 
     Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
