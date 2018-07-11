@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
   typedef Map_t::local_ordinal_type localId_t;
   typedef Map_t::global_ordinal_type globalId_t;
   typedef double scalar_t;
+  typedef Tpetra::Map<>::node_type node_t;
 
   ///////////////////////////////////////////////////////////////////////
   // Generate some input data.
@@ -144,7 +145,8 @@ int main(int argc, char *argv[]) {
   // Check and print the solution.
   // Count number of IDs assigned to each part; compare to targetCount
 
-  Kokkos::View<const globalId_t *> ids;
+  // TODO: Determine how to set node here
+  Kokkos::View<const globalId_t *, typename node_t::device_type> ids;
   ia.getIDsKokkosView(ids);
 
   Kokkos::View<int*> partCounts("partCounts", nprocs, 0);

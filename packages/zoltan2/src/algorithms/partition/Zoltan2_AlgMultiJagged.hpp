@@ -3977,6 +3977,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim
 ){
+    mj_part_t rectilinear_cut_count = 0;
+
     mj_scalar_t *temp_cut_coords = current_cut_coordinates;
 
     Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
@@ -4151,7 +4153,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 this->cut_coordinates_work_array +cut_shift, //new cut coordinates
                                 current_part_cut_line_weight_to_put_left,
                                 &rectilinear_cut_count,
-
                                 this->my_incomplete_cut_count[kk]);
 
                 cut_shift += num_cuts;
@@ -4223,6 +4224,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * \param my_current_right_closest is the array holding the coordinate of the closest points to the cut lines from right for the calling thread.
  * \param partIds is the array that holds the part ids of the coordinates
  */
+
+#ifdef HAVE_ZOLTAN2_OMP
+
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
@@ -4234,63 +4238,35 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_scalar_t min_coord,
     mj_lno_t coordinate_begin_index,
     mj_lno_t coordinate_end_index,
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords,
     Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status,
     Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest){
-#else
-    mj_scalar_t *mj_current_dim_coords,
-    mj_scalar_t *temp_current_cut_coords,
-    bool *current_cut_status,
-    double *my_current_part_weights,
-    mj_scalar_t *my_current_left_closest,
-    mj_scalar_t *my_current_right_closest){
-#endif
         // initializations for part weights, left/right closest
         for (size_t i = 0; i < total_part_count; ++i){
-#ifdef HAVE_ZOLTAN2_OMP
                 kokkos_my_current_part_weights(i) = 0;
-#else
-                my_current_part_weights[i] = 0;
-#endif
         }
 
         //initialize the left and right closest coordinates
         //to their max value.
         for(mj_part_t i = 0; i < num_cuts; ++i){
-#ifdef HAVE_ZOLTAN2_OMP
                 kokkos_my_current_left_closest(i) = min_coord - 1;
                 kokkos_my_current_right_closest(i) = max_coord + 1;
-#else
-                my_current_left_closest[i] = min_coord - 1;
-                my_current_right_closest[i] = max_coord + 1;
-#endif
         }
         //mj_lno_t comparison_count = 0;
         mj_scalar_t minus_EPSILON = -this->sEpsilon;
-#ifdef HAVE_ZOLTAN2_OMP
         //no need for the barrier as all threads uses their local memories.
         //dont change the static scheduling here, as it is assumed when the new
         //partitions are created later.
 //XXXX #pragma omp for
-#endif
         for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
                 int i = this->kokkos_coordinate_permutations(ii);
-#else
-                int i = this->coordinate_permutations[ii];
-#endif
 
                 //the accesses to assigned_part_ids are thread safe
                 //since each coordinate is assigned to only a single thread.
-#ifdef HAVE_ZOLTAN2_OMP
                 mj_part_t j = this->kokkos_assigned_part_ids(i) / 2;
-#else
-                mj_part_t j = this->assigned_part_ids[i] / 2;
-#endif
 
                 if(j >= num_cuts){
                         j = num_cuts - 1;
@@ -4299,21 +4275,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t lower_cut_index = 0;
                 mj_part_t upper_cut_index = num_cuts - 1;
 
-#ifdef HAVE_ZOLTAN2_OMP
                 mj_scalar_t w = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(i,0);
-#else
-                mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
-#endif
                 bool is_inserted = false;
                 bool is_on_left_of_cut = false;
                 bool is_on_right_of_cut = false;
                 mj_part_t last_compared_part = -1;
-
-#ifdef HAVE_ZOLTAN2_OMP
                 mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
-#else
-                mj_scalar_t coord = mj_current_dim_coords[i];
-#endif
 
                 while(upper_cut_index >= lower_cut_index)
                 {
@@ -4321,63 +4288,36 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         last_compared_part = -1;
                         is_on_left_of_cut = false;
                         is_on_right_of_cut = false;
-#ifdef HAVE_ZOLTAN2_OMP
                         mj_scalar_t cut = kokkos_temp_current_cut_coords(j);
-#else
-                        mj_scalar_t cut = temp_current_cut_coords[j];
-#endif
 
                         mj_scalar_t distance_to_cut = coord - cut;
                         mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
 
                         //if it is on the line.
                         if(abs_distance_to_cut < this->sEpsilon){
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_my_current_part_weights(j * 2 + 1) += w;
                                 this->kokkos_assigned_part_ids(i) = j * 2 + 1;
                                 //assign left and right closest point to cut as the point is on the cut.
                                 kokkos_my_current_left_closest(j) = coord;
                                 kokkos_my_current_right_closest(j) = coord;
-#else
-                                my_current_part_weights[j * 2 + 1] += w;
-                                this->assigned_part_ids[i] = j * 2 + 1;
-                                //assign left and right closest point to cut as the point is on the cut.
-                                my_current_left_closest[j] = coord;
-                                my_current_right_closest[j] = coord;
-#endif
 
                                 //now we need to check if there are other cuts on the same cut coordinate.
                                 //if there are, then we add the weight of the cut to all cuts in the same coordinate.
                                 mj_part_t kk = j + 1;
                                 while(kk < num_cuts){
                                         // Needed when cuts shared the same position
-#ifdef HAVE_ZOLTAN2_OMP
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-#else
-                                        distance_to_cut =ZOLTAN2_ABS(temp_current_cut_coords[kk] - cut);
-#endif
                                         if(distance_to_cut < this->sEpsilon){
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_my_current_part_weights(2 * kk + 1) += w;
                                                 kokkos_my_current_left_closest(kk) = coord;
                                                 kokkos_my_current_right_closest(kk) = coord;
-#else
-                                                my_current_part_weights[2 * kk + 1] += w;
-                                                my_current_left_closest[kk] = coord;
-                                                my_current_right_closest[kk] = coord;
-#endif
                                                 kk++;
                                         }
                                         else{
                                                 //cut is far away.
                                                 //just check the left closest point for the next cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 if(coord - kokkos_my_current_left_closest(kk) > this->sEpsilon){
                                                         kokkos_my_current_left_closest(kk) = coord;
-#else
-                                                if(coord - my_current_left_closest[kk] > this->sEpsilon){
-                                                        my_current_left_closest[kk] = coord;
-#endif
                                                 }
                                                 break;
                                         }
@@ -4387,40 +4327,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 kk = j - 1;
                                 //continue checking for the cuts on the left if they share the same coordinate.
                                 while(kk >= 0){
-#ifdef HAVE_ZOLTAN2_OMP
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-#else
-                                        distance_to_cut =ZOLTAN2_ABS(temp_current_cut_coords[kk] - cut);
-#endif
                                         if(distance_to_cut < this->sEpsilon){
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_my_current_part_weights(2 * kk + 1) += w;
-#else
-                                                my_current_part_weights[2 * kk + 1] += w;
-#endif
                                                 //try to write the partId as the leftmost cut.
-
-#ifdef HAVE_ZOLTAN2_OMP
                                                 this->kokkos_assigned_part_ids(i) = kk * 2 + 1;
                                                 kokkos_my_current_left_closest(kk) = coord;
                                                 kokkos_my_current_right_closest(kk) = coord;
-#else
-                                                this->assigned_part_ids[i] = kk * 2 + 1;
-                                                my_current_left_closest[kk] = coord;
-                                                my_current_right_closest[kk] = coord;
-#endif
                                                 kk--;
                                         }
                                         else{
                                                 //if cut is far away on the left of the point.
                                                 //then just compare for right closest point.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 if(kokkos_my_current_right_closest(kk) - coord > this->sEpsilon){
                                                         kokkos_my_current_right_closest(kk) = coord;
-#else
-                                                if(my_current_right_closest[kk] - coord > this->sEpsilon){
-                                                        my_current_right_closest[kk] = coord;
-#endif
                                                 }
                                                 break;
                                         }
@@ -4436,11 +4356,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         if(j > 0){
                                                 //check distance to the cut on the left the current cut compared.
                                                 //if point is on the right, then we find the part of the point.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j - 1);
-#else
-                                                mj_scalar_t distance_to_next_cut = coord - temp_current_cut_coords[j - 1];
-#endif
                                                 if(distance_to_next_cut > this->sEpsilon){
                                                         _break = true;
                                                 }
@@ -4459,11 +4375,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         if(j < num_cuts - 1){
                                                 //check distance to the cut on the left the current cut compared.
                                                 //if point is on the right, then we find the part of the point.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j + 1);
-#else
-                                                mj_scalar_t distance_to_next_cut = coord - temp_current_cut_coords[j + 1];
-#endif
                                                 if(distance_to_next_cut < minus_EPSILON){
                          _break = true;
                      }
@@ -4486,70 +4398,36 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         if(is_on_right_of_cut){
 
                                 //add it to the right of the last compared part.
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_my_current_part_weights(2 * last_compared_part + 2) += w;
                                 this->kokkos_assigned_part_ids(i) = 2 * last_compared_part + 2;
-#else
-                                my_current_part_weights[2 * last_compared_part + 2] += w;
-                                this->assigned_part_ids[i] = 2 * last_compared_part + 2;
-#endif
 
                                 //update the right closest point of last compared cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if(kokkos_my_current_right_closest(last_compared_part) - coord > this->sEpsilon){
                                         kokkos_my_current_right_closest(last_compared_part) = coord;
                                 }
-#else
-                                if(my_current_right_closest[last_compared_part] - coord > this->sEpsilon){
-                                        my_current_right_closest[last_compared_part] = coord;
-                                }
-#endif
                                 //update the left closest point of the cut on the right of the last compared cut.
                                 if(last_compared_part+1 < num_cuts){
-#ifdef HAVE_ZOLTAN2_OMP
                                         if(coord - kokkos_my_current_left_closest(last_compared_part + 1) > this->sEpsilon){
                                                 kokkos_my_current_left_closest(last_compared_part + 1) = coord;
                                         }
-#else
-                                        if(coord - my_current_left_closest[last_compared_part + 1] > this->sEpsilon){
-                                                my_current_left_closest[last_compared_part + 1] = coord;
-                                        }
-#endif
                                 }
 
                         }
                         else if(is_on_left_of_cut){
 
                                 //add it to the left of the last compared part.
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_my_current_part_weights(2 * last_compared_part) += w;
                                 this->kokkos_assigned_part_ids(i) = 2 * last_compared_part;
-#else
-                                my_current_part_weights[2 * last_compared_part] += w;
-                                this->assigned_part_ids[i] = 2 * last_compared_part;
-#endif
 
                                 //update the left closest point of last compared cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if(coord - kokkos_my_current_left_closest(last_compared_part) > this->sEpsilon){
                                         kokkos_my_current_left_closest(last_compared_part) = coord;
                                 }
-#else
-                                if(coord - my_current_left_closest[last_compared_part] > this->sEpsilon){
-                                        my_current_left_closest[last_compared_part] = coord;
-                                }
-#endif
                                 //update the right closest point of the cut on the left of the last compared cut.
                                 if(last_compared_part-1 >= 0){
-#ifdef HAVE_ZOLTAN2_OMP
                                         if(kokkos_my_current_right_closest(last_compared_part -1) - coord > this->sEpsilon){
                                                 kokkos_my_current_right_closest(last_compared_part -1) = coord;
                                         }
-#else
-                                        if(my_current_right_closest[last_compared_part -1] - coord > this->sEpsilon){
-                                                my_current_right_closest[last_compared_part -1] = coord;
-                                        }
-#endif
                                 }
                         }
                 }
@@ -4561,34 +4439,244 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 // check for cuts sharing the same position; all cuts sharing a position
                 // have the same weight == total weight for all cuts sharing the position.
                 // don't want to accumulate that total weight more than once.
-#ifdef HAVE_ZOLTAN2_OMP
                 if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
                                 ZOLTAN2_ABS(kokkos_temp_current_cut_coords(i / 2) - kokkos_temp_current_cut_coords(i /2 - 1))
                 < this->sEpsilon){
-#else
-                if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
-                                ZOLTAN2_ABS(temp_current_cut_coords[i / 2] - temp_current_cut_coords[i /2 - 1])
-                < this->sEpsilon){
-#endif
                         //i % 2 = 0 when part i represents the cut coordinate.
                         //if it is a cut, and if the next cut also have the same coordinate, then
                         //dont addup.
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_my_current_part_weights(i) = kokkos_my_current_part_weights(i-2);
-#else
-                        my_current_part_weights[i] = my_current_part_weights[i-2];
-#endif
                         continue;
                 }
                 //otherwise do the prefix sum.
-#ifdef HAVE_ZOLTAN2_OMP
                 kokkos_my_current_part_weights(i) += kokkos_my_current_part_weights(i-1);
-#else
-                my_current_part_weights[i] += my_current_part_weights[i-1];
-#endif
         }
 }
 
+#else // HAVE_ZOLTAN2_OMP
+
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+          typename mj_part_t,
+          typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          mj_node_t>::mj_1D_part_get_thread_part_weights(
+    size_t total_part_count,
+    mj_part_t num_cuts,
+    mj_scalar_t max_coord,
+    mj_scalar_t min_coord,
+    mj_lno_t coordinate_begin_index,
+    mj_lno_t coordinate_end_index,
+    mj_scalar_t *mj_current_dim_coords,
+    mj_scalar_t *temp_current_cut_coords,
+    bool *current_cut_status,
+    double *my_current_part_weights,
+    mj_scalar_t *my_current_left_closest,
+    mj_scalar_t *my_current_right_closest){
+        // initializations for part weights, left/right closest
+        for (size_t i = 0; i < total_part_count; ++i){
+                my_current_part_weights[i] = 0;
+        }
+
+        //initialize the left and right closest coordinates
+        //to their max value.
+        for(mj_part_t i = 0; i < num_cuts; ++i){
+                my_current_left_closest[i] = min_coord - 1;
+                my_current_right_closest[i] = max_coord + 1;
+        }
+        //mj_lno_t comparison_count = 0;
+        mj_scalar_t minus_EPSILON = -this->sEpsilon;
+        for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii){
+                int i = this->coordinate_permutations[ii];
+
+                //the accesses to assigned_part_ids are thread safe
+                //since each coordinate is assigned to only a single thread.
+                mj_part_t j = this->assigned_part_ids[i] / 2;
+
+                if(j >= num_cuts){
+                        j = num_cuts - 1;
+                }
+
+                mj_part_t lower_cut_index = 0;
+                mj_part_t upper_cut_index = num_cuts - 1;
+                mj_scalar_t w = this->mj_uniform_weights[0]? 1:this->mj_weights[0][i];
+                bool is_inserted = false;
+                bool is_on_left_of_cut = false;
+                bool is_on_right_of_cut = false;
+                mj_part_t last_compared_part = -1;
+                mj_scalar_t coord = mj_current_dim_coords[i];
+
+                while(upper_cut_index >= lower_cut_index)
+                {
+                        //comparison_count++;
+                        last_compared_part = -1;
+                        is_on_left_of_cut = false;
+                        is_on_right_of_cut = false;
+                        mj_scalar_t cut = temp_current_cut_coords[j];
+
+                        mj_scalar_t distance_to_cut = coord - cut;
+                        mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
+
+                        //if it is on the line.
+                        if(abs_distance_to_cut < this->sEpsilon){
+                                my_current_part_weights[j * 2 + 1] += w;
+                                this->assigned_part_ids[i] = j * 2 + 1;
+                                //assign left and right closest point to cut as the point is on the cut.
+                                my_current_left_closest[j] = coord;
+                                my_current_right_closest[j] = coord;
+
+                                //now we need to check if there are other cuts on the same cut coordinate.
+                                //if there are, then we add the weight of the cut to all cuts in the same coordinate.
+                                mj_part_t kk = j + 1;
+                                while(kk < num_cuts){
+                                        // Needed when cuts shared the same position
+                                        distance_to_cut =ZOLTAN2_ABS(temp_current_cut_coords[kk] - cut);
+                                        if(distance_to_cut < this->sEpsilon){
+                                                my_current_part_weights[2 * kk + 1] += w;
+                                                my_current_left_closest[kk] = coord;
+                                                my_current_right_closest[kk] = coord;
+                                                kk++;
+                                        }
+                                        else{
+                                                //cut is far away.
+                                                //just check the left closest point for the next cut.
+                                                if(coord - my_current_left_closest[kk] > this->sEpsilon){
+                                                        my_current_left_closest[kk] = coord;
+                                                }
+                                                break;
+                                        }
+                                }
+
+
+                                kk = j - 1;
+                                //continue checking for the cuts on the left if they share the same coordinate.
+                                while(kk >= 0){
+                                        distance_to_cut =ZOLTAN2_ABS(temp_current_cut_coords[kk] - cut);
+                                        if(distance_to_cut < this->sEpsilon){
+                                                my_current_part_weights[2 * kk + 1] += w;
+                                                //try to write the partId as the leftmost cut.
+                                                this->assigned_part_ids[i] = kk * 2 + 1;
+                                                my_current_left_closest[kk] = coord;
+                                                my_current_right_closest[kk] = coord;
+                                                kk--;
+                                        }
+                                        else{
+                                                //if cut is far away on the left of the point.
+                                                //then just compare for right closest point.
+                                                if(my_current_right_closest[kk] - coord > this->sEpsilon){
+                                                        my_current_right_closest[kk] = coord;
+                                                }
+                                                break;
+                                        }
+                                }
+
+                                is_inserted = true;
+                                break;
+                        }
+                        else {
+                                //if point is on the left of the cut.
+                                if (distance_to_cut < 0) {
+                                        bool _break = false;
+                                        if(j > 0){
+                                                //check distance to the cut on the left the current cut compared.
+                                                //if point is on the right, then we find the part of the point.
+                                                mj_scalar_t distance_to_next_cut = coord - temp_current_cut_coords[j - 1];
+                                                if(distance_to_next_cut > this->sEpsilon){
+                                                        _break = true;
+                                                }
+                                        }
+                                        //if point is not on the right of the next cut, then
+                                        //set the upper bound to this cut.
+                                        upper_cut_index = j - 1;
+                                        //set the last part, and mark it as on the left of the last part.
+                                        is_on_left_of_cut = true;
+                                        last_compared_part = j;
+                                        if(_break) break;
+                                }
+                                else {
+                                        //if point is on the right of the cut.
+                                        bool _break = false;
+                                        if(j < num_cuts - 1){
+                                                //check distance to the cut on the left the current cut compared.
+                                                //if point is on the right, then we find the part of the point.
+                                                mj_scalar_t distance_to_next_cut = coord - temp_current_cut_coords[j + 1];
+                                                if(distance_to_next_cut < minus_EPSILON){
+                         _break = true;
+                     }
+                                        }
+
+                                        //if point is not on the left of the next cut, then
+                                        //set the upper bound to this cut.
+                                        lower_cut_index = j + 1;
+                                        //set the last part, and mark it as on the right of the last part.
+                                        is_on_right_of_cut = true;
+                                        last_compared_part = j;
+                                        if(j < 0) throw std::logic_error("Bad setlast_compared_part");
+                                        if(_break) break;
+                                }
+                        }
+
+                        j = (upper_cut_index + lower_cut_index) / 2;
+                }
+                if(!is_inserted){
+                        if(is_on_right_of_cut){
+
+                                //add it to the right of the last compared part.
+                                my_current_part_weights[2 * last_compared_part + 2] += w;
+                                this->assigned_part_ids[i] = 2 * last_compared_part + 2;
+
+                                //update the right closest point of last compared cut.
+                                if(my_current_right_closest[last_compared_part] - coord > this->sEpsilon){
+                                        my_current_right_closest[last_compared_part] = coord;
+                                }
+                                //update the left closest point of the cut on the right of the last compared cut.
+                                if(last_compared_part+1 < num_cuts){
+                                        if(coord - my_current_left_closest[last_compared_part + 1] > this->sEpsilon){
+                                                my_current_left_closest[last_compared_part + 1] = coord;
+                                        }
+                                }
+
+                        }
+                        else if(is_on_left_of_cut){
+
+                                //add it to the left of the last compared part.
+                                my_current_part_weights[2 * last_compared_part] += w;
+                                this->assigned_part_ids[i] = 2 * last_compared_part;
+
+                                //update the left closest point of last compared cut.
+                                if(coord - my_current_left_closest[last_compared_part] > this->sEpsilon){
+                                        my_current_left_closest[last_compared_part] = coord;
+                                }
+                                //update the right closest point of the cut on the left of the last compared cut.
+                                if(last_compared_part-1 >= 0){
+                                        if(my_current_right_closest[last_compared_part -1] - coord > this->sEpsilon){
+                                                my_current_right_closest[last_compared_part -1] = coord;
+                                        }
+                                }
+                        }
+                }
+        }
+
+        // prefix sum computation.
+        //we need prefix sum for each part to determine cut positions.
+        for (size_t i = 1; i < total_part_count; ++i){
+                // check for cuts sharing the same position; all cuts sharing a position
+                // have the same weight == total weight for all cuts sharing the position.
+                // don't want to accumulate that total weight more than once.
+                if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
+                                ZOLTAN2_ABS(temp_current_cut_coords[i / 2] - temp_current_cut_coords[i /2 - 1])
+                < this->sEpsilon){
+                        //i % 2 = 0 when part i represents the cut coordinate.
+                        //if it is a cut, and if the next cut also have the same coordinate, then
+                        //dont addup.
+                        my_current_part_weights[i] = my_current_part_weights[i-2];
+                        continue;
+                }
+                //otherwise do the prefix sum.
+                my_current_part_weights[i] += my_current_part_weights[i-1];
+        }
+}
+
+#endif // HAVE_ZOLTAN2_OMP
 
 /*! \brief Function that reduces the result of multiple threads
  * for left and right closest points and part weights in a single mpi process.
@@ -4599,7 +4687,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  */
 
 #ifdef HAVE_ZOLTAN2_OMP
- 
+
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
@@ -4871,7 +4959,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_part_t num_cuts = num_parts - 1;
 
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel
+#pragma omp parallel  //XXXX
 #endif
         {
                 int me = 0;
@@ -4902,7 +4990,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
                         // this for assumes the static scheduling in mj_1D_part calculation.
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
+#pragma omp for  //XXXX
 #endif
                         for (mj_part_t i = 0; i < num_cuts; ++i){
                                 //the left to be put on the left of the cut.
@@ -4978,7 +5066,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
                 //dont change static scheduler. the static partitioner used later as well.
-#pragma omp for
+#pragma omp for  //XXXX
 #endif
                 for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii){
 
@@ -5118,7 +5206,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
+#pragma omp for  //XXXX
 #endif
                 for(mj_part_t j = 0; j < num_parts; ++j){
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
@@ -5146,7 +5234,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp single
+#pragma omp single  //XXXX
 #endif
                 {
                         //perform prefix sum for num_points in parts.
@@ -5173,7 +5261,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
+#pragma omp for  //XXXX
 #endif
                 for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii){
 #ifdef HAVE_ZOLTAN2_OMP
@@ -5225,6 +5313,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * \param rectilinear_cut_count is the count of cut lines whose balance can be achived via distributing the points in same coordinate to different parts.
  * \param my_num_incomplete_cut is the number of cutlines whose position has not been determined yet. For K > 1 it is the count in a single part (whose cut lines are determined).
  */
+
+#ifdef HAVE_ZOLTAN2_OMP
+
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
@@ -5236,44 +5327,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 const mj_scalar_t &min_coordinate,
                 const mj_scalar_t &global_total_weight,
                 const mj_scalar_t &used_imbalance_tolerance,
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights,
                 Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights,
                 Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_target_weights,
                 Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined,
-#else
-                mj_scalar_t * current_global_part_weights,
-                const mj_scalar_t * current_local_part_weights,
-                const mj_scalar_t *current_part_target_weights,
-                bool *current_cut_line_determined,
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_bounds,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bounds,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_left_closest_points,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_right_closest_points,
-#else
-                mj_scalar_t *current_cut_coordinates,
-                mj_scalar_t *current_cut_upper_bounds,
-                mj_scalar_t *current_cut_lower_bounds,
-                mj_scalar_t *current_global_left_closest_points,
-                mj_scalar_t *current_global_right_closest_points,
-#endif
-
-
-#ifdef HAVE_ZOLTAN2_OMP
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_new_current_cut_coordinates,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_cut_line_weight_to_put_left,
-#else
-                mj_scalar_t * current_cut_lower_bound_weights,
-                mj_scalar_t * current_cut_upper_weights,
-                mj_scalar_t *new_current_cut_coordinates,
-                mj_scalar_t *current_part_cut_line_weight_to_put_left,
-#endif
                 mj_part_t *rectilinear_cut_count,
                 mj_part_t &my_num_incomplete_cut){
 
@@ -5284,59 +5350,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //imbalance for the left and right side of the cut.
         mj_scalar_t imbalance_on_left = 0, imbalance_on_right = 0;
 
-
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp for
-#endif
         for (mj_part_t i = 0; i < num_cuts; i++){
                 //if left and right closest points are not set yet,
                 //set it to the cut itself.
-#ifdef HAVE_ZOLTAN2_OMP
                 if(min_coordinate - kokkos_current_global_left_closest_points(i) > this->sEpsilon)
                         kokkos_current_global_left_closest_points(i) = kokkos_current_cut_coordinates(i);
                 if(kokkos_current_global_right_closest_points(i) - max_coordinate > this->sEpsilon)
                         kokkos_current_global_right_closest_points(i) = kokkos_current_cut_coordinates(i);
-#else
-                if(min_coordinate - current_global_left_closest_points[i] > this->sEpsilon)
-                        current_global_left_closest_points[i] = current_cut_coordinates[i];
-                if(current_global_right_closest_points[i] - max_coordinate > this->sEpsilon)
-                        current_global_right_closest_points[i] = current_cut_coordinates[i];
-#endif
 
         }
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp for
-#endif
         for (mj_part_t i = 0; i < num_cuts; i++){
 
                 if(this->distribute_points_on_cut_lines){
                         //init the weight on the cut.
-#ifdef HAVE_ZOLTAN2_OMP
                         this->kokkos_global_rectilinear_cut_weight(i) = 0;
                         this->kokkos_process_rectilinear_cut_weight(i) = 0;
-#else
-                        this->global_rectilinear_cut_weight[i] = 0;
-                        this->process_rectilinear_cut_weight[i] = 0;
-#endif
                 }
                 //if already determined at previous iterations,
                 //then just write the coordinate to new array, and proceed.
-#ifdef HAVE_ZOLTAN2_OMP
                 if(kokkos_current_cut_line_determined(i)) {
                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-#else
-                if(current_cut_line_determined[i]) {
-                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
-#endif
                         continue;
                 }
 
                 //current weight of the part at the left of the cut line.
-#ifdef HAVE_ZOLTAN2_OMP
                 seen_weight_in_part = kokkos_current_global_part_weights(i * 2);
-#else
-                seen_weight_in_part = current_global_part_weights[i * 2];
-#endif
 
                 /*
                 cout << "seen_weight_in_part:" << i << " is "<< seen_weight_in_part << endl;
@@ -5345,11 +5385,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << endl;
                */
                 //expected ratio
-#ifdef HAVE_ZOLTAN2_OMP
                 expected_weight_in_part = kokkos_current_part_target_weights(i);
-#else
-                expected_weight_in_part = current_part_target_weights[i];
-#endif
                 //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
                 imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
                 //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
@@ -5360,21 +5396,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //if the cut line reaches to desired imbalance.
                 if(is_left_imbalance_valid && is_right_imbalance_valid){
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_current_cut_line_determined(i) = true;
-#else
-                        current_cut_line_determined[i] = true;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                         my_num_incomplete_cut -= 1;
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-#else
-                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
-#endif
                         continue;
                 }
                 else if(imbalance_on_left < 0){
@@ -5385,111 +5411,55 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 //the same coordinate to left and right.
                                 //then check if we can reach to the target weight by including the
                                 //coordinates in the part.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if (kokkos_current_global_part_weights(i * 2 + 1) == expected_weight_in_part){
                                         //if it is we are done.
                                         kokkos_current_cut_line_determined(i) = true;
-#else
-                                if (current_global_part_weights[i * 2 + 1] == expected_weight_in_part){
-                                        //if it is we are done.
-                                        current_cut_line_determined[i] = true;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                                         my_num_incomplete_cut -= 1;
 
                                         //then assign everything on the cut to the left of the cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-#else
-                                        new_current_cut_coordinates [i] = current_cut_coordinates[i];
-#endif
                                         //for this cut all the weight on cut will be put to left.
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_part_cut_line_weight_to_put_left(i) = kokkos_current_local_part_weights(i * 2 + 1) - kokkos_current_local_part_weights(i * 2);
-#else
-                                        current_part_cut_line_weight_to_put_left[i] = current_local_part_weights[i * 2 + 1] - current_local_part_weights[i * 2];
-#endif
                                         continue;
                                 }
-#ifdef HAVE_ZOLTAN2_OMP
                                 else if (kokkos_current_global_part_weights(i * 2 + 1) > expected_weight_in_part){
-#else
-                                else if (current_global_part_weights[i * 2 + 1] > expected_weight_in_part){
-#endif
 
                                         //if the weight is larger than the expected weight,
                                         //then we need to distribute some points to left, some to right.
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_line_determined(i) = true;
-#else
-                                        current_cut_line_determined[i] = true;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                                         *rectilinear_cut_count += 1;
                                         //increase the num cuts to be determined with rectilinear partitioning.
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                                         my_num_incomplete_cut -= 1;
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
                                         this->kokkos_process_rectilinear_cut_weight[i] = kokkos_current_local_part_weights(i * 2 + 1) -
                                                         kokkos_current_local_part_weights(i * 2);
-#else
-                                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
-                                        this->process_rectilinear_cut_weight[i] = current_local_part_weights[i * 2 + 1] -
-                                                        current_local_part_weights[i * 2];
-#endif
                                         continue;
                                 }
                         }
                         //we need to move further right,so set lower bound to current line, and shift it to the closes point from right.
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(i);
-#else
-                        current_cut_lower_bounds[i] = current_global_right_closest_points[i];
-#endif
                         //set the lower bound weight to the weight we have seen.
-
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_current_cut_lower_bound_weights(i) = seen_weight_in_part;
-#else
-                        current_cut_lower_bound_weights[i] = seen_weight_in_part;
-#endif
 
                         //compare the upper bound with what has been found in the last iteration.
                         //we try to make more strict bounds for the cut here.
                         for (mj_part_t ii = i + 1; ii < num_cuts ; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
                                 mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
                                 mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
-#else
-                                mj_scalar_t p_weight = current_global_part_weights[ii * 2];
-                                mj_scalar_t line_weight = current_global_part_weights[ii * 2 + 1];
-#endif
                                 if(p_weight >= expected_weight_in_part){
                                         //if a cut on the right has the expected weight, then we found
                                         //our cut position. Set up and low coordiantes to this new cut coordinate.
                                         //but we need one more iteration to finalize the cut position,
                                         //as wee need to update the part ids.
                                         if(p_weight == expected_weight_in_part){
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
                                                 kokkos_current_cut_upper_weights(i) = p_weight;
-#else
-                                                current_cut_upper_bounds[i] = current_cut_coordinates[ii];
-                                                current_cut_upper_weights[i] = p_weight;
-#endif
-
-
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
                                                 kokkos_current_cut_lower_bound_weights(i) = p_weight;
                                         } else if (p_weight < kokkos_current_cut_upper_weights(i)){
@@ -5497,15 +5467,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 //but lower than my upper bound weight, update upper bound.
                                                 kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
                                                 kokkos_current_cut_upper_weights(i) = p_weight;
-#else
-                                                current_cut_lower_bounds[i] = current_cut_coordinates[ii];
-                                                current_cut_lower_bound_weights[i] = p_weight;
-                                        } else if (p_weight < current_cut_upper_weights[i]){
-                                                //if a part weight is larger then my expected weight,
-                                                //but lower than my upper bound weight, update upper bound.
-                                                current_cut_upper_bounds[i] = current_global_left_closest_points[ii];
-                                                current_cut_upper_weights[i] = p_weight;
-#endif
                                         }
                                         break;
                                 }
@@ -5514,128 +5475,64 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 if(line_weight >= expected_weight_in_part){
                                         //if the line is larger than the expected weight,
                                         //then we need to reach to the balance by distributing coordinates on this line.
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
                                         kokkos_current_cut_upper_weights(i) = line_weight;
-#else
-                                        current_cut_upper_bounds[i] = current_cut_coordinates[ii];
-                                        current_cut_upper_weights[i] = line_weight;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
                                         kokkos_current_cut_lower_bound_weights(i) = p_weight;
-#else
-                                        current_cut_lower_bounds[i] = current_cut_coordinates[ii];
-                                        current_cut_lower_bound_weights[i] = p_weight;
-#endif
                                         break;
                                 }
                                 //if a stricter lower bound is found,
                                 //update the lower bound.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if (p_weight <= expected_weight_in_part && p_weight >= kokkos_current_cut_lower_bound_weights(i)){
                                         kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(ii);
                                         kokkos_current_cut_lower_bound_weights(i) = p_weight;
                                 }
-#else
-                                if (p_weight <= expected_weight_in_part && p_weight >= current_cut_lower_bound_weights[i]){
-                                        current_cut_lower_bounds[i] = current_global_right_closest_points[ii];
-                                        current_cut_lower_bound_weights[i] = p_weight;
-                                }
-#endif
                         }
 
 
                         mj_scalar_t new_cut_position = 0;
                         this->mj_calculate_new_cut_position(
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_upper_bounds(i),
                                         kokkos_current_cut_lower_bounds(i),
                                         kokkos_current_cut_upper_weights(i),
                                         kokkos_current_cut_lower_bound_weights(i),
-#else
-                                        current_cut_upper_bounds[i],
-                                        current_cut_lower_bounds[i],
-                                        current_cut_upper_weights[i],
-                                        current_cut_lower_bound_weights[i],
-#endif
                                         expected_weight_in_part, new_cut_position);
 
                         //if cut line does not move significantly.
                         //then finalize the search.
-#ifdef HAVE_ZOLTAN2_OMP
                         if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
-#else
-                        if (ZOLTAN2_ABS(current_cut_coordinates[i] - new_cut_position) < this->sEpsilon
-#endif
                                 /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/
                                 ){
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_current_cut_line_determined(i) = true;
-#else
-                                current_cut_line_determined[i] = true;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                                 my_num_incomplete_cut -= 1;
 
                                 //set the cut coordinate and proceed.
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-#else
-                                new_current_cut_coordinates[i] = current_cut_coordinates[i];
-#endif
                         } else {
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_new_current_cut_coordinates(i) = new_cut_position;
-#else
-                                new_current_cut_coordinates[i] = new_cut_position;
-#endif
                         }
                 } else {
 
                         //need to move the cut line to left.
                         //set upper bound to current line.
-#ifdef HAVE_ZOLTAN2_OMP
                         kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(i);
                         kokkos_current_cut_upper_weights(i) = seen_weight_in_part;
-#else
-                        current_cut_upper_bounds[i] = current_global_left_closest_points[i];
-                        current_cut_upper_weights[i] = seen_weight_in_part;
-#endif
                         // compare the current cut line weights with previous upper and lower bounds.
                         for (int ii = i - 1; ii >= 0; --ii){
-#ifdef HAVE_ZOLTAN2_OMP
                                 mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
                                 mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
-#else
-                                mj_scalar_t p_weight = current_global_part_weights[ii * 2];
-                                mj_scalar_t line_weight = current_global_part_weights[ii * 2 + 1];
-#endif
                                 if(p_weight <= expected_weight_in_part){
                                         if(p_weight == expected_weight_in_part){
                                                 //if the weight of the part is my expected weight
                                                 //then we find the solution.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
                                                 kokkos_current_cut_upper_weights(i) = p_weight;
-#else
-                                                current_cut_upper_bounds[i] = current_cut_coordinates[ii];
-                                                current_cut_upper_weights[i] = p_weight;
-#endif
-
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
                                                 kokkos_current_cut_lower_bound_weights(i) = p_weight;
-#else
-                                                current_cut_lower_bounds[i] = current_cut_coordinates[ii];
-                                                current_cut_lower_bound_weights[i] = p_weight;
-#endif
                                         }
-#ifdef HAVE_ZOLTAN2_OMP
                                         else if (p_weight > kokkos_current_cut_lower_bound_weights(i)){
                                                 //if found weight is bigger than the lower bound
                                                 //then update the lower bound.
@@ -5651,30 +5548,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                         kokkos_current_cut_upper_weights(i) = line_weight;
                                                 }
                                         }
-#else
-                                        else if (p_weight > current_cut_lower_bound_weights[i]){
-                                                //if found weight is bigger than the lower bound
-                                                //then update the lower bound.
-                                                current_cut_lower_bounds[i] = current_global_right_closest_points[ii];
-                                                current_cut_lower_bound_weights[i] = p_weight;
-
-                                                //at the same time, if weight of line is bigger than the
-                                                //expected weight, then update the upper bound as well.
-                                                //in this case the balance will be obtained by distributing weightss
-                                                //on this cut position.
-                                                if(line_weight > expected_weight_in_part){
-                                                        current_cut_upper_bounds[i] = current_global_right_closest_points[ii];
-                                                        current_cut_upper_weights[i] = line_weight;
-                                                }
-                                        }
-#endif
                                         break;
                                 }
                                 //if the weight of the cut on the left is still bigger than my weight,
                                 //and also if the weight is smaller than the current upper weight,
                                 //or if the weight is equal to current upper weight, but on the left of
                                 // the upper weight, then update upper bound.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if (p_weight >= expected_weight_in_part &&
                                                 (p_weight < kokkos_current_cut_upper_weights(i) ||
                                                                 (p_weight == kokkos_current_cut_upper_weights(i) &&
@@ -5685,62 +5564,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
                                         kokkos_current_cut_upper_weights(i) = p_weight;
                                 }
-#else
-                                if (p_weight >= expected_weight_in_part &&
-                                                (p_weight < current_cut_upper_weights[i] ||
-                                                                (p_weight == current_cut_upper_weights[i] &&
-                                                                                current_cut_upper_bounds[i] > current_global_left_closest_points[ii]
-                                                                )
-                                                )
-                                        ){
-                                        current_cut_upper_bounds[i] = current_global_left_closest_points[ii] ;
-                                        current_cut_upper_weights[i] = p_weight;
-                                }
-#endif
                         }
                         mj_scalar_t new_cut_position = 0;
                         this->mj_calculate_new_cut_position(
-#ifdef HAVE_ZOLTAN2_OMP
                                         kokkos_current_cut_upper_bounds(i),
                                         kokkos_current_cut_lower_bounds(i),
                                         kokkos_current_cut_upper_weights(i),
                                         kokkos_current_cut_lower_bound_weights(i),
-#else
-                                        current_cut_upper_bounds[i],
-                                        current_cut_lower_bounds[i],
-                                        current_cut_upper_weights[i],
-                                        current_cut_lower_bound_weights[i],
-#endif
                                         expected_weight_in_part,
                                         new_cut_position);
 
                         //if cut line does not move significantly.
-#ifdef HAVE_ZOLTAN2_OMP
                         if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
                                         /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/ ){
                                 kokkos_current_cut_line_determined(i) = true;
-#else
-                        if (ZOLTAN2_ABS(current_cut_coordinates[i] - new_cut_position) < this->sEpsilon
-                                        /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/ ){
-                                current_cut_line_determined[i] = true;
-#endif
 
-#ifdef HAVE_ZOLTAN2_OMP
 //XXXX #pragma omp atomic
-#endif
                                 my_num_incomplete_cut -= 1;
                                 //set the cut coordinate and proceed.
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-#else
-                                new_current_cut_coordinates[i] = current_cut_coordinates[i];
-#endif
                         } else {
-#ifdef HAVE_ZOLTAN2_OMP
                                 kokkos_new_current_cut_coordinates(i) = new_cut_position;
-#else
-                                new_current_cut_coordinates[i] = new_cut_position;
-#endif
                         }
                 }
         }
@@ -5749,62 +5593,35 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //communication to determine the ratios of processors for the distribution
         //of coordinates on the cut lines.
-#ifdef HAVE_ZOLTAN2_OMP
         //no need barrier here as it is implicit.
 //XXXX #pragma omp single
-#endif
         {
                 if(*rectilinear_cut_count > 0){
                         try{
                                 Teuchos::scan<int,mj_scalar_t>(
                                                 *comm, Teuchos::REDUCE_SUM,
                                                 num_cuts,
-#ifdef HAVE_ZOLTAN2_OMP
                                                 // Note this is refactored but needs to be improved
                                                 // to avoid the use of direct data() ptr completely.
                                                 this->kokkos_process_rectilinear_cut_weight.data(),
                                                 this->kokkos_global_rectilinear_cut_weight.data()
-#else
-                                                this->process_rectilinear_cut_weight,
-                                                this->global_rectilinear_cut_weight
-#endif
                                 );
                         }
                         Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
 
                         for (mj_part_t i = 0; i < num_cuts; ++i){
                                 //if cut line weight to be distributed.
-#ifdef HAVE_ZOLTAN2_OMP
                                 if(this->kokkos_global_rectilinear_cut_weight(i) > 0) {
-#else
-                                if(this->global_rectilinear_cut_weight[i] > 0) {
-#endif
                                         //expected weight to go to left of the cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                         mj_scalar_t expected_part_weight = kokkos_current_part_target_weights(i);
-#else
-                                        mj_scalar_t expected_part_weight = current_part_target_weights[i];
-#endif
                                         //the weight that should be put to left of the cut.
-#ifdef HAVE_ZOLTAN2_OMP
                                         mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - kokkos_current_global_part_weights(i * 2);
-#else
-                                        mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - current_global_part_weights[i * 2];
-#endif
 
                                         //the weight of the cut in the process
-#ifdef HAVE_ZOLTAN2_OMP
                                         mj_scalar_t my_weight_on_line = this->kokkos_process_rectilinear_cut_weight(i);
-#else
-                                        mj_scalar_t my_weight_on_line = this->process_rectilinear_cut_weight[i];
-#endif
 
                                         //the sum of the cut weights upto this process, including the weight of this process.
-#ifdef HAVE_ZOLTAN2_OMP
                                         mj_scalar_t weight_on_line_upto_process_inclusive = this->kokkos_global_rectilinear_cut_weight(i);
-#else
-                                        mj_scalar_t weight_on_line_upto_process_inclusive = this->global_rectilinear_cut_weight[i];
-#endif
                                         //the space on the left side of the cut after all processes before this process (including this process)
                                         //puts their weights on cut to left.
                                         mj_scalar_t space_to_put_left = necessary_weight_on_line_for_left - weight_on_line_upto_process_inclusive;
@@ -5821,29 +5638,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                          */
                                         if(space_left_to_me < 0){
                                                 //space_left_to_me is negative and i dont need to put anything to left.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_part_cut_line_weight_to_put_left(i) = 0;
-#else
-                                                current_part_cut_line_weight_to_put_left[i] = 0;
-#endif
                                         }
                                         else if(space_left_to_me >= my_weight_on_line){
                                                 //space left to me is bigger than the weight of the processor on cut.
                                                 //so put everything to left.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_part_cut_line_weight_to_put_left(i) = my_weight_on_line;
-#else
-                                                current_part_cut_line_weight_to_put_left[i] = my_weight_on_line;
-#endif
                                                 //cout << "setting current_part_cut_line_weight_to_put_left to my_weight_on_line:" << my_weight_on_line << endl;
                                         }
                                         else {
                                                 //put only the weight as much as the space.
-#ifdef HAVE_ZOLTAN2_OMP
                                                 kokkos_current_part_cut_line_weight_to_put_left(i) = space_left_to_me;
-#else
-                                                current_part_cut_line_weight_to_put_left[i] = space_left_to_me;
-#endif
 
                                                 //cout << "setting current_part_cut_line_weight_to_put_left to space_left_to_me:" << space_left_to_me << endl;
                                         }
@@ -5855,6 +5660,337 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
         }
 }
+
+#else // HAVE_ZOLTAN2_OMP
+
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+          typename mj_part_t,
+          typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+          mj_node_t>::mj_get_new_cut_coordinates(
+                const size_t &num_total_part,
+                const mj_part_t &num_cuts,
+                const mj_scalar_t &max_coordinate,
+                const mj_scalar_t &min_coordinate,
+                const mj_scalar_t &global_total_weight,
+                const mj_scalar_t &used_imbalance_tolerance,
+                mj_scalar_t * current_global_part_weights,
+                const mj_scalar_t * current_local_part_weights,
+                const mj_scalar_t *current_part_target_weights,
+                bool *current_cut_line_determined,
+                mj_scalar_t *current_cut_coordinates,
+                mj_scalar_t *current_cut_upper_bounds,
+                mj_scalar_t *current_cut_lower_bounds,
+                mj_scalar_t *current_global_left_closest_points,
+                mj_scalar_t *current_global_right_closest_points,
+                mj_scalar_t * current_cut_lower_bound_weights,
+                mj_scalar_t * current_cut_upper_weights,
+                mj_scalar_t *new_current_cut_coordinates,
+                mj_scalar_t *current_part_cut_line_weight_to_put_left,
+                mj_part_t *rectilinear_cut_count,
+                mj_part_t &my_num_incomplete_cut){
+
+        //seen weight in the part
+        mj_scalar_t seen_weight_in_part = 0;
+        //expected weight for part.
+        mj_scalar_t expected_weight_in_part = 0;
+        //imbalance for the left and right side of the cut.
+        mj_scalar_t imbalance_on_left = 0, imbalance_on_right = 0;
+
+        for (mj_part_t i = 0; i < num_cuts; i++){
+                //if left and right closest points are not set yet,
+                //set it to the cut itself.
+                if(min_coordinate - current_global_left_closest_points[i] > this->sEpsilon)
+                        current_global_left_closest_points[i] = current_cut_coordinates[i];
+                if(current_global_right_closest_points[i] - max_coordinate > this->sEpsilon)
+                        current_global_right_closest_points[i] = current_cut_coordinates[i];
+
+        }
+        for (mj_part_t i = 0; i < num_cuts; i++){
+
+                if(this->distribute_points_on_cut_lines){
+                        //init the weight on the cut.
+                        this->global_rectilinear_cut_weight[i] = 0;
+                        this->process_rectilinear_cut_weight[i] = 0;
+                }
+                //if already determined at previous iterations,
+                //then just write the coordinate to new array, and proceed.
+                if(current_cut_line_determined[i]) {
+                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
+                        continue;
+                }
+
+                //current weight of the part at the left of the cut line.
+                seen_weight_in_part = current_global_part_weights[i * 2];
+
+                /*
+                cout << "seen_weight_in_part:" << i << " is "<< seen_weight_in_part << endl;
+                cout << "\tcut:" << current_cut_coordinates[i]
+                       << " current_cut_lower_bounds:" << current_cut_lower_bounds[i]
+               << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << endl;
+               */
+                //expected ratio
+                expected_weight_in_part = current_part_target_weights[i];
+                //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
+                imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
+                //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
+                imbalance_on_right = imbalanceOf2(global_total_weight - seen_weight_in_part, global_total_weight - expected_weight_in_part);
+
+                bool is_left_imbalance_valid = ZOLTAN2_ABS(imbalance_on_left) - used_imbalance_tolerance < this->sEpsilon ;
+                bool is_right_imbalance_valid = ZOLTAN2_ABS(imbalance_on_right) - used_imbalance_tolerance < this->sEpsilon;
+
+                //if the cut line reaches to desired imbalance.
+                if(is_left_imbalance_valid && is_right_imbalance_valid){
+                        current_cut_line_determined[i] = true;
+                        my_num_incomplete_cut -= 1;
+                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
+                        continue;
+                }
+                else if(imbalance_on_left < 0){
+                        //if left imbalance < 0 then we need to move the cut to right.
+
+                        if(this->distribute_points_on_cut_lines){
+                                //if it is okay to distribute the coordinate on
+                                //the same coordinate to left and right.
+                                //then check if we can reach to the target weight by including the
+                                //coordinates in the part.
+                                if (current_global_part_weights[i * 2 + 1] == expected_weight_in_part){
+                                        //if it is we are done.
+                                        current_cut_line_determined[i] = true;
+                                        my_num_incomplete_cut -= 1;
+
+                                        //then assign everything on the cut to the left of the cut.
+                                        new_current_cut_coordinates [i] = current_cut_coordinates[i];
+                                        //for this cut all the weight on cut will be put to left.
+                                        current_part_cut_line_weight_to_put_left[i] = current_local_part_weights[i * 2 + 1] - current_local_part_weights[i * 2];
+                                        continue;
+                                }
+                                else if (current_global_part_weights[i * 2 + 1] > expected_weight_in_part){
+
+                                        //if the weight is larger than the expected weight,
+                                        //then we need to distribute some points to left, some to right.
+                                        current_cut_line_determined[i] = true;
+                                        *rectilinear_cut_count += 1;
+                                        //increase the num cuts to be determined with rectilinear partitioning.
+                                        my_num_incomplete_cut -= 1;
+                                        new_current_cut_coordinates[i] = current_cut_coordinates[i];
+                                        this->process_rectilinear_cut_weight[i] = current_local_part_weights[i * 2 + 1] -
+                                                        current_local_part_weights[i * 2];
+                                        continue;
+                                }
+                        }
+                        //we need to move further right,so set lower bound to current line, and shift it to the closes point from right.
+                        current_cut_lower_bounds[i] = current_global_right_closest_points[i];
+                        //set the lower bound weight to the weight we have seen.
+                        current_cut_lower_bound_weights[i] = seen_weight_in_part;
+
+                        //compare the upper bound with what has been found in the last iteration.
+                        //we try to make more strict bounds for the cut here.
+                        for (mj_part_t ii = i + 1; ii < num_cuts ; ++ii){
+                                mj_scalar_t p_weight = current_global_part_weights[ii * 2];
+                                mj_scalar_t line_weight = current_global_part_weights[ii * 2 + 1];
+                                if(p_weight >= expected_weight_in_part){
+                                        //if a cut on the right has the expected weight, then we found
+                                        //our cut position. Set up and low coordiantes to this new cut coordinate.
+                                        //but we need one more iteration to finalize the cut position,
+                                        //as wee need to update the part ids.
+                                        if(p_weight == expected_weight_in_part){
+                                                current_cut_upper_bounds[i] = current_cut_coordinates[ii];
+                                                current_cut_upper_weights[i] = p_weight;
+                                                current_cut_lower_bounds[i] = current_cut_coordinates[ii];
+                                                current_cut_lower_bound_weights[i] = p_weight;
+                                        } else if (p_weight < current_cut_upper_weights[i]){
+                                                //if a part weight is larger then my expected weight,
+                                                //but lower than my upper bound weight, update upper bound.
+                                                current_cut_upper_bounds[i] = current_global_left_closest_points[ii];
+                                                current_cut_upper_weights[i] = p_weight;
+                                        }
+                                        break;
+                                }
+                                //if comes here then pw < ew
+                                //then compare the weight against line weight.
+                                if(line_weight >= expected_weight_in_part){
+                                        //if the line is larger than the expected weight,
+                                        //then we need to reach to the balance by distributing coordinates on this line.
+                                        current_cut_upper_bounds[i] = current_cut_coordinates[ii];
+                                        current_cut_upper_weights[i] = line_weight;
+                                        current_cut_lower_bounds[i] = current_cut_coordinates[ii];
+                                        current_cut_lower_bound_weights[i] = p_weight;
+                                        break;
+                                }
+                                //if a stricter lower bound is found,
+                                //update the lower bound.
+                                if (p_weight <= expected_weight_in_part && p_weight >= current_cut_lower_bound_weights[i]){
+                                        current_cut_lower_bounds[i] = current_global_right_closest_points[ii];
+                                        current_cut_lower_bound_weights[i] = p_weight;
+                                }
+                        }
+
+
+                        mj_scalar_t new_cut_position = 0;
+                        this->mj_calculate_new_cut_position(
+                                        current_cut_upper_bounds[i],
+                                        current_cut_lower_bounds[i],
+                                        current_cut_upper_weights[i],
+                                        current_cut_lower_bound_weights[i],
+                                        expected_weight_in_part, new_cut_position);
+
+                        //if cut line does not move significantly.
+                        //then finalize the search.
+                        if (ZOLTAN2_ABS(current_cut_coordinates[i] - new_cut_position) < this->sEpsilon
+                                /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/
+                                ){
+                                current_cut_line_determined[i] = true;
+                                my_num_incomplete_cut -= 1;
+
+                                //set the cut coordinate and proceed.
+                                new_current_cut_coordinates[i] = current_cut_coordinates[i];
+                        } else {
+                                new_current_cut_coordinates[i] = new_cut_position;
+                        }
+                } else {
+
+                        //need to move the cut line to left.
+                        //set upper bound to current line.
+                        current_cut_upper_bounds[i] = current_global_left_closest_points[i];
+                        current_cut_upper_weights[i] = seen_weight_in_part;
+                        // compare the current cut line weights with previous upper and lower bounds.
+                        for (int ii = i - 1; ii >= 0; --ii){
+                                mj_scalar_t p_weight = current_global_part_weights[ii * 2];
+                                mj_scalar_t line_weight = current_global_part_weights[ii * 2 + 1];
+                                if(p_weight <= expected_weight_in_part){
+                                        if(p_weight == expected_weight_in_part){
+                                                //if the weight of the part is my expected weight
+                                                //then we find the solution.
+                                                current_cut_upper_bounds[i] = current_cut_coordinates[ii];
+                                                current_cut_upper_weights[i] = p_weight;
+                                                current_cut_lower_bounds[i] = current_cut_coordinates[ii];
+                                                current_cut_lower_bound_weights[i] = p_weight;
+                                        }
+                                        else if (p_weight > current_cut_lower_bound_weights[i]){
+                                                //if found weight is bigger than the lower bound
+                                                //then update the lower bound.
+                                                current_cut_lower_bounds[i] = current_global_right_closest_points[ii];
+                                                current_cut_lower_bound_weights[i] = p_weight;
+
+                                                //at the same time, if weight of line is bigger than the
+                                                //expected weight, then update the upper bound as well.
+                                                //in this case the balance will be obtained by distributing weightss
+                                                //on this cut position.
+                                                if(line_weight > expected_weight_in_part){
+                                                        current_cut_upper_bounds[i] = current_global_right_closest_points[ii];
+                                                        current_cut_upper_weights[i] = line_weight;
+                                                }
+                                        }
+                                        break;
+                                }
+                                //if the weight of the cut on the left is still bigger than my weight,
+                                //and also if the weight is smaller than the current upper weight,
+                                //or if the weight is equal to current upper weight, but on the left of
+                                // the upper weight, then update upper bound.
+                                if (p_weight >= expected_weight_in_part &&
+                                                (p_weight < current_cut_upper_weights[i] ||
+                                                                (p_weight == current_cut_upper_weights[i] &&
+                                                                                current_cut_upper_bounds[i] > current_global_left_closest_points[ii]
+                                                                )
+                                                )
+                                        ){
+                                        current_cut_upper_bounds[i] = current_global_left_closest_points[ii] ;
+                                        current_cut_upper_weights[i] = p_weight;
+                                }
+                        }
+                        mj_scalar_t new_cut_position = 0;
+                        this->mj_calculate_new_cut_position(
+                                        current_cut_upper_bounds[i],
+                                        current_cut_lower_bounds[i],
+                                        current_cut_upper_weights[i],
+                                        current_cut_lower_bound_weights[i],
+                                        expected_weight_in_part,
+                                        new_cut_position);
+
+                        //if cut line does not move significantly.
+                        if (ZOLTAN2_ABS(current_cut_coordinates[i] - new_cut_position) < this->sEpsilon
+                                        /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/ ){
+                                current_cut_line_determined[i] = true;
+                                my_num_incomplete_cut -= 1;
+                                //set the cut coordinate and proceed.
+                                new_current_cut_coordinates[i] = current_cut_coordinates[i];
+                        } else {
+                                new_current_cut_coordinates[i] = new_cut_position;
+                        }
+                }
+        }
+
+        { // This unnecessary bracket works around a compiler bug in NVCC when enabling OpenMP as well
+
+        //communication to determine the ratios of processors for the distribution
+        //of coordinates on the cut lines.
+        {
+                if(*rectilinear_cut_count > 0){
+                        try{
+                                Teuchos::scan<int,mj_scalar_t>(
+                                                *comm, Teuchos::REDUCE_SUM,
+                                                num_cuts,
+                                                this->process_rectilinear_cut_weight,
+                                                this->global_rectilinear_cut_weight
+                                );
+                        }
+                        Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
+
+                        for (mj_part_t i = 0; i < num_cuts; ++i){
+                                //if cut line weight to be distributed.
+                                if(this->global_rectilinear_cut_weight[i] > 0) {
+                                        //expected weight to go to left of the cut.
+                                        mj_scalar_t expected_part_weight = current_part_target_weights[i];
+                                        //the weight that should be put to left of the cut.
+                                        mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - current_global_part_weights[i * 2];
+
+                                        //the weight of the cut in the process
+                                        mj_scalar_t my_weight_on_line = this->process_rectilinear_cut_weight[i];
+
+                                        //the sum of the cut weights upto this process, including the weight of this process.
+                                        mj_scalar_t weight_on_line_upto_process_inclusive = this->global_rectilinear_cut_weight[i];
+
+                                        //the space on the left side of the cut after all processes before this process (including this process)
+                                        //puts their weights on cut to left.
+                                        mj_scalar_t space_to_put_left = necessary_weight_on_line_for_left - weight_on_line_upto_process_inclusive;
+                                        //add my weight to this space to find out how much space is left to me.
+                                        mj_scalar_t space_left_to_me = space_to_put_left + my_weight_on_line;
+
+                                        /*
+                                        cout << "expected_part_weight:" << expected_part_weight
+                                                        << " necessary_weight_on_line_for_left:" << necessary_weight_on_line_for_left
+                                                        << " my_weight_on_line" << my_weight_on_line
+                                                        << " weight_on_line_upto_process_inclusive:" << weight_on_line_upto_process_inclusive
+                                                        << " space_to_put_left:" << space_to_put_left
+                                                        << " space_left_to_me" << space_left_to_me << endl;
+                                         */
+                                        if(space_left_to_me < 0){
+                                                //space_left_to_me is negative and i dont need to put anything to left.
+                                                current_part_cut_line_weight_to_put_left[i] = 0;
+                                        }
+                                        else if(space_left_to_me >= my_weight_on_line){
+                                                //space left to me is bigger than the weight of the processor on cut.
+                                                //so put everything to left.
+                                                current_part_cut_line_weight_to_put_left[i] = my_weight_on_line;
+                                                //cout << "setting current_part_cut_line_weight_to_put_left to my_weight_on_line:" << my_weight_on_line << endl;
+                                        }
+                                        else {
+                                                //put only the weight as much as the space.
+                                                current_part_cut_line_weight_to_put_left[i] = space_left_to_me;
+
+                                                //cout << "setting current_part_cut_line_weight_to_put_left to space_left_to_me:" << space_left_to_me << endl;
+                                        }
+
+                                }
+                        }
+                        *rectilinear_cut_count = 0;
+                }
+        }
+        }
+}
+
+#endif // HAVE_ZOLTAN2_OMP
 
 /*! \brief Function fills up the num_points_in_all_processor_parts, so that
  * it has the number of coordinates in each processor of each part.
