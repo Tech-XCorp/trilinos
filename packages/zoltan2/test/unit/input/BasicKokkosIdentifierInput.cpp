@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
     fail = 5;
   }
 
-  Kokkos::View<const zgno_t *> globalIdsIn;
+  Kokkos::View<const zgno_t *, znode_t::device_type> globalIdsIn;
   Kokkos::View<zscalar_t *> weightsIn[nWeights];
 
   ia.getIDsKokkosView(globalIdsIn);
