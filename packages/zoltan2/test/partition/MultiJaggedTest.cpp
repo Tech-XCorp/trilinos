@@ -1293,12 +1293,12 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-int main(int argc, char *argv[])
+int mainX(int argc, char *argv[])
 {
 // TEMPORARY TEST JUST A SINGLE THREAD FOR DEBUGGING
 #ifdef HAVE_ZOLTAN2_OMP
- omp_set_dynamic(0);     // Explicitly disable dynamic teams
- omp_set_num_threads(1); // Use 1 threads for all consecutive parallel regions
+// omp_set_dynamic(0);     // Explicitly disable dynamic teams
+// omp_set_num_threads(2); // Use 1 threads for all consecutive parallel regions
 #endif
 
     Teuchos::GlobalMPISession session(&argc, &argv);
@@ -1418,4 +1418,14 @@ int main(int argc, char *argv[])
 
     Kokkos::finalize ();
     return 0;
+}
+
+int main(int argc, char *argv[])
+{
+  for(int n = 0; n < 1000; ++n) {
+    int code = mainX(argc, argv);
+    if(code != 0) std::abort();
+    printf("####################################### Completed main: %d\n", n);
+  }
+  return 0;
 }
