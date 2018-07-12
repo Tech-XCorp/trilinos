@@ -862,12 +862,14 @@ int testFromDataFile(
     // Compare with MultiVectorAdapter result
     for (inputAdapter_t::lno_t i = 0; i < bvlen; i++) {
       if (problem->getSolution().getPartListView()[i] !=
-          bvproblem->getSolution().getPartListView()[i])
+          bvproblem->getSolution().getPartListView()[i]) {
         cout << bvme << " " << i << " "
              << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
              << ": XMV " << problem->getSolution().getPartListView()[i]
              << "; BMV " << bvproblem->getSolution().getPartListView()[i]
              << "  :  FAIL" << endl;
+          ++ierr;
+        }
     }
 
     delete [] bvgids;
@@ -875,7 +877,7 @@ int testFromDataFile(
     delete [] bvtpetravectors;
     delete bvproblem;
     }
-
+    
     if (coordsConst->getGlobalLength() < 40) {
         int len = coordsConst->getLocalLength();
         const inputAdapter_t::part_t *zparts =
@@ -901,7 +903,7 @@ int testFromDataFile(
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr = run_pointAssign_tests<inputAdapter_t>(problem, coords);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, coords);
     }
 
@@ -1293,14 +1295,8 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-int mainX(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-// TEMPORARY TEST JUST A SINGLE THREAD FOR DEBUGGING
-#ifdef HAVE_ZOLTAN2_OMP
-// omp_set_dynamic(0);     // Explicitly disable dynamic teams
-// omp_set_num_threads(2); // Use 1 threads for all consecutive parallel regions
-#endif
-
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
     //cout << argv << endl;
@@ -1418,14 +1414,4 @@ int mainX(int argc, char *argv[])
 
     Kokkos::finalize ();
     return 0;
-}
-
-int main(int argc, char *argv[])
-{
-  for(int n = 0; n < 1000; ++n) {
-    int code = mainX(argc, argv);
-    if(code != 0) std::abort();
-    printf("####################################### Completed main: %d\n", n);
-  }
-  return 0;
 }

@@ -3691,7 +3691,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           Kokkos::subview(this->kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
-
+team_member.team_barrier();  
         Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
@@ -3714,9 +3714,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
           }
         });
-
+team_member.team_barrier();  
         int iteration = 0;
+    team_member.team_barrier();  
         while (view_total_incomplete_cut_count(0) != 0){
+    team_member.team_barrier();  
             iteration += 1;
             mj_part_t concurrent_cut_shifts = 0;
             size_t total_part_shift = 0;
@@ -3782,7 +3784,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 concurrent_cut_shifts += num_cuts;
                 total_part_shift += total_part_count;
             }
-        
+        team_member.team_barrier();  
             //sum up the results of threads
             this->mj_accumulate_thread_results(
                 num_partitioning_in_current_dim,
@@ -4069,8 +4071,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         current_cut_status,
                         my_current_part_weights,
                         my_current_left_closest,
-                        my_current_right_closest,
-                        team_member);
+                        my_current_right_closest);
                 }
 
                 concurrent_cut_shifts += num_cuts;
