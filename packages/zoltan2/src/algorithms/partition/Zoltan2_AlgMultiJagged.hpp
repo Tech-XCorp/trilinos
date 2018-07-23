@@ -3437,7 +3437,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         current_concurrent_num_parts,
                                         current_concurrent_num_parts);
 #ifdef HAVE_ZOLTAN2_OMP
-                throw std::logic_error("To do - refactor in progresss - convert to kokkos");
+                try{
+                        reduceAll<int, mj_scalar_t>(
+                                        *(this->comm),
+                                        reductionOp,
+                                        3 * current_concurrent_num_parts,
+                                        // TODO: Note this is refactored but needs to be improved
+                                        // to avoid the use of direct data() ptr completely.
+                                        kokkos_local_min_max_total.data(),
+                                        kokkos_global_min_max_total.data());
+                }
+                Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
 #else
                 try{
                         reduceAll<int, mj_scalar_t>(
@@ -3772,6 +3782,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_scalar_t min_coord = kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
 
+                    this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights()");
+
                     // compute part weights using existing cuts
                     this->mj_1D_part_get_thread_part_weights(
                         total_part_count,
@@ -3787,6 +3799,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         kokkos_my_current_left_closest,
                         kokkos_my_current_right_closest,
                         team_member);
+
+                    this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights()");
                 }
 
                 concurrent_cut_shifts += num_cuts;
@@ -3803,7 +3817,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             //now sum up the results of mpi processors.
             Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
                 if(this->comm->getSize() > 1){
-                        throw std::logic_error("Not refactored for global_total_part_weight_left_right_closests. TODO.");
+                        // TODO: Remove use of data() - refactor in progress
+                        reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
+                                        view_total_reduction_size(0),
+                                        this->kokkos_total_part_weight_left_right_closests.data(),
+                                        this->kokkos_global_total_part_weight_left_right_closests.data());
                 }
                 else {
                         // TODO: Optimize
@@ -5645,7 +5663,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 Teuchos::scan<int,mj_scalar_t>(
                                                 *comm, Teuchos::REDUCE_SUM,
                                                 num_cuts,
-                                                // Note this is refactored but needs to be improved
+                                                // TODO: Note this is refactored but needs to be improved
                                                 // to avoid the use of direct data() ptr completely.
                                                 this->kokkos_process_rectilinear_cut_weight.data(),
                                                 this->kokkos_global_rectilinear_cut_weight.data()
@@ -7051,7 +7069,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //migrate gnos.
                 ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me This will cause the parallel tests to fail if OpenMP is on!");
+                ArrayView<mj_gno_t> sent_gnos(this->kokkos_current_mj_gnos.data(), this->num_local_coords);
+                distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+                this->kokkos_current_mj_gnos =
+                  Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", num_incoming_gnos);
+                memcpy(
+                                this->kokkos_current_mj_gnos.data(),
+                                received_gnos.getRawPtr(),
+                                num_incoming_gnos * sizeof(mj_gno_t));
 #else
                 ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
                 distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
@@ -7067,7 +7092,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //migrate coordinates
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for coords. This will cause the parallel tests to fail if OpenMP is on!");
+        for (int i = 0; i < this->coord_dim; ++i){
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> sent_subview_kokkos_mj_coordinates =
+                  Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, i);
+                ArrayView<mj_scalar_t> sent_coord(sent_subview_kokkos_mj_coordinates.data(), this->num_local_coords);
+                ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
+                distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> subview_kokkos_mj_coordinates =
+                  Kokkos::subview(kokkos_mj_coordinates, Kokkos::ALL, i);
+                memcpy(
+                                subview_kokkos_mj_coordinates.data(),
+                                received_coord.getRawPtr(),
+                                num_incoming_gnos * sizeof(mj_scalar_t));
+        }
 #else
         for (int i = 0; i < this->coord_dim; ++i){
 
@@ -7085,7 +7122,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //migrate weights.
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for weights. This will cause the parallel tests to fail if OpenMP is on!");
+        for (int i = 0; i < this->num_weights_per_coord; ++i){
+                // TODO: How to optimize this better to use layouts properly
+                ArrayRCP<mj_scalar_t> sent_weight(num_incoming_gnos);
+                for(int n = 0; n < num_incoming_gnos; ++n) {
+                  sent_weight[n] = this->kokkos_mj_weights(i,n);
+                }
+                ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
+                distributor.doPostsAndWaits<mj_scalar_t>(sent_weight(), 1, received_weight());
+                for(int n = 0; n < num_incoming_gnos; ++n) {
+                  this->kokkos_mj_weights(i,n) = received_weight[n];
+                }
+        }
 #else
         for (int i = 0; i < this->num_weights_per_coord; ++i){
 
@@ -7102,7 +7150,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for migrate the owners. This will cause the parallel tests to fail if OpenMP is on!");
+        {
+                ArrayView<int> sent_owners(this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
+                ArrayRCP<int> received_owners(num_incoming_gnos);
+                distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
+                this->kokkos_owner_of_coordinate =
+                  Kokkos::View<int *, typename mj_node_t::device_type>
+                   ("owner_of_coordinate", num_incoming_gnos);
+                memcpy(
+                                                this->kokkos_owner_of_coordinate.data(),
+                                                received_owners.getRawPtr(),
+                                                num_incoming_gnos * sizeof(int));
+        }
 #else
         {
                 //migrate the owners of the coordinates
@@ -7122,7 +7181,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //we need the part assigment arrays as well, since
         //there will be multiple parts in processor.
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for migrate the part ids. This will cause the parallel tests to fail if OpenMP is on!");
+        if(num_procs < num_parts){
+                ArrayView<mj_part_t> sent_partids(this->kokkos_assigned_part_ids.data(), this->num_local_coords);
+                ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
+                distributor.doPostsAndWaits<mj_part_t>(sent_partids, 1, received_partids());
+                this->kokkos_assigned_part_ids =
+                  Kokkos::View<mj_part_t *, typename mj_node_t::device_type>
+                   ("kokkos_assigned_part_ids", num_incoming_gnos);
+                memcpy(
+                                this->kokkos_assigned_part_ids.data(),
+                                received_partids.getRawPtr(),
+                                num_incoming_gnos * sizeof(mj_part_t));
+        }
+        else {
+                this->kokkos_assigned_part_ids =
+                  Kokkos::View<mj_part_t *, typename mj_node_t::device_type>
+                   ("kokkos_assigned_part_ids", num_incoming_gnos);
+        }
 #else
         if(num_procs < num_parts){
                 ArrayView<mj_part_t> sent_partids(this->assigned_part_ids, this->num_local_coords);
@@ -8022,11 +8097,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         freeArray<mj_gno_t>(this->current_mj_gnos);
         this->current_mj_gnos = incoming_gnos;
 
-        mj_part_t *incoming_partIds = allocMemory< mj_part_t>(incoming);
 
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for part ids! This will cause the parallel tests to fail if OpenMP is on!");
+        Kokkos::View<mj_part_t*, typename mj_node_t::device_type>
+          kokkos_incoming_partIds(incoming);
+        message_tag++;
+        ierr = Zoltan_Comm_Do( plan, message_tag, (char *) this->kokkos_assigned_part_ids.data(),
+                        sizeof(mj_part_t), (char *) kokkos_incoming_partIds.data());
+        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+        this->kokkos_assigned_part_ids = kokkos_incoming_partIds;
 #else
+        mj_part_t *incoming_partIds = allocMemory< mj_part_t>(incoming);
+
         message_tag++;
         ierr = Zoltan_Comm_Do( plan, message_tag, (char *) this->assigned_part_ids,
                         sizeof(mj_part_t), (char *) incoming_partIds);
@@ -8047,22 +8129,29 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif  // !ENABLE_ZOLTAN_MIGRATION
       {
         //if data is migrated, then send part numbers to the original owners.
-#ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for owners! This will cause the parallel tests to fail if OpenMP is on!");
-#else
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating");
         Tpetra::Distributor distributor(this->mj_problemComm);
+#ifdef HAVE_ZOLTAN2_OMP
+        ArrayView<const mj_part_t> owners_of_coords(this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
+#else
         ArrayView<const mj_part_t> owners_of_coords(this->owner_of_coordinate, this->num_local_coords);
+#endif
+
         mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating" );
-
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
         //migrate gnos to actual owners.
         ArrayRCP<mj_gno_t> received_gnos(incoming);
-#endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me! This will cause the parallel tests to fail if OpenMP is on!");
+        ArrayView<mj_gno_t> sent_gnos(this->kokkos_current_mj_gnos.data(), this->num_local_coords);
+        distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+        this->kokkos_current_mj_gnos =
+          Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>
+          ("kokkos_current_mj_gnos", incoming);
+        memcpy( this->kokkos_current_mj_gnos.data(),
+                received_gnos.getRawPtr(),
+                incoming * sizeof(mj_gno_t));
 #else
         ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos, this->num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
@@ -8074,7 +8163,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #endif
 
 #ifdef HAVE_ZOLTAN2_OMP
-        throw std::logic_error("Restore me for owners! This will cause the parallel tests to fail if OpenMP is on!");
+                //migrate part ids to actual owners.
+        ArrayView<mj_part_t> sent_partids(this->kokkos_assigned_part_ids.data(), this->num_local_coords);
+        ArrayRCP<mj_part_t> received_partids(incoming);
+        distributor.doPostsAndWaits<mj_part_t>(sent_partids, 1, received_partids());
+        this->kokkos_assigned_part_ids =
+          Kokkos::View<mj_part_t*, typename mj_node_t::device_type>
+          ("kokkos_assigned_part_ids", incoming);
+        memcpy( this->kokkos_assigned_part_ids.data(),
+                received_partids.getRawPtr(),
+                incoming * sizeof(mj_part_t));
 #else
                 //migrate part ids to actual owners.
         ArrayView<mj_part_t> sent_partids(this->assigned_part_ids, this->num_local_coords);
@@ -8085,10 +8183,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         memcpy( this->assigned_part_ids,
                 received_partids.getRawPtr(),
                 incoming * sizeof(mj_part_t));
-
+#endif
         this->num_local_coords = incoming;
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
-#endif
       }
     }
 
@@ -10110,7 +10207,6 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
         this->num_threads = Adapter::node_t::execution_space::thread_pool_size();
 #endif
 #endif
-
 }
 
 /////////////////////////////////////////////////////////////////////////////
