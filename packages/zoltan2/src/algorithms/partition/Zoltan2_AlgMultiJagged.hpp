@@ -1659,11 +1659,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               Teuchos::rcp_const_cast<Comm<int> >(this->mj_problemComm);
         this->myActualRank = this->myRank = 1;
 
-#ifdef HAVE_ZOLTAN2_OMP
-        //int actual_num_threads = omp_get_num_threads();
-        //omp_set_num_threads(1);
-#endif
-
     this->divide_to_prime_first = divide_to_prime_first_;
     //weights are uniform for task mapping
 
@@ -2858,7 +2853,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //initial configuration, set each pointer-i to i.
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
-          Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
           KOKKOS_LAMBDA (const int i) {
             this->kokkos_coordinate_permutations(i) = i;
           }
@@ -3059,7 +3054,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       "coord", this->num_local_coords, this->coord_dim);
     for (int i=0; i < this->coord_dim; i++){
       Kokkos::parallel_for(
-        Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
         KOKKOS_LAMBDA (const int j) {
           coord(j,i) = this->kokkos_mj_coordinates(j,i);
         }
@@ -3081,7 +3076,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       "weights", this->num_local_coords, this->num_weights_per_coord);
     for (int i=0; i < this->num_weights_per_coord; i++){
       Kokkos::parallel_for(
-        Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
         KOKKOS_LAMBDA (const int j) {
           weights(j,i) = this->kokkos_mj_weights(j,i);
         }
@@ -3091,14 +3086,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_current_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
     Kokkos::parallel_for(
-      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
       }
     );
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
     Kokkos::parallel_for(
-      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, this->num_local_coords),
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         this->kokkos_owner_of_coordinate(j) = this->myActualRank;
       }
@@ -3305,7 +3300,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-      int my_thread_id = omp_get_thread_num();
+      int my_thread_id = team_member.team_rank();
       this->kokkos_max_min_coords(my_thread_id) = my_thread_min_coord;
       this->kokkos_max_min_coords(my_thread_id + this->num_threads) =
         my_thread_max_coord;
@@ -3616,7 +3611,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     if(ZOLTAN2_ABS(coordinate_range) < this->sEpsilon ){
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
-          Kokkos::RangePolicy<Kokkos::OpenMP, int> (coordinate_begin_index, coordinate_end_index),
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (coordinate_begin_index, coordinate_end_index),
           KOKKOS_LAMBDA (const int ii) {
             kokkos_mj_part_ids(mj_current_coordinate_permutations[ii]) = 0;
           }
@@ -3635,7 +3630,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
-          Kokkos::RangePolicy<Kokkos::OpenMP, int> (coordinate_begin_index, coordinate_end_index),
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (coordinate_begin_index, coordinate_end_index),
           KOKKOS_LAMBDA (const int ii) {
             mj_lno_t iii = mj_current_coordinate_permutations[ii];
             mj_part_t pp = mj_part_t((mj_current_dim_coords[iii] - min_coordinate) / slice);
@@ -8056,7 +8051,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef HAVE_ZOLTAN2_OMP
     Kokkos::parallel_for(
-      Kokkos::RangePolicy<Kokkos::OpenMP, int> (0, current_num_parts),
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, current_num_parts),
       KOKKOS_LAMBDA (const int i) {
         mj_lno_t begin = 0;
         mj_lno_t end = this->kokkos_part_xadj(i);

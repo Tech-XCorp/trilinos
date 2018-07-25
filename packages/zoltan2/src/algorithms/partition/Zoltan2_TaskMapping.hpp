@@ -836,27 +836,35 @@ public:
  *  \param arrSize the size of the array.
  *  \param val    the pointer to the value to be filled. if given NULL, the filling performs arr[i] = i.
  */
-template <typename T>
+template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+      KOKKOS_LAMBDA (const int i) {
+        arr[i] = i;
+    });
+#else
     for(size_t i = 0; i < arrSize; ++i){
       arr[i] = i;
     }
-
+#endif
   }
   else {
     T v = *val;
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+      KOKKOS_LAMBDA (const int i) {
+        arr[i] = v;
+    });
+#else
     for(size_t i = 0; i < arrSize; ++i){
       //cout << "writing to i:" << i << " arr:" << arrSize << endl;
       arr[i] = v;
     }
+#endif
   }
 }
 
@@ -1066,7 +1074,7 @@ public:
     }
     /*
   //fill array.
-  fillContinousArray<part_t>(proc_permutation, nprocs, NULL);
+  fillContinousArray<part_t, node_t>(proc_permutation, nprocs, NULL);
   int _u_umpa_seed = 847449649;
   srand (time(NULL));
   int a = rand() % 1000 + 1;
@@ -1187,7 +1195,7 @@ public:
 
 
     part_t invalid = 0;
-    fillContinousArray<part_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
+    fillContinousArray<part_t, node_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
 
     //obtain the number of parts that should be divided.
     part_t num_parts = MINOF(this->no_procs, this->no_tasks);
@@ -1241,7 +1249,7 @@ public:
       used_num_procs = this->no_tasks;
     }
     else {
-      fillContinousArray<part_t>(proc_adjList,this->no_procs, NULL);
+      fillContinousArray<part_t, node_t>(proc_adjList,this->no_procs, NULL);
     }
 
     int myPermutation = myRank % permutations; //the index of the permutation
@@ -1408,7 +1416,7 @@ public:
     part_t *task_xadj = allocMemory<part_t> (num_parts+1);
     part_t *task_adjList = allocMemory<part_t>(this->no_tasks);
     //fill task_adjList st: task_adjList[i] <- i.
-    fillContinousArray<part_t>(task_adjList,this->no_tasks, NULL);
+    fillContinousArray<part_t, node_t>(task_adjList,this->no_tasks, NULL);
 
     //get the permutation order from the task permutation index.
     ithPermutation<int>(this->task_coord_dim, myTaskPerm, permutation);

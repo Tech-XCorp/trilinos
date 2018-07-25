@@ -467,7 +467,7 @@ public:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t>
+template <typename T, typename lno_t, typename gno_t, typename node_t>
 class CoordinateDistribution{
 public:
   gno_t numPoints;
@@ -481,7 +481,7 @@ public:
     numPoints(np_), dimension(dim), requested(0), assignedPrevious(0),
     worldSize(wSize){}
 
-  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int &state) = 0;
+  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int state) = 0;
   virtual T getXCenter() = 0;
   virtual T getXRadius() =0;
 
@@ -502,24 +502,43 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-//#ifdef HAVE_ZOLTAN2_OMP
-//#pragma omp parallel for
-//#endif
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel
-#endif
+    int tsize = node_t::execution_space::thread_pool_size();
+    typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+    Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
+    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+      int me = team_member.team_rank();
+      unsigned int state = stateBegin + me * slice/(tsize);
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(
+        team_member, 0, requestedPointcount),
+        KOKKOS_LAMBDA(int & cnt) {
+            lno_t iteration = 0;
+            while(1){
+              if(++iteration > MAX_ITER_ALLOWED) {
+                throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
+              }
+              CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
+              bool isInHole = false;
+              for(lno_t i = 0; i < holeCount; ++i){
+                if(holes[i][0].isInArea(p)){
+                  isInHole = true;
+                  break;
+                }
+              }
+              if(isInHole) continue;
+              points[cnt].x = p.x;
+
+              points[cnt].y = p.y;
+              points[cnt].z = p.z;
+              break;
+            }
+      });
+    });
+#else
     {
       int me = 0;
       int tsize = 1;
-#ifdef HAVE_ZOLTAN2_OMP
-      me = omp_get_thread_num();
-      tsize = omp_get_num_threads();
-#endif
       unsigned int state = stateBegin + me * slice/(tsize);
-
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
-#endif
       for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
         lno_t iteration = 0;
         while(1){
@@ -544,6 +563,8 @@ public:
         }
       }
     }
+#endif
+
 //#pragma omp parallel
       /*
     {
@@ -590,16 +611,45 @@ public:
 
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
+    
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel
-#endif
-    {
+    int tsize = node_t::execution_space::thread_pool_size();
+    typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+    Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
+    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+      int me = team_member.team_rank();
+      unsigned int state = stateBegin + me * (slice/(tsize));
+      Kokkos::parallel_for(Kokkos::TeamThreadRange(
+        team_member, 0, requestedPointcount),
+        KOKKOS_LAMBDA(int & cnt) {
+          lno_t iteration = 0;
+          while(1){
+            if(++iteration > MAX_ITER_ALLOWED) {
+              throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
+            }
+            CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
+            bool isInHole = false;
+            for(lno_t i = 0; i < holeCount; ++i){
+              if(holes[i][0].isInArea(p)){
+                isInHole = true;
+                break;
+              }
+            }
+            if(isInHole) continue;
+            coords[0][cnt + tindex] = p.x;
+            if(this->dimension > 1){
+              coords[1][cnt + tindex] = p.y;
+              if(this->dimension > 2){
+                coords[2][cnt + tindex] = p.z;
+              }
+            }
+            break;
+          }
+      });
+    });
+#else
       int me = 0;
       int tsize = 1;
-#ifdef HAVE_ZOLTAN2_OMP
-      me = omp_get_thread_num();
-      tsize = omp_get_num_threads();
-#endif
       unsigned int state = stateBegin + me * (slice/(tsize));
       /*
 #pragma omp critical
@@ -608,9 +658,6 @@ public:
         std::cout << "myRank:" << me << " stateBeg:" << stateBegin << " tsize:" << tsize << " state:" << state <<  " slice: " << slice / tsize <<  std::endl;
       }
       */
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp for
-#endif
       for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
         lno_t iteration = 0;
         while(1){
@@ -637,12 +684,12 @@ public:
           break;
         }
       }
-    }
+#endif
   }
 };
 
-template <typename T, typename lno_t, typename gno_t>
-class CoordinateNormalDistribution:public CoordinateDistribution<T,lno_t,gno_t>{
+template <typename T, typename lno_t, typename gno_t, typename node_t>
+class CoordinateNormalDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
 public:
   CoordinatePoint<T> center;
   T standartDevx;
@@ -659,7 +706,7 @@ public:
 
   CoordinateNormalDistribution(gno_t np_, int dim, CoordinatePoint<T> center_ ,
                                T sd_x, T sd_y, T sd_z, int wSize) :
-    CoordinateDistribution<T,lno_t,gno_t>(np_,dim,wSize),
+    CoordinateDistribution<T,lno_t,gno_t,node_t>(np_,dim,wSize),
     standartDevx(sd_x), standartDevy(sd_y), standartDevz(sd_z)
   {
     this->center.x = center_.x;
@@ -667,7 +714,7 @@ public:
     this->center.z = center_.z;
   }
 
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int &state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
 
     //pindex = 0; // not used in normal distribution.
     CoordinatePoint <T> p;
@@ -692,7 +739,7 @@ public:
 
   virtual ~CoordinateNormalDistribution(){};
 private:
-  T normalDist(T center_, T sd, unsigned int &state) {
+  T normalDist(T center_, T sd, unsigned int state) {
     static bool derived=false;
     static T storedDerivation;
     T polarsqrt, normalsquared, normal1, normal2;
@@ -715,8 +762,8 @@ private:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t>
-class CoordinateUniformDistribution:public CoordinateDistribution<T,lno_t, gno_t>{
+template <typename T, typename lno_t, typename gno_t, typename node_t>
+class CoordinateUniformDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
 public:
   T leftMostx;
   T rightMostx;
@@ -736,12 +783,12 @@ public:
 
   CoordinateUniformDistribution(gno_t np_, int dim, T l_x, T r_x, T l_y, T r_y,
                                 T l_z, T r_z, int wSize ) :
-      CoordinateDistribution<T,lno_t,gno_t>(np_,dim,wSize),
+      CoordinateDistribution<T,lno_t,gno_t,node_t>(np_,dim,wSize),
       leftMostx(l_x), rightMostx(r_x), leftMosty(l_y), rightMosty(r_y),
       leftMostz(l_z), rightMostz(r_z){}
 
   virtual ~CoordinateUniformDistribution(){};
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int &state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
 
 
     //pindex = 0; //not used in uniform dist.
@@ -772,8 +819,8 @@ private:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t>
-class CoordinateGridDistribution:public CoordinateDistribution<T,lno_t,gno_t>{
+template <typename T, typename lno_t, typename gno_t, typename node_t>
+class CoordinateGridDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
 public:
   T leftMostx;
   T rightMostx;
@@ -799,7 +846,7 @@ public:
   CoordinateGridDistribution(gno_t alongX, gno_t alongY, gno_t alongZ, int dim,
                              T l_x, T r_x, T l_y, T r_y, T l_z, T r_z ,
                              int myRank_, int wSize) :
-      CoordinateDistribution<T,lno_t,gno_t>(alongX * alongY * alongZ,dim,wSize),
+      CoordinateDistribution<T,lno_t,gno_t,node_t>(alongX * alongY * alongZ,dim,wSize),
       leftMostx(l_x), rightMostx(r_x), leftMosty(l_y), rightMosty(r_y), leftMostz(l_z), rightMostz(r_z), myRank(myRank_){
     //currentX = leftMostx, currentY = leftMosty, currentZ = leftMostz;
     this->processCnt = 0;
@@ -821,7 +868,7 @@ public:
   }
 
   virtual ~CoordinateGridDistribution(){};
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int &state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
     //lno_t before = processCnt + this->assignedPrevious;
     //std::cout << "before:" << processCnt << " " << this->assignedPrevious << std::endl;
     //lno_t xshift = 0, yshift = 0, zshift = 0;
@@ -831,6 +878,9 @@ public:
     //yshift = tmp / this->along_X;
     //zshift = before / (this->along_X * this->along_Y);
 
+    // TODO: Changed state to not be reference - is this consequential to the
+    // caller ever? Did state need to be &? Changed to support the kokkos
+    // semantics for the refactor.
     state = 0; //not used here
     this->zshift = pindex / (along_X * along_Y);
     this->yshift = (pindex % (along_X * along_Y)) / along_X;
@@ -909,7 +959,7 @@ private:
   float *loadDistributions; //sized as the number of processors, the load of each processor.
   bool loadDistSet;
   bool distinctCoordSet;
-  CoordinateDistribution<scalar_t, lno_t,gno_t> **coordinateDistributions;
+  CoordinateDistribution<scalar_t, lno_t,gno_t,node_t> **coordinateDistributions;
   int distributionCount;
   //CoordinatePoint<scalar_t> *points;
   scalar_t **coords;
@@ -1022,9 +1072,9 @@ private:
     int argCnt = this->countChar(coordinate_distributions, ',') + 1;
     std::string *splittedStr = new std::string[argCnt];
     splitString(coordinate_distributions, ',', splittedStr);
-    coordinateDistributions = (CoordinateDistribution<scalar_t, lno_t,gno_t> **) malloc(sizeof (CoordinateDistribution<scalar_t, lno_t,gno_t> *) * 1);
+    coordinateDistributions = (CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> **) malloc(sizeof (CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> *) * 1);
     for(int i = 0; i < argCnt; ){
-      coordinateDistributions = (CoordinateDistribution<scalar_t, lno_t,gno_t> **)realloc((void *)coordinateDistributions, (this->distributionCount + 1)* sizeof(CoordinateDistribution<scalar_t, lno_t,gno_t> *));
+      coordinateDistributions = (CoordinateDistribution<scalar_t, lno_t,gno_t,node_t> **)realloc((void *)coordinateDistributions, (this->distributionCount + 1)* sizeof(CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> *));
 
       std::string distName = splittedStr[i++];
       gno_t np_ = 0;
@@ -1053,7 +1103,7 @@ private:
         if(this->coordinate_dimension == 3){
           sd_z = fromString<scalar_t>(splittedStr[i++]);
         }
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateNormalDistribution<scalar_t, lno_t,gno_t>(np_, this->coordinate_dimension, pp , sd_x, sd_y, sd_z, this->worldSize );
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateNormalDistribution<scalar_t,lno_t,gno_t,node_t>(np_, this->coordinate_dimension, pp , sd_x, sd_y, sd_z, this->worldSize );
 
       } else if(distName == "UNIFORM" ){
         int reqArg = 5;
@@ -1077,7 +1127,7 @@ private:
           r_z = fromString<scalar_t>(splittedStr[i++]);
         }
 
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateUniformDistribution<scalar_t, lno_t,gno_t>( np_,  this->coordinate_dimension, l_x, r_x, l_y, r_y, l_z, r_z, this->worldSize );
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateUniformDistribution<scalar_t,lno_t,gno_t,node_t>( np_,  this->coordinate_dimension, l_x, r_x, l_y, r_y, l_z, r_z, this->worldSize );
       } else if (distName == "GRID"){
         int reqArg = 6;
         if(this->coordinate_dimension == 3){
@@ -1114,7 +1164,7 @@ private:
           throw "Provide at least 1 point along each dimension for grid test.";
         }
         //std::cout << "ly:" << l_y << " ry:" << r_y << std::endl;
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateGridDistribution<scalar_t, lno_t,gno_t>
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateGridDistribution<scalar_t,lno_t,gno_t,node_t>
         (np_x, np_y,np_z, this->coordinate_dimension, l_x, r_x,l_y, r_y, l_z, r_z , this->myRank, this->worldSize);
 
       }
@@ -1684,11 +1734,16 @@ public:
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, myPointCount),
+        KOKKOS_LAMBDA (const int i) {
+        this->coords[ii][i] = 0;
+      });
+#else
       for(lno_t i = 0; i < myPointCount; ++i){
         this->coords[ii][i] = 0;
       }
+#endif
     }
 
     this->numLocalCoords = 0;
@@ -1812,31 +1867,46 @@ public:
       case 1:
  	{
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+          KOKKOS_LAMBDA (const int i) {
+            this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
+        });
+#else
         for (lno_t i = 0; i < this->numLocalCoords; ++i){
           this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
         }
+#endif
 	}
         break;
       case 2:
 	{
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+          KOKKOS_LAMBDA (const int i) {
+            this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
+        });
+#else
         for (lno_t i = 0; i < this->numLocalCoords; ++i){
           this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
         }
+#endif
 	}
         break;
       case 3:
 	{
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+          KOKKOS_LAMBDA (const int i) {
+            this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
+        });
+#else
         for (lno_t i = 0; i < this->numLocalCoords; ++i){
           this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
         }
+#endif
 	}
         break;
       }
@@ -2695,22 +2765,32 @@ public:
   void getLocalCoordinatesCopy( scalar_t ** c){
     for(int ii = 0; ii < this->coordinate_dimension; ++ii){
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+        KOKKOS_LAMBDA (const int i) {
+          c[ii][i] = this->coords[ii][i];
+      });
+#else
       for (lno_t i = 0; i < this->numLocalCoords; ++i){
         c[ii][i] = this->coords[ii][i];
       }
+#endif
     }
   }
 
   void getLocalWeightsCopy(scalar_t **w){
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
 #ifdef HAVE_ZOLTAN2_OMP
-#pragma omp parallel for
-#endif
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+        KOKKOS_LAMBDA (const int i) {
+          w[ii][i] = this->wghts[ii][i];
+      });
+#else
       for (lno_t i = 0; i < this->numLocalCoords; ++i){
         w[ii][i] = this->wghts[ii][i];
       }
+#endif
     }
   }
 };

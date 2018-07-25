@@ -562,6 +562,8 @@ bool mainExecute(int argc, char *argv[], RCP<const Comm<int> > &comm)
 int main(int argc, char *argv[])
 {
   Teuchos::GlobalMPISession session(&argc, &argv); 
+  Kokkos::initialize (argc, argv);
+  
   RCP<const Comm<int> > comm = Teuchos::DefaultComm<int>::getComm();
 
   int result = 0;
@@ -610,5 +612,6 @@ int main(int argc, char *argv[])
               << std::endl;
   }
 
+  Kokkos::finalize();
   return result;
 }

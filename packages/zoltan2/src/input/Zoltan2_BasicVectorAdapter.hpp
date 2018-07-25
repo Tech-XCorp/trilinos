@@ -240,12 +240,7 @@ public:
 
 #ifdef HAVE_ZOLTAN2_OMP
   void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
-    // TODO: The BasicUserTypes don't support the node type and are set to
-    // default. Howveer I wasn't sure yet where/when we wanted to upgrade
-    // things as we add Kokkos support. So hard coding OpenMP node type right
-    // now... but need to decide if and how we will support kokkos here.
-    typedef Kokkos::OpenMP kokkos_node_t;
-    ids = Kokkos::View<const gno_t*, kokkos_node_t,
+    ids = Kokkos::View<const gno_t*, typename node_t::device_type,
       Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
   }
 #endif
