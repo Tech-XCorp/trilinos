@@ -3678,7 +3678,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim
-){
+){              
     // TODO: Remove this view? How to clean this up?
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
     view_rectilinear_cut_count(0) = 0;
@@ -3736,7 +3736,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
         });
         team_member.team_barrier();  // for end of Kokkos::single
-        // std::cout << "CHECK1:" << me << std::endl;
 
         int iteration = 0;
         while (view_total_incomplete_cut_count(0) != 0){
@@ -3785,8 +3784,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_scalar_t min_coord = kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
 
-                    this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights()");
-
                     // compute part weights using existing cuts
                     this->mj_1D_part_get_thread_part_weights(
                         total_part_count,
@@ -3802,8 +3799,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         kokkos_my_current_left_closest,
                         kokkos_my_current_right_closest,
                         team_member);
-
-                    this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights()");
                 }
 
                 concurrent_cut_shifts += num_cuts;
@@ -3835,7 +3830,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
             });
             team_member.team_barrier();  // for end of Kokkos::single
-            // std::cout << "CHECK2:" << me << std::endl;
         
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
@@ -3961,7 +3955,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   view_total_incomplete_cut_count(0) -= iteration_complete_cut_count;
                 });
                 team_member.team_barrier(); // for end of Kokkos::single
-                // std::cout << "CHECK3:" << me << std::endl;
             }
 
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
@@ -3972,7 +3965,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   this->kokkos_cut_coordinates_work_array = t;
               });
               team_member.team_barrier(); // for end of Kokkos::single
-              // std::cout << "CHECK4:" << me << std::endl;
             }
         }
 
@@ -3997,15 +3989,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     }
           });
           team_member.team_barrier();  // for end of Kokkos::single
-          // std::cout << "CHECK5:" << me << std::endl;
 
           Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
             this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
           });
           team_member.team_barrier();  // for end of Kokkos::single
-          // std::cout << "CHECK6:" << me << std::endl;
         }
     });
+
     delete reductionOp;
 }
 
@@ -4310,56 +4301,35 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //dont change the static scheduling here, as it is assumed when the new
         //partitions are created later.
 
-// The purpose of this messy code is to evaluate the new refactored kokkos format
-// relative to the original setup. I was finding there was more overhead than
-// expected and tracked that down to this internal loop. To demonstrate that all
-// of the new overhead is generated just from view access, and not other possible
-// issues such as incorrect barriers or logic, I replace all of the views here
-// with raw ptr access
-//#define USE_RAW_PTR
-#ifdef USE_RAW_PTR
-        mj_lno_t    * kokkos_coordinate_permutations_ptr  = this->kokkos_coordinate_permutations.data();
-        mj_scalar_t * kokkos_mj_current_dim_coords_ptr    = kokkos_mj_current_dim_coords.data();
-        mj_scalar_t * kokkos_temp_current_cut_coords_ptr  = kokkos_temp_current_cut_coords.data();
-        mj_scalar_t * kokkos_my_current_part_weights_ptr  = kokkos_my_current_part_weights.data();
-        mj_scalar_t * kokkos_my_current_left_closest_ptr  = kokkos_my_current_left_closest.data();
-        mj_scalar_t * kokkos_my_current_right_closest_ptr = kokkos_my_current_right_closest.data();
-        mj_part_t   * kokkos_assigned_part_ids_ptr        = kokkos_assigned_part_ids.data();
-        bool        * kokkos_mj_uniform_weights_ptr       = this->kokkos_mj_uniform_weights.data();
+        // This code can cause quite a bit of overhead relative to the original
+        // #pragma omp for setup. To confirm this, we can do the following:
+        //
+        // (1) Set in the develop branch and this branch the MultiJaggedTest.cpp
+        //     main to initialize with:
+        //        #ifdef HAVE_ZOLTAN2_OMP
+        //          omp_set_dynamic(0);     // Explicitly disable dynamic teams
+        //          omp_set_num_threads(1);
+        //        #endif
+        // (2) Change this parallel_for to simply run the commented out for loop
+        //     and then also change the end of the loop to be } instead of });
+        // (3) Remove the #pragma omp for from the develop branch setup
+        // 
+        // Now times will be similar while restoring the Kokkos::parallel_for
+        // here will show a significant jump up in times of about 20% for this
+        // region. This may be due to how the lambda captures all this internal
+        // code but not sure yet.
         
-        ArrayRCP<mj_scalar_t> temp_save(coordinate_end_index-coordinate_begin_index+1);
-        for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
-          int i = kokkos_coordinate_permutations_ptr[ii];
-          temp_save[ii - coordinate_begin_index] = kokkos_mj_uniform_weights_ptr[0]? 1:this->kokkos_mj_weights(i,0);
-        }
-#endif
-        
-this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights() B");
+        Kokkos::parallel_for(Kokkos::TeamThreadRange(
+          team_member, coordinate_begin_index, coordinate_end_index),
+          KOKKOS_LAMBDA (mj_lno_t & ii) {
 
-static double total_duration = 0;
-static int clock_counter = 0;
-std::clock_t start_time = std::clock();    
-    
- //       std::cout << "Doing loop: " << coordinate_begin_index << " to " << coordinate_end_index << std::endl;
+        // for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
 
-        Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin_index, coordinate_end_index),
-          KOKKOS_LAMBDA (int & ii) {
-          
-   //     for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
-          
-#ifdef USE_RAW_PTR
-                int i = kokkos_coordinate_permutations_ptr[ii];
-#else
                 int i = this->kokkos_coordinate_permutations(ii);
-#endif
 
                 //the accesses to assigned_part_ids are thread safe
                 //since each coordinate is assigned to only a single thread.
-#ifdef USE_RAW_PTR
-                mj_part_t j = kokkos_assigned_part_ids_ptr[i] / 2;
-#else
                 mj_part_t j = this->kokkos_assigned_part_ids(i) / 2;
-#endif
 
                 if(j >= num_cuts){
                         j = num_cuts - 1;
@@ -4367,23 +4337,13 @@ std::clock_t start_time = std::clock();
 
                 mj_part_t lower_cut_index = 0;
                 mj_part_t upper_cut_index = num_cuts - 1;
-
-#ifdef USE_RAW_PTR
-                mj_scalar_t w = temp_save[ii-coordinate_begin_index];
-#else
                 mj_scalar_t w = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(i,0);
-#endif
 
                 bool is_inserted = false;
                 bool is_on_left_of_cut = false;
                 bool is_on_right_of_cut = false;
                 mj_part_t last_compared_part = -1;
-
-#ifdef USE_RAW_PTR
-                mj_scalar_t coord = kokkos_mj_current_dim_coords_ptr[i];
-#else
                 mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
-#endif
 
                 while(upper_cut_index >= lower_cut_index)
                 {
@@ -4392,65 +4352,36 @@ std::clock_t start_time = std::clock();
                         is_on_left_of_cut = false;
                         is_on_right_of_cut = false;
 
-#ifdef USE_RAW_PTR
-                        mj_scalar_t cut = kokkos_temp_current_cut_coords_ptr[j];
-#else
                         mj_scalar_t cut = kokkos_temp_current_cut_coords(j);
-#endif
-
                         mj_scalar_t distance_to_cut = coord - cut;
                         mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
 
                         //if it is on the line.
                         if(abs_distance_to_cut < this->sEpsilon){
-#ifdef USE_RAW_PTR
-                                kokkos_my_current_part_weights_ptr[j * 2 + 1] += w;
-                                kokkos_assigned_part_ids_ptr[i] = j * 2 + 1;
-                                //assign left and right closest point to cut as the point is on the cut.
-                                kokkos_my_current_left_closest_ptr[j] = coord;
-                                kokkos_my_current_right_closest_ptr[j] = coord;
-#else
                                 kokkos_my_current_part_weights(j * 2 + 1) += w;
                                 this->kokkos_assigned_part_ids(i) = j * 2 + 1;
                                 //assign left and right closest point to cut as the point is on the cut.
                                 kokkos_my_current_left_closest(j) = coord;
                                 kokkos_my_current_right_closest(j) = coord;
-#endif
 
                                 //now we need to check if there are other cuts on the same cut coordinate.
                                 //if there are, then we add the weight of the cut to all cuts in the same coordinate.
                                 mj_part_t kk = j + 1;
                                 while(kk < num_cuts){
                                         // Needed when cuts shared the same position
-#ifdef USE_RAW_PTR
-                                        distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords_ptr[kk] - cut);
-#else
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-#endif
                                         if(distance_to_cut < this->sEpsilon){
-#ifdef USE_RAW_PTR
-                                                kokkos_my_current_part_weights_ptr[2 * kk + 1] += w;
-                                                kokkos_my_current_left_closest_ptr[kk] = coord;
-                                                kokkos_my_current_right_closest_ptr[kk] = coord;
-#else
                                                 kokkos_my_current_part_weights(2 * kk + 1) += w;
                                                 kokkos_my_current_left_closest(kk) = coord;
                                                 kokkos_my_current_right_closest(kk) = coord;
-#endif
                                                 kk++;
                                         }
                                         else{
                                                 //cut is far away.
                                                 //just check the left closest point for the next cut.
-#ifdef USE_RAW_PTR
-                                                if(coord - kokkos_my_current_left_closest_ptr[kk] > this->sEpsilon){
-                                                        kokkos_my_current_left_closest_ptr[kk] = coord;
-                                                }
-#else
                                                 if(coord - kokkos_my_current_left_closest(kk) > this->sEpsilon){
                                                         kokkos_my_current_left_closest(kk) = coord;
                                                 }
-#endif
                                                 break;
                                         }
                                 }
@@ -4459,39 +4390,21 @@ std::clock_t start_time = std::clock();
                                 kk = j - 1;
                                 //continue checking for the cuts on the left if they share the same coordinate.
                                 while(kk >= 0){
-#ifdef USE_RAW_PTR
-                                        distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords_ptr[kk] - cut);
-#else
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-#endif
                                         if(distance_to_cut < this->sEpsilon){
-#ifdef USE_RAW_PTR
-                                                kokkos_my_current_part_weights_ptr[2 * kk + 1] += w;
-                                                //try to write the partId as the leftmost cut.
-                                                kokkos_assigned_part_ids_ptr[i] = kk * 2 + 1;
-                                                kokkos_my_current_left_closest_ptr[kk] = coord;
-                                                kokkos_my_current_right_closest_ptr[kk] = coord;
-#else
                                                 kokkos_my_current_part_weights(2 * kk + 1) += w;
                                                 //try to write the partId as the leftmost cut.
                                                 this->kokkos_assigned_part_ids(i) = kk * 2 + 1;
                                                 kokkos_my_current_left_closest(kk) = coord;
                                                 kokkos_my_current_right_closest(kk) = coord;
-#endif
                                                 kk--;
                                         }
                                         else{
                                                 //if cut is far away on the left of the point.
                                                 //then just compare for right closest point.
-#ifdef USE_RAW_PTR
-                                                if(kokkos_my_current_right_closest_ptr[kk] - coord > this->sEpsilon){
-                                                        kokkos_my_current_right_closest_ptr[kk] = coord;
-                                                }
-#else
                                                 if(kokkos_my_current_right_closest(kk) - coord > this->sEpsilon){
                                                         kokkos_my_current_right_closest(kk) = coord;
                                                 }
-#endif
                                                 break;
                                         }
                                 }
@@ -4506,11 +4419,7 @@ std::clock_t start_time = std::clock();
                                         if(j > 0){
                                                 //check distance to the cut on the left the current cut compared.
                                                 //if point is on the right, then we find the part of the point.
-#ifdef USE_RAW_PTR
-                                                mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords_ptr[j - 1];
-#else
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j - 1);
-#endif
                                                 if(distance_to_next_cut > this->sEpsilon){
                                                         _break = true;
                                                 }
@@ -4529,11 +4438,7 @@ std::clock_t start_time = std::clock();
                                         if(j < num_cuts - 1){
                                                 //check distance to the cut on the left the current cut compared.
                                                 //if point is on the right, then we find the part of the point.
-#ifdef USE_RAW_PTR
-                                                mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords_ptr[j + 1];
-#else
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j + 1);
-#endif
 
                                                 if(distance_to_next_cut < minus_EPSILON){
                                                   _break = true;
@@ -4558,86 +4463,44 @@ std::clock_t start_time = std::clock();
                         if(is_on_right_of_cut){
 
                                 //add it to the right of the last compared part.
-#ifdef USE_RAW_PTR
-                                kokkos_my_current_part_weights_ptr[2 * last_compared_part + 2] += w;
-                                kokkos_assigned_part_ids_ptr[i] = 2 * last_compared_part + 2;
-#else
                                 kokkos_my_current_part_weights(2 * last_compared_part + 2) += w;
                                 this->kokkos_assigned_part_ids(i) = 2 * last_compared_part + 2;
-#endif
 
                                 //update the right closest point of last compared cut.
-#ifdef USE_RAW_PTR
-                                if(kokkos_my_current_right_closest_ptr[last_compared_part] - coord > this->sEpsilon){
-                                        kokkos_my_current_right_closest_ptr[last_compared_part] = coord;
-                                }
-#else
                                 if(kokkos_my_current_right_closest(last_compared_part) - coord > this->sEpsilon){
                                         kokkos_my_current_right_closest(last_compared_part) = coord;
                                 }
-#endif
 
                                 //update the left closest point of the cut on the right of the last compared cut.
                                 if(last_compared_part+1 < num_cuts){
-#ifdef USE_RAW_PTR
-                                        if(coord - kokkos_my_current_left_closest_ptr[last_compared_part + 1] > this->sEpsilon){
-                                                kokkos_my_current_left_closest_ptr[last_compared_part + 1] = coord;
-                                        }
-#else
                                         if(coord - kokkos_my_current_left_closest(last_compared_part + 1) > this->sEpsilon){
                                                 kokkos_my_current_left_closest(last_compared_part + 1) = coord;
                                         }
-#endif
                                 }
 
                         }
                         else if(is_on_left_of_cut){
 
                                 //add it to the left of the last compared part.
-#ifdef USE_RAW_PTR
-                                kokkos_my_current_part_weights_ptr[2 * last_compared_part] += w;
-                                kokkos_assigned_part_ids_ptr[i] = 2 * last_compared_part;
-#else
                                 kokkos_my_current_part_weights(2 * last_compared_part) += w;
                                 this->kokkos_assigned_part_ids(i) = 2 * last_compared_part;
-#endif
+
                                 //update the left closest point of last compared cut.
-#ifdef USE_RAW_PTR
-                                if(coord - kokkos_my_current_left_closest_ptr[last_compared_part] > this->sEpsilon){
-                                        kokkos_my_current_left_closest_ptr[last_compared_part] = coord;
-                                }
-#else
                                 if(coord - kokkos_my_current_left_closest(last_compared_part) > this->sEpsilon){
                                         kokkos_my_current_left_closest(last_compared_part) = coord;
                                 }
-#endif
+
                                 //update the right closest point of the cut on the left of the last compared cut.
                                 if(last_compared_part-1 >= 0){
-#ifdef USE_RAW_PTR
-                                        if(kokkos_my_current_right_closest_ptr[last_compared_part -1] - coord > this->sEpsilon){
-                                                kokkos_my_current_right_closest_ptr[last_compared_part -1] = coord;
-                                        }
-#else
                                         if(kokkos_my_current_right_closest(last_compared_part -1) - coord > this->sEpsilon){
                                                 kokkos_my_current_right_closest(last_compared_part -1) = coord;
                                         }
-#endif
                                 }
                         }
                 }
         });
 
-        //}
-        
-total_duration += ( std::clock() - start_time ) / (double) CLOCKS_PER_SEC;
-++clock_counter;
-if(clock_counter == 171) {
-  std::cout << "################# My total duration: " << total_duration << std::endl;
-}
-
-this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part_get_thread_part_weights() B");
-
-     //   team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+        team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
         // prefix sum computation.
         //we need prefix sum for each part to determine cut positions.
@@ -4984,7 +4847,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       }
     });
     team_member.team_barrier();  // for end of Kokkos::single
-    // std::cout << "CHECK7:" << team_member.team_rank() << std::endl;
 }
 
 #else // HAVE_ZOLTAN2_OMP
@@ -5310,7 +5172,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                 });
                 team_member.team_barrier(); // for end of Kokkos::single
-                // std::cout << "CHECK8:" << me << std::endl;
 
                 //shift the num points in threads thread to obtain the
                 //beginning index of each thread's private space.
@@ -5890,7 +5751,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
         });
         team_member.team_barrier(); // for end of Kokkos::single
-        // std::cout << "CHECK9:" << team_member.team_rank() << std::endl;
 
         } // TODO: This may not be necessary anymore? See comment above
 }
