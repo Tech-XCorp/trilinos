@@ -877,7 +877,7 @@ int testFromDataFile(
     delete [] bvtpetravectors;
     delete bvproblem;
     }
-    
+
     if (coordsConst->getGlobalLength() < 40) {
         int len = coordsConst->getLocalLength();
         const inputAdapter_t::part_t *zparts =

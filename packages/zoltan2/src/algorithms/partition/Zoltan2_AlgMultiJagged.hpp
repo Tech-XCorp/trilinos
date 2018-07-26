@@ -1897,9 +1897,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     delete future_num_part_in_parts;
     delete next_future_num_parts_in_parts;
-
-    // TODO: Should we ever do something like for Kokkos?
-    //omp_set_num_threads(actual_num_threads);
 }
 
 /*! \brief Multi Jagged  coordinate partitioning algorithm default constructor.
@@ -2854,7 +2851,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim
-){              
+){           
     // TODO: Remove this view? How to clean this up?
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
     view_rectilinear_cut_count(0) = 0;
@@ -2878,7 +2875,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
-    
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member){
         int me = team_member.team_rank();
 
@@ -2980,14 +2976,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 concurrent_cut_shifts += num_cuts;
                 total_part_shift += total_part_count;
             }
- 
+
             //sum up the results of threads
             this->mj_accumulate_thread_results(
                 num_partitioning_in_current_dim,
                 current_work_part,
                 current_concurrent_num_parts,
                 team_member);
- 
+
             //now sum up the results of mpi processors.
             Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
                 if(this->comm->getSize() > 1){
@@ -3006,7 +3002,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
             });
             team_member.team_barrier();  // for end of Kokkos::single
-        
+
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
 
@@ -3125,7 +3121,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
-                     
+
                 Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
                   mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->kokkos_my_incomplete_cut_count(kk);
                   view_total_incomplete_cut_count(0) -= iteration_complete_cut_count;
@@ -3246,7 +3242,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // here will show a significant jump up in times of about 20% for this
         // region. This may be due to how the lambda captures all this internal
         // code but not sure yet.
-        
+
         Kokkos::parallel_for(Kokkos::TeamThreadRange(
           team_member, coordinate_begin_index, coordinate_end_index),
           KOKKOS_LAMBDA (mj_lno_t & ii) {
@@ -3636,7 +3632,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                         // TODO: Evaluate this comment in light of the new refactor to Kokkos...
                         // this for assumes the static scheduling in mj_1D_part calculation.
-                        
+
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
                           KOKKOS_LAMBDA (mj_part_t & i) {
                                 //the left to be put on the left of the cut.
@@ -3747,7 +3743,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                         else {
                                 //if it is already assigned to a part, then just put it to the corresponding part.
-                                ++kokkos_thread_num_points_in_parts(coordinate_assigned_part);        
+                                ++kokkos_thread_num_points_in_parts(coordinate_assigned_part);
                                 this->kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
                         }
                 });
@@ -3864,7 +3860,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         });
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-  
         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
           KOKKOS_LAMBDA (const int i) {
 
@@ -3880,7 +3875,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         this->kokkos_global_rectilinear_cut_weight(i) = 0;
                         this->kokkos_process_rectilinear_cut_weight(i) = 0;
                 }
-                
+
                 bool bContinue = false;
                 //if already determined at previous iterations,
                 //then just write the coordinate to new array, and proceed.
@@ -3888,216 +3883,216 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
                         bContinue = true;
                 }
-                
+
                 if(!bContinue) {
 
-                //current weight of the part at the left of the cut line.
-                seen_weight_in_part = kokkos_current_global_part_weights(i * 2);
+                  //current weight of the part at the left of the cut line.
+                  seen_weight_in_part = kokkos_current_global_part_weights(i * 2);
 
-                /*
-                cout << "seen_weight_in_part:" << i << " is "<< seen_weight_in_part << endl;
-                cout << "\tcut:" << current_cut_coordinates[i]
-                       << " current_cut_lower_bounds:" << current_cut_lower_bounds[i]
-               << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << endl;
-               */
-                //expected ratio
-                expected_weight_in_part = kokkos_current_part_target_weights(i);
-                //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
-                imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
-                //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
-                imbalance_on_right = imbalanceOf2(global_total_weight - seen_weight_in_part, global_total_weight - expected_weight_in_part);
+                  /*
+                  cout << "seen_weight_in_part:" << i << " is "<< seen_weight_in_part << endl;
+                  cout << "\tcut:" << current_cut_coordinates[i]
+                         << " current_cut_lower_bounds:" << current_cut_lower_bounds[i]
+                 << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << endl;
+                 */
+                  //expected ratio
+                  expected_weight_in_part = kokkos_current_part_target_weights(i);
+                  //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
+                  imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
+                  //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
+                  imbalance_on_right = imbalanceOf2(global_total_weight - seen_weight_in_part, global_total_weight - expected_weight_in_part);
 
-                bool is_left_imbalance_valid = ZOLTAN2_ABS(imbalance_on_left) - used_imbalance_tolerance < this->sEpsilon ;
-                bool is_right_imbalance_valid = ZOLTAN2_ABS(imbalance_on_right) - used_imbalance_tolerance < this->sEpsilon;
+                  bool is_left_imbalance_valid = ZOLTAN2_ABS(imbalance_on_left) - used_imbalance_tolerance < this->sEpsilon ;
+                  bool is_right_imbalance_valid = ZOLTAN2_ABS(imbalance_on_right) - used_imbalance_tolerance < this->sEpsilon;
 
-                //if the cut line reaches to desired imbalance.
-                if(is_left_imbalance_valid && is_right_imbalance_valid){
-                        kokkos_current_cut_line_determined(i) = true;
-                        Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
-                        kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                        // return; // TODO: Validate this is like continue?
-                }
-                else if(imbalance_on_left < 0){
-                        //if left imbalance < 0 then we need to move the cut to right.
+                  //if the cut line reaches to desired imbalance.
+                  if(is_left_imbalance_valid && is_right_imbalance_valid){
+                          kokkos_current_cut_line_determined(i) = true;
+                          Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
+                          kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                          // return; // TODO: Validate this is like continue?
+                  }
+                  else if(imbalance_on_left < 0){
+                          //if left imbalance < 0 then we need to move the cut to right.
 
-                        if(this->distribute_points_on_cut_lines){
-                                //if it is okay to distribute the coordinate on
-                                //the same coordinate to left and right.
-                                //then check if we can reach to the target weight by including the
-                                //coordinates in the part.
-                                if (kokkos_current_global_part_weights(i * 2 + 1) == expected_weight_in_part){
-                                        //if it is we are done.
-                                        kokkos_current_cut_line_determined(i) = true;
-                                        Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
+                          if(this->distribute_points_on_cut_lines){
+                                  //if it is okay to distribute the coordinate on
+                                  //the same coordinate to left and right.
+                                  //then check if we can reach to the target weight by including the
+                                  //coordinates in the part.
+                                  if (kokkos_current_global_part_weights(i * 2 + 1) == expected_weight_in_part){
+                                          //if it is we are done.
+                                          kokkos_current_cut_line_determined(i) = true;
+                                          Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
 
-                                        //then assign everything on the cut to the left of the cut.
-                                        kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                                        //for this cut all the weight on cut will be put to left.
-                                        kokkos_current_part_cut_line_weight_to_put_left(i) = kokkos_current_local_part_weights(i * 2 + 1) - kokkos_current_local_part_weights(i * 2);
-                                        bContinue = true; // TODO: Validate this is like continue?
-                                }
-                                else if (kokkos_current_global_part_weights(i * 2 + 1) > expected_weight_in_part){
+                                          //then assign everything on the cut to the left of the cut.
+                                          kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                                          //for this cut all the weight on cut will be put to left.
+                                          kokkos_current_part_cut_line_weight_to_put_left(i) = kokkos_current_local_part_weights(i * 2 + 1) - kokkos_current_local_part_weights(i * 2);
+                                          bContinue = true; // TODO: Validate this is like continue?
+                                  }
+                                  else if (kokkos_current_global_part_weights(i * 2 + 1) > expected_weight_in_part){
 
-                                        //if the weight is larger than the expected weight,
-                                        //then we need to distribute some points to left, some to right.
-                                        kokkos_current_cut_line_determined(i) = true;
-                                        Kokkos::atomic_add(&view_rectilinear_cut_count(0), 1);
+                                          //if the weight is larger than the expected weight,
+                                          //then we need to distribute some points to left, some to right.
+                                          kokkos_current_cut_line_determined(i) = true;
+                                          Kokkos::atomic_add(&view_rectilinear_cut_count(0), 1);
 
-                                        //increase the num cuts to be determined with rectilinear partitioning.
-                                        Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
-                                        kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                                        this->kokkos_process_rectilinear_cut_weight[i] = kokkos_current_local_part_weights(i * 2 + 1) -
-                                                        kokkos_current_local_part_weights(i * 2);
-                                        bContinue = true; // TODO: Validate this is like continue?
-                                }
-                        }
-                        
-                        if(!bContinue) {
-                        
-                        //we need to move further right,so set lower bound to current line, and shift it to the closes point from right.
-                        kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(i);
-                        //set the lower bound weight to the weight we have seen.
-                        kokkos_current_cut_lower_bound_weights(i) = seen_weight_in_part;
+                                          //increase the num cuts to be determined with rectilinear partitioning.
+                                          Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
+                                          kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                                          this->kokkos_process_rectilinear_cut_weight[i] = kokkos_current_local_part_weights(i * 2 + 1) -
+                                                          kokkos_current_local_part_weights(i * 2);
+                                          bContinue = true; // TODO: Validate this is like continue?
+                                  }
+                          }
 
-                        //compare the upper bound with what has been found in the last iteration.
-                        //we try to make more strict bounds for the cut here.
-                        for (mj_part_t ii = i + 1; ii < num_cuts ; ++ii){
-                                mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
-                                mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
-                                if(p_weight >= expected_weight_in_part){
-                                        //if a cut on the right has the expected weight, then we found
-                                        //our cut position. Set up and low coordiantes to this new cut coordinate.
-                                        //but we need one more iteration to finalize the cut position,
-                                        //as wee need to update the part ids.
-                                        if(p_weight == expected_weight_in_part){
-                                                kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                                kokkos_current_cut_upper_weights(i) = p_weight;
-                                                kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                                kokkos_current_cut_lower_bound_weights(i) = p_weight;
-                                        } else if (p_weight < kokkos_current_cut_upper_weights(i)){
-                                                //if a part weight is larger then my expected weight,
-                                                //but lower than my upper bound weight, update upper bound.
-                                                kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
-                                                kokkos_current_cut_upper_weights(i) = p_weight;
-                                        }
-                                        break;
-                                }
-                                //if comes here then pw < ew
-                                //then compare the weight against line weight.
-                                if(line_weight >= expected_weight_in_part){
-                                        //if the line is larger than the expected weight,
-                                        //then we need to reach to the balance by distributing coordinates on this line.
-                                        kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                        kokkos_current_cut_upper_weights(i) = line_weight;
+                          if(!bContinue) {
 
-                                        kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                        kokkos_current_cut_lower_bound_weights(i) = p_weight;
-                                        break;
-                                }
-                                //if a stricter lower bound is found,
-                                //update the lower bound.
-                                if (p_weight <= expected_weight_in_part && p_weight >= kokkos_current_cut_lower_bound_weights(i)){
-                                        kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(ii);
-                                        kokkos_current_cut_lower_bound_weights(i) = p_weight;
-                                }
-                        }
+                            //we need to move further right,so set lower bound to current line, and shift it to the closes point from right.
+                            kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(i);
+                            //set the lower bound weight to the weight we have seen.
+                            kokkos_current_cut_lower_bound_weights(i) = seen_weight_in_part;
+
+                            //compare the upper bound with what has been found in the last iteration.
+                            //we try to make more strict bounds for the cut here.
+                            for (mj_part_t ii = i + 1; ii < num_cuts ; ++ii){
+                                    mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
+                                    mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
+                                    if(p_weight >= expected_weight_in_part){
+                                            //if a cut on the right has the expected weight, then we found
+                                            //our cut position. Set up and low coordiantes to this new cut coordinate.
+                                            //but we need one more iteration to finalize the cut position,
+                                            //as wee need to update the part ids.
+                                            if(p_weight == expected_weight_in_part){
+                                                    kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                                    kokkos_current_cut_upper_weights(i) = p_weight;
+                                                    kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                                    kokkos_current_cut_lower_bound_weights(i) = p_weight;
+                                            } else if (p_weight < kokkos_current_cut_upper_weights(i)){
+                                                    //if a part weight is larger then my expected weight,
+                                                    //but lower than my upper bound weight, update upper bound.
+                                                    kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
+                                                    kokkos_current_cut_upper_weights(i) = p_weight;
+                                            }
+                                            break;
+                                    }
+                                    //if comes here then pw < ew
+                                    //then compare the weight against line weight.
+                                    if(line_weight >= expected_weight_in_part){
+                                            //if the line is larger than the expected weight,
+                                            //then we need to reach to the balance by distributing coordinates on this line.
+                                            kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                            kokkos_current_cut_upper_weights(i) = line_weight;
+
+                                            kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                            kokkos_current_cut_lower_bound_weights(i) = p_weight;
+                                            break;
+                                    }
+                                    //if a stricter lower bound is found,
+                                    //update the lower bound.
+                                    if (p_weight <= expected_weight_in_part && p_weight >= kokkos_current_cut_lower_bound_weights(i)){
+                                            kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(ii);
+                                            kokkos_current_cut_lower_bound_weights(i) = p_weight;
+                                    }
+                            }
 
 
-                        mj_scalar_t new_cut_position = 0;
-                        this->mj_calculate_new_cut_position(
-                                        kokkos_current_cut_upper_bounds(i),
-                                        kokkos_current_cut_lower_bounds(i),
-                                        kokkos_current_cut_upper_weights(i),
-                                        kokkos_current_cut_lower_bound_weights(i),
-                                        expected_weight_in_part, new_cut_position);
+                            mj_scalar_t new_cut_position = 0;
+                            this->mj_calculate_new_cut_position(
+                                            kokkos_current_cut_upper_bounds(i),
+                                            kokkos_current_cut_lower_bounds(i),
+                                            kokkos_current_cut_upper_weights(i),
+                                            kokkos_current_cut_lower_bound_weights(i),
+                                            expected_weight_in_part, new_cut_position);
 
-                        //if cut line does not move significantly.
-                        //then finalize the search.
-                        if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
-                                /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/
-                                ){
-                                kokkos_current_cut_line_determined(i) = true;
-                                Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
+                            //if cut line does not move significantly.
+                            //then finalize the search.
+                            if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
+                                    /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/
+                                    ){
+                                    kokkos_current_cut_line_determined(i) = true;
+                                    Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
 
-                                //set the cut coordinate and proceed.
-                                kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                        } else {
-                                kokkos_new_current_cut_coordinates(i) = new_cut_position;
-                        }
-                        
-                        }; // bContinue
-                        
-                } else {
+                                    //set the cut coordinate and proceed.
+                                    kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                            } else {
+                                    kokkos_new_current_cut_coordinates(i) = new_cut_position;
+                            }
+                          
+                          }; // bContinue
+                          
+                  } else {
 
-                        //need to move the cut line to left.
-                        //set upper bound to current line.
-                        kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(i);
-                        kokkos_current_cut_upper_weights(i) = seen_weight_in_part;
-                        // compare the current cut line weights with previous upper and lower bounds.
-                        for (int ii = i - 1; ii >= 0; --ii){
-                                mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
-                                mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
-                                if(p_weight <= expected_weight_in_part){
-                                        if(p_weight == expected_weight_in_part){
-                                                //if the weight of the part is my expected weight
-                                                //then we find the solution.
-                                                kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                                kokkos_current_cut_upper_weights(i) = p_weight;
-                                                kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
-                                                kokkos_current_cut_lower_bound_weights(i) = p_weight;
-                                        }
-                                        else if (p_weight > kokkos_current_cut_lower_bound_weights(i)){
-                                                //if found weight is bigger than the lower bound
-                                                //then update the lower bound.
-                                                kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(ii);
-                                                kokkos_current_cut_lower_bound_weights(i) = p_weight;
+                          //need to move the cut line to left.
+                          //set upper bound to current line.
+                          kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(i);
+                          kokkos_current_cut_upper_weights(i) = seen_weight_in_part;
+                          // compare the current cut line weights with previous upper and lower bounds.
+                          for (int ii = i - 1; ii >= 0; --ii){
+                                  mj_scalar_t p_weight = kokkos_current_global_part_weights(ii * 2);
+                                  mj_scalar_t line_weight = kokkos_current_global_part_weights(ii * 2 + 1);
+                                  if(p_weight <= expected_weight_in_part){
+                                          if(p_weight == expected_weight_in_part){
+                                                  //if the weight of the part is my expected weight
+                                                  //then we find the solution.
+                                                  kokkos_current_cut_upper_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                                  kokkos_current_cut_upper_weights(i) = p_weight;
+                                                  kokkos_current_cut_lower_bounds(i) = kokkos_current_cut_coordinates(ii);
+                                                  kokkos_current_cut_lower_bound_weights(i) = p_weight;
+                                          }
+                                          else if (p_weight > kokkos_current_cut_lower_bound_weights(i)){
+                                                  //if found weight is bigger than the lower bound
+                                                  //then update the lower bound.
+                                                  kokkos_current_cut_lower_bounds(i) = kokkos_current_global_right_closest_points(ii);
+                                                  kokkos_current_cut_lower_bound_weights(i) = p_weight;
 
-                                                //at the same time, if weight of line is bigger than the
-                                                //expected weight, then update the upper bound as well.
-                                                //in this case the balance will be obtained by distributing weightss
-                                                //on this cut position.
-                                                if(line_weight > expected_weight_in_part){
-                                                        kokkos_current_cut_upper_bounds(i) = kokkos_current_global_right_closest_points(ii);
-                                                        kokkos_current_cut_upper_weights(i) = line_weight;
-                                                }
-                                        }
-                                        break;
-                                }
-                                //if the weight of the cut on the left is still bigger than my weight,
-                                //and also if the weight is smaller than the current upper weight,
-                                //or if the weight is equal to current upper weight, but on the left of
-                                // the upper weight, then update upper bound.
-                                if (p_weight >= expected_weight_in_part &&
-                                                (p_weight < kokkos_current_cut_upper_weights(i) ||
-                                                                (p_weight == kokkos_current_cut_upper_weights(i) &&
-                                                                                kokkos_current_cut_upper_bounds(i) > kokkos_current_global_left_closest_points(ii)
-                                                                )
-                                                )
-                                        ){
-                                        kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
-                                        kokkos_current_cut_upper_weights(i) = p_weight;
-                                }
-                        }
-                        mj_scalar_t new_cut_position = 0;
-                        this->mj_calculate_new_cut_position(
-                                        kokkos_current_cut_upper_bounds(i),
-                                        kokkos_current_cut_lower_bounds(i),
-                                        kokkos_current_cut_upper_weights(i),
-                                        kokkos_current_cut_lower_bound_weights(i),
-                                        expected_weight_in_part,
-                                        new_cut_position);
+                                                  //at the same time, if weight of line is bigger than the
+                                                  //expected weight, then update the upper bound as well.
+                                                  //in this case the balance will be obtained by distributing weightss
+                                                  //on this cut position.
+                                                  if(line_weight > expected_weight_in_part){
+                                                          kokkos_current_cut_upper_bounds(i) = kokkos_current_global_right_closest_points(ii);
+                                                          kokkos_current_cut_upper_weights(i) = line_weight;
+                                                  }
+                                          }
+                                          break;
+                                  }
+                                  //if the weight of the cut on the left is still bigger than my weight,
+                                  //and also if the weight is smaller than the current upper weight,
+                                  //or if the weight is equal to current upper weight, but on the left of
+                                  // the upper weight, then update upper bound.
+                                  if (p_weight >= expected_weight_in_part &&
+                                                  (p_weight < kokkos_current_cut_upper_weights(i) ||
+                                                                  (p_weight == kokkos_current_cut_upper_weights(i) &&
+                                                                                  kokkos_current_cut_upper_bounds(i) > kokkos_current_global_left_closest_points(ii)
+                                                                  )
+                                                  )
+                                          ){
+                                          kokkos_current_cut_upper_bounds(i) = kokkos_current_global_left_closest_points(ii);
+                                          kokkos_current_cut_upper_weights(i) = p_weight;
+                                  }
+                          }
+                          mj_scalar_t new_cut_position = 0;
+                          this->mj_calculate_new_cut_position(
+                                          kokkos_current_cut_upper_bounds(i),
+                                          kokkos_current_cut_lower_bounds(i),
+                                          kokkos_current_cut_upper_weights(i),
+                                          kokkos_current_cut_lower_bound_weights(i),
+                                          expected_weight_in_part,
+                                          new_cut_position);
 
-                        //if cut line does not move significantly.
-                        if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
-                                        /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/ ){
-                                kokkos_current_cut_line_determined(i) = true;
-                                Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
-                                //set the cut coordinate and proceed.
-                                kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                        } else {
-                                kokkos_new_current_cut_coordinates(i) = new_cut_position;
-                        }
-                }
+                          //if cut line does not move significantly.
+                          if (ZOLTAN2_ABS(kokkos_current_cut_coordinates(i) - new_cut_position) < this->sEpsilon
+                                          /*|| current_cut_lower_bounds[i] - current_cut_upper_bounds[i] > this->sEpsilon*/ ){
+                                  kokkos_current_cut_line_determined(i) = true;
+                                  Kokkos::atomic_add(&this->kokkos_my_incomplete_cut_count(kk), -1);
+                                  //set the cut coordinate and proceed.
+                                  kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
+                          } else {
+                                  kokkos_new_current_cut_coordinates(i) = new_cut_position;
+                          }
+                  }
                 
                 }; // bContinue
         });

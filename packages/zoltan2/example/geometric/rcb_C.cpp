@@ -436,7 +436,7 @@ int main(int argc, char *argv[])
   delete ia3;
 
   Kokkos::finalize();
-  
+
 #ifdef HAVE_ZOLTAN2_MPI
   MPI_Finalize();
 #endif
