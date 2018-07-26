@@ -839,32 +839,19 @@ public:
 template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
       KOKKOS_LAMBDA (const int i) {
         arr[i] = i;
     });
-#else
-    for(size_t i = 0; i < arrSize; ++i){
-      arr[i] = i;
-    }
-#endif
   }
   else {
     T v = *val;
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
       KOKKOS_LAMBDA (const int i) {
         arr[i] = v;
     });
-#else
-    for(size_t i = 0; i < arrSize; ++i){
-      //cout << "writing to i:" << i << " arr:" << arrSize << endl;
-      arr[i] = v;
-    }
-#endif
   }
 }
 
@@ -972,11 +959,7 @@ public:
   tcoord_t **task_coords; //the task coordinates allocated outside of the class.
   int partArraySize;
 
-#ifdef HAVE_ZOLTAN2_OMP
   Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
-#else
-  part_t *partNoArray;
-#endif
 
   int *machine_extent;
   bool *machine_extent_wrap_around;
@@ -993,9 +976,6 @@ public:
     task_coord_dim(0),
     task_coords(0),
     partArraySize(-1),
-#ifndef HAVE_ZOLTAN2_OMP
-    partNoArray(NULL),
-#endif
     machine_extent(NULL),
     machine_extent_wrap_around(NULL),
     machine(NULL),
@@ -1027,9 +1007,6 @@ public:
     proc_coord_dim(pcoord_dim_), proc_coords(pcoords_),
     task_coord_dim(tcoord_dim_), task_coords(tcoords_),
     partArraySize(-1),
-#ifndef HAVE_ZOLTAN2_OMP
-    partNoArray(NULL),
-#endif
     machine_extent(machine_extent_),
     machine_extent_wrap_around(machine_extent_wrap_around_),
     machine(machine_),
@@ -1042,15 +1019,9 @@ public:
     this->partArraySize = psize;
   }
 
-#ifdef HAVE_ZOLTAN2_OMP
   void setPartArray(Kokkos::View<part_t *> pNo){
     this->kokkos_partNoArray = pNo;
   }
-#else
-  void setPartArray(part_t *pNo){
-    this->partNoArray = pNo;
-  }
-#endif
 
   /*! \brief Function is called whenever nprocs > no_task.
    * Function returns only the subset of processors that are closest to each other.
@@ -1365,8 +1336,6 @@ public:
 
     AlgMJ<pcoord_t, part_t, part_t, part_t, node_t> mj_partitioner;
 
-
-#ifdef HAVE_ZOLTAN2_OMP
     // pcoords was allocated as an array of arrays - each made individually
     // so memory is not contiguous and cannot be directly passed to an unmanaged view
     // eventually this should be built from the start as a Kokkos::View but I'm
@@ -1378,7 +1347,6 @@ public:
         make_kokkos_pcoords(j,i) = pcoords[i][j];
       }
     }
-#endif
 
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1387,20 +1355,11 @@ public:
         num_parts,
         procdim,
         //minCoordDim,
-#ifdef HAVE_ZOLTAN2_OMP
         make_kokkos_pcoords, // see note above - eventually this will be prebuilt already as kokkos
         Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(proc_adjList, this->no_procs),
-#else
-        pcoords,//this->proc_coords,
-        proc_adjList,
-#endif
         proc_xadj,
         recursion_depth,
-#ifdef HAVE_ZOLTAN2_OMP
         kokkos_partNoArray,
-#else
-        partNoArray,
-#endif
         proc_partition_along_longest_dim//, false
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -1430,7 +1389,6 @@ public:
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
 
-#ifdef HAVE_ZOLTAN2_OMP
     // tcoords was allocated as an array of arrays - each made individually
     // so memory is not contiguous and cannot be directly passed to an unmanaged view
     // eventually this should be built from the start as a Kokkos::View but I'm
@@ -1442,7 +1400,6 @@ public:
         make_kokkos_tcoords(j,i) = tcoords[i][j];
       }
     }
-#endif
 
     //partitioning of tasks
     mj_partitioner.sequential_task_partitioning(
@@ -1452,20 +1409,11 @@ public:
         num_parts,
         this->task_coord_dim,
         //minCoordDim,
-    #ifdef HAVE_ZOLTAN2_OMP
         make_kokkos_tcoords,
         Kokkos::View<part_t*>(task_adjList, this->no_procs),
-    #else
-        tcoords, //this->task_coords,
-        task_adjList,
-    #endif
         task_xadj,
         recursion_depth,
-    #ifdef HAVE_ZOLTAN2_OMP
         kokkos_partNoArray,
-    #else
-        partNoArray,
-    #endif
         task_partition_along_longest_dim
         ,num_ranks_per_node
         ,divide_to_prime_first
@@ -2581,7 +2529,6 @@ public:
       int proc_dim,
       int num_processors,
       pcoord_t **machine_coords,
-
       int task_dim,
       part_t num_tasks,
       tcoord_t **task_coords,
@@ -2589,12 +2536,7 @@ public:
       ArrayRCP<part_t>task_comm_adj,
       pcoord_t *task_communication_edge_weight_,
       int recursion_depth,
-#ifdef HAVE_ZOLTAN2_OMP
       Kokkos::View<part_t *> kokkos_part_no_array,
-#else
-      part_t *part_no_array,
-#endif
-
       const part_t *machine_dimensions,
       int num_ranks_per_node = 1,
       bool divide_to_prime_first = false, bool reduce_best_mapping = true
@@ -2645,15 +2587,8 @@ public:
 
     this->proc_task_comm->num_ranks_per_node = num_ranks_per_node;
     this->proc_task_comm->divide_to_prime_first = divide_to_prime_first;
-
     this->proc_task_comm->setPartArraySize(recursion_depth);
-
-#ifdef HAVE_ZOLTAN2_OMP
     this->proc_task_comm->setPartArray(kokkos_part_no_array);
-#else
-    this->proc_task_comm->setPartArray(part_no_array);
-#endif
-
     int myRank = problemComm->getRank();
 
     this->doMapping(myRank, this->comm);
@@ -2947,13 +2882,7 @@ void coordinateTaskMapperInterface(
     part_t *proc_to_task_xadj, /*output*/
     part_t *proc_to_task_adj, /*output*/
     int recursion_depth,
-
-#ifdef HAVE_ZOLTAN2_OMP
     Kokkos::View<part_t *> kokkos_part_no_array,
-#else
-    part_t *part_no_array,
-#endif
-
     const part_t *machine_dimensions,
     int num_ranks_per_node = 1,
     bool divide_to_prime_first = false
@@ -2992,12 +2921,7 @@ void coordinateTaskMapperInterface(
       task_communication_adj,
       task_communication_edge_weight_,
       recursion_depth,
-#ifdef HAVE_ZOLTAN2_OMP
       kokkos_part_no_array,
-#else
-      part_no_array,
-#endif
-
       machine_dimensions,
       num_ranks_per_node,
       divide_to_prime_first

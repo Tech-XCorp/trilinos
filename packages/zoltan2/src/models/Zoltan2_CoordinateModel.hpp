@@ -93,9 +93,6 @@ public:
                   modelFlag_t &flags):
                   numGlobalCoordinates_(), env_(env), comm_(comm),
                   coordinateDim_(),
-#ifndef HAVE_ZOLTAN2_OMP
-                  gids_(),
-#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef VectorAdapter<user_t> adapterWithCoords_t;
@@ -109,9 +106,6 @@ public:
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
                   coordinateDim_(),
-#ifndef HAVE_ZOLTAN2_OMP
-                  gids_(),
-#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -130,9 +124,6 @@ public:
                   modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
                   coordinateDim_(),
-#ifndef HAVE_ZOLTAN2_OMP
-                  gids_(),
-#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     if (!(ia->coordinatesAvailable()))
@@ -151,9 +142,6 @@ public:
 		  modelFlag_t &flags) :
                   numGlobalCoordinates_(), env_(env), comm_(comm),
                   coordinateDim_(),
-#ifndef HAVE_ZOLTAN2_OMP
-                  gids_(),
-#endif
                   xyz_(), userNumWeights_(0), weights_()
   {
     typedef MeshAdapter<user_t> adapterWithCoords_t;
@@ -181,11 +169,7 @@ public:
   /*! \brief Returns the number of coordinates on this process.
    */
   size_t getLocalNumCoordinates() const {
-#ifdef HAVE_ZOLTAN2_OMP
     return kokkos_gids_.size();
-#else
-    return gids_.size();
-#endif
   }
 
 
@@ -237,7 +221,6 @@ public:
     return nCoord;
   }
 
-#ifdef HAVE_ZOLTAN2_OMP
   size_t getCoordinatesKokkos(
     Kokkos::View<const gno_t *, typename node_t::device_type> &Ids,
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
@@ -248,7 +231,6 @@ public:
     wgts = kokkos_weights_;
     return getLocalNumCoordinates();
   }
-#endif
 
   ////////////////////////////////////////////////////
   // The Model interface.
@@ -322,13 +304,11 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
   if (nLocalIds){
 
-#ifdef HAVE_ZOLTAN2_OMP
     ia->getIDsKokkosView(kokkos_gids_);
     ia->getCoordinatesKokkosView(kokkos_xyz_);
     if(userNumWeights_ > 0) {
       ia->getWeightsKokkos2dView(kokkos_weights_);
     }
-#endif
 
     const gno_t *gids=NULL;
     ia->getIDsView(gids);

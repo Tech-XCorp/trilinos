@@ -419,12 +419,9 @@ int main(int argc, char *argv[]){
                 proc_to_task_adj_, /*output*/
 		
                 partArraysize, // TODO refactor me out for Kokkos conversion...
-    #ifdef HAVE_ZOLTAN2_OMP
+
                 // TODO Not sure we can use 0 size to place hold null here
                 Kokkos::View<part_t*,Kokkos::MemoryUnmanaged>(partArray,(partArraysize == -1 ? 0 : partArraysize)),
-    #else
-                partArray,
-    #endif
                 machineDimensions, rank_per_node, divide_prime
                 );
 

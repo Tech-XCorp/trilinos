@@ -238,12 +238,10 @@ public:
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
-#ifdef HAVE_ZOLTAN2_OMP
   void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     ids = Kokkos::View<const gno_t*, typename node_t::device_type,
       Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
   }
-#endif
 
   int getNumWeightsPerID() const { return numWeights_;}
 
@@ -297,13 +295,11 @@ public:
     entries_[idx].getStridedList(length, entries, stride);
   }
 
-#ifdef HAVE_ZOLTAN2_OMP
   void getEntriesKokkosView(
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & entries) const
   {
     entries = kokkos_entries_;
   }
-#endif
 
 private:
 
@@ -313,9 +309,7 @@ private:
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
 
-#ifdef HAVE_ZOLTAN2_OMP
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_entries_;
-#endif
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
@@ -335,10 +329,8 @@ private:
         entries_[v] = input_t(eltV, stride);
       }
 
-#ifdef HAVE_ZOLTAN2_OMP
       kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft>(
         "entries", numIds_, numEntriesPerID_);
-#endif
 
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
@@ -346,13 +338,11 @@ private:
         const scalar_t * entries;
         entries_[v].getStridedList(length, entries, stride);
 
-#ifdef HAVE_ZOLTAN2_OMP
         // TODO - optimize - if we can? Need this into Kokkos view ...
         int fill_index = 0;
         for(int n = 0; n < length; n += stride) {
           kokkos_entries_(fill_index++,v) = entries[n];
         }
-#endif
       }
     }
 
