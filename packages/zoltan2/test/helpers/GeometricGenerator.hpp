@@ -481,7 +481,7 @@ public:
     numPoints(np_), dimension(dim), requested(0), assignedPrevious(0),
     worldSize(wSize){}
 
-  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int state) = 0;
+  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int & state) = 0;
   virtual T getXCenter() = 0;
   virtual T getXRadius() =0;
 
@@ -618,11 +618,11 @@ public:
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
       int me = team_member.team_rank();
-      unsigned int state = stateBegin + me * (slice/(tsize));
       Kokkos::parallel_for(Kokkos::TeamThreadRange(
         team_member, 0, requestedPointcount),
         KOKKOS_LAMBDA(int & cnt) {
           lno_t iteration = 0;
+          unsigned int state = stateBegin + me * (slice/(tsize));
           while(1){
             if(++iteration > MAX_ITER_ALLOWED) {
               throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
@@ -714,7 +714,7 @@ public:
     this->center.z = center_.z;
   }
 
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
 
     //pindex = 0; // not used in normal distribution.
     CoordinatePoint <T> p;
@@ -739,7 +739,7 @@ public:
 
   virtual ~CoordinateNormalDistribution(){};
 private:
-  T normalDist(T center_, T sd, unsigned int state) {
+  T normalDist(T center_, T sd, unsigned int & state) {
     static bool derived=false;
     static T storedDerivation;
     T polarsqrt, normalsquared, normal1, normal2;
@@ -788,7 +788,7 @@ public:
       leftMostz(l_z), rightMostz(r_z){}
 
   virtual ~CoordinateUniformDistribution(){};
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
 
 
     //pindex = 0; //not used in uniform dist.
@@ -868,7 +868,7 @@ public:
   }
 
   virtual ~CoordinateGridDistribution(){};
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
     //lno_t before = processCnt + this->assignedPrevious;
     //std::cout << "before:" << processCnt << " " << this->assignedPrevious << std::endl;
     //lno_t xshift = 0, yshift = 0, zshift = 0;
