@@ -74,6 +74,8 @@ int main(int argc, char *argv[])
   int rank=0, nprocs=1;
 #endif
 
+  Kokkos::initialize(argc, argv);
+
   // For convenience, we'll use the Tpetra defaults for local/global ID types
   // Users can substitute their preferred local/global ID types
   typedef Tpetra::Map<> Map_t;
@@ -433,6 +435,8 @@ int main(int argc, char *argv[])
   delete problem3;
   delete ia3;
 
+  Kokkos::finalize();
+  
 #ifdef HAVE_ZOLTAN2_MPI
   MPI_Finalize();
 #endif
