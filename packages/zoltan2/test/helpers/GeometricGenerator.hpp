@@ -505,9 +505,15 @@ public:
     int tsize = node_t::execution_space::thread_pool_size();
     typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
+
+    // TODO: Determine why need view - how to do this elegantly?
+    // Also which is the second seemingly indentical case below compiling
+    // without this. What exactly controls this?
+    Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
+
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
       int me = team_member.team_rank();
-      unsigned int state = stateBegin + me * slice/(tsize);
+      view_state(me) = stateBegin + me * slice/(tsize);
       Kokkos::parallel_for(Kokkos::TeamThreadRange(
         team_member, 0, requestedPointcount),
         KOKKOS_LAMBDA(int & cnt) {
@@ -516,7 +522,7 @@ public:
               if(++iteration > MAX_ITER_ALLOWED) {
                 throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
               }
-              CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
+              CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
               bool isInHole = false;
               for(lno_t i = 0; i < holeCount; ++i){
                 if(holes[i][0].isInArea(p)){
@@ -583,19 +589,25 @@ public:
 
     int tsize = node_t::execution_space::thread_pool_size();
     typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+
+    // TODO: Determine why need view - how to do this elegantly?
+    // Also which is the second seemingly indentical case below compiling
+    // without this. What exactly controls this?
+    Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
+
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
       int me = team_member.team_rank();
+      view_state(me) = stateBegin + me * (slice/(tsize));
       Kokkos::parallel_for(Kokkos::TeamThreadRange(
         team_member, 0, requestedPointcount),
         KOKKOS_LAMBDA(int & cnt) {
           lno_t iteration = 0;
-          unsigned int state = stateBegin + me * (slice/(tsize));
           while(1){
             if(++iteration > MAX_ITER_ALLOWED) {
               throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
             }
-            CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
+            CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
             bool isInHole = false;
             for(lno_t i = 0; i < holeCount; ++i){
               if(holes[i][0].isInArea(p)){
@@ -1663,11 +1675,16 @@ public:
     }
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, myPointCount),
-        KOKKOS_LAMBDA (const int i) {
+      // TODO: Fix this up - move to a method and test carefully
+      // This runs and compiles fine but it's in a constructor so do not
+      // do a lambda. Note cuda builds will flag this as an error
+      // Probably will refactor anyways
+   //   Kokkos::parallel_for(
+   //     Kokkos::RangePolicy<typename node_t::execution_space, int> (0, myPointCount),
+   //     KOKKOS_LAMBDA (const int i) {
+      for(int i = 0; i < myPointCount; ++i) {
         this->coords[ii][i] = 0;
-      });
+      } // );
     }
 
     this->numLocalCoords = 0;
@@ -1786,34 +1803,41 @@ public:
     	}
     }
 
+      // TODO: Fix this up - move to a method and test carefully
+      // This runs and compiles fine but it's in a constructor so do not
+      // do a lambda. Note cuda builds will flag this as an error
+      // Probably will refactor anyways
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
       switch(this->coordinate_dimension){
       case 1:
- 	{
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-          KOKKOS_LAMBDA (const int i) {
-            this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
-        });
-	}
-        break;
-      case 2:
-	{
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-          KOKKOS_LAMBDA (const int i) {
-            this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
-        });
-	}
-        break;
-      case 3:
-	{
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-          KOKKOS_LAMBDA (const int i) {
-            this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
-        });
-	}
+      {
+            //Kokkos::parallel_for(
+            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+            //  KOKKOS_LAMBDA (const int i) {
+            for(int i = 0; i < this->numLocalCoords; ++i) {
+                this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
+            } //);
+      }
+            break;
+          case 2:
+      {
+            //Kokkos::parallel_for(
+            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+            //  KOKKOS_LAMBDA (const int i) {
+            for(int i = 0; i < this->numLocalCoords; ++i) {
+                this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
+            } //);
+      }
+            break;
+          case 3:
+      {
+            //Kokkos::parallel_for(
+            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
+            //  KOKKOS_LAMBDA (const int i) {
+            for(int i = 0; i < this->numLocalCoords; ++i) {
+                this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
+            } //);
+      }
         break;
       }
     }
