@@ -3091,7 +3091,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_current_mj_gnos(j) = this->kokkos_initial_mj_gnos(j);
       }
     );
-    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
+    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
       KOKKOS_LAMBDA (const int j) {
@@ -7114,7 +7114,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 num_incoming_gnos * sizeof(mj_gno_t));
 #endif
         }
-
         //migrate coordinates
 #ifdef HAVE_ZOLTAN2_OMP
         for (int i = 0; i < this->coord_dim; ++i){
@@ -7147,6 +7146,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         //migrate weights.
 #ifdef HAVE_ZOLTAN2_OMP
+         Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> temp_weights(
+         "kokkos_mj_weights", num_incoming_gnos, this->num_weights_per_coord);
         for (int i = 0; i < this->num_weights_per_coord; ++i){
                 // TODO: How to optimize this better to use layouts properly
                 ArrayRCP<mj_scalar_t> sent_weight(num_incoming_gnos);
@@ -7156,9 +7157,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
                 distributor.doPostsAndWaits<mj_scalar_t>(sent_weight(), 1, received_weight());
                 for(int n = 0; n < num_incoming_gnos; ++n) {
-                  this->kokkos_mj_weights(i,n) = received_weight[n];
+                  temp_weights(i,n) = received_weight[n];
                 }
         }
+        this->kokkos_mj_weights = temp_weights;
 #else
         for (int i = 0; i < this->num_weights_per_coord; ++i){
 
@@ -7201,7 +7203,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 num_incoming_gnos * sizeof(int));
         }
 #endif
-
         //if num procs is less than num parts,
         //we need the part assigment arrays as well, since
         //there will be multiple parts in processor.
@@ -7241,7 +7242,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 this->assigned_part_ids = new_parts;
         }
 #endif
-
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Migration DistributorMigration-" + iteration);
         num_new_local_points = num_incoming_gnos;
 
@@ -7422,8 +7422,6 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         num_procs,
                         input_num_parts,
                         num_points_in_all_processor_parts);
-
-
         //check if migration will be performed or not.
         if (!this->mj_check_to_migrate(
                         migration_reduce_all_population,
@@ -7457,9 +7455,6 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         output_part_begin_index,
                         coordinate_destinations);
 
-
-
-
         freeArray<mj_lno_t>(send_count_to_each_proc);
         std::vector <mj_part_t> tmpv;
 
@@ -7483,6 +7478,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         input_part_boxes->push_back((*output_part_boxes)[ind]);
                 }
         }
+
         //swap the input and output part boxes.
         if (this->mj_keep_part_boxes){
                 RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
@@ -7499,7 +7495,6 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         mj_lno_t num_new_local_points = 0;
 
-
         //perform the actual migration operation here.
         this->mj_migrate_coords(
                         num_procs,
@@ -7513,8 +7508,8 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         if(this->num_local_coords != num_new_local_points){
 #ifdef HAVE_ZOLTAN2_OMP
-                this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_new_local_points", num_new_local_points);
-                this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_new_local_points", num_new_local_points);
+                this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("kokkos_new_coordinate_permutations", num_new_local_points);
+                this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("kokkos_coordinate_permutations", num_new_local_points);
 #else
                 freeArray<mj_lno_t>(this->new_coordinate_permutations);
                 freeArray<mj_lno_t>(this->coordinate_permutations);
@@ -7524,8 +7519,6 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
         this->num_local_coords = num_new_local_points;
         this->num_global_coords = new_global_num_points;
-
-
 
         //create subcommunicator.
         this->create_sub_communicator(processor_ranks_for_subcomm);
@@ -8859,6 +8852,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     num_partitioning_in_current_dim
                     
                     );
+
                 this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
             }
 
@@ -9050,7 +9044,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
         // end of this partitioning dimension
 
-
         int current_world_size = this->comm->getSize();
         long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
 
@@ -9142,7 +9135,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
-
 }
 
 
