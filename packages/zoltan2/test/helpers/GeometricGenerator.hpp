@@ -502,7 +502,6 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-#ifdef HAVE_ZOLTAN2_OMP
     int tsize = node_t::execution_space::thread_pool_size();
     typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
@@ -534,36 +533,6 @@ public:
             }
       });
     });
-#else
-    {
-      int me = 0;
-      int tsize = 1;
-      unsigned int state = stateBegin + me * slice/(tsize);
-      for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
-        lno_t iteration = 0;
-        while(1){
-          if(++iteration > MAX_ITER_ALLOWED) {
-            throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
-          }
-          CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
-
-          bool isInHole = false;
-          for(lno_t i = 0; i < holeCount; ++i){
-            if(holes[i][0].isInArea(p)){
-              isInHole = true;
-              break;
-            }
-          }
-          if(isInHole) continue;
-          points[cnt].x = p.x;
-
-          points[cnt].y = p.y;
-          points[cnt].z = p.z;
-          break;
-        }
-      }
-    }
-#endif
 
 //#pragma omp parallel
       /*
@@ -611,8 +580,7 @@ public:
 
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
-    
-#ifdef HAVE_ZOLTAN2_OMP
+
     int tsize = node_t::execution_space::thread_pool_size();
     typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
@@ -647,44 +615,6 @@ public:
           }
       });
     });
-#else
-      int me = 0;
-      int tsize = 1;
-      unsigned int state = stateBegin + me * (slice/(tsize));
-      /*
-#pragma omp critical
-      {
-
-        std::cout << "myRank:" << me << " stateBeg:" << stateBegin << " tsize:" << tsize << " state:" << state <<  " slice: " << slice / tsize <<  std::endl;
-      }
-      */
-      for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
-        lno_t iteration = 0;
-        while(1){
-          if(++iteration > MAX_ITER_ALLOWED) {
-            throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
-          }
-          CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
-
-          bool isInHole = false;
-          for(lno_t i = 0; i < holeCount; ++i){
-            if(holes[i][0].isInArea(p)){
-              isInHole = true;
-              break;
-            }
-          }
-          if(isInHole) continue;
-          coords[0][cnt + tindex] = p.x;
-          if(this->dimension > 1){
-            coords[1][cnt + tindex] = p.y;
-            if(this->dimension > 2){
-              coords[2][cnt + tindex] = p.z;
-            }
-          }
-          break;
-        }
-      }
-#endif
   }
 };
 
@@ -1733,17 +1663,11 @@ public:
     }
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename node_t::execution_space, int> (0, myPointCount),
         KOKKOS_LAMBDA (const int i) {
         this->coords[ii][i] = 0;
       });
-#else
-      for(lno_t i = 0; i < myPointCount; ++i){
-        this->coords[ii][i] = 0;
-      }
-#endif
     }
 
     this->numLocalCoords = 0;
@@ -1866,47 +1790,29 @@ public:
       switch(this->coordinate_dimension){
       case 1:
  	{
-#ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
           Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
           KOKKOS_LAMBDA (const int i) {
             this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
         });
-#else
-        for (lno_t i = 0; i < this->numLocalCoords; ++i){
-          this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
-        }
-#endif
 	}
         break;
       case 2:
 	{
-#ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
           Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
           KOKKOS_LAMBDA (const int i) {
             this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
         });
-#else
-        for (lno_t i = 0; i < this->numLocalCoords; ++i){
-          this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
-        }
-#endif
 	}
         break;
       case 3:
 	{
-#ifdef HAVE_ZOLTAN2_OMP
         Kokkos::parallel_for(
           Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
           KOKKOS_LAMBDA (const int i) {
             this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
         });
-#else
-        for (lno_t i = 0; i < this->numLocalCoords; ++i){
-          this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
-        }
-#endif
 	}
         break;
       }
@@ -2764,33 +2670,21 @@ public:
 
   void getLocalCoordinatesCopy( scalar_t ** c){
     for(int ii = 0; ii < this->coordinate_dimension; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
         KOKKOS_LAMBDA (const int i) {
           c[ii][i] = this->coords[ii][i];
       });
-#else
-      for (lno_t i = 0; i < this->numLocalCoords; ++i){
-        c[ii][i] = this->coords[ii][i];
-      }
-#endif
     }
   }
 
   void getLocalWeightsCopy(scalar_t **w){
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
-#ifdef HAVE_ZOLTAN2_OMP
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
         KOKKOS_LAMBDA (const int i) {
           w[ii][i] = this->wghts[ii][i];
       });
-#else
-      for (lno_t i = 0; i < this->numLocalCoords; ++i){
-        w[ii][i] = this->wghts[ii][i];
-      }
-#endif
     }
   }
 };
