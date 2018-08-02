@@ -5177,14 +5177,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
          "kokkos_mj_weights", num_incoming_gnos, this->num_weights_per_coord);
         for (int i = 0; i < this->num_weights_per_coord; ++i){
                 // TODO: How to optimize this better to use layouts properly
-                ArrayRCP<mj_scalar_t> sent_weight(num_incoming_gnos);
-                for(int n = 0; n < num_incoming_gnos; ++n) {
-                  sent_weight[n] = this->kokkos_mj_weights(i,n);
+                ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
+                for(int n = 0; n < this->num_local_coords; ++n) {
+                  sent_weight[n] = this->kokkos_mj_weights(n,i);
                 }
                 ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
                 distributor.doPostsAndWaits<mj_scalar_t>(sent_weight(), 1, received_weight());
                 for(int n = 0; n < num_incoming_gnos; ++n) {
-                  temp_weights(i,n) = received_weight[n];
+                  temp_weights(n,i) = received_weight[n];
                 }
         }
         this->kokkos_mj_weights = temp_weights;
