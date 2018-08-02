@@ -254,7 +254,7 @@ public:
 
       // call just to get length for 2d setup
       weights_[0].getStridedList(length, weights, stride);
-      wgt = Kokkos::View<scalar_t**>("wgts", length, numWeights_);
+      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>("wgts", length, numWeights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
         weights_[idx].getStridedList(length, weights, stride);
         size_t fill_index = 0;
