@@ -5158,6 +5158,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 num_incoming_gnos * sizeof(mj_gno_t));
         }
         //migrate coordinates
+        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> temp_coordinates(
+         "kokkos_mj_coordinates", num_incoming_gnos, this->coord_dim);
         for (int i = 0; i < this->coord_dim; ++i){
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> sent_subview_kokkos_mj_coordinates =
                   Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, i);
@@ -5165,18 +5167,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
                 distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> subview_kokkos_mj_coordinates =
-                  Kokkos::subview(kokkos_mj_coordinates, Kokkos::ALL, i);
+                  Kokkos::subview(temp_coordinates, Kokkos::ALL, i);
                 memcpy(
                                 subview_kokkos_mj_coordinates.data(),
                                 received_coord.getRawPtr(),
                                 num_incoming_gnos * sizeof(mj_scalar_t));
         }
-
+        this->kokkos_mj_coordinates = temp_coordinates;
+        
         //migrate weights.
-         Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> temp_weights(
+        Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> temp_weights(
          "kokkos_mj_weights", num_incoming_gnos, this->num_weights_per_coord);
         for (int i = 0; i < this->num_weights_per_coord; ++i){
                 // TODO: How to optimize this better to use layouts properly
+                // I think we can flip the weight layout and then use subviews
+                // but need to determine if this will cause problems elsewhere
                 ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
                 for(int n = 0; n < this->num_local_coords; ++n) {
                   sent_weight[n] = this->kokkos_mj_weights(n,i);
