@@ -189,8 +189,8 @@ int run_pointAssign_tests(
 
     // test correctness of pointAssign for owned points
     {
-      const typename Adapter::part_t *solnPartView =
-                                      problem->getSolution().getPartListView();
+      //const typename Adapter::part_t *solnPartView =
+        //                              problem->getSolution().getPartListView();
 
       size_t numPoints = coords->getLocalLength();
       for (size_t localID = 0; localID < numPoints; localID++) {
@@ -237,9 +237,9 @@ int run_pointAssign_tests(
                                                    typename Adapter::part_t> >
             pBoxes = problem->getSolution().getPartBoxesView();
       for (size_t i = 0; i < pBoxes.size(); i++) {
+        /*
         zscalar_t *lmin = pBoxes[i].getlmins();
         zscalar_t *lmax = pBoxes[i].getlmaxs();;
-        /*
         std::cout << me << " pBox " << i << " pid " << pBoxes[i].getpId()
                   << " (" << lmin[0] << "," << lmin[1] << ","
                   << (coordDim > 2 ? lmin[2] : 0) << ") x "
