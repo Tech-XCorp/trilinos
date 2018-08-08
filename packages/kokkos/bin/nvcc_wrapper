@@ -34,7 +34,7 @@ cpp_files=""
 xcompiler_args=""
 
 # Cuda (NVCC) only arguments
-cuda_args=""
+cuda_args=" -Xcudafe --diag_suppress=conversion_function_not_usable -Xcudafe --diag_suppress=cc_clobber_ignored -Xcudafe --diag_suppress=code_is_unreachable"
 
 # Arguments for both NVCC and Host compiler
 shared_args=""
@@ -167,7 +167,8 @@ do
   #Handle c++11
   --std=c++11|-std=c++11|--std=c++14|-std=c++14|--std=c++1z|-std=c++1z)
     if [ $stdcxx_applied -eq 1 ]; then
-       echo "nvcc_wrapper - *warning* you have set multiple optimization flags (-std=c++1* or --std=c++1*), only the first is used because nvcc can only accept a single std setting"
+       stdcxx_applied=1 #dummy hack disable warning here
+     #  echo "nvcc_wrapper - *warning* you have set multiple optimization flags (-std=c++1* or --std=c++1*), only the first is used because nvcc can only accept a single std setting"
     else
        shared_args="$shared_args $1"
        stdcxx_applied=1

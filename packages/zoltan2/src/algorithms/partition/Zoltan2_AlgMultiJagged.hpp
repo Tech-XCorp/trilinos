@@ -46,6 +46,7 @@
   \brief Contains the Multi-jagged algorthm.
  */
 
+
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
@@ -527,7 +528,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 class AlgMJ
 {
-private:
+public: // For CUDA Temp
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_cut_coords;
 
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
@@ -842,7 +843,7 @@ private:
      * \param my_current_right_closest is the array holding the coordinate of the closest points to the cut lines from right for the calling thread.
      * \param partIds is the array that holds the part ids of the coordinates
      */
-    void mj_1D_part_get_thread_part_weights(
+    KOKKOS_INLINE_FUNCTION void mj_1D_part_get_thread_part_weights(
         size_t total_part_count,
         mj_part_t num_cuts,
         mj_scalar_t max_coord,
@@ -864,8 +865,8 @@ private:
      * \param current_work_part holds the index of the first part (important when concurrent parts are used.)
      * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
      */
-    void mj_accumulate_thread_results(
-        const std::vector <mj_part_t> &num_partitioning_in_current_dim,
+    KOKKOS_INLINE_FUNCTION void mj_accumulate_thread_results(
+        Kokkos::View<mj_part_t*, typename mj_node_t::device_type> num_partitioning_in_current_dim,
         mj_part_t current_work_part,
         mj_part_t current_concurrent_num_parts
         ,typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_memver
@@ -901,7 +902,7 @@ private:
      * \param rectilinear_cut_count is the count of cut lines whose balance can be achived via distributing the points in same coordinate to different parts.
      * \param my_num_incomplete_cut is the number of cutlines whose position has not been determined yet. For K > 1 it is the count in a single part (whose cut lines are determined).
      */
-    void mj_get_new_cut_coordinates(
+    KOKKOS_INLINE_FUNCTION void mj_get_new_cut_coordinates(
         const size_t &num_total_part,
         const mj_part_t &num_cuts,
         const mj_scalar_t &max_coordinate,
@@ -935,7 +936,7 @@ private:
      * \param cut_lower_weight is the weights at the lower bound of the cut.
      * \param expected_weight is the expected weight that should be placed on the left of the cut line.
      */
-    void mj_calculate_new_cut_position (
+    KOKKOS_INLINE_FUNCTION void mj_calculate_new_cut_position (
         mj_scalar_t cut_upper_bound,
         mj_scalar_t cut_lower_bound,
         mj_scalar_t cut_upper_weight,
@@ -2253,8 +2254,6 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               //increase the output number of parts.
               output_num_parts += num_partitions_in_current_dim;
 
-
-
               if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
                 atomic_part_count = 1;
               }
@@ -2311,10 +2310,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         );
 
         //new_coordinate_permutations holds the current permutation.
-        this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_local_coords", this->num_local_coords);
+        this->kokkos_new_coordinate_permutations =
+          Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_local_coords", this->num_local_coords);
+
         this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned parts"); // TODO empty is ok for NULL replacement?
-
-
         if(this->num_local_coords > 0){
                 this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned part ids", this->num_local_coords);
         }
@@ -2329,7 +2328,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         // only store this much if cuts are needed to be stored.
         //this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
-
         this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
           "all cut coordinates",
           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -2349,7 +2347,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
               "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
         }
-
 
         // work array to manipulate coordinate of cutlines in different iterations.
         //necessary because previous cut line information is used for determining
@@ -2584,7 +2581,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if(kokkos_mj_current_dim_coords(i) < running_min)
           running_min = kokkos_mj_current_dim_coords(i);
       }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
-
     // get max
     Kokkos::parallel_reduce("MaxReduce",
       coordinate_end_index - coordinate_begin_index,
@@ -2594,7 +2590,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if(kokkos_mj_current_dim_coords(i) > running_max)
           running_max = kokkos_mj_current_dim_coords(i);
       }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
-
     mj_scalar_t my_total_weight = 0;
     if (this->kokkos_mj_uniform_weights(0)) {
       my_total_weight = coordinate_end_index - coordinate_begin_index;
@@ -2616,7 +2611,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       }
     }
     total_weight = my_total_weight;
-
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
@@ -2625,14 +2619,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       this->kokkos_max_min_coords(my_thread_id + this->num_threads) =
         my_thread_max_coord;
     });
-
     min_coordinate = this->kokkos_max_min_coords(0);
     for(int i = 1; i < this->num_threads; ++i) {
       if(this->kokkos_max_min_coords(i) < min_coordinate) {
         min_coordinate = this->kokkos_max_min_coords(i);
       }
     }
-
     max_coordinate = this->kokkos_max_min_coords(this->num_threads);
     for(int i = this->num_threads + 1; i < this->num_threads * 2; ++i) {
       if(this->kokkos_max_min_coords(i) > max_coordinate) {
@@ -2873,6 +2865,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
     view_total_reduction_size(0) = 0;
 
+    bool bSingleProcess = (this->comm->getSize() == 1);
+
+    // TEMP HACK for CUDA for std::vector 
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> pTemp_num_partitioning_in_current_dim(
+      "pTemp_num_partitioning_in_current_dim", num_partitioning_in_current_dim.size());
+    for(size_t n = 0; n < num_partitioning_in_current_dim.size(); ++n) {
+      pTemp_num_partitioning_in_current_dim(n) = num_partitioning_in_current_dim[n];
+    }
+   
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member){
@@ -2885,12 +2886,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(this->kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
 
-        Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+        Kokkos::single(Kokkos::PerTeam(team_member), [=](){
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
           for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
 
-            mj_part_t num_part_in_dim =  num_partitioning_in_current_dim[current_work_part + i];
+            mj_part_t num_part_in_dim = pTemp_num_partitioning_in_current_dim(current_work_part + i);
             mj_part_t num_cut_in_dim = num_part_in_dim - 1;
             view_total_reduction_size(0) += (4 * num_cut_in_dim + 1);
 
@@ -2979,23 +2980,26 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
             //sum up the results of threads
             this->mj_accumulate_thread_results(
-                num_partitioning_in_current_dim,
+                pTemp_num_partitioning_in_current_dim,
                 current_work_part,
                 current_concurrent_num_parts,
                 team_member);
 
             //now sum up the results of mpi processors.
-            Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
-                if(this->comm->getSize() > 1){
+            Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+                if(!bSingleProcess){
                         // TODO: Remove use of data() - refactor in progress
+std::abort(); // need to add back in!
+/*
                         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
                                         view_total_reduction_size(0),
                                         this->kokkos_total_part_weight_left_right_closests.data(),
                                         this->kokkos_global_total_part_weight_left_right_closests.data());
+*/
                 }
                 else {
-                        // TODO: Optimize
-                        for(int n = 0; n < view_total_reduction_size(0); ++n) {
+                        // TODO: Optimize and fix this c cast - clean up use of the view
+                        for(int n = 0; n < (int) view_total_reduction_size(0); ++n) {
                           this->kokkos_global_total_part_weight_left_right_closests(n) =
                             this->kokkos_total_part_weight_left_right_closests(n);
                         }
@@ -3122,7 +3126,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
 
-                Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+                Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                   mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - this->kokkos_my_incomplete_cut_count(kk);
                   view_total_incomplete_cut_count(0) -= iteration_complete_cut_count;
                 });
@@ -3130,7 +3134,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
 
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
-              Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+              Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                   //swap the cut coordinates for next iteration.
                   Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = this->kokkos_temp_cut_coords;
                   this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
@@ -3147,11 +3151,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // (at first iteration, cutCoordinates == cutCoorindates_tmp).
         // computed cuts must be in cutCoordinates.
         if (kokkos_current_cut_coordinates != this->kokkos_temp_cut_coords){
-          Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+          Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                     mj_part_t next = 0;
                     for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
                             mj_part_t num_parts = -1;
-                            num_parts = num_partitioning_in_current_dim[current_work_part + i];
+                            num_parts = pTemp_num_partitioning_in_current_dim(current_work_part + i);
                             mj_part_t num_cuts = num_parts - 1;
 
                             for(mj_part_t ii = 0; ii < num_cuts; ++ii){
@@ -3162,7 +3166,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           });
           team_member.team_barrier();  // for end of Kokkos::single
 
-          Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+          Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
             this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
           });
           team_member.team_barrier();  // for end of Kokkos::single
@@ -3375,7 +3379,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         //set the last part, and mark it as on the right of the last part.
                                         is_on_right_of_cut = true;
                                         last_compared_part = j;
-                                        if(j < 0) throw std::logic_error("Bad setlast_compared_part");
+                                        //  if(j < 0) throw std::logic_error("Bad setlast_compared_part");
                                         if(_break) break;
                                 }
                         }
@@ -3458,7 +3462,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::mj_accumulate_thread_results(
-    const std::vector <mj_part_t> &num_partitioning_in_current_dim,
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
     typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member){
@@ -3474,7 +3478,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       //iterate for all concurrent parts to find the left and right closest points in the process.
       for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
 
-              mj_part_t num_parts_in_part =  num_partitioning_in_current_dim[current_work_part + i];
+              mj_part_t num_parts_in_part = num_partitioning_in_current_dim(current_work_part + i);
               mj_part_t num_cuts_in_part = num_parts_in_part - 1;
               size_t num_total_part_in_part = num_parts_in_part + size_t (num_cuts_in_part) ;
 
@@ -3515,7 +3519,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       //iterate for all concurrent parts to find the total weight in the process.
       for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
 
-              mj_part_t num_parts_in_part =  num_partitioning_in_current_dim[current_work_part + i];
+              mj_part_t num_parts_in_part = num_partitioning_in_current_dim(current_work_part + i);
               mj_part_t num_cuts_in_part = num_parts_in_part - 1;
               size_t num_total_part_in_part = num_parts_in_part + size_t (num_cuts_in_part) ;
 
@@ -3634,7 +3638,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         // this for assumes the static scheduling in mj_1D_part calculation.
 
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-                          KOKKOS_LAMBDA (mj_part_t & i) {
+                          [=] (mj_part_t & i) {
                                 //the left to be put on the left of the cut.
                                 mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
                                 for(int ii = 0; ii < this->num_threads; ++ii){
@@ -3677,7 +3681,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //dont change static scheduler. the static partitioner used later as well.
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
-                  KOKKOS_LAMBDA (mj_lno_t & ii) {
+                  [=] (mj_lno_t & ii) {
                         mj_lno_t coordinate_index = this->kokkos_coordinate_permutations(ii);
                         mj_scalar_t coordinate_weight = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(coordinate_index,0);
                         mj_part_t coordinate_assigned_place = this->kokkos_assigned_part_ids(coordinate_index);
@@ -3753,7 +3757,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-                    KOKKOS_LAMBDA (mj_part_t & j) {
+                    [=] (mj_part_t & j) {
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
                         for (int i = 0; i < this->num_threads; ++i){
                                 mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j,i);
@@ -3766,7 +3770,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
-                Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+                Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                         //perform prefix sum for num_points in parts.
                         for(mj_part_t j = 1; j < num_parts; ++j){
                                 kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
@@ -3783,7 +3787,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
-                  KOKKOS_LAMBDA (mj_lno_t & ii) {
+                  [=] (mj_lno_t & ii) {
                         mj_lno_t i = this->kokkos_coordinate_permutations(ii);
                         mj_part_t p =  this->kokkos_assigned_part_ids(i);
                         this->kokkos_new_coordinate_permutations(coordinate_begin +
@@ -4103,7 +4107,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
                 if(view_rectilinear_cut_count(0) > 0){
-                        try{
+
+/*
+                       // try
+                          {
                                 Teuchos::scan<int,mj_scalar_t>(
                                                 *comm, Teuchos::REDUCE_SUM,
                                                 num_cuts,
@@ -4113,7 +4120,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 this->kokkos_global_rectilinear_cut_weight.data()
                                 );
                         }
-                        Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
+*/
+                      //  Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
 
                         for (mj_part_t i = 0; i < num_cuts; ++i){
                                 //if cut line weight to be distributed.
@@ -6068,7 +6076,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     */
     
-
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "In MultiJagged Jagged");
 
@@ -6087,7 +6094,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
         this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
-        this->num_threads = mj_node_t::execution_space::thread_pool_size();
+        this->num_threads = 1; // HACK CUDA TEMP mj_node_t::execution_space::thread_pool_size();
     }
     //this->set_input_data();
     this->set_part_specifications();
@@ -6114,7 +6121,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
     RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
-
     compute_global_box();
     if(this->mj_keep_part_boxes){
         this->init_part_boxes(output_part_boxes);
@@ -6155,7 +6161,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
-
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6184,7 +6189,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
             continue;
         }
-
 
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
@@ -6248,7 +6252,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                             this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts)); //total_weight
 
             }
-
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
@@ -6256,7 +6259,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 current_concurrent_num_parts,
                                 this->kokkos_process_local_min_max_coord_total_weight,
                                 this->kokkos_global_min_max_coord_total_weight);
-
                 //represents the total number of cutlines
                 //whose coordinate should be determined.
                 mj_part_t total_incomplete_cut_count = 0;
@@ -6819,12 +6821,12 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   {
     ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
 
-    throw std::logic_error("Restore doPostsAndWaits");
+//    throw std::logic_error("Restore doPostsAndWaits");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
   //  ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_, num_local_coords_);
   //  distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
 
-    throw std::logic_error("distributor not implemented for coords! refactor in progress.");
+//    throw std::logic_error("distributor not implemented for coords! refactor in progress.");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
     /* started - not tested yet
     kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *, typename mj_node_t::device_type>("gids", num_incoming_gnos);
@@ -6842,7 +6844,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
 
   //migrate coordinates
   kokkos_result_mj_coordinates_ = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type>("coords", num_local_coords_);
-  throw std::logic_error("distributor not implemented for coords! refactor in progress.");
+//  throw std::logic_error("distributor not implemented for coords! refactor in progress.");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
   //result_mj_coordinates_ = allocMemory<mj_scalar_t *>(coord_dim_);
   //for (int i = 0; i < coord_dim_; ++i){
@@ -6857,7 +6859,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   //}
 
   //migrate weights.
-  throw std::logic_error("distributor not implemented for weights! refactor in progress.");
+//  throw std::logic_error("distributor not implemented for weights! refactor in progress.");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
   //result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
   //for (int i = 0; i < num_weights_per_coord_; ++i){
@@ -6872,7 +6874,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
   //}
 
   //migrate the owners of the coordinates
-  throw std::logic_error("distributor not implemented for owners! refactor in progress.");
+//  throw std::logic_error("distributor not implemented for owners! refactor in progress.");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
   //{ 
   //  std::vector<int> owner_of_coordinate(num_local_coords_, myRank);
@@ -6907,7 +6909,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
 {
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
-
+std::cout << "calling partition..." << std::endl;
     this->set_up_partitioning_data(solution);
     this->set_input_parameters(this->mj_env->getParameters());
     if (this->mj_keep_part_boxes){
@@ -6990,6 +6992,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - call multi_jagged_part()");
 
+std::cout << "calling mj_partitioner.multi_jagged_part..." << std::endl;
     if (am_i_in_subset){
       this->mj_partitioner.multi_jagged_part(
           this->mj_env,
@@ -7065,14 +7068,16 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
         //  ArrayView<const mj_gno_t> sent_gnos(result_num_local_coords);
-        throw std::logic_error("Restore distributoer!");
+        throw std::logic_error("Restore distributor!");
         // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
         //ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_, result_num_local_coords);
         //distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
       {
-        ArrayView<mj_part_t> sent_partnos(partId());
-        distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1, received_partids());
+        throw std::logic_error("Restore distributor!");
+        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+        //ArrayView<mj_part_t> sent_partnos(partId());
+        //distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1, received_partids());
       }
       partId = arcp(new mj_part_t[this->num_local_coords],
                       0, this->num_local_coords, true);
@@ -7088,7 +7093,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         mj_lno_t origLID = localGidToLid2[received_gnos[i]];
         partId[origLID] = received_partids[i];
       }
-
 #else
       Teuchos::Hashtable<mj_gno_t, mj_lno_t>
 	      localGidToLid2(this->num_local_coords);
@@ -7117,6 +7121,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
 }
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
+
+std::cout << "done with partion..." << std::endl;
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
@@ -7335,7 +7341,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 }
         }
 
-        this->num_threads = Adapter::node_t::execution_space::thread_pool_size();
+        this->num_threads = 1;  // HACK CUDA TEMP Adapter::node_t::execution_space::thread_pool_size();
 }
 
 /////////////////////////////////////////////////////////////////////////////

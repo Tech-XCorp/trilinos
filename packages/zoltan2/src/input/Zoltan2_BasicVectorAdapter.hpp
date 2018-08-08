@@ -334,14 +334,13 @@ private:
 
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
-        int stride;
-        const scalar_t * entries;
-        entries_[v].getStridedList(length, entries, stride);
+        const scalar_t * entriesPtr;
+        entries_[v].getStridedList(length, entriesPtr, stride);
 
         // TODO - optimize - if we can? Need this into Kokkos view ...
         int fill_index = 0;
-        for(int n = 0; n < length; n += stride) {
-          kokkos_entries_(fill_index++,v) = entries[n];
+        for(int n = 0; n < static_cast<int>(length); n += stride) {
+          kokkos_entries_(fill_index++,v) = entriesPtr[n];
         }
       }
     }

@@ -408,7 +408,7 @@ void KernelWrappers2<Scalar,LocalOrdinal,GlobalOrdinal,Kokkos::Compat::KokkosCud
   using Teuchos::RCP;
 
   // Options
-  int team_work_size = 16;  // Defaults to 16 as per Deveci 12/7/16 - csiefer
+  // int team_work_size = 16;  // Defaults to 16 as per Deveci 12/7/16 - csiefer
   std::string myalg("MSAK");
   if(!params.is_null()) {
     if(params->isParameter("cuda: jacobi algorithm"))

@@ -195,7 +195,7 @@ int run_pointAssign_tests(
       size_t numPoints = coords->getLocalLength();
       for (size_t localID = 0; localID < numPoints; localID++) {
 
-        typename Adapter::part_t solnPart = solnPartView[localID];
+        // typename Adapter::part_t solnPart = solnPartView[localID];
 
         for (int i = 0; i < coordDim; i++)
           pointDrop[i] = coords->getData(i)[localID];
@@ -792,7 +792,6 @@ int testFromDataFile(
     if (mj_premigration_coordinate_cutoff > 0){
         params->set("mj_premigration_coordinate_count", mj_premigration_coordinate_cutoff);
     }
-
     Zoltan2::PartitioningProblem<inputAdapter_t> *problem;
     try {
         problem = new Zoltan2::PartitioningProblem<inputAdapter_t>(ia,
@@ -805,7 +804,6 @@ int testFromDataFile(
         problem->solve();
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
-
     {
     // Run a test with BasicVectorAdapter and xyzxyz format coordinates
     const int bvme = comm->getRank();
@@ -818,7 +816,6 @@ int testFromDataFile(
             new ArrayRCP<inputAdapter_t::scalar_t>[bvnvecs];
     for (size_t i = 0; i < bvnvecs; i++)
       bvtpetravectors[i] = coords->getDataNonConst(i);
-
     int idx = 0;
     inputAdapter_t::gno_t *bvgids = new
                            inputAdapter_t::gno_t[coords->getLocalLength()];
@@ -1295,6 +1292,44 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
+/*
+#include<Kokkos_Core.hpp>
+using std::max;
+using std::min;
+using std::abs;
+int main(int argc, char* argv[]) {
+  Kokkos::initialize(argc,argv);
+  {
+  typedef double KruskalValue;
+  typedef int SubIdx;
+  Kokkos::View<double**> A("A",10,10),B("B",10,10);
+  Kokkos::deep_copy(A,3.0);
+  Kokkos::deep_copy(B,0.5);
+  int nRow = 10;
+  int kruskal_nColumn = 10;
+  double myMax;
+  const auto teamSize = Kokkos::AUTO;
+  Kokkos::parallel_reduce (Kokkos::TeamPolicy<>(nRow, teamSize), KOKKOS_LAMBDA (Kokkos::TeamPolicy<>::member_type thread, double &ldMyMax)
+  {
+    const auto iRow = thread.league_rank();
+    KruskalValue tldMyMax = 0;
+    Kokkos::parallel_reduce (Kokkos::TeamThreadRange(thread, kruskal_nColumn), [=] (SubIdx iCol, KruskalValue &lldMyMax)
+    {
+      lldMyMax = static_cast<KruskalValue>(max(static_cast<double>(lldMyMax), abs(min(static_cast<double>(A(iRow,iCol)), 1.0 - static_cast<double>(B(iRow,iCol))))));
+    },Kokkos::Experimental::Max<double>(tldMyMax));
+
+    ldMyMax = static_cast<KruskalValue>(max(static_cast<double>(ldMyMax), static_cast<double>(tldMyMax)));
+  }, Kokkos::Experimental::Max<KruskalValue>(myMax));
+  printf("%lf\n",myMax);
+  }
+  Kokkos::fence();
+  Kokkos::finalize();
+
+  std::cout << "PASSED" << std::endl;
+  return 0;
+}
+*/
+
 int main(int argc, char *argv[])
 {
     Teuchos::GlobalMPISession session(&argc, &argv);
@@ -1302,8 +1337,8 @@ int main(int argc, char *argv[])
     //cout << argv << endl;
 
     RCP<const Teuchos::Comm<int> > tcomm = Teuchos::DefaultComm<int>::getComm();
-    int rank = tcomm->getRank();
 
+    int rank = tcomm->getRank();
 
     int numParts = -10;
     float imbalance = -1.03;

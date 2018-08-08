@@ -502,8 +502,8 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-    int tsize = node_t::execution_space::thread_pool_size();
-    typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+    int tsize = 1; // HACK CUDA TEMP node_t::execution_space::thread_pool_size();
+    //typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
 
     // TODO: Determine why need view - how to do this elegantly?
@@ -511,12 +511,18 @@ public:
     // without this. What exactly controls this?
     Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
 
-    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-      int me = team_member.team_rank();
+    //Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+    {
+      int me = 0; // TODO team_member.team_rank();
       view_state(me) = stateBegin + me * slice/(tsize);
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(
-        team_member, 0, requestedPointcount),
-        KOKKOS_LAMBDA(int & cnt) {
+ 
+      for(int cnt = 0; cnt < requestedPointcount; ++cnt)
+
+//      Kokkos::parallel_for(Kokkos::TeamThreadRange(
+//        team_member, 0, requestedPointcount),
+//        KOKKOS_LAMBDA(int & cnt)
+
+        {
             lno_t iteration = 0;
             while(1){
               if(++iteration > MAX_ITER_ALLOWED) {
@@ -537,8 +543,8 @@ public:
               points[cnt].z = p.z;
               break;
             }
-      });
-    });
+      } // );
+    }//);
 
 //#pragma omp parallel
       /*
@@ -587,25 +593,30 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-    int tsize = node_t::execution_space::thread_pool_size();
-    typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+    int tsize = 1; // HACK CUDA TEMP node_t::execution_space::thread_pool_size();
+    // typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
 
     // TODO: Determine why need view - how to do this elegantly?
-    // Also which is the second seemingly indentical case below compiling
+    // Also why is the second seemingly identical case below compiling
     // without this. What exactly controls this?
     Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
 
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
-    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-      int me = team_member.team_rank();
+ //   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) 
+    {
+      int me = 0; // TODO team_member.team_rank();
       view_state(me) = stateBegin + me * (slice/(tsize));
-      Kokkos::parallel_for(Kokkos::TeamThreadRange(
-        team_member, 0, requestedPointcount),
-        KOKKOS_LAMBDA(int & cnt) {
+
+      for(int cnt = 0; cnt < requestedPointcount; ++cnt) 
+
+  //    Kokkos::parallel_for(Kokkos::TeamThreadRange(
+  //      team_member, 0, requestedPointcount),
+  //      [=] (int & cnt) 
+      {
           lno_t iteration = 0;
           while(1){
             if(++iteration > MAX_ITER_ALLOWED) {
-              throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
+            //  throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
             }
             CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
             bool isInHole = false;
@@ -625,8 +636,8 @@ public:
             }
             break;
           }
-      });
-    });
+      } // );
+    } // );
   }
 };
 
@@ -673,7 +684,8 @@ public:
         p.z = normalDist(this->center.z, this->standartDevz, state);
         break;
       default:
-        throw "unsupported dimension";
+        p.x = 0; p.y = 0; p.z = 0;  // TODO This is junk code for cuda need to setup error handling
+       // throw "unsupported dimension";
       }
     }
     return p;
@@ -681,7 +693,7 @@ public:
 
   virtual ~CoordinateNormalDistribution(){};
 private:
-  T normalDist(T center_, T sd, unsigned int & state) {
+  KOKKOS_INLINE_FUNCTION T normalDist(T center_, T sd, unsigned int & state) {
     static bool derived=false;
     static T storedDerivation;
     T polarsqrt, normalsquared, normal1, normal2;
@@ -747,7 +759,8 @@ public:
         p.z = uniformDist(this->leftMostz, this->rightMostz, state);
         break;
       default:
-        throw "unsupported dimension";
+        p.x = 0; p.y = 0; p.z = 0; // TODO: Cuda error handling
+       // throw "unsupported dimension";
       }
     }
     return p;
@@ -810,6 +823,7 @@ public:
   }
 
   virtual ~CoordinateGridDistribution(){};
+  
   virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
     //lno_t before = processCnt + this->assignedPrevious;
     //std::cout << "before:" << processCnt << " " << this->assignedPrevious << std::endl;
@@ -1671,7 +1685,8 @@ public:
 
     this->coords = new scalar_t *[this->coordinate_dimension];
     for(int i = 0; i < this->coordinate_dimension; ++i){
-      this->coords[i] = new scalar_t[myPointCount];
+      typedef scalar_t temp_t; // TODO remove this - added to resolve cuda warnings I don't understand yet
+      this->coords[i] = new temp_t[myPointCount];
     }
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){

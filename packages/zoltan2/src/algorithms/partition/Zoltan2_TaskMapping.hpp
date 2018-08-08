@@ -1,3 +1,4 @@
+
 #ifndef _ZOLTAN2_COORD_PARTITIONMAPPING_HPP_
 #define _ZOLTAN2_COORD_PARTITIONMAPPING_HPP_
 
@@ -398,9 +399,9 @@ void getCoarsenedPartGraph(
       }
       g_part_xadj[i + 1] = nindex;
     }
-    return;
+    return; // TODO clean up flow here - remove this return
   }
-
+#ifdef HAVE_ZOLTAN2_MPI // TODO added this due to return above to clean up cuda warnings - needs rework
   RCP<const Teuchos::Comm<int> > tcomm = rcpFromRef(*comm);
   typedef Tpetra::Map<>::node_type t_node_t;
   typedef Tpetra::Map<part_t, part_t, t_node_t> t_map_t;
@@ -522,6 +523,7 @@ void getCoarsenedPartGraph(
     A_gather->getLocalRowCopy(i, Indices, Values, nentries);
   }
   envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Import Copy");
+#endif
 }
 
 
@@ -2669,7 +2671,9 @@ public:
 
     for (int i = 0; i < machine_dim; ++i){
       part_t numMachinesAlongDim = machine_dimensions[i];
-      part_t *machineCounts= new part_t[numMachinesAlongDim];
+
+      typedef part_t temp_t; // hack to fix cuda warning - TODO
+      part_t *machineCounts= new temp_t[numMachinesAlongDim];
       memset(machineCounts, 0, sizeof(part_t) *numMachinesAlongDim);
 
       int *filledCoordinates= new int[numMachinesAlongDim];
