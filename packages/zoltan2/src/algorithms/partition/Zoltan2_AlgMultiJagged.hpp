@@ -2989,7 +2989,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
                 if(!bSingleProcess){
                         // TODO: Remove use of data() - refactor in progress
-std::abort(); // need to add back in!
 /*
                         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
                                         view_total_reduction_size(0),
@@ -4110,6 +4109,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                        // try
                           {
+                                // For cuda initial testing reduce this to a form ok for device
+                                // TODO need to opimize this but now we're just assuming on thread
+  	                        for(int n = 0; n < (int) this->kokkos_process_rectilinear_cut_weight.size(); ++n) {
+                                  this->kokkos_global_rectilinear_cut_weight(n) =
+                                    this->kokkos_process_rectilinear_cut_weight(n);
+                                }
+/*
                                 Teuchos::scan<int,mj_scalar_t>(
                                                 *comm, Teuchos::REDUCE_SUM,
                                                 num_cuts,
@@ -4118,6 +4124,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 this->kokkos_process_rectilinear_cut_weight.data(),
                                                 this->kokkos_global_rectilinear_cut_weight.data()
                                 );
+*/
                         }
 
                       //  Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
