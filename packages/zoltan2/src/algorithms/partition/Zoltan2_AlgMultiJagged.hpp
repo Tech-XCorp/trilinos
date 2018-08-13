@@ -2920,10 +2920,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
 
-    auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
+//    auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
     auto local_kokkos_global_total_part_weight_left_right_closests = kokkos_global_total_part_weight_left_right_closests;
     auto local_kokkos_total_part_weight_left_right_closests = kokkos_total_part_weight_left_right_closests;
-    auto local_kokkos_cut_coordinates_work_array = kokkos_cut_coordinates_work_array;
+//    auto local_kokkos_cut_coordinates_work_array = kokkos_cut_coordinates_work_array;
     auto local_kokkos_part_xadj = kokkos_part_xadj;
 
     auto local_kokkos_global_min_max_coord_total_weight = kokkos_global_min_max_coord_total_weight;
@@ -3014,10 +3014,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
                     mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords =
-                      Kokkos::subview(local_kokkos_temp_cut_coords,
+                      Kokkos::subview(this->kokkos_temp_cut_coords,
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_cut_shifts,
-                          local_kokkos_temp_cut_coords.size()));
+                          this->kokkos_temp_cut_coords.size()));
                     mj_scalar_t min_coord = local_kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                     // compute part weights using existing cuts
@@ -3209,7 +3209,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
               Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                   //swap the cut coordinates for next iteration.
-                  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = local_kokkos_temp_cut_coords;
+                  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = this->kokkos_temp_cut_coords;
                   this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
                   this->kokkos_cut_coordinates_work_array = t;
               });
@@ -3223,7 +3223,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // cutCoordinates and cutCoordinatesWork.
         // (at first iteration, cutCoordinates == cutCoorindates_tmp).
         // computed cuts must be in cutCoordinates.
-        if (kokkos_current_cut_coordinates != local_kokkos_temp_cut_coords){
+        if (kokkos_current_cut_coordinates != this->kokkos_temp_cut_coords){
           Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                     mj_part_t next = 0;
                     for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
