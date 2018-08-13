@@ -3174,18 +3174,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 kokkos_current_local_part_weights,
                                 kokkos_current_part_target_weights,
                                 kokkos_current_cut_line_determined,
-                                Kokkos::subview(local_kokkos_temp_cut_coords,
+                                Kokkos::subview(this->kokkos_temp_cut_coords,
                                   std::pair<mj_lno_t, mj_lno_t>(
-                                    cut_shift, local_kokkos_temp_cut_coords.size())),
+                                    cut_shift, this->kokkos_temp_cut_coords.size())),
                                 kokkos_current_cut_upper_bounds,
                                 kokkos_current_cut_lower_bounds,
                                 kokkos_current_global_left_closest_points,
                                 kokkos_current_global_right_closest_points,
                                 kokkos_current_cut_lower_bound_weights,
                                 kokkos_current_cut_upper_weights,
-                                Kokkos::subview(local_kokkos_cut_coordinates_work_array,
+                                Kokkos::subview(this->kokkos_cut_coordinates_work_array,
                                   std::pair<mj_lno_t, mj_lno_t>(
-                                    cut_shift, local_kokkos_cut_coordinates_work_array.size())),
+                                    cut_shift, this->kokkos_cut_coordinates_work_array.size())),
                                 kokkos_current_part_cut_line_weight_to_put_left,
                                 view_rectilinear_cut_count,
                                 kk,
@@ -3210,7 +3210,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
                   //swap the cut coordinates for next iteration.
                   Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = local_kokkos_temp_cut_coords;
-                  this->kokkos_temp_cut_coords = local_kokkos_cut_coordinates_work_array;
+                  this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
                   this->kokkos_cut_coordinates_work_array = t;
               });
               team_member.team_barrier(); // for end of Kokkos::single
@@ -3240,7 +3240,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           team_member.team_barrier();  // for end of Kokkos::single
 
           Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
-            this->kokkos_cut_coordinates_work_array = local_kokkos_temp_cut_coords;
+            this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
           });
           team_member.team_barrier();  // for end of Kokkos::single
         }
@@ -3989,10 +3989,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
                   //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
                   imbalance_on_right = imbalanceOf2(global_total_weight - seen_weight_in_part, global_total_weight - expected_weight_in_part);
-printf("Analyze 5 2\n");
+//printf("Analyze 5 2\n");
                   bool is_left_imbalance_valid = ZOLTAN2_ABS(imbalance_on_left) - used_imbalance_tolerance < this->sEpsilon ;
                   bool is_right_imbalance_valid = ZOLTAN2_ABS(imbalance_on_right) - used_imbalance_tolerance < this->sEpsilon;
-printf("Analyze 6\n");
+//printf("Analyze 6\n");
                   //if the cut line reaches to desired imbalance.
                   if(is_left_imbalance_valid && is_right_imbalance_valid){
                           kokkos_current_cut_line_determined(i) = true;
@@ -4002,7 +4002,7 @@ printf("Analyze 6\n");
                   }
                   else if(imbalance_on_left < 0){
                           //if left imbalance < 0 then we need to move the cut to right.
-printf("Analyze 7\n");
+//printf("Analyze 7\n");
                           if(this->distribute_points_on_cut_lines){
                                   //if it is okay to distribute the coordinate on
                                   //the same coordinate to left and right.
