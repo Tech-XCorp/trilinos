@@ -1298,6 +1298,7 @@ using std::max;
 using std::min;
 using std::abs;
 int main(int argc, char* argv[]) {
+
   Kokkos::initialize(argc,argv);
   {
   typedef double KruskalValue;
@@ -1337,6 +1338,41 @@ int main(int argc, char *argv[])
     //cout << argv << endl;
 
     RCP<const Teuchos::Comm<int> > tcomm = Teuchos::DefaultComm<int>::getComm();
+
+
+
+
+/*
+  {
+  typedef double KruskalValue;
+  typedef int SubIdx;
+  Kokkos::View<double**> A("A",10,10),B("B",10,10);
+  Kokkos::deep_copy(A,3.0);
+  Kokkos::deep_copy(B,0.5);
+  int nRow = 10;
+  int kruskal_nColumn = 10;
+  double myMax;
+  const auto teamSize = Kokkos::AUTO;
+  Kokkos::parallel_reduce (Kokkos::TeamPolicy<>(nRow, teamSize), KOKKOS_LAMBDA (Kokkos::TeamPolicy<>::member_type thread, double &ldMyMax)
+  {
+    const auto iRow = thread.league_rank();
+    KruskalValue tldMyMax = 0;
+    Kokkos::parallel_reduce (Kokkos::TeamThreadRange(thread, kruskal_nColumn), [=] (SubIdx iCol, KruskalValue &lldMyMax)
+    {
+      lldMyMax = static_cast<KruskalValue>(max(static_cast<double>(lldMyMax), abs(min(static_cast<double>(A(iRow,iCol)), 1.0 - static_cast<double>(B(iRow,iCol))))));
+    },Kokkos::Experimental::Max<double>(tldMyMax));
+
+    ldMyMax = static_cast<KruskalValue>(max(static_cast<double>(ldMyMax), static_cast<double>(tldMyMax)));
+  }, Kokkos::Experimental::Max<KruskalValue>(myMax));
+  printf("%lf\n",myMax);
+  }
+  Kokkos::fence();
+  Kokkos::finalize();
+
+  std::cout << "PASSED" << std::endl;
+  return 0;
+
+*/
 
     int rank = tcomm->getRank();
 
