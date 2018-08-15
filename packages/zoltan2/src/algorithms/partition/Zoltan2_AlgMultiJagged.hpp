@@ -2324,16 +2324,17 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::allocate_set_work_memory(){
-
+printf("check1\n");
+CHECK_BUILD_KILL(995)
         //points to process that initially owns the coordinate.
         this->kokkos_owner_of_coordinate  = Kokkos::View<int*, typename mj_node_t::device_type>("empty"); // TODO decide if this is ok
-
+printf("check2\n");
         //Throughout the partitioning execution,
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
         this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
         //initial configuration, set each pointer-i to i.
- 
+ printf("check3\n");
         // Cuda local/this issues
         // use local view to avoid capturing this which is problematic for CUDA
         // see issue #695 and #762
@@ -2348,13 +2349,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
         );
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
-
+printf("check4\n");
         //new_coordinate_permutations holds the current permutation.
         this->kokkos_new_coordinate_permutations =
           Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_local_coords", this->num_local_coords);
-
+printf("check5\n");
         this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned parts"); // TODO empty is ok for NULL replacement?
-
+printf("check6\n");
         if(this->num_local_coords > 0){
                 this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned part ids", this->num_local_coords);
         }
@@ -2366,7 +2367,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_part_xadj(0) = static_cast<mj_lno_t>(this->num_local_coords);//the end of the initial partition is the end of coordinates.
         //the ends points of the output, this is allocated later.
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
-
+printf("check7\n");
         // only store this much if cuts are needed to be stored.
         //this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
         this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
@@ -2376,6 +2377,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("empty"); //how much weight percentage should a MPI put left side of the each cutline
         this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
 
+printf("check8\n");
         //distribute_points_on_cut_lines = false;
         if(this->distribute_points_on_cut_lines){
             this->kokkos_process_cut_line_weight_to_put_left =
@@ -2388,7 +2390,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
               "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
         }
-
+CHECK_BUILD_KILL(997)
+printf("check9\n");
         // work array to manipulate coordinate of cutlines in different iterations.
         //necessary because previous cut line information is used for determining
         //the next cutline information. therefore, cannot update the cut work array
@@ -2400,7 +2403,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "kokkos_target_part_weights",
       this->max_num_part_along_dim * this->max_concurrent_part_calculation);
-
+printf("check10\n");
     // the weight from left to write.
     this->kokkos_cut_upper_bound_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("kokkos_cut_upper_bound_coordinates",
       this->max_num_cut_along_dim * this->max_concurrent_part_calculation);  //upper bound coordinate of a cut line
@@ -2450,49 +2453,57 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_global_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "global_total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
-
+CHECK_BUILD_KILL(998)
+printf("check11\n");
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
+
+    auto local_num_local_coords = this->num_local_coords;
+
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
     for (int i=0; i < this->coord_dim; i++){
       Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
           coord(j,i) = local_kokkos_mj_coordinates(j,i);
         }
       );
     }
     this->kokkos_mj_coordinates = coord;
-
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
     auto local_kokkos_mj_weights = kokkos_mj_weights; // See comment above - Cuda local/this issues
     for (int i=0; i < this->num_weights_per_coord; i++){
       Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
           weights(j,i) = local_kokkos_mj_weights(j,i);
         }
       );
     }
+
     this->kokkos_mj_weights = weights;
     this->kokkos_current_mj_gnos =
-      Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
+      Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", local_num_local_coords);
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
     auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos; // See comment above - Cuda local/this issues
+CHECK_BUILD_KILL(300)
+
+printf("check12      %d   %d    %d\n", (int)this->kokkos_current_mj_gnos.size(), (int) this->kokkos_initial_mj_gnos.size(), local_num_local_coords);
     Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
       }
     );
+CHECK_BUILD_KILL(10000)
 
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
     auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
     auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
     Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         local_kokkos_owner_of_coordinate(j) = local_myActualRank;
       }
@@ -5958,10 +5969,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     // output_part_boxes so it's a Kokkos View I expect. But would
     // like to get a basic cuda build running first.
     // TODO: Fix this
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, current_num_parts),
-      KOKKOS_LAMBDA (const int i) {
-//    for(int i = 0; i < current_num_parts; ++i) {
+//    Kokkos::parallel_for(
+//      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, current_num_parts),
+//      KOKKOS_LAMBDA (const int i) {
+    for(int i = 0; i < current_num_parts; ++i) {
         mj_lno_t begin = 0;
         mj_lno_t end = local_kokkos_part_xadj(i);
         if(i > 0) begin = local_kokkos_part_xadj(i-1);
@@ -5973,8 +5984,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_lno_t k = local_kokkos_coordinate_permutations(ii);
           local_kokkos_assigned_part_ids(k) = part_to_set_index;
         }
-    });
-//    }
+//    });
+    }
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
@@ -6203,7 +6214,7 @@ CHECK_BUILD_KILL(1)
     
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "In MultiJagged Jagged");
-
+CHECK_BUILD_KILL(2)
     {
         this->imbalance_tolerance = imbalance_tolerance_;
         this->num_global_parts = num_global_parts_;
@@ -6221,10 +6232,18 @@ CHECK_BUILD_KILL(1)
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
         this->num_threads = 1; // HACK CUDA TEMP mj_node_t::execution_space::thread_pool_size();
     }
+
+CHECK_BUILD_KILL(20)
+
     //this->set_input_data();
     this->set_part_specifications();
 
+CHECK_BUILD_KILL(200)
+
     this->allocate_set_work_memory();
+
+CHECK_BUILD_KILL(30)
+
     //We duplicate the comm as we create subcommunicators during migration.
     //We keep the problemComm as it is, while comm changes after each migration.
     this->comm = this->mj_problemComm->duplicate();
@@ -6237,7 +6256,7 @@ CHECK_BUILD_KILL(1)
     mj_part_t output_part_begin_index = 0;
     mj_part_t future_num_parts = this->total_num_part;
     bool is_data_ever_migrated = false;
-
+CHECK_BUILD_KILL(40)
     std::vector<mj_part_t> *future_num_part_in_parts = new std::vector<mj_part_t> ();
     std::vector<mj_part_t> *next_future_num_parts_in_parts = new std::vector<mj_part_t> ();
     next_future_num_parts_in_parts->push_back(this->num_global_parts);
@@ -6248,7 +6267,7 @@ CHECK_BUILD_KILL(1)
     if(this->mj_keep_part_boxes){
         this->init_part_boxes(output_part_boxes);
     }
-
+CHECK_BUILD_KILL(3)
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
     for (int i = 0; i < this->recursion_depth; ++i){
         //convert i to string to be used for debugging purposes.
@@ -6285,6 +6304,7 @@ CHECK_BUILD_KILL(1)
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
+CHECK_BUILD_KILL(4)
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6313,7 +6333,7 @@ CHECK_BUILD_KILL(1)
             }
             continue;
         }
-
+CHECK_BUILD_KILL(5)
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
@@ -6334,7 +6354,7 @@ CHECK_BUILD_KILL(1)
                         std::min(current_num_parts - current_work_part, this->max_concurrent_part_calculation);
 
         mj_part_t obtained_part_index = 0;
-
+CHECK_BUILD_KILL(6)
         //run for all available parts.
         for (; current_work_part < current_num_parts;
                  current_work_part += current_concurrent_num_parts){
@@ -6373,6 +6393,7 @@ CHECK_BUILD_KILL(1)
                             this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max_coordinate
                             this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts)); //total_weight
             }
+CHECK_BUILD_KILL(7)
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
@@ -6481,7 +6502,7 @@ CHECK_BUILD_KILL(1)
                     );
                 this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
             }
-
+CHECK_BUILD_KILL(8)
             //create new part chunks
             {
                 mj_part_t output_array_shift = 0;
@@ -6606,6 +6627,7 @@ CHECK_BUILD_KILL(1)
                 }
             }
         }
+CHECK_BUILD_KILL(9)
         // end of this partitioning dimension
         int current_world_size = this->comm->getSize();
         long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
@@ -6641,6 +6663,7 @@ CHECK_BUILD_KILL(1)
                         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Migration-" + istring);
                 }
         }
+CHECK_BUILD_KILL(10)
         //swap the coordinate permutations for the next dimension.
         Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> tmp = this->kokkos_coordinate_permutations;
         this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
@@ -6661,7 +6684,7 @@ CHECK_BUILD_KILL(1)
 
 
     }
-
+CHECK_BUILD_KILL(11)
     // Partitioning is done
     delete future_num_part_in_parts;
     delete next_future_num_parts_in_parts;
@@ -6680,6 +6703,7 @@ CHECK_BUILD_KILL(1)
     kokkos_result_mj_gnos_ = this->kokkos_current_mj_gnos;
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
+CHECK_BUILD_KILL(12)
 }
 
 
