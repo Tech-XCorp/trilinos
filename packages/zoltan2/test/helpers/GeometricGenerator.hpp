@@ -2708,22 +2708,31 @@ public:
   }
 
   void getLocalCoordinatesCopy( scalar_t ** c){
+    auto local_numLocalCoords = this->numLocalCoords;
+    auto local_coords = this->coords;
+
     for(int ii = 0; ii < this->coordinate_dimension; ++ii){
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-        KOKKOS_LAMBDA (const int i) {
-          c[ii][i] = this->coords[ii][i];
-      });
+    // TODO Disabled to get cuda working
+    //  Kokkos::parallel_for(
+    //    Kokkos::RangePolicy<typename node_t::execution_space, int> (0, local_numLocalCoords),
+    //    KOKKOS_LAMBDA (const int i) {
+      for(int i = 0; i < local_numLocalCoords; ++i) {
+          c[ii][i] = local_coords[ii][i];
+      } // );
     }
   }
 
   void getLocalWeightsCopy(scalar_t **w){
+    auto local_numLocalCoords = this->numLocalCoords;
+    auto local_wghts = this->wghts;
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-        KOKKOS_LAMBDA (const int i) {
-          w[ii][i] = this->wghts[ii][i];
-      });
+    // TODO Disabled to get cuda working
+    //  Kokkos::parallel_for(
+    //    Kokkos::RangePolicy<typename node_t::execution_space, int> (0, local_numLocalCoords),
+    //    KOKKOS_LAMBDA (const int i) {
+      for(int i = 0; i < local_numLocalCoords; ++i) {
+          w[ii][i] = local_wghts[ii][i];
+      } // );
     }
   }
 };
