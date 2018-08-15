@@ -2490,12 +2490,21 @@ printf("check11\n");
 CHECK_BUILD_KILL(300)
 
 printf("check12      %d   %d    %d\n", (int)this->kokkos_current_mj_gnos.size(), (int) this->kokkos_initial_mj_gnos.size(), local_num_local_coords);
+
+    // parallel loop causes crashed after the fact on a kokkos view alloc
+    // to invesitgate I am disabling the parallel loop to see if we can run through
+    for(int j = 0; j < local_num_local_coords; ++j) {
+      local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
+    }
+/*
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
       }
     );
+*/
+
 CHECK_BUILD_KILL(10000)
 
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
