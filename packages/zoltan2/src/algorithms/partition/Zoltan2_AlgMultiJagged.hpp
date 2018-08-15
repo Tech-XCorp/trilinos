@@ -103,6 +103,12 @@
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
+// temporary hack to find cuda crash points
+#define CHECK_BUILD_KILL(then)       \
+printf("Attempt build kill %d\n", then); \
+{ Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> junk1 = Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("junk",1); } \
+printf("Success build kill %d\n", then);
+
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -5943,22 +5949,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 {
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Part_Assignment");
 
+    auto local_kokkos_part_xadj = kokkos_part_xadj;
+    auto local_mj_keep_part_boxes = mj_keep_part_boxes;
+    auto local_kokkos_coordinate_permutations = kokkos_coordinate_permutations;
+    auto local_kokkos_assigned_part_ids = kokkos_assigned_part_ids;
+
+    // Will temporarily disable the for loop here - need to refactor
+    // output_part_boxes so it's a Kokkos View I expect. But would
+    // like to get a basic cuda build running first.
+    // TODO: Fix this
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, current_num_parts),
       KOKKOS_LAMBDA (const int i) {
+//    for(int i = 0; i < current_num_parts; ++i) {
         mj_lno_t begin = 0;
-        mj_lno_t end = this->kokkos_part_xadj(i);
-        if(i > 0) begin = this->kokkos_part_xadj(i-1);
+        mj_lno_t end = local_kokkos_part_xadj(i);
+        if(i > 0) begin = local_kokkos_part_xadj(i-1);
         mj_part_t part_to_set_index = i + output_part_begin_index;
-        if (this->mj_keep_part_boxes){
+        if (local_mj_keep_part_boxes){
                 (*output_part_boxes)[i].setpId(part_to_set_index);
         }
         for (mj_lno_t ii = begin; ii < end; ++ii){
-          mj_lno_t k = this->kokkos_coordinate_permutations(ii);
-          this->kokkos_assigned_part_ids(k) = part_to_set_index;
+          mj_lno_t k = local_kokkos_coordinate_permutations(ii);
+          local_kokkos_assigned_part_ids(k) = part_to_set_index;
         }
-      }
-    );
+    });
+//    }
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
@@ -6018,6 +6034,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       else
 
 #endif  // !ENABLE_ZOLTAN_MIGRATION
+
       {
         //if data is migrated, then send part numbers to the original owners.
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating");
@@ -6152,6 +6169,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 )
 {
+CHECK_BUILD_KILL(1)
 
 #ifdef print_debug
     if(comm->getRank() == 0){
@@ -6210,7 +6228,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     //We duplicate the comm as we create subcommunicators during migration.
     //We keep the problemComm as it is, while comm changes after each migration.
     this->comm = this->mj_problemComm->duplicate();
-
     //initially there is a single partition
     mj_part_t current_num_parts = 1;
 
@@ -6233,7 +6250,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
 
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
-
     for (int i = 0; i < this->recursion_depth; ++i){
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
@@ -6307,7 +6323,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //alloc Memory to point the indices
         //of the parts in the permutation array.
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("new part xadj", output_part_count_in_dimension);
-
         //the index where in the new_part_xadj will be written.
         mj_part_t output_part_index = 0;
         //whatever is written to output_part_index will be added with putput_coordinate_end_index
@@ -6340,7 +6355,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     continue;
                 }
                 ++actual_work_part_count;
-
                 mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
                 mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
 
@@ -6414,7 +6428,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         //for this part.
                         this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
                         //get the target weights of the parts.
-
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
                                         max_coordinate,
@@ -6455,7 +6468,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //used imbalance, it is always 0, as it is difficult to
                 //estimate a range.
                 mj_scalar_t used_imbalance = 0;
-
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
                 this->mj_1D_part(
@@ -6532,6 +6544,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                    updateMinMax(kokkos_current_concurrent_cut_coordinate(j), 0 /*update max*/, coordInd);
                             }
                         }
+
                         // Rewrite the indices based on the computed cuts.
                         this->mj_create_new_partitions(
                             num_parts,
@@ -6647,13 +6660,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
     }
-
     this->kokkos_part_xadj = local_kokkos_part_xadj;
 
     // Partitioning is done
     delete future_num_part_in_parts;
     delete next_future_num_parts_in_parts;
-
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
     /////////////////////////////End of the partitioning////////////////////////
 
@@ -7071,6 +7082,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
      if(migration_selection_option * this->num_global_parts > (size_t) (current_world_size)){
        migration_selection_option = current_world_size / this->num_global_parts;
      }
+
      int used_num_ranks = int (this->num_global_coords / float (threshold_num_local_coords) + 0.5);
      if (used_num_ranks == 0) used_num_ranks = 1;
      am_i_in_subset = this->mj_premigrate_to_subset(
@@ -7139,7 +7151,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       localGidToLid[kokkos_result_initial_mj_gnos_(i)] = i;
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
-
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[kokkos_result_mj_gnos(i)];
       partId[origLID] = kokkos_result_assigned_part_ids(i);
@@ -7158,8 +7169,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       mj_lno_t origLID = localGidToLid.get(result_mj_gnos(i));
       partId[origLID] = kokkos_result_assigned_part_ids(i);
     }
-
 #endif // C++11 is enabled
+
 
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
@@ -7172,6 +7183,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       if (num_incoming_gnos != this->num_local_coords){
         throw std::logic_error("Zoltan2 - Multijagged Post Migration - num incoming is not equal to num local coords");
       }
+
       mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorPlanCreating");
       mj_env->timerStart(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
@@ -7215,7 +7227,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       }
 
 #endif // C++11 is enabled
-
       }
 
       {
