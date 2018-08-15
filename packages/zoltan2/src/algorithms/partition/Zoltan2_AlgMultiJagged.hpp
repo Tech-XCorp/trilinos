@@ -6652,6 +6652,7 @@ CHECK_BUILD_KILL(1)
 
 {
 
+        this->kokkos_part_xadj = this->kokkos_new_part_xadj;
         local_kokkos_part_xadj = this->kokkos_new_part_xadj;
 
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
@@ -6660,7 +6661,6 @@ CHECK_BUILD_KILL(1)
 
 
     }
-    this->kokkos_part_xadj = local_kokkos_part_xadj;
 
     // Partitioning is done
     delete future_num_part_in_parts;
