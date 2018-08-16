@@ -841,19 +841,23 @@ public:
 template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
-      KOKKOS_LAMBDA (const int i) {
+   // TODO Restore afer fixing for CUDA
+//    Kokkos::parallel_for(
+//      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+//      KOKKOS_LAMBDA (const int i) {
+    for(size_t i = 0; i < arrSize; ++i) {
         arr[i] = i;
-    });
+    }//);
   }
   else {
     T v = *val;
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
-      KOKKOS_LAMBDA (const int i) {
+   // TODO Restore afer fixing for CUDA
+   // Kokkos::parallel_for(
+   //   Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
+   //   KOKKOS_LAMBDA (const int i) {
+      for(size_t i = 0; i < arrSize; ++i) {
         arr[i] = v;
-    });
+    }//);
   }
 }
 
