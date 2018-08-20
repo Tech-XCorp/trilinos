@@ -578,11 +578,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     int ierr = 0;
     Teuchos::ParameterList geoparams("geo params");
     readGeoGenParams(paramFile, geoparams, comm);
-printf("main6\n");
     GeometricGen::GeometricGenerator<zscalar_t, zlno_t, zgno_t, znode_t> *gg =
     new GeometricGen::GeometricGenerator<zscalar_t,zlno_t,zgno_t,znode_t>(geoparams,
                                                                       comm);
-printf("main7\n");
     int coord_dim = gg->getCoordinateDimension();
     int numWeightsPerCoord = gg->getNumWeights();
     zlno_t numLocalPoints = gg->getNumLocalCoords();
@@ -591,9 +589,7 @@ printf("main7\n");
     for(int i = 0; i < coord_dim; ++i){
         coords[i] = new zscalar_t[numLocalPoints];
     }
-printf("main8\n");
     gg->getLocalCoordinatesCopy(coords);
-printf("main8b\n");
     zscalar_t **weight = NULL;
     if (numWeightsPerCoord) {
         weight= new zscalar_t * [numWeightsPerCoord];
@@ -602,14 +598,12 @@ printf("main8b\n");
         }
         gg->getLocalWeightsCopy(weight);
     }
-printf("main9\n");
 
     delete gg;
 
     RCP<Tpetra::Map<zlno_t, zgno_t, znode_t> > mp = rcp(
                 new Tpetra::Map<zlno_t, zgno_t, znode_t>(numGlobalPoints,
                                                       numLocalPoints, 0, comm));
-printf("main10\n");
     Teuchos::Array<Teuchos::ArrayView<const zscalar_t> > coordView(coord_dim);
     for (int i=0; i < coord_dim; i++){
         if(numLocalPoints > 0){
@@ -621,7 +615,6 @@ printf("main10\n");
             coordView[i] = a;
         }
     }
-printf("main11\n");
     RCP<tMVector_t> tmVector = RCP<tMVector_t>(new
                                    tMVector_t(mp, coordView.view(0, coord_dim),
                                               coord_dim));
@@ -635,7 +628,6 @@ printf("main11\n");
         }
     }
     vector <int> stride;
-printf("main12\n");
     typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     typedef Zoltan2::EvaluatePartition<inputAdapter_t> quality_t;
     //inputAdapter_t ia(coordsConst);
@@ -650,7 +642,6 @@ printf("main12\n");
     else {
         params =RCP<Teuchos::ParameterList>(new Teuchos::ParameterList, true);
     }
-printf("main13\n");
 /*
     params->set("memory_output_stream" , "std::cout");
     params->set("memory_procs" , 0);
@@ -667,7 +658,6 @@ printf("main13\n");
         params->set("imbalance_tolerance", double(imbalance));
     params->set("mj_premigration_option", mj_premigration_option);
 
-printf("main14\n");
     if(pqParts != "")
         params->set("mj_parts", pqParts);
     if(numParts > 0)
@@ -1298,96 +1288,19 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-/*
-#include<Kokkos_Core.hpp>
-using std::max;
-using std::min;
-using std::abs;
-int main(int argc, char* argv[]) {
-
-  Kokkos::initialize(argc,argv);
-  {
-  typedef double KruskalValue;
-  typedef int SubIdx;
-  Kokkos::View<double**> A("A",10,10),B("B",10,10);
-  Kokkos::deep_copy(A,3.0);
-  Kokkos::deep_copy(B,0.5);
-  int nRow = 10;
-  int kruskal_nColumn = 10;
-  double myMax;
-  const auto teamSize = Kokkos::AUTO;
-  Kokkos::parallel_reduce (Kokkos::TeamPolicy<>(nRow, teamSize), KOKKOS_LAMBDA (Kokkos::TeamPolicy<>::member_type thread, double &ldMyMax)
-  {
-    const auto iRow = thread.league_rank();
-    KruskalValue tldMyMax = 0;
-    Kokkos::parallel_reduce (Kokkos::TeamThreadRange(thread, kruskal_nColumn), [=] (SubIdx iCol, KruskalValue &lldMyMax)
-    {
-      lldMyMax = static_cast<KruskalValue>(max(static_cast<double>(lldMyMax), abs(min(static_cast<double>(A(iRow,iCol)), 1.0 - static_cast<double>(B(iRow,iCol))))));
-    },Kokkos::Experimental::Max<double>(tldMyMax));
-
-    ldMyMax = static_cast<KruskalValue>(max(static_cast<double>(ldMyMax), static_cast<double>(tldMyMax)));
-  }, Kokkos::Experimental::Max<KruskalValue>(myMax));
-  printf("%lf\n",myMax);
-  }
-  Kokkos::fence();
-  Kokkos::finalize();
-
-  std::cout << "PASSED" << std::endl;
-  return 0;
-}
-*/
-
 int main(int argc, char *argv[])
 {
-printf("main1\n");
     Teuchos::GlobalMPISession session(&argc, &argv);
     Kokkos::initialize (argc, argv);
     //cout << argv << endl;
 
     RCP<const Teuchos::Comm<int> > tcomm = Teuchos::DefaultComm<int>::getComm();
 
-printf("main2\n");
-
-
-/*
-  {
-  typedef double KruskalValue;
-  typedef int SubIdx;
-  Kokkos::View<double**> A("A",10,10),B("B",10,10);
-  Kokkos::deep_copy(A,3.0);
-  Kokkos::deep_copy(B,0.5);
-  int nRow = 10;
-  int kruskal_nColumn = 10;
-  double myMax;
-  const auto teamSize = Kokkos::AUTO;
-  Kokkos::parallel_reduce (Kokkos::TeamPolicy<>(nRow, teamSize), KOKKOS_LAMBDA (Kokkos::TeamPolicy<>::member_type thread, double &ldMyMax)
-  {
-    const auto iRow = thread.league_rank();
-    KruskalValue tldMyMax = 0;
-    Kokkos::parallel_reduce (Kokkos::TeamThreadRange(thread, kruskal_nColumn), [=] (SubIdx iCol, KruskalValue &lldMyMax)
-    {
-      lldMyMax = static_cast<KruskalValue>(max(static_cast<double>(lldMyMax), abs(min(static_cast<double>(A(iRow,iCol)), 1.0 - static_cast<double>(B(iRow,iCol))))));
-    },Kokkos::Experimental::Max<double>(tldMyMax));
-
-    ldMyMax = static_cast<KruskalValue>(max(static_cast<double>(ldMyMax), static_cast<double>(tldMyMax)));
-  }, Kokkos::Experimental::Max<KruskalValue>(myMax));
-  printf("%lf\n",myMax);
-  }
-  Kokkos::fence();
-  Kokkos::finalize();
-
-  std::cout << "PASSED" << std::endl;
-  return 0;
-
-*/
-
     int rank = tcomm->getRank();
 
     int numParts = -10;
     float imbalance = -1.03;
     int k = -1;
-
-printf("main3\n");
 
     string pqParts = "";
     int opt = 1;
@@ -1405,8 +1318,6 @@ printf("main3\n");
 
     bool test_boxes = false;
     bool rectilinear = false;
-
-printf("main4\n");
 
     try{
         try {
@@ -1467,7 +1378,6 @@ printf("main4\n");
             break;
 #endif
         default:
-printf("main5\n");
             ierr = GeometricGenInterface(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
