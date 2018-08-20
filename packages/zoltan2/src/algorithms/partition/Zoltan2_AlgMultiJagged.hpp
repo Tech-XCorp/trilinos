@@ -79,6 +79,8 @@
 #endif
 #endif
 
+//#define TEMP_CUDA_BUILD
+
 #define LEAST_SIGNIFICANCE 0.0001
 #define SIGNIFICANCE_MUL 1000
 
@@ -862,7 +864,9 @@ public: // For CUDA Temp
         Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest,
+#ifndef TEMP_CUDA_BUILD
         typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
         mj_scalar_t local_sEpsilon,
         Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_coordinate_permutations,
         Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
@@ -879,7 +883,9 @@ public: // For CUDA Temp
         Kokkos::View<mj_part_t*, typename mj_node_t::device_type> num_partitioning_in_current_dim,
         mj_part_t current_work_part,
         mj_part_t current_concurrent_num_parts,
-        typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_memver,
+#ifndef TEMP_CUDA_BUILD
+        typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
         Kokkos::View<bool *, typename mj_node_t::device_type> local_kokkos_is_cut_line_determined,
         int local_num_threads,
         Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> local_kokkos_thread_cut_left_closest_point,
@@ -940,7 +946,9 @@ public: // For CUDA Temp
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_part_cut_line_weight_to_put_left,
         Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
         size_t kk,
+#ifndef TEMP_CUDA_BUILD
         typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
         mj_scalar_t local_sEpsilon,
         bool local_distribute_points_on_cut_lines,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
@@ -2343,9 +2351,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
           KOKKOS_LAMBDA (const int i) {
             temp(i) = i;
-            // this->kokkos_coordinate_permutations(i) = i;
+#ifdef __CUDA_ARCH__
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("PARALLEL LOOP 1: block: %d thread: %d   writing for index: %d\n", block, thread, i);
+#endif
           }
         );
+
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
         //new_coordinate_permutations holds the current permutation.
         this->kokkos_new_coordinate_permutations =
@@ -2453,6 +2466,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
+#ifdef __CUDA_ARCH__
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("PARALLEL LOOP 2: block: %d thread: %d   writing for index: %d\n", block, thread, j);
+#endif
           coord(j,i) = local_kokkos_mj_coordinates(j,i);
         }
       );
@@ -2643,6 +2661,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::parallel_reduce("MinReduce",
       coordinate_end_index - coordinate_begin_index,
       KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_min) {
+
+#ifdef __CUDA_ARCH__
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("PARALLEL MinReduce: block: %d thread: %d   writing for index: %d\n", block, thread, j);
+#endif
+
         int i =
           kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) < running_min)
@@ -2688,6 +2713,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       local_kokkos_max_min_coords(my_thread_id + local_num_threads) =
         my_thread_max_coord;
     });
+
     min_coordinate = this->kokkos_max_min_coords(0);
     for(int i = 1; i < this->num_threads; ++i) {
       if(this->kokkos_max_min_coords(i) < min_coordinate) {
@@ -2967,19 +2993,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     auto local_this = this;
 
-//CHECK_BUILD_KILL(53);
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
-    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member){
 
-        int me = 0; // team_member.team_rank();
+#ifdef TEMP_CUDA_BUILD
+    {
+        int me = 0; // format everything as if there is one thread
+#else
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
+    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+    { 
+        int me = team_member.team_rank();
+#endif
+
         Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_thread_part_weights =
           Kokkos::subview(local_kokkos_thread_part_weights, Kokkos::ALL, me);
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_left_closest =
           Kokkos::subview(local_kokkos_thread_cut_left_closest_point, Kokkos::ALL, me);
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_my_thread_right_closest =
           Kokkos::subview(local_kokkos_thread_cut_right_closest_point, Kokkos::ALL, me);
-        Kokkos::single(Kokkos::PerTeam(team_member), [=](){
+#ifndef TEMP_CUDA_BUILD
+        Kokkos::single(Kokkos::PerTeam(team_member), [=]()
+#endif
+        {
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
           for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
@@ -2998,8 +3033,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
               ++next;
             }
           }
-        });
+        }
+#ifndef TEMP_CUDA_BUILD
+        );
         team_member.team_barrier();  // for end of Kokkos::single
+#endif
+
         int iteration = 0;
         while (view_total_incomplete_cut_count(0) != 0) {//  && iteration != 1){
             iteration += 1;
@@ -3043,7 +3082,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                     mj_scalar_t min_coord = local_kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                     // compute part weights using existing cuts
-
                     local_this->mj_1D_part_get_thread_part_weights(
                         total_part_count,
                         num_cuts,
@@ -3057,7 +3095,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                         kokkos_my_current_part_weights,
                         kokkos_my_current_left_closest,
                         kokkos_my_current_right_closest,
+#ifndef TEMP_CUDA_BUILD
                         team_member,
+#endif
                         local_sEpsilon,
                         local_kokkos_coordinate_permutations,
                         local_kokkos_assigned_part_ids,
@@ -3074,7 +3114,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                 pTemp_num_partitioning_in_current_dim,
                 current_work_part,
                 current_concurrent_num_parts,
+#ifndef TEMP_CUDA_BUILD
                 team_member,
+#endif
                 local_kokkos_is_cut_line_determined,
                 local_num_threads,
                 local_kokkos_thread_cut_left_closest_point,
@@ -3084,7 +3126,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             );
 
             //now sum up the results of mpi processors.
-            Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+#ifndef TEMP_CUDA_BUILD
+            Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+            {
                 if(!bSingleProcess){
                         // TODO: Remove use of data() - refactor in progress
 /*
@@ -3101,8 +3146,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                             local_kokkos_total_part_weight_left_right_closests(n);
                         }
                 }
-            });
+            }
+#ifndef TEMP_CUDA_BUILD
+            );
             team_member.team_barrier();  // for end of Kokkos::single
+#endif
+
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
             //how much the concantaneted array will be shifted for the next part in concurrent part calculation.
@@ -3158,7 +3207,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                     std::pair<mj_lno_t, mj_lno_t>(
                       cut_shift,
                       local_kokkos_process_cut_line_weight_to_put_left.size()));
-               mj_scalar_t min_coordinate = local_kokkos_global_min_max_coord_total_weight(kk);
+                mj_scalar_t min_coordinate = local_kokkos_global_min_max_coord_total_weight(kk);
                 mj_scalar_t max_coordinate = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                 mj_scalar_t global_total_weight = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts * 2);
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights =
@@ -3210,7 +3259,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                                 kokkos_current_part_cut_line_weight_to_put_left,
                                 view_rectilinear_cut_count,
                                 kk,
+#ifndef TEMP_CUDA_BUILD
                                 team_member,
+#endif
                                 local_sEpsilon,
                                 local_distribute_points_on_cut_lines,
                                 local_kokkos_global_rectilinear_cut_weight,
@@ -3220,14 +3271,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
-                Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
+#ifndef TEMP_CUDA_BUILD
+                Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+                {
                   mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - local_kokkos_my_incomplete_cut_count(kk);
                   view_total_incomplete_cut_count(0) -= iteration_complete_cut_count;
-                });
+                }
+#ifndef TEMP_CUDA_BUILD
+                );
                 team_member.team_barrier(); // for end of Kokkos::single
+#endif
             }
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
-              Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
+#ifndef TEMP_CUDA_BUILD
+              Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+              {
                   //swap the cut coordinates for next iteration
 		  // TODO: Need to figure this out - how to swap cleanly with Cuda/Kokkos
                   // This is inefficient as a test to get some basic cuda up and running
@@ -3241,10 +3301,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                   this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
                   this->kokkos_cut_coordinates_work_array = t;
 */
-              });
+              }
+#ifndef TEMP_CUDA_BUILD
+              );
               team_member.team_barrier(); // for end of Kokkos::single
+#endif
             }
-//#endif
         } // end of the while loop
         //if (myRank == 0)
         //std::cout << "iteration:" << iteration << " partition:" << num_partitioning_in_current_dim[current_work_part] << std::endl;
@@ -3253,7 +3315,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         // (at first iteration, cutCoordinates == cutCoorindates_tmp).
         // computed cuts must be in cutCoordinates.
         if (kokkos_current_cut_coordinates != local_kokkos_temp_cut_coords){
-          Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
+
+#ifndef TEMP_CUDA_BUILD
+          Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+          {
                     mj_part_t next = 0;
                     for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
                             mj_part_t num_parts = -1;
@@ -3264,23 +3330,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                             }
                             next += num_cuts;
                     }
-          });
+          }
+#ifndef TEMP_CUDA_BUILD
+          );
           team_member.team_barrier();  // for end of Kokkos::single
-          Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
+#endif
 
+#ifndef TEMP_CUDA_BUILD
+          Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+          {
 	    // TODO Same as above - need to optimize fix this
             // Work around for the ptr swap setup just to get some cuda running
             // But this is inefficient
             for(int n = 0; n < (int) local_kokkos_cut_coordinates_work_array.size(); ++n) {
               local_kokkos_cut_coordinates_work_array(n) = local_kokkos_temp_cut_coords(n);
             }
-
 //            this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
-          });
+          }
+#ifndef TEMP_CUDA_BUILD
+          );
           team_member.team_barrier();  // for end of Kokkos::single
-        }
-    });
-//CHECK_BUILD_KILL(56); // this
+#endif
+        } // end of if
+    }
+#ifndef TEMP_CUDA_BUILD
+    );
+#endif
     delete reductionOp;
 }
 
@@ -3320,7 +3396,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<double *, typename mj_node_t::device_type> kokkos_my_current_part_weights,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest,
+#ifndef TEMP_CUDA_BUILD
     typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
     mj_scalar_t local_sEpsilon,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_coordinate_permutations,
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
@@ -3360,10 +3438,26 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // here will show a significant jump up in times of about 20% for this
         // region. This may be due to how the lambda captures all this internal
         // code but not sure yet.
-        Kokkos::parallel_for(Kokkos::TeamThreadRange(
-          team_member, coordinate_begin_index, coordinate_end_index),
+
+#ifdef TEMP_CUDA_BUILD
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin_index, coordinate_end_index),
           KOKKOS_LAMBDA (mj_lno_t & ii) {
-        // for (mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
+#else
+        Kokkos::parallel_for(
+          Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+          KOKKOS_LAMBDA (mj_lno_t & ii) {
+#endif
+
+//        Kokkos::parallel_for(
+//          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (coordinate_begin_index, coordinate_end_index),
+//          [=] (const int ii) {
+//XXXXX
+#ifdef __CUDA_ARCH__
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("mj_1D_part_get_thread_part_weights loops 1 block: %d thread: %d   ii: %d\n", block, thread, ii);
+#endif
 
                 int i = local_kokkos_coordinate_permutations(ii);
 
@@ -3534,8 +3628,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                 }
         });
-
+#ifndef TEMP_CUDA_BUILD
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
 
         // prefix sum computation.
         //we need prefix sum for each part to determine cut positions.
@@ -3572,7 +3667,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
+#ifndef TEMP_CUDA_BUILD
     typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
     Kokkos::View<bool *, typename mj_node_t::device_type> local_kokkos_is_cut_line_determined,
     int local_num_threads,
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> local_kokkos_thread_cut_left_closest_point,
@@ -3582,9 +3679,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     ){
     //needs barrier here, as it requires all threads to finish mj_1D_part_get_thread_part_weights
     //using parallel region here reduces the performance because of the cache invalidates.
+#ifndef TEMP_CUDA_BUILD
     team_member.team_barrier(); // Note: I confirmed we still need this barrier with the new kokkos refactor
-
-    Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+    Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA()
+#endif
+    {
       size_t tlr_array_shift = 0;
       mj_part_t cut_shift = 0;
       //iterate for all concurrent parts to find the left and right closest points in the process.
@@ -3653,8 +3752,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               tlr_array_shift += num_total_part_in_part + 2 * num_cuts_in_part;
               total_part_array_shift += num_total_part_in_part;
       }
-    });
+    }
+#ifndef TEMP_CUDA_BUILD
+    );
     team_member.team_barrier();  // for end of Kokkos::single
+#endif
 }
 
 /*! \brief
@@ -3738,10 +3840,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_part_t num_cuts = num_parts - 1;
 
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+printf("Check 2 league A\n");
+#ifdef TEMP_CUDA_BUILD
+        {
+                 int me = 0; // map as if one thread for now - in progress
+#else
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
-        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member){
-                int me = 0; // team_member.team_rank();
-
+        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+        {
+        
+                int me = team_member.team_rank();
+#endif
                 Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_num_points_in_parts =
                   Kokkos::subview(local_kokkos_thread_point_counts, Kokkos::ALL, me);
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_local_thread_cut_weights_to_put_left;
@@ -3756,8 +3865,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         // TODO: Evaluate this comment in light of the new refactor to Kokkos...
                         // this for assumes the static scheduling in mj_1D_part calculation.
 
+#ifdef TEMP_CUDA_BUILD
+                       Kokkos::parallel_for(
+                         Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
+                         KOKKOS_LAMBDA (mj_part_t & i) {
+#else
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
                           [=] (mj_part_t & i) {
+#endif
+
                                 //the left to be put on the left of the cut.
                                 mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
                                 for(int ii = 0; ii < local_num_threads; ++ii){
@@ -3780,7 +3896,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         }
                                 }
                         });
+#ifndef TEMP_CUDA_BUILD
                         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
 
                         if(num_cuts > 0){
                                 //this is a special case. If cutlines share the same coordinate, their weights are equal.
@@ -3799,8 +3917,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
 
                 //dont change static scheduler. the static partitioner used later as well.
+#ifdef TEMP_CUDA_BUILD
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
+                  KOKKOS_LAMBDA (mj_lno_t & ii) {
+#else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
                   [=] (mj_lno_t & ii) {
+#endif
+
                         mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
                         mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
                         mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
@@ -3870,13 +3995,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
                         }
                 });
+#ifndef TEMP_CUDA_BUILD
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
 
                 //now we calculate where each thread will write in new_coordinate_permutations array.
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
+#ifdef TEMP_CUDA_BUILD
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
+                  KOKKOS_LAMBDA (mj_part_t & j) {
+#else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
                     [=] (mj_part_t & j) {
+#endif
+
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
                         for (int i = 0; i < local_num_threads; ++i){
                                 mj_lno_t thread_num_points_in_part_j = local_kokkos_thread_point_counts(j,i);
@@ -3886,16 +4020,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                         kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
                 });
+#ifndef TEMP_CUDA_BUILD
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
 
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
-                Kokkos::single(Kokkos::PerTeam(team_member), [=] (){
+
+#ifndef TEMP_CUDA_BUILD
+                Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+#endif
+                {
                         //perform prefix sum for num_points in parts.
                         for(mj_part_t j = 1; j < num_parts; ++j){
                                 kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
                         }
-                });
+                }
+#ifndef TEMP_CUDA_BUILD
+                );
                 team_member.team_barrier(); // for end of Kokkos::single
+#endif
 
                 //shift the num points in threads thread to obtain the
                 //beginning index of each thread's private space.
@@ -3905,15 +4048,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
+#ifdef TEMP_CUDA_BUILD
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
+                  KOKKOS_LAMBDA (mj_lno_t & ii) {
+#else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
                   [=] (mj_lno_t & ii) {
+#endif
                         mj_lno_t i = local_kokkos_coordinate_permutations(ii);
                         mj_part_t p =  local_kokkos_assigned_part_ids(i);
                         local_kokkos_new_coordinate_permutations(coordinate_begin +
                                                           kokkos_thread_num_points_in_parts(p)++) = i;
                 });
+#ifndef TEMP_CUDA_BUILD
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-        });
+#endif
+
+        }
+#ifndef TEMP_CUDA_BUILD
+        );
+#endif
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
@@ -3970,29 +4125,52 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_cut_line_weight_to_put_left,
                 Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
                 size_t kk,
+#ifndef TEMP_CUDA_BUILD
                 typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
+#endif
                 mj_scalar_t local_sEpsilon,
                 bool local_distribute_points_on_cut_lines,
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
+             Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_process_rectilinear_cut_weight,
                 Kokkos::View<mj_part_t *, typename mj_node_t::device_type> local_kokkos_my_incomplete_cut_count
         ){
 
-        Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
+#ifdef TEMP_CUDA_BUILD
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_cuts),
           KOKKOS_LAMBDA (int & i) {
+#else
+        Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
+          [=] (int & i) {
+#endif
+
                 //if left and right closest points are not set yet,
                 //set it to the cut itself.
+// YYYYY
+#ifdef __CUDA_ARCH__
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("mj_get_new_cut_coordinates loops 1 block: %d thread: %d   ii: %d\n", block, thread, i);
+#endif
                 if(min_coordinate - kokkos_current_global_left_closest_points(i) > local_sEpsilon)
                         kokkos_current_global_left_closest_points(i) = kokkos_current_cut_coordinates(i);
                 if(kokkos_current_global_right_closest_points(i) - max_coordinate > local_sEpsilon)
                         kokkos_current_global_right_closest_points(i) = kokkos_current_cut_coordinates(i);
 
         });
+#ifndef TEMP_CUDA_BUILD
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
 
+
+#ifdef TEMP_CUDA_BUILD
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_cuts),
+          KOKKOS_LAMBDA (int & i) {
+#else
         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-          KOKKOS_LAMBDA (const int i) {
-
+          [=] (int & i) {
+#endif
                 //seen weight in the part
                 mj_scalar_t seen_weight_in_part = 0;
                 //expected weight for part.
@@ -4217,11 +4395,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 
                 }; // bContinue
         });
+
+#ifndef TEMP_CUDA_BUILD
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+#endif
+
         // TODO: This may not be necessary anymore?
         { // This unnecessary bracket works around a compiler bug in NVCC when enabling OpenMP as well
 
-        Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA(){
+#ifndef TEMP_CUDA_BUILD
+        Kokkos::single(Kokkos::PerTeam(team_member), KOKKOS_LAMBDA()
+#endif
+        {
                 if(view_rectilinear_cut_count(0) > 0){
                        // try
                           {
@@ -4291,8 +4476,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                         view_rectilinear_cut_count(0) = 0;
                 }
-        });
+        }
+#ifndef TEMP_CUDA_BUILD
+        );
         team_member.team_barrier(); // for end of Kokkos::single
+#endif
 
         } // TODO: This may not be necessary anymore? See comment above
 }
