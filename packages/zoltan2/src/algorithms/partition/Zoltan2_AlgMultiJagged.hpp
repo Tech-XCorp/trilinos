@@ -3886,12 +3886,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef TEMP_CUDA_BUILD // NEWLOOP
 
-#ifdef SIMPLE_LOOP
-                        for(mj_part_t i = 0; i < num_cuts; ++i) {
-#else
+                       // This loop works for cuda
                         Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
                           KOKKOS_LAMBDA (const mj_part_t & i) {
-#endif
 
 #else
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
@@ -3918,11 +3915,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 local_kokkos_thread_cut_line_weight_to_put_left(i,ii) = 0;
                                         }
                                 }
-                       }
-
-#ifndef SIMPLE_LOOP
-                       );
-#endif
+                       });
 
 #ifndef TEMP_CUDA_BUILD
                         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
@@ -3947,13 +3940,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //dont change static scheduler. the static partitioner used later as well.
 #ifdef TEMP_CUDA_BUILD  // NEWLOOP
 
-#ifdef SIMPLE_LOOP
+                // needs refactor to work for cuda
                 for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-#else
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
-                  KOKKOS_LAMBDA (const mj_lno_t & ii) {
-#endif
+
+                // this will fail for some tests on cuda - did not evaluate yet
+                // Kokkos::parallel_for(
+                //  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
+                //  KOKKOS_LAMBDA (const mj_lno_t & ii) {
 
 #else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
@@ -4030,11 +4023,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                 }
 
-#ifndef SIMPLE_LOOP
-                );
-#endif
-
 #ifndef TEMP_CUDA_BUILD
+                );
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 #endif
 
@@ -4197,14 +4187,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         ){
 
 #ifdef TEMP_CUDA_BUILD // NEWLOOP
-
-#ifdef SIMPLE_LOOP
-        for(int i = 0; i < num_cuts; ++i) {
-#else
         Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
           KOKKOS_LAMBDA (const int & i) {
-#endif
-
 #else
         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
           [=] (int & i) {
@@ -4212,7 +4196,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //if left and right closest points are not set yet,
                 //set it to the cut itself.
-// YYYYY
 #ifdef __CUDA_ARCH__
 //int block = blockIdx.x;
 //int thread = threadIdx.x;
@@ -4222,21 +4205,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         kokkos_current_global_left_closest_points(i) = kokkos_current_cut_coordinates(i);
                 if(kokkos_current_global_right_closest_points(i) - max_coordinate > local_sEpsilon)
                         kokkos_current_global_right_closest_points(i) = kokkos_current_cut_coordinates(i);
-
-        }
-
-#ifndef SIMPLE_LOOP
-        );
-#endif
+        });
 
 #ifndef TEMP_CUDA_BUILD
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 #endif
 
-
 #ifdef TEMP_CUDA_BUILD // NEWLOOP
 
-#ifdef SIMPLE_LOOP
+#ifdef XSIMPLE_LOOP
         for(int i = 0; i < num_cuts; ++i) {
 #else
         Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
@@ -4472,7 +4449,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }; // bContinue
         }
 
-#ifndef SIMPLE_LOOP
+#ifndef XSIMPLE_LOOP
         );
 #endif
 
