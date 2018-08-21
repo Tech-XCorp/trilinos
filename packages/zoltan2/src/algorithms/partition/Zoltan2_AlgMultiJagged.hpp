@@ -2375,11 +2375,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
           KOKKOS_LAMBDA (const int i) {
             temp(i) = i;
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("PARALLEL LOOP 1: block: %d thread: %d   writing for index: %d\n", block, thread, i);
-#endif
           }
         );
 
@@ -2490,11 +2485,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("PARALLEL LOOP 2: block: %d thread: %d   writing for index: %d\n", block, thread, j);
-#endif
           coord(j,i) = local_kokkos_mj_coordinates(j,i);
         }
       );
@@ -3478,12 +3468,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           KOKKOS_LAMBDA (mj_lno_t & ii) {
 #endif
 
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("mj_1D_part_get_thread_part_weights loops 1 block: %d thread: %d   ii: %d\n", block, thread, ii);
-#endif
-
                 int i = local_kokkos_coordinate_permutations(ii);
 
                 //the accesses to assigned_part_ids are thread safe
@@ -4048,6 +4032,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
                   KOKKOS_LAMBDA (const mj_part_t & j) {
 
+#ifdef __CUDA_ARCH__
+int block = blockIdx.x;
+int thread = threadIdx.x;
+printf("num_parts: %d  loops block: %d thread: %d   j: %d\n", (int) num_parts, block, thread, j);
+#endif
+
 #else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
                     [=] (mj_part_t & j) {
@@ -4105,11 +4095,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   [=] (mj_lno_t & ii) {
 #endif
 
-#ifdef __CUDA_ARCH__
-int block = blockIdx.x;
-int thread = threadIdx.x;
-printf("Investigate block: %d thread: %d   ii: %d\n", block, thread, ii);
-#endif
                         mj_lno_t i = local_kokkos_coordinate_permutations(ii);
                         mj_part_t p =  local_kokkos_assigned_part_ids(i);
                         local_kokkos_new_coordinate_permutations(coordinate_begin +
