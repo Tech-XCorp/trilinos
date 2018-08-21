@@ -3870,6 +3870,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef DISABLE_THREADS_BUILD
         {
                  int me = 0; // map as if one thread for now - in progress
+                 printf("Running without the thread loop for CUDA.\n");
+
 #else
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
         Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
@@ -4263,7 +4265,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                           kokkos_current_cut_line_determined(i) = true;
                           Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
                           kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                          // return; // TODO: Validate this is like continue?
                   }
                   else if(imbalance_on_left < 0){
                           //if left imbalance < 0 then we need to move the cut to right.
@@ -4281,7 +4282,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                           kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
                                           //for this cut all the weight on cut will be put to left.
                                           kokkos_current_part_cut_line_weight_to_put_left(i) = kokkos_current_local_part_weights(i * 2 + 1) - kokkos_current_local_part_weights(i * 2);
-                                          bContinue = true; // TODO: Validate this is like continue?
+                                          bContinue = true;
                                   }
                                   else if (kokkos_current_global_part_weights(i * 2 + 1) > expected_weight_in_part){
 
@@ -4295,7 +4296,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                           kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
                                           local_kokkos_process_rectilinear_cut_weight[i] = kokkos_current_local_part_weights(i * 2 + 1) -
                                                           kokkos_current_local_part_weights(i * 2);
-                                          bContinue = true; // TODO: Validate this is like continue?
+                                          bContinue = true;
                                   }
                           }
 
