@@ -111,6 +111,20 @@ printf("Attempt build kill %d\n", then); \
 { Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> junk1 = Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("junk",1); } \
 printf("Success build kill %d\n", then);
 
+
+// This is temporary  measure in development.
+// For the cuda build without openmp the outer thread loop
+// is disabled and the internal loops are refactored to run
+// over the index range (gpu) instead of over threads.
+// Not all the loops could be put on the gpus yet due to
+// the formatting. So we still need to merge the OpenMP
+// format and gpu formats into one cohesive algorithm.
+// I'm using this as a way to get some basic cuda up and
+// running and test things out.
+#ifndef HAVE_ZOLTAN2_OMP
+  #define DISABLE_THREADS_BUILD
+#endif
+
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -3862,6 +3876,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         {
         
                 int me = team_member.team_rank();
+                printf("Running main loop as thread: %d\n", me);
 #endif
 
                 Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_num_points_in_parts =
@@ -6448,7 +6463,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
         this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
-        this->num_threads = 1; // HACK CUDA TEMP mj_node_t::execution_space::thread_pool_size();
+
+        // currently the build is running multiple threads for OpenMP
+        // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->num_threads = mj_node_t::execution_space::thread_pool_size();
+#else
+        this->num_threads = 1;
+#endif
+        printf("Read num threads: %d\n", (int) this->num_threads);
     }
 
 
@@ -7689,7 +7712,13 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 }
         }
 
-        this->num_threads = 1;  // HACK CUDA TEMP Adapter::node_t::execution_space::thread_pool_size();
+        // currently the build is running multiple threads for OpenMP
+        // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
+#ifdef HAVE_ZOLTAN2_OMP
+        this->num_threads = Adapter::node_t::execution_space::thread_pool_size();
+#else
+        this->num_threads = 1;
+#endif
 }
 
 /////////////////////////////////////////////////////////////////////////////
