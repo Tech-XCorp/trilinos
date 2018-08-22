@@ -2532,7 +2532,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
     auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
     auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
-    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
 
     // parallel loop causes crashed after the fact on a kokkos view alloc
     // to invesitgate I am disabling the parallel loop to see if we can run through
