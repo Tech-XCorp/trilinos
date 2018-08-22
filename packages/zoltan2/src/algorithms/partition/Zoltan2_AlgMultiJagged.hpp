@@ -79,8 +79,6 @@
 #endif
 #endif
 
-// #define DISABLE_THREADS_BUILD
-
 #define LEAST_SIGNIFICANCE 0.0001
 #define SIGNIFICANCE_MUL 1000
 
@@ -121,9 +119,14 @@ printf("Success build kill %d\n", then);
 // format and gpu formats into one cohesive algorithm.
 // I'm using this as a way to get some basic cuda up and
 // running and test things out.
-#ifndef HAVE_ZOLTAN2_OMP
-  #define DISABLE_THREADS_BUILD
+// #define DISABLE_THREADS_BUILD
+
+#ifdef DISABLE_THREADS_BUILD
+#define TEST_CUDA_BY_FIXING_LEAGUE_THREADS // also a development thing to explore how the cuda loops behave
 #endif
+
+#define TEST_CUDA_FOR_THREAD_SYSTEM
+#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS 1 
 
 namespace Teuchos{
 
@@ -2718,7 +2721,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     total_weight = my_total_weight;
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+
+
+#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+#else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
+#endif
+
     auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
     auto local_num_threads = this->num_threads;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
@@ -3014,7 +3024,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     {
         int me = 0; // format everything as if there is one thread
 #else
+
+#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+#else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
+#endif
+
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     { 
         int me = team_member.team_rank();
@@ -3853,11 +3869,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
 #ifdef DISABLE_THREADS_BUILD
         {
+                 static int counter = 0;
                  int me = 0; // map as if one thread for now - in progress
-                 printf("Running without the thread loop for CUDA.\n");
+                 printf("Running without the thread loop for CUDA %d.\n", ++counter);
 
 #else
+
+#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+#else
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
+#endif
+
         Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
         {
         
@@ -3881,13 +3904,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 #ifdef DISABLE_THREADS_BUILD // NEWLOOP
 
+
                        // This loop works for cuda
-                        Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
-                          KOKKOS_LAMBDA (const mj_part_t & i) {
+#ifdef TEST_CUDA_BY_FIXING_LEAGUE_THREADS
+                       // TODO - why can't we spawn multiple threads here?
+                       Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (2, 4); // request 2 blocks and 2 threads per block
+                       Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
+                       {
+#endif
+                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
+
+//                       Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
+                         [=] (const mj_part_t & i) {
+#ifdef __CUDA_ARCH__
+  int block = blockIdx.x;
+  int thread;
+  thread = threadIdx.x;
+  printf("cut: %d block: %d thread: %d\n", (int) i, block, thread);
+#endif
+
 
 #else
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
                           [=] (mj_part_t & i) {
+
+
+  printf("Running the thread loop for cut: %i  me: %d\n", (int) i, me);
+    
 #endif
                                 //the left to be put on the left of the cut.
                                 mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
@@ -3911,6 +3954,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         }
                                 }
                        });
+
+#ifdef TEST_CUDA_BY_FIXING_LEAGUE_THREADS
+                       }); // second outer loop to setup temp league range
+#endif
 
 #ifndef DISABLE_THREADS_BUILD
                         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
@@ -4033,9 +4080,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   KOKKOS_LAMBDA (const mj_part_t & j) {
 
 #ifdef __CUDA_ARCH__
-int block = blockIdx.x;
-int thread = threadIdx.x;
-printf("num_parts: %d  loops block: %d thread: %d   j: %d\n", (int) num_parts, block, thread, j);
+//int block = blockIdx.x;
+//int thread = threadIdx.x;
+//printf("num_parts: %d  loops block: %d thread: %d   j: %d\n", (int) num_parts, block, thread, j);
 #endif
 
 #else
@@ -6452,8 +6499,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         // currently the build is running multiple threads for OpenMP
         // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
-#ifdef HAVE_ZOLTAN2_OMP
+#ifndef DISABLE_THREADS_BUILD
+ 
+#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+        this->num_threads = 1;
+#else
         this->num_threads = mj_node_t::execution_space::thread_pool_size();
+#endif
+
 #else
         this->num_threads = 1;
 #endif
@@ -7700,8 +7753,14 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
 
         // currently the build is running multiple threads for OpenMP
         // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
-#ifdef HAVE_ZOLTAN2_OMP
-        this->num_threads = Adapter::node_t::execution_space::thread_pool_size();
+#ifndef DISABLE_THREADS_BUILD
+
+#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+        this->num_threads = 1;
+#else
+        this->num_threads = mj_node_t::execution_space::thread_pool_size();
+#endif
+
 #else
         this->num_threads = 1;
 #endif
