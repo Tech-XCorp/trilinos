@@ -128,6 +128,8 @@ printf("Success build kill %d\n", then);
 #define TEST_CUDA_FOR_THREAD_SYSTEM
 #define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS 1 
 
+#define DISABLE_PARALLEL_CODE // cuda wasn't supporting these yet - TODO - fix these
+
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -3163,12 +3165,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             {
                 if(!bSingleProcess){
                         // TODO: Remove use of data() - refactor in progress
-/*
+#ifndef DISABLE_PARALLEL_CODE
                         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
                                         view_total_reduction_size(0),
                                         this->kokkos_total_part_weight_left_right_closests.data(),
                                         this->kokkos_global_total_part_weight_left_right_closests.data());
-*/
+#endif/
                 }
                 else {
                         // TODO: Optimize and fix this c cast - clean up use of the view
