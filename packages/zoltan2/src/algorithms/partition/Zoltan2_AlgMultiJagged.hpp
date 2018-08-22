@@ -126,7 +126,7 @@ printf("Success build kill %d\n", then);
 #endif
 
 #define TEST_CUDA_FOR_THREAD_SYSTEM
-#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS 1 
+#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS 2 
 
 #define DISABLE_PARALLEL_CODE // cuda wasn't supporting these yet - TODO - fix these
 
@@ -2714,7 +2714,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 
 #ifdef TEST_CUDA_FOR_THREAD_SYSTEM
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS, 1);
 #else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
 #endif
@@ -3016,7 +3016,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 #else
 
 #ifdef TEST_CUDA_FOR_THREAD_SYSTEM
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS, 1);
 #else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
 #endif
@@ -3866,7 +3866,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #else
 
 #ifdef TEST_CUDA_FOR_THREAD_SYSTEM
-        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_THREADS, 1);
+        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS, 1);
 #else
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
 #endif
