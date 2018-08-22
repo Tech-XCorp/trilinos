@@ -3170,7 +3170,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                                         view_total_reduction_size(0),
                                         this->kokkos_total_part_weight_left_right_closests.data(),
                                         this->kokkos_global_total_part_weight_left_right_closests.data());
-#endif/
+#endif
                 }
                 else {
                         // TODO: Optimize and fix this c cast - clean up use of the view
