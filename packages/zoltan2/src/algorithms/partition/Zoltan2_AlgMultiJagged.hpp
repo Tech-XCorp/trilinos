@@ -126,7 +126,7 @@ printf("Success build kill %d\n", then);
 #endif
 
 #define TEST_CUDA_FOR_THREAD_SYSTEM
-#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS 2 
+#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS 1 
 
 #define DISABLE_PARALLEL_CODE // cuda wasn't supporting these yet - TODO - fix these
 
