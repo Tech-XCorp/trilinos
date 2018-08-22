@@ -157,6 +157,8 @@ void print_boxAssign_result(
   typename Adapter::part_t *parts
 )
 {
+// Temp disable while trying some larger systems
+/*
   std::cout << "boxAssign test " << str << ":  Box (";
   for (int j = 0; j < dim; j++) std::cout << lower[j] << " ";
   std::cout << ") x (";
@@ -169,6 +171,7 @@ void print_boxAssign_result(
     for (size_t k = 0; k < nparts; k++) std::cout << parts[k] << " ";
     std::cout << std::endl;
   }
+*/
 }
 
 template <typename Adapter>
