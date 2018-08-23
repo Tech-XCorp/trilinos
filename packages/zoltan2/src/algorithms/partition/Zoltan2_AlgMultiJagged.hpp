@@ -114,15 +114,6 @@
 // running and test things out.
 // #define DISABLE_THREADS_BUILD
 
-
-#define TEST_CUDA_FOR_THREAD_SYSTEM
-#define TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS 1
-
-// some tests I was doing to check out how kokkos loops behave
-#ifdef DISABLE_THREADS_BUILD
-#define TEST_CUDA_BY_FIXING_LEAGUE_THREADS // also a development thing to explore how the cuda loops behave
-#endif
-
 #define DISABLE_PARALLEL_CODE // cuda wasn't supporting these yet - TODO - fix these
 
 namespace Teuchos{
@@ -3005,14 +2996,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     {
         int me = 0; // format everything as if there is one thread
 #else
-
-#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
-    // as a test restrict this to a single league - otherwise the while loop is invalid
-    // this allows us to inspect the others
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS, 1);
-#else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
-#endif
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     { 
@@ -3856,16 +3840,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           int me = 0; // map as if one thread for now - in progress
 
 #else // DISABLE_THREADS_BUILD
-
-#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
-         // as a test restrict this to a single league - otherwise the while loop is invalid
-         // this allows us to inspect the others
-         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS, 1);
-         printf("calling mj_create_new_partitions with league size %d as a test for cuda.\n", TEST_CUDA_FOR_THREAD_SYSTEM_NUM_BLOCKS);
-#else // TEST_CUDA_FOR_THREAD_SYSTEM
          Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
-#endif // TEST_CUDA_FOR_THREAD_SYSTEM
-
          // in this mode we have a policy determined above either fixing the threads
          // or fixing the blocks (for cuda) which is a temporary measure to explore what
          // issues we face with cuda.
@@ -3893,24 +3868,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   // options are to just run parallel_for and let cuda decide or request a policy.
   // I think doing nothing and letting cuda decide is best but then for small scale systems we can
   // often be running on a single block so added the second option just to explore the behavior.
-  #ifdef TEST_CUDA_BY_FIXING_LEAGUE_THREADS
-                       // TODO - why can't we spawn multiple threads here? threadIdx.x is always 0...
-                       const int request_league_size = 2;
-                       const int request_thread_size = 2;
-                       Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (request_league_size, request_thread_size); // request 2 blocks and 4 threads (though can't seem to control threads)
-                       printf("mj_create_new_partitions: Inserting policy league size: %d  thread count: %d for testing.\n", request_league_size, request_thread_size);
-                       Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
-                       {
-                       Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-                         [=] (const mj_part_t & i) {
-  #else // TEST_CUDA_BY_FIXING_LEAGUE_THREADS
-                       printf("mj_create_new_partitions: Running parallel_for without any specific policy set.\n"); 
                        Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
                          [=] (const mj_part_t & i) {
-  #endif // TEST_CUDA_BY_FIXING_LEAGUE_THREADS
-
 #else // DISABLE_THREADS_BUILD
-                       printf("mj_create_new_partitions will run parallel_for across TeamThreadRange with num_cuts: %d\n", num_cuts);
                         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
                           [=] (mj_part_t & i) {
 #endif // DISABLE_THREADS_BUILD
@@ -3939,10 +3899,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                        });
 
-#ifdef TEST_CUDA_BY_FIXING_LEAGUE_THREADS
-                       }); // second outer loop to setup temp league range
-#endif
-
 #ifndef DISABLE_THREADS_BUILD
                         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 #endif
@@ -3966,13 +3922,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //dont change static scheduler. the static partitioner used later as well.
 #ifdef DISABLE_THREADS_BUILD  // NEWLOOP
 
-                // needs refactor to work for cuda
+#ifdef KOKKOS_ENABLE_CUDA
                 for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-
+#else
                 // this would fail cuda as did not work on this loop yet - above is a short term bypass
-                // Kokkos::parallel_for(
-                //  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
-                //  KOKKOS_LAMBDA (const mj_lno_t & ii) {
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
+                  KOKKOS_LAMBDA (const mj_lno_t & ii) {
+#endif
 
 #else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
@@ -4058,8 +4015,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
 #ifdef DISABLE_THREADS_BUILD // NEWLOOP
-                // this loop needs cuda refactor I think (but can be ok due to range - needs tests to stress
-                // and refaxctor.
+                // this loop needs cuda refactor I think (but can be ok due to range so doesn't fail tests but probably not correct
                 Kokkos::parallel_for(
                   Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
                   KOKKOS_LAMBDA (const mj_part_t & j) {
@@ -4107,13 +4063,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
 #ifdef DISABLE_THREADS_BUILD  // NEWLOOP
-// TODO Disable optimization for cuda - needs refactor
-                for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
 
-// This cuda loop won't work in the current form - needs refactor
-//              Kokkos::parallel_for(
-//                Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
-//                KOKKOS_LAMBDA (const mj_lno_t & ii) {
+#ifdef KOKKOS_ENABLE_CUDA
+               // TODO: Fix optimize cuda loop
+                for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
+#else
+              Kokkos::parallel_for(
+                Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin, coordinate_end),
+                KOKKOS_LAMBDA (const mj_lno_t & ii) {
+#endif
 
 #else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
@@ -6474,7 +6432,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
 #ifndef DISABLE_THREADS_BUILD
  
-#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+#ifdef KOKKOS_ENABLE_CUDA
         this->num_threads = 1;
 #else
         this->num_threads = mj_node_t::execution_space::thread_pool_size();
@@ -7728,7 +7686,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
         // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
 #ifndef DISABLE_THREADS_BUILD
 
-#ifdef TEST_CUDA_FOR_THREAD_SYSTEM
+#ifdef KOKKOS_ENABLE_CUDA
         this->num_threads = 1;
 #else
         this->num_threads = mj_node_t::execution_space::thread_pool_size();
