@@ -114,8 +114,6 @@
 // running and test things out.
 // #define DISABLE_THREADS_BUILD
 
-#define DISABLE_PARALLEL_CODE // cuda wasn't supporting these yet - TODO - fix these
-
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -3129,8 +3127,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 #endif
             {
                 if(!bSingleProcess){
+                        // TODO: Ignore this code for cuda right now - not worrying about parallel build yet
+#ifndef KOKKOS_ENABLE_CUDA
                         // TODO: Remove use of data() - refactor in progress
-#ifndef DISABLE_PARALLEL_CODE
                         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
                                         view_total_reduction_size(0),
                                         this->kokkos_total_part_weight_left_right_closests.data(),
@@ -3440,11 +3439,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 #ifdef DISABLE_THREADS_BUILD // NEWLOOP
 
         // TODO - optimize this for cuda
+#ifdef KOKKOS_ENABLE_CUDA
         for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
-        // This would not work for cuda tests right now though ok for some task mappers
-        // Kokkos::parallel_for(
-        //   Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin_index, coordinate_end_index),
-        //   KOKKOS_LAMBDA (const mj_lno_t & ii) {
+#else
+        Kokkos::parallel_for(
+           Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (coordinate_begin_index, coordinate_end_index),
+           KOKKOS_LAMBDA (const mj_lno_t & ii) {
+#endif
+
 #else
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
@@ -7682,8 +7684,6 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 }
         }
 
-        // currently the build is running multiple threads for OpenMP
-        // for cuda we set 1 thread and just run the internal loops ... in progress refactoring.
 #ifndef DISABLE_THREADS_BUILD
 
 #ifdef KOKKOS_ENABLE_CUDA
