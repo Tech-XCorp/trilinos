@@ -103,15 +103,6 @@
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
-// temporary hack to find cuda crash points
-// sometimes bad code would cause a view to crash later when allocated
-// so inserting these as check points could track it down
-#define CHECK_BUILD_KILL(then)       \
-printf("Attempt build kill %d\n", then); \
-{ Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> junk1 = Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("junk",1); } \
-printf("Success build kill %d\n", then);
-
-
 // This is temporary  measure in development.
 // For the cuda build without openmp the outer thread loop
 // is disabled and the internal loops are refactored to run
@@ -121,7 +112,7 @@ printf("Success build kill %d\n", then);
 // format and gpu formats into one cohesive algorithm.
 // I'm using this as a way to get some basic cuda up and
 // running and test things out.
-//#define DISABLE_THREADS_BUILD
+// #define DISABLE_THREADS_BUILD
 
 
 #define TEST_CUDA_FOR_THREAD_SYSTEM
@@ -2672,13 +2663,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::parallel_reduce("MinReduce",
       coordinate_end_index - coordinate_begin_index,
       KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_min) {
-
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("PARALLEL MinReduce: block: %d thread: %d   writing for index: %d\n", block, thread, j);
-#endif
-
         int i =
           kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) < running_min)
@@ -2714,8 +2698,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       }
     }
     total_weight = my_total_weight;
-    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-
 
     // This is a simple loop just over the threads
     // So with threads disable we skip the parallel call
@@ -2727,6 +2709,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     {
       int my_thread_id = 0;
 #else
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, this->num_threads);
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) 
     {
@@ -3018,10 +3001,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-    auto local_this = this;
-
-    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-
 #ifdef DISABLE_THREADS_BUILD
     {
         int me = 0; // format everything as if there is one thread
@@ -3034,7 +3013,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 #else
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, local_num_threads);
 #endif
-
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     { 
         int me = team_member.team_rank();
@@ -3117,7 +3096,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                     mj_scalar_t min_coord = local_kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coord = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                     // compute part weights using existing cuts
-                    local_this->mj_1D_part_get_thread_part_weights(
+                    this->mj_1D_part_get_thread_part_weights(
                         total_part_count,
                         num_cuts,
                         max_coord,//globalMinMaxTotal[kk + concurrentPartCount],//maxScalar,
@@ -3145,7 +3124,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                 total_part_shift += total_part_count;
             }
             //sum up the results of threads
-            local_this->mj_accumulate_thread_results(
+            this->mj_accumulate_thread_results(
                 pTemp_num_partitioning_in_current_dim,
                 current_work_part,
                 current_concurrent_num_parts,
@@ -3268,7 +3247,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                 mj_part_t initial_incomplete_cut_count = local_kokkos_my_incomplete_cut_count(kk);
                 // Now compute the new cut coordinates.
 
-                local_this->mj_get_new_cut_coordinates(
+                this->mj_get_new_cut_coordinates(
                                 num_total_part,
                                 num_cuts,
                                 max_coordinate,
@@ -3936,17 +3915,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                           [=] (mj_part_t & i) {
 #endif // DISABLE_THREADS_BUILD
 
-#ifdef __CUDA_ARCH__
-  printf("mj_create_new_partitions cut: %d block: %d blockDim: %d thread: %d\n", (int) i, blockIdx.x, blockDim.x, threadIdx.x);
-#else
-  printf("Running loop without cuda arch: %d\n", (int) i);
-#endif
-
-#ifdef __CUDA_ARCH__
-if(blockIdx.x == 0) { // as a test try just executing this code over one block - should work but why does test fail for 0, but work for 1?
-#endif
-
-printf("Actualling ding it for cut: %i\n", i);
                                 //the left to be put on the left of the cut.
                                 mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
                                 for(int ii = 0; ii < local_num_threads; ++ii){
@@ -3968,9 +3936,6 @@ printf("Actualling ding it for cut: %i\n", i);
                                                 local_kokkos_thread_cut_line_weight_to_put_left(i,ii) = 0;
                                         }
                                 }
-#ifdef __CUDA_ARCH__
-}
-#endif
 
                        });
 
@@ -4098,13 +4063,6 @@ printf("Actualling ding it for cut: %i\n", i);
                 Kokkos::parallel_for(
                   Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
                   KOKKOS_LAMBDA (const mj_part_t & j) {
-
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("num_parts: %d  loops block: %d thread: %d   j: %d\n", (int) num_parts, block, thread, j);
-#endif
-
 #else
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
                     [=] (mj_part_t & j) {
@@ -4254,11 +4212,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                 //if left and right closest points are not set yet,
                 //set it to the cut itself.
-#ifdef __CUDA_ARCH__
-//int block = blockIdx.x;
-//int thread = threadIdx.x;
-//printf("mj_get_new_cut_coordinates loops 1 block: %d thread: %d   ii: %d\n", block, thread, i);
-#endif
                 if(min_coordinate - kokkos_current_global_left_closest_points(i) > local_sEpsilon)
                         kokkos_current_global_left_closest_points(i) = kokkos_current_cut_coordinates(i);
                 if(kokkos_current_global_right_closest_points(i) - max_coordinate > local_sEpsilon)
