@@ -2659,15 +2659,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     total_weight = my_total_weight;
 
-    auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
-
-    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, 1); // TODO: Fix policy
-    Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) 
-    {
-      local_kokkos_max_min_coords(0) = my_thread_min_coord;
-      local_kokkos_max_min_coords(1) = my_thread_max_coord;
-    });
+    // TODO: Now with refactor this can be cleaned up / simplfied
+    this->kokkos_max_min_coords(0) = my_thread_min_coord;
+    this->kokkos_max_min_coords(1) = my_thread_max_coord;
 
     min_coordinate = this->kokkos_max_min_coords(0);
     max_coordinate = this->kokkos_max_min_coords(1);
@@ -2936,7 +2930,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, 1); // TODO: Make it work multiple theads Kokkos::AUTO
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     { 
@@ -3671,7 +3665,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         mj_part_t num_cuts = num_parts - 1;
 
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, 1); // TODO make work multiple threads
+        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, Kokkos::AUTO());
         // in this mode we have a policy determined above either fixing the threads
         // or fixing the blocks (for cuda) which is a temporary measure to explore what
         // issues we face with cuda.
