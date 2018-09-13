@@ -49,24 +49,21 @@
  */
 
 #include <Zoltan2_TestHelpers.hpp>
-#include <Zoltan2_XpetraMultiVectorAdapter.hpp>
-#include <Zoltan2_BasicVectorAdapter.hpp>
+#include <Zoltan2_BasicKokkosVectorAdapter.hpp>
 #include <Zoltan2_PartitioningSolution.hpp>
 #include <Zoltan2_PartitioningProblem.hpp>
-#include <GeometricGenerator.hpp>
-#include <vector>
-
 #include <Zoltan2_EvaluatePartition.hpp>
+#include <Zoltan2_XpetraMultiVectorAdapter.hpp> // no Tpetra for this mode
+#include <GeometricGenerator.hpp>
 
 #include "Teuchos_XMLParameterListHelpers.hpp"
-
 #include <Teuchos_LAPACK.hpp>
 #include <fstream>
 #include <string>
+#include <vector>
 using namespace std;
 using Teuchos::RCP;
 using Teuchos::rcp;
-
 
 //#define hopper_separate_test
 #ifdef hopper_separate_test
@@ -115,9 +112,6 @@ using Teuchos::rcp;
             << e.what() << " FAIL" << endl; \
             (ierr)++; \
         }
-
-
-typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
 
 /*! \test MultiJaggedTest.cpp
     An example of the use of the MultiJagged algorithm to partition coordinate data.
@@ -791,6 +785,7 @@ int testFromDataFile(
     if (mj_premigration_coordinate_cutoff > 0){
         params->set("mj_premigration_coordinate_count", mj_premigration_coordinate_cutoff);
     }
+    
     Zoltan2::PartitioningProblem<inputAdapter_t> *problem;
     try {
         problem = new Zoltan2::PartitioningProblem<inputAdapter_t>(ia,
@@ -798,13 +793,12 @@ int testFromDataFile(
                                                    comm);
     }
     CATCH_EXCEPTIONS_AND_RETURN("PartitioningProblem()")
-
     try {
         problem->solve();
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
-    // Run a test with BasicVectorAdapter and xyzxyz format coordinates
+    // Run a test with BasicKokkosVectorAdapter and xyzxyz format coordinates
     const int bvme = comm->getRank();
     const inputAdapter_t::lno_t bvlen =
                           inputAdapter_t::lno_t(coords->getLocalLength());
@@ -826,10 +820,15 @@ int testFromDataFile(
       }
     }
 
+    // my test node type
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
+      Kokkos::OpenMP, Kokkos::HostSpace>  custom_node_t;
+    
     typedef Zoltan2::BasicUserTypes<inputAdapter_t::scalar_t,
                                     inputAdapter_t::lno_t,
-                                    inputAdapter_t::gno_t> bvtypes_t;
-    typedef Zoltan2::BasicVectorAdapter<bvtypes_t> bvadapter_t;
+                                    inputAdapter_t::gno_t,
+                                    custom_node_t> bvtypes_t;
+    typedef Zoltan2::BasicKokkosVectorAdapter<bvtypes_t> bvadapter_t;
     std::vector<const inputAdapter_t::scalar_t *> bvcoords(bvnvecs);
     std::vector<int> bvstrides(bvnvecs);
     for (size_t i = 0; i < bvnvecs; i++) {

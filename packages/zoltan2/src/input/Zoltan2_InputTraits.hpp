@@ -134,7 +134,11 @@ typedef Tpetra::Map<>::node_type default_node_t;
     \li \c gno (global number) is the integral data type used by the application and Zoltan2 to represent global identifiers and global counts.
  */
 
-template <typename scalar=double, typename lno=int, typename gno=int>
+// MDM - I've added the Node type as well to the BasicUserTypes
+// This was part of the refactor to get the BasicKokkosVectorAdapter to have a
+// customizable view. But we may prefer to template that separately so I need
+// to discuss this design plan. TODO
+template <typename scalar=double, typename lno=int, typename gno=int, typename node=Zoltan2::default_node_t>
 class BasicUserTypes{
 };
 
@@ -244,15 +248,16 @@ struct InputTraits {
 
 template <typename Scalar,
           typename LocalOrdinal,
-          typename GlobalOrdinal>
-struct InputTraits<BasicUserTypes<Scalar, LocalOrdinal, GlobalOrdinal> >
+          typename GlobalOrdinal,
+          typename Node>
+struct InputTraits<BasicUserTypes<Scalar, LocalOrdinal, GlobalOrdinal, Node> >
 {
   typedef Scalar        scalar_t;
   typedef LocalOrdinal  lno_t;
   typedef GlobalOrdinal gno_t;
   typedef LocalOrdinal  offset_t;
   typedef Zoltan2::default_part_t  part_t;
-  typedef Zoltan2::default_node_t node_t;
+  typedef Node          node_t;
   static inline std::string name() {return "BasicUserTypes";}
 
   Z2_STATIC_ASSERT_TYPES // validate the types

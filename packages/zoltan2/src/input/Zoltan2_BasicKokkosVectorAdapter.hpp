@@ -43,25 +43,25 @@
 //
 // @HEADER
 
-/*! \file Zoltan2_BasicVectorAdapter.hpp
-    \brief Defines the BasicVectorAdapter class.
+/*! \file Zoltan2_BasicKokkosVectorAdapter.hpp
+    \brief Defines the BasicKokkosVectorAdapter class.
 */
 
-#ifndef _ZOLTAN2_BASICVECTORADAPTER_HPP_
-#define _ZOLTAN2_BASICVECTORADAPTER_HPP_
+#ifndef _ZOLTAN2_BASICKOKKOSVECTORADAPTER_HPP_
+#define _ZOLTAN2_BASICKOKKOSVECTORADAPTER_HPP_
 
 #include <Zoltan2_VectorAdapter.hpp>
 #include <Zoltan2_StridedData.hpp>
 
 namespace Zoltan2 {
 
-/*!  \brief BasicVectorAdapter represents a vector (plus optional weights)
+/*!  \brief BasicKokkosVectorAdapter represents a vector (plus optional weights)
             supplied by the user as pointers to strided arrays.
 
-    BasicVectorAdapter may be a single vector or multivector (set of
+    BasicKokkosVectorAdapter may be a single vector or multivector (set of
     corresponding vectors with the same global identifiers and
     distribution across processes).  A constructor specifically for use
-    of BasicVectorAdapter to represent geometric coordinates is also provided.
+    of BasicKokkosVectorAdapter to represent geometric coordinates is also provided.
 
     Data types:
     \li \c scalar_t is the data type for weights and vector entry values.
@@ -78,7 +78,7 @@ namespace Zoltan2 {
 */
 
 template <typename User>
-  class BasicVectorAdapter : public VectorAdapter<User> {
+  class BasicKokkosVectorAdapter : public VectorAdapter<User> {
 
 public:
 
@@ -109,7 +109,7 @@ public:
    *  lifetime of this Adapter.
    */
 
-  BasicVectorAdapter(lno_t numIds, const gno_t *ids,
+  BasicKokkosVectorAdapter(lno_t numIds, const gno_t *ids,
                      const scalar_t *entries, int entryStride=1,
                      bool usewgts=false,
                      const scalar_t *wgts=NULL, int wgtStride=1):
@@ -129,7 +129,7 @@ public:
       weightStrides.push_back(wgtStride);
     }
 
-    createBasicVector(values, strides, weightValues, weightStrides);
+    createBasicKokkosVector(values, strides, weightValues, weightStrides);
   }
 
   /*! \brief Constructor for multivector (a set of vectors sharing the same
@@ -157,14 +157,14 @@ public:
    *  lifetime of this Adapter.
    */
 
-  BasicVectorAdapter(lno_t numIds, const gno_t *ids,
+  BasicKokkosVectorAdapter(lno_t numIds, const gno_t *ids,
     std::vector<const scalar_t *> &entries,  std::vector<int> &entryStride,
     std::vector<const scalar_t *> &weights, std::vector<int> &weightStrides):
       numIds_(numIds), idList_(ids),
       numEntriesPerID_(entries.size()), entries_(),
       numWeights_(weights.size()), weights_()
   {
-    createBasicVector(entries, entryStride, weights, weightStrides);
+    createBasicKokkosVector(entries, entryStride, weights, weightStrides);
   }
 
   /*! \brief A simple constructor for coordinate-based problems with
@@ -193,7 +193,7 @@ public:
    *  lifetime of this Adapter.
    */
 
-  BasicVectorAdapter(lno_t numIds, const gno_t *ids,
+  BasicKokkosVectorAdapter(lno_t numIds, const gno_t *ids,
                      const scalar_t *x, const scalar_t *y,
                      const scalar_t *z,
                      int xStride=1, int yStride=1, int zStride=1,
@@ -224,11 +224,11 @@ public:
       weightValues.push_back(wgts);
       weightStrides.push_back(wgtStride);
     }
-    createBasicVector(values, strides, weightValues, weightStrides);
+    createBasicKokkosVector(values, strides, weightValues, weightStrides);
   }
 
 
-  ~BasicVectorAdapter() {};
+  ~BasicKokkosVectorAdapter() {};
 
   ////////////////////////////////////////////////////////////////
   // The Adapter interface.
@@ -236,20 +236,31 @@ public:
 
   size_t getLocalNumIDs() const { return numIds_;}
 
-  void getIDsView(const gno_t *&ids) const {ids = idList_;}
+  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+    ids = Kokkos::View<const gno_t*, typename node_t::device_type,
+      Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
+  }
 
   int getNumWeightsPerID() const { return numWeights_;}
 
-  void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
-  {
-    if (idx < 0 || idx >= numWeights_) {
-      std::ostringstream emsg;
-      emsg << __FILE__ << ":" << __LINE__
-           << "  Invalid vector index " << idx << std::endl;
-      throw std::runtime_error(emsg.str());
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
+
+    if(numWeights_ > 0) {
+      int stride;
+      size_t length;
+      const scalar_t * weights;
+
+      // call just to get length for 2d setup
+      weights_[0].getStridedList(length, weights, stride);
+      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>("wgts", length, numWeights_);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        weights_[idx].getStridedList(length, weights, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          wgt(fill_index++,idx) = weights[n];
+        }
+      }
     }
-    size_t length;
-    weights_[idx].getStridedList(length, weights, stride);
   }
 
   ////////////////////////////////////////////////////
@@ -258,6 +269,11 @@ public:
 
   int getNumEntriesPerID() const { return numEntriesPerID_;}
 
+  // TODO: I'd like to refactor this so BasicKokkosVectorAdapter only has
+  // Kokkos View API calls and BasicVectorAdapter only has scalar ptr API calls.
+  // They all derive from VectorAdapter so I need to rethink this setup so we
+  // don't have duplication and odd floating  methods that can be called but
+  // have to throw errors.
   void getEntriesView(const scalar_t *&entries, int &stride, int idx = 0) const
   {
     if (idx < 0 || idx >= numEntriesPerID_) {
@@ -269,6 +285,12 @@ public:
     size_t length;
     entries_[idx].getStridedList(length, entries, stride);
   }
+  
+  void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & entries) const
+  {
+    entries = kokkos_entries_;
+  }
 
 private:
 
@@ -276,12 +298,16 @@ private:
   const gno_t *idList_;
 
   int numEntriesPerID_;
+  
+  // TODO: Eventually we'd like this to be gone and just have a Kokkos View
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
+
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_entries_;
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
 
-  void createBasicVector(
+  void createBasicKokkosVector(
     std::vector<const scalar_t *> &entries,  std::vector<int> &entryStride,
     std::vector<const scalar_t *> &weights, std::vector<int> &weightStrides)
   {
@@ -296,10 +322,19 @@ private:
         entries_[v] = input_t(eltV, stride);
       }
 
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft>(
+        "entries", numIds_, numEntriesPerID_);
+
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
+
+        // TODO - optimize - if we can? Need this into Kokkos view ...
+        int fill_index = 0;
+        for(int n = 0; n < static_cast<int>(length); n += stride) {
+          kokkos_entries_(fill_index++,v) = entriesPtr[n];
+        }
       }
     }
 
