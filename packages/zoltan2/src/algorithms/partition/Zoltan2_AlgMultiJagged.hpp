@@ -103,6 +103,10 @@
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
+// TODO: This is temporary - probably should be a member variable
+// But not sure yet how we want to organize this
+#define ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS 1000 
+
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -2930,10 +2934,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, 1);
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS, Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
-    { 
+    {
+
+if(team_member.league_rank() == 0) {
         Kokkos::single(Kokkos::PerTeam(team_member), [=]()
         {
           //initialize the lower and upper bounds of the cuts.
@@ -2956,7 +2962,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
           }
         });
         team_member.team_barrier();  // for end of Kokkos::single
+}
 
+if(team_member.league_rank() == 0) {
         int iteration = 0;
         while (view_total_incomplete_cut_count(0) != 0) {
             iteration += 1;
@@ -3026,6 +3034,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                 total_part_shift += total_part_count;
             }
             //sum up the results of threads
+            // TODO: Now with the threads eliminated we should eliminate a lot of this code
+            // There is only 1 thread block in the new cuda refactor setup
             this->mj_accumulate_thread_results(
                 pTemp_num_partitioning_in_current_dim,
                 current_work_part,
@@ -3206,6 +3216,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
               team_member.team_barrier(); // for end of Kokkos::single
             }
         } // end of the while loop
+}
+
         //if (myRank == 0)
         //std::cout << "iteration:" << iteration << " partition:" << num_partitioning_in_current_dim[current_work_part] << std::endl;
         // Needed only if keep_cuts; otherwise can simply swap array pointers
@@ -3213,7 +3225,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         // (at first iteration, cutCoordinates == cutCoorindates_tmp).
         // computed cuts must be in cutCoordinates.
         if (kokkos_current_cut_coordinates != local_kokkos_temp_cut_coords){
-
+if(team_member.league_rank() == 0) {
           Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
           {
                     mj_part_t next = 0;
@@ -3228,7 +3240,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                     }
           });
           team_member.team_barrier();  // for end of Kokkos::single
+}
 
+if(team_member.league_rank() == 0) {
           Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
           {
 	          // TODO Same as above - need to optimize fix this
@@ -3240,8 +3254,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 //            this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
           });
           team_member.team_barrier();  // for end of Kokkos::single
+}
         } // end of if
-    });
+    }); // end of the outer mj_1D_part loop
 
     delete reductionOp;
 }
@@ -3306,9 +3321,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //no need for the barrier as all threads uses their local memories.
         //dont change the static scheduling here, as it is assumed when the new
         //partitions are created later.
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
-          KOKKOS_LAMBDA (mj_lno_t & ii) {
+
+        // TODO: Turned on Kokkos::AUTO for thread outer loop
+        // Now temporarily disable the paralell loop here and do serial
+        // My strategy is to get it back working so I can rebuild the inner loops
+        // one piece at a time.
+        Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
+        {
+          for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
+
+    //    Kokkos::parallel_for(
+    //      Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+    //      KOKKOS_LAMBDA (mj_lno_t & ii) {
                 int i = local_kokkos_coordinate_permutations(ii);
 
                 //the accesses to assigned_part_ids are thread safe
@@ -3477,6 +3501,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 }
                         }
                 }
+
+        } // TODO temporarily added extra for loop - see note above - will be removed
         });
         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
@@ -3664,18 +3690,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     ){
         mj_part_t num_cuts = num_parts - 1;
 
-        typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (1, Kokkos::AUTO());
-        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+printf("Running mj_create_new_partitions\n");
 
+        typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
+          ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS,
+          Kokkos::AUTO());
+        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
                 //now if the rectilinear partitioning is allowed we decide how
                 //much weight each thread should put to left and right.
                 if (local_distribute_points_on_cut_lines){
                         // TODO: Evaluate this comment in light of the new refactor to Kokkos...
                         // this for assumes the static scheduling in mj_1D_part calculation.
-
-                        Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-                          [=] (mj_part_t & i) {
+if(team_member.league_rank() == 0) {
+for(mj_part_t i = 0; i < num_cuts; ++i) {
+              //          Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
+               //           [=] (mj_part_t & i) {
                                 //the left to be put on the left of the cut.
                                 mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
                                         if(left_weight > local_sEpsilon){
@@ -3695,7 +3725,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         else {
                                                 local_kokkos_thread_cut_line_weight_to_put_left(i) = 0;
                                         }
-                        });
+                        }
+//);
+}
                         team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
                         // Note I'm inserting this single now that we have no thread chunks
@@ -3704,6 +3736,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         // For now we call this once
                         Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
 
+// TODO: Temp delete - a test to verify setting multiple teams above was doing what I thought - this should work with this test
+if(team_member.league_rank() == 0) {
                         if(num_cuts > 0){
                                 //this is a special case. If cutlines share the same coordinate, their weights are equal.
                                 //we need to adjust the ratio for that.
@@ -3714,21 +3748,34 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         local_kokkos_thread_cut_line_weight_to_put_left(i) = int ((local_kokkos_thread_cut_line_weight_to_put_left(i) + LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) / mj_scalar_t(SIGNIFICANCE_MUL);
                                 }
                         }
+} // temp handle multiple teams
 
                         }); // end of single
                         team_member.team_barrier(); // for end of Kokkos::single
                 }
 
                 // Note this single inserted with refactor since we don't have multple thread chunks anymore
+//if(team_member.league_rank() == 0) {
+//for(mj_part_t ii = 0; ii < num_parts; ++ii) {
+
                 Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
                   [=] (mj_part_t & ii) {
                   local_kokkos_thread_point_counts(ii) = 0;
                 });
+//}
                 team_member.team_barrier(); // for end of Kokkos::single
+
+        }); // end it
+        Kokkos::fence();
+        // start it up again
+        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
 // This loop not currently safe for the cuda run so disabled to a serial single
 // TODO: Needs optimization and refactoring
                   Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+
+// TODO: Temp delete - a test to verify setting multiple teams above was doing what I thought - this should work with this test
+if(team_member.league_rank() == 0) {
                   for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
 
                   //dont change static scheduler. the static partitioner used later as well.
@@ -3807,15 +3854,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                 //});
                 } // temporary serial for loop
+} // temp 
                 }); // temporary single setup
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
                 //now we calculate where each thread will write in new_coordinate_permutations array.
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
+if(team_member.league_rank() == 0) {
+for(mj_part_t j = 0; j < num_parts; ++j) {
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-                    [=] (mj_part_t & j) {
+//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
+//                    [=] (mj_part_t & j) {
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
 
                         // TODO: Refactored to remove num_threads - now clean this section up
@@ -3825,24 +3875,31 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
 
                         kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
-                });
+                }
+//);
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-
+}
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
-                    [=] (mj_part_t & j) {
+if(team_member.league_rank() == 0) {
+for(mj_part_t j = 1; j < num_parts; ++j) {
+
+//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
+//                    [=] (mj_part_t & j) {
                     //perform prefix sum for num_points in parts.
                     kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
-                });
+                }
+//);
                 team_member.team_barrier(); // for end of Kokkos::single
 
-                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
-                    [=] (mj_part_t & j) {
+for(mj_part_t j = 1; j < num_parts; ++j) {
+//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
+//                    [=] (mj_part_t & j) {
                     local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
-                });
+                }
+//);
                 team_member.team_barrier(); // for end of Kokkos::single
-
+}
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
 
@@ -3850,6 +3907,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 // is not thread safe - in the original setup things were split between the
                 // threads so each could handle independently. TODO: Improve  
                 Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+// TODO: Temp delete - a test to verify setting multiple teams above was doing what I thought - this should work with this test
+if(team_member.league_rank() == 0) {
                 for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
                 //Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
                 //  [=] (mj_lno_t & ii) {
@@ -3860,6 +3919,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                           local_kokkos_thread_point_counts(p)++) = i;
                 //});
                 }
+} // temp
                 });
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
         });
@@ -6115,6 +6175,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 )
 {
+    // purpose of this code is to validate node and UVM status for the tests
+    // TODO: Later can remove or make this debug code
+    std::cout << "node: " << mj_node_t::name() << std::endl;
+    std::cout << "  memory_space: " << mj_node_t::memory_space::name() << std::endl;
+    std::cout << "  execution_space: " << mj_node_t::execution_space::name() << std::endl;
 
 #ifdef print_debug
     if(comm->getRank() == 0){
@@ -6632,17 +6697,17 @@ class Zoltan2_AlgMJ : public Algorithm<Adapter>
 private:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-
     typedef CoordinateModel<typename Adapter::base_adapter_t> coordinateModel_t;
     typedef typename Adapter::scalar_t mj_scalar_t;
     typedef typename Adapter::gno_t mj_gno_t;
     typedef typename Adapter::lno_t mj_lno_t;
-    typedef typename Adapter::node_t mj_node_t;
     typedef typename Adapter::part_t mj_part_t;
+    typedef typename Adapter::node_t mj_node_t;
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
     typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
 #endif
-    AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
+
+   AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
        mj_node_t> mj_partitioner;
 
     RCP<const Environment> mj_env; //the environment object
