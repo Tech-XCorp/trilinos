@@ -230,6 +230,9 @@ public:
 
   ~BasicKokkosVectorAdapter() {};
 
+  // TODO: Refactor so this doesn't exist - think on design
+  virtual bool hasKokkosCoordinates() const { return true; }
+  
   ////////////////////////////////////////////////////////////////
   // The Adapter interface.
   ////////////////////////////////////////////////////////////////
