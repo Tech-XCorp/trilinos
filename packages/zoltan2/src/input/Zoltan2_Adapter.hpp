@@ -147,7 +147,7 @@ public:
   // */ 
   virtual void getWeightsView(const scalar_t *&wgt, int &stride,
                               int idx = 0) const {
-    Kokkos::View<scalar_t *> tempWeightsView;
+    Kokkos::View<scalar_t *, typename node_t::device_type> tempWeightsView;
     getWeightsKokkosView(tempWeightsView, idx);
     wgt = tempWeightsView.data();
     stride = 1;
@@ -160,14 +160,14 @@ public:
   // *   getNumWeightsPerID > 0.
   // *   This function should not be called if getNumWeightsPerID is zero.
   // */ 
-  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx) const {
-    Z2_THROW_NOT_IMPLEMENTED
+  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *, typename node_t::device_type> &wgt, int idx) const {
+    throw std::logic_error("getWeightsKokkosView not implemented.");
   }
 
   // 2nd form returns the 2darray - still need to decide how this will all sort
   // out but they should all be made consistent.
   virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> & wgt) const {
-    Z2_THROW_NOT_IMPLEMENTED
+    throw std::logic_error("getWeightsKokkos2dView not implemented.");
   }
 
   /*! \brief Provide pointer to an array containing the input part 

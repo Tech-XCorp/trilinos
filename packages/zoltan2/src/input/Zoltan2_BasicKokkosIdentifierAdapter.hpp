@@ -120,7 +120,7 @@ public:
 
   // TODO: I'm adding a new form which takes the 2d array but probably should
   // convert this all to be the same style.
-  void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx) const {
+  void getWeightsKokkosView(Kokkos::View<scalar_t *, typename node_t::device_type> &wgt, int idx) const {
     if (idx < 0 || scalar_t(idx) >= weightsView_.extent(0)) {
       std::ostringstream emsg;
       emsg << __FILE__ << ":" << __LINE__

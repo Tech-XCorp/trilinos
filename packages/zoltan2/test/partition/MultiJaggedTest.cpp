@@ -49,7 +49,7 @@
  */
 
 #include <Zoltan2_TestHelpers.hpp>
-#include <Zoltan2_BasicKokkosVectorAdapter.hpp>
+#include <Zoltan2_BasicVectorAdapter.hpp>
 #include <Zoltan2_PartitioningSolution.hpp>
 #include <Zoltan2_PartitioningProblem.hpp>
 #include <Zoltan2_EvaluatePartition.hpp>
@@ -798,7 +798,7 @@ int testFromDataFile(
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
-    // Run a test with BasicKokkosVectorAdapter and xyzxyz format coordinates
+    // Run a test with BasicVectorAdapter and xyzxyz format coordinates
     const int bvme = comm->getRank();
     const inputAdapter_t::lno_t bvlen =
                           inputAdapter_t::lno_t(coords->getLocalLength());
@@ -828,7 +828,7 @@ int testFromDataFile(
                                     inputAdapter_t::lno_t,
                                     inputAdapter_t::gno_t,
                                     custom_node_t> bvtypes_t;
-    typedef Zoltan2::BasicKokkosVectorAdapter<bvtypes_t> bvadapter_t;
+    typedef Zoltan2::BasicVectorAdapter<bvtypes_t> bvadapter_t;
     std::vector<const inputAdapter_t::scalar_t *> bvcoords(bvnvecs);
     std::vector<int> bvstrides(bvnvecs);
     for (size_t i = 0; i < bvnvecs; i++) {

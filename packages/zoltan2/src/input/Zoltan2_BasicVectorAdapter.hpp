@@ -238,7 +238,32 @@ public:
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
+  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+    ids = Kokkos::View<const gno_t*, typename node_t::device_type,
+      Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
+  }
+
   int getNumWeightsPerID() const { return numWeights_;}
+
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
+
+    if(numWeights_ > 0) {
+      int stride;
+      size_t length;
+      const scalar_t * weights;
+
+      // call just to get length for 2d setup
+      weights_[0].getStridedList(length, weights, stride);
+      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>("wgts", length, numWeights_);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        weights_[idx].getStridedList(length, weights, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          wgt(fill_index++,idx) = weights[n];
+        }
+      }
+    }
+  }
 
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
   {
@@ -270,6 +295,12 @@ public:
     entries_[idx].getStridedList(length, entries, stride);
   }
 
+  void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & entries) const
+  {
+    entries = kokkos_entries_;
+  }
+
 private:
 
   lno_t numIds_;
@@ -277,6 +308,8 @@ private:
 
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
+
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_entries_;
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
@@ -296,10 +329,19 @@ private:
         entries_[v] = input_t(eltV, stride);
       }
 
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft>(
+        "entries", numIds_, numEntriesPerID_);
+
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
+
+        // TODO - optimize - if we can? Need this into Kokkos view ...
+        int fill_index = 0;
+        for(int n = 0; n < static_cast<int>(length); n += stride) {
+          kokkos_entries_(fill_index++,v) = entriesPtr[n];
+        }
       }
     }
 

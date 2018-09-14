@@ -305,42 +305,38 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
   if (nLocalIds_){
 
-    // TODO: Refactor so this doesn't exist - think on design
-    if(ia->hasKokkosCoordinates()) {
-      ia->getIDsKokkosView(kokkos_gids_);
-      ia->getCoordinatesKokkosView(kokkos_xyz_);
-      if(userNumWeights_ > 0) {
-        ia->getWeightsKokkos2dView(kokkos_weights_);
-      }
+    ia->getIDsKokkosView(kokkos_gids_);
+    ia->getCoordinatesKokkosView(kokkos_xyz_);
+    if(userNumWeights_ > 0) {
+      ia->getWeightsKokkos2dView(kokkos_weights_);
     }
-    else {
-      const gno_t *gids=NULL;
-      ia->getIDsView(gids);
-      gids_ = arcp(gids, 0, nLocalIds_, false);
 
-      for (int dim=0; dim < coordinateDim_; dim++){
-        int stride;
-        const scalar_t *coords=NULL;
-        try{
-          ia->getCoordinatesView(coords, stride, dim);
-        }
-        Z2_FORWARD_EXCEPTIONS;
+    const gno_t *gids=NULL;
+    ia->getIDsView(gids);
+    gids_ = arcp(gids, 0, nLocalIds_, false);
 
-        ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds_*stride, false);
-        coordArray[dim] = input_t(cArray, stride);
+    for (int dim=0; dim < coordinateDim_; dim++){
+      int stride;
+      const scalar_t *coords=NULL;
+      try{
+        ia->getCoordinatesView(coords, stride, dim);
       }
+      Z2_FORWARD_EXCEPTIONS;
 
-      for (int idx=0; idx < userNumWeights_; idx++){
-        int stride;
-        const scalar_t *weights;
-        try{
-          ia->getWeightsView(weights, stride, idx);
-        }
-        Z2_FORWARD_EXCEPTIONS;
+      ArrayRCP<const scalar_t> cArray(coords, 0, nLocalIds_*stride, false);
+      coordArray[dim] = input_t(cArray, stride);
+    }
 
-        ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds_*stride, false);
-        weightArray[idx] = input_t(wArray, stride);
+    for (int idx=0; idx < userNumWeights_; idx++){
+      int stride;
+      const scalar_t *weights;
+      try{
+        ia->getWeightsView(weights, stride, idx);
       }
+      Z2_FORWARD_EXCEPTIONS;
+
+      ArrayRCP<const scalar_t> wArray(weights, 0, nLocalIds_*stride, false);
+      weightArray[idx] = input_t(wArray, stride);
     }
   }
 
