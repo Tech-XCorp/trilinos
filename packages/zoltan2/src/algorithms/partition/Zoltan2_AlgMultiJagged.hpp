@@ -6177,7 +6177,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 {
     // purpose of this code is to validate node and UVM status for the tests
     // TODO: Later can remove or make this debug code
-    std::cout << "node: " << mj_node_t::name() << std::endl;
     std::cout << "  memory_space: " << mj_node_t::memory_space::name() << std::endl;
     std::cout << "  execution_space: " << mj_node_t::execution_space::name() << std::endl;
 

@@ -65,6 +65,7 @@ using namespace std;
 using Teuchos::RCP;
 using Teuchos::rcp;
 
+
 //#define hopper_separate_test
 #ifdef hopper_separate_test
 #include "stdio.h"
@@ -822,7 +823,7 @@ int testFromDataFile(
 
     // my test node type
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
-      Kokkos::OpenMP, Kokkos::HostSpace>  custom_node_t;
+      Kokkos::Cuda, Kokkos::CudaUVMSpace>  custom_node_t;
     
     typedef Zoltan2::BasicUserTypes<inputAdapter_t::scalar_t,
                                     inputAdapter_t::lno_t,
