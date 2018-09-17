@@ -7280,46 +7280,80 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         //extract coordinates from multivector.
         this->kokkos_mj_coordinates = kokkos_xyz;
         //if no weights are provided set uniform weight.
+        auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
         if (this->num_weights_per_coord == 0){
-
 		// originally we did the following:
-                this->kokkos_mj_uniform_weights(0) = true;
+                // this->kokkos_mj_uniform_weights(0) = true;
                 // But I want this to work for UVM off - normally we'd be in a parallel_for
                 // but for a single iteration is there a better way? I just do the parallel_for for now
-           
-            //    Kokkos::parallel_for(
-            //      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-            //      KOKKOS_LAMBDA (const int i) {
-            //        this->kokkos_mj_uniform_weights(i) = true;
-            //      }
-            //    );
-
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+                  KOKKOS_LAMBDA (const int i) {
+                    local_kokkos_mj_uniform_weights(i) = true;
+                  }
+                );
                 Kokkos::resize(this->kokkos_mj_weights, 0);
         }
         else{
-
                 this->kokkos_mj_weights = kokkos_wgts;
 
-
-//                Kokkos::parallel_for(
-//                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_weights_per_coord),
-//                  KOKKOS_LAMBDA (const int wdim) {
-              for(int wdim = 0; wdim < this->num_weights_per_coord; ++wdim) {
-                    this->kokkos_mj_uniform_weights(wdim) = false;
+                // Originally in serial - need to alloctae properly for UVM
+                // for(int wdim = 0; wdim < this->num_weights_per_coord; ++wdim) {
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_weights_per_coord),
+                  KOKKOS_LAMBDA (const int wdim) {
+                    local_kokkos_mj_uniform_weights(wdim) = false;
                   }
- //               );
+                );
+        }
+        // originally did this
+        // for (int wdim = 0; wdim < criteria_dim; wdim++){
+
+        // Here we need the criteriaHasUniformPartSizes on device
+        // I'd like to avoid refactoring solution at this phase so the new Kokkos View stuff doesn't spread too much
+        // Create a host view, fill it, then mirror to the device for the following loop
+        // TODO: Clean this up and eliminate!
+
+        // 1st create a device view - eventually this should probably live on device in solution
+   
+        // I'd like to use this memory space but this won't compile - I get an obsure ; expected for the HostMirror line
+        // I suspect this is because of the way I'm using the node as a wrapper for device with a custom setting for exec space and
+        // memory space. That nodes does not exist as a true object that, for example, we can call ::name() on.
+        // For that reason I may need to refactot this all back to a exec and mem space templating to avoid node completely.
+        // I'm holding off for now to avoid committing to bigger changes like that unless necessary.
+        //     typedef typename mj_node_t::memory_space use_mem_space;
+
+        // instead of using the defined mem space, just use the default mem space
+        // for cuda will be UVM space here only
+        // but this is just a stop gap to get the solution data onto device anyways
+        // I'll need to rethink all of this
+        typedef Kokkos::View<bool *> view_vector_t;
+        view_vector_t device_hasUniformPartSizes("device criteriaHasUniformPartSizes", criteria_dim);
+        view_vector_t::HostMirror host_hasUniformPartSizes = Kokkos::create_mirror_view(device_hasUniformPartSizes);
+        // now fill host with values currently stored in solution on host
+        for(int wdim = 0; wdim < criteria_dim; ++wdim) {
+          host_hasUniformPartSizes(wdim) = solution->criteriaHasUniformPartSizes(wdim);
         }
 
-        for (int wdim = 0; wdim < criteria_dim; wdim++){
-                if (solution->criteriaHasUniformPartSizes(wdim)){
-                        this->kokkos_mj_uniform_parts(wdim) = true;
-
-                }
-                else{
-                        std::cerr << "MJ does not support non uniform target part weights" << std::endl;
-                        exit(1);
-                }
-        }
+        // copy to the device
+        Kokkos::deep_copy(device_hasUniformPartSizes, host_hasUniformPartSizes);
+        // now we are ready to initialize kokkos_mj_uniform_parts safely on device for UVM off
+        // TODO: we could probably refactor this a bit and just copy the view ptr but I want to keep the error checking.
+        // Also when we refactor above we may end up with a form similar to this.
+        // For now keep the full loop to preserve the original code pattern
+        auto local_kokkos_mj_uniform_parts = kokkos_mj_uniform_parts;
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, criteria_dim),
+            KOKKOS_LAMBDA (const int wdim) {
+            if(device_hasUniformPartSizes(wdim)) {
+              local_kokkos_mj_uniform_parts(wdim) = true;
+            }
+            else {
+              printf("Error: MJ does not support non uniform target part weights\n");
+              // TODO: Resolve error handling for device
+              // exit(1);
+            }
+        });
 }
 
 /* \brief Sets the partitioning parameters for multijagged algorithm.
