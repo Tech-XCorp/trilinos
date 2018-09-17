@@ -1440,15 +1440,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     int num_ranks_per_node,
     bool divide_to_prime_first_
 ){
-
-
-        this->mj_env = env;
-        const RCP<Comm<int> > commN;
-        this->mj_problemComm = 
-              Teuchos::DefaultComm<int>::getDefaultSerialComm(commN);
-        this->comm = 
-              Teuchos::rcp_const_cast<Comm<int> >(this->mj_problemComm);
-        this->myActualRank = this->myRank = 1;
+    this->mj_env = env;
+    const RCP<Comm<int> > commN;
+    this->mj_problemComm = 
+      Teuchos::DefaultComm<int>::getDefaultSerialComm(commN);
+    this->comm = 
+      Teuchos::rcp_const_cast<Comm<int> >(this->mj_problemComm);
+    this->myActualRank = this->myRank = 1;
 
     this->divide_to_prime_first = divide_to_prime_first_;
     //weights are uniform for task mapping
@@ -1953,6 +1951,11 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         kept_boxes(),global_box(),
         myRank(0), myActualRank(0), divide_to_prime_first(false)
 {
+    // purpose of this code is to validate node and UVM status for the tests
+    // TODO: Later can remove or make this debug code
+    std::cout << "  memory_space: " << mj_node_t::memory_space::name() << std::endl;
+    std::cout << "  execution_space: " << mj_node_t::execution_space::name() << std::endl;
+
     this->fEpsilon = std::numeric_limits<float>::epsilon();
     this->sEpsilon = std::numeric_limits<mj_scalar_t>::epsilon() * 100;
 
@@ -2324,11 +2327,15 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::allocate_set_work_memory(){
         //points to process that initially owns the coordinate.
-        this->kokkos_owner_of_coordinate  = Kokkos::View<int*, typename mj_node_t::device_type>("empty"); // TODO decide if this is ok
+        Kokkos::resize(this->kokkos_owner_of_coordinate, 0);
+
+printf("begin allocate_set_work_memory B1\n");
         //Throughout the partitioning execution,
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
-        this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num local coords", this->num_local_coords);
+        Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
+
+printf("begin allocate_set_work_memory  B2\n");
         //initial configuration, set each pointer-i to i.
         // Cuda local/this issues
         // use local view to avoid capturing this which is problematic for CUDA
@@ -2344,6 +2351,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         );
 
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
+
         //new_coordinate_permutations holds the current permutation.
         this->kokkos_new_coordinate_permutations =
           Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("num_local_coords", this->num_local_coords);
@@ -2441,7 +2449,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
-
     auto local_num_local_coords = this->num_local_coords;
 
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
@@ -3689,8 +3696,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_new_coordinate_permutations
     ){
         mj_part_t num_cuts = num_parts - 1;
-
-printf("Running mj_create_new_partitions\n");
 
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
@@ -6175,14 +6180,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 )
 {
-    // purpose of this code is to validate node and UVM status for the tests
-    // TODO: Later can remove or make this debug code
-    std::cout << "  memory_space: " << mj_node_t::memory_space::name() << std::endl;
-    std::cout << "  execution_space: " << mj_node_t::execution_space::name() << std::endl;
-
 #ifdef print_debug
     if(comm->getRank() == 0){
         std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
+
         std::cout << "size of lno:" << sizeof(mj_lno_t) << std::endl;
         std::cout << "size of mj_scalar_t:" << sizeof(mj_scalar_t) << std::endl;
     }
@@ -6228,7 +6229,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
     }
-
 
     //this->set_input_data();
     this->set_part_specifications();
@@ -6693,7 +6693,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 template <typename Adapter>
 class Zoltan2_AlgMJ : public Algorithm<Adapter>
 {
-private:
+public: // TODO: Changed all to public for cuda refactoring - need to to work up design
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
     typedef CoordinateModel<typename Adapter::base_adapter_t> coordinateModel_t;
@@ -7034,11 +7034,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
 {
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
+
     this->set_up_partitioning_data(solution);
+
     this->set_input_parameters(this->mj_env->getParameters());
     if (this->mj_keep_part_boxes){
         this->mj_partitioner.set_to_keep_part_boxes();
     }
+
     this->mj_partitioner.set_partitioning_parameters(
                 this->distribute_points_on_cut_lines,
                 this->max_concurrent_part_calculation,
@@ -7259,7 +7262,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         this->num_local_coords = this->mj_coords->getLocalNumCoordinates();
         this->num_global_coords = this->mj_coords->getGlobalNumCoordinates();
         int criteria_dim = (this->num_weights_per_coord ? this->num_weights_per_coord : 1);
-
         // From the Solution we get part information.
         // If the part sizes for a given criteria are not uniform,
         // then they are values that sum to 1.0.
@@ -7269,31 +7271,43 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         this->kokkos_mj_uniform_parts = Kokkos::View<bool *, typename mj_node_t::device_type>("uniform parts", criteria_dim);
         this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type>("part sizes", criteria_dim);
         this->kokkos_mj_uniform_weights = Kokkos::View<bool *, typename mj_node_t::device_type>("uniform weights", criteria_dim);
-
         Kokkos::View<const mj_gno_t *, typename mj_node_t::device_type> kokkos_gnos;
         Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_xyz;
         Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_wgts;
-
         this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
-
         //obtain global ids.
         this->kokkos_initial_mj_gnos = kokkos_gnos;
-
         //extract coordinates from multivector.
         this->kokkos_mj_coordinates = kokkos_xyz;
-
         //if no weights are provided set uniform weight.
         if (this->num_weights_per_coord == 0){
+
+		// originally we did the following:
                 this->kokkos_mj_uniform_weights(0) = true;
-                this->kokkos_mj_weights = Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type>(); // TODO: better way to 'clear' a view?
+                // But I want this to work for UVM off - normally we'd be in a parallel_for
+                // but for a single iteration is there a better way? I just do the parallel_for for now
+           
+            //    Kokkos::parallel_for(
+            //      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+            //      KOKKOS_LAMBDA (const int i) {
+            //        this->kokkos_mj_uniform_weights(i) = true;
+            //      }
+            //    );
+
+                Kokkos::resize(this->kokkos_mj_weights, 0);
         }
         else{
+
                 this->kokkos_mj_weights = kokkos_wgts;
 
-                //if weights are provided get weights for all weight indices
-                for (int wdim = 0; wdim < this->num_weights_per_coord; wdim++){
-                        this->kokkos_mj_uniform_weights(wdim) = false;
-                }
+
+//                Kokkos::parallel_for(
+//                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_weights_per_coord),
+//                  KOKKOS_LAMBDA (const int wdim) {
+              for(int wdim = 0; wdim < this->num_weights_per_coord; ++wdim) {
+                    this->kokkos_mj_uniform_weights(wdim) = false;
+                  }
+ //               );
         }
 
         for (int wdim = 0; wdim < criteria_dim; wdim++){
@@ -7321,12 +7335,11 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 this->imbalance_tolerance = tol - 1.0;
         }
 
-    // TODO: May be a more relaxed tolerance is needed. RCB uses 10%
+        // TODO: May be a more relaxed tolerance is needed. RCB uses 10%
         if (this->imbalance_tolerance <= 0)
                 this->imbalance_tolerance= 10e-4;
-
         //if an input partitioning array is provided.
-        this->kokkos_part_no_array = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("empty");
+        Kokkos::resize(this->kokkos_part_no_array, 0);
 
         //the length of the input partitioning array.
         this->recursion_depth = 0;

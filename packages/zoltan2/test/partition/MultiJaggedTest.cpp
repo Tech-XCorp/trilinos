@@ -713,6 +713,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     return ierr;
 }
 
+// Run this node type for the BasicVectorAdapter
+// We don't apply this to the Tpetra setup since that always requires UVM on
+template<class bv_use_node_t>
 int testFromDataFile(
         RCP<const Teuchos::Comm<int> > &comm,
         int numParts,
@@ -729,7 +732,7 @@ int testFromDataFile(
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option, 
-	      int mj_premigration_coordinate_cutoff
+        int mj_premigration_coordinate_cutoff
 )
 {
     int ierr = 0;
@@ -822,13 +825,10 @@ int testFromDataFile(
     }
 
     // my test node type
-    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
-      Kokkos::Cuda, Kokkos::CudaUVMSpace>  custom_node_t;
-    
     typedef Zoltan2::BasicUserTypes<inputAdapter_t::scalar_t,
                                     inputAdapter_t::lno_t,
                                     inputAdapter_t::gno_t,
-                                    custom_node_t> bvtypes_t;
+                                    bv_use_node_t> bvtypes_t;
     typedef Zoltan2::BasicVectorAdapter<bvtypes_t> bvadapter_t;
     std::vector<const inputAdapter_t::scalar_t *> bvcoords(bvnvecs);
     std::vector<int> bvstrides(bvnvecs);
@@ -1322,6 +1322,9 @@ int main(int argc, char *argv[])
     bool test_boxes = false;
     bool rectilinear = false;
 
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
+      Kokkos::Cuda, Kokkos::CudaSpace>  uvm_off_node_t;
+
     try{
         try {
             getArgVals(
@@ -1361,7 +1364,17 @@ int main(int argc, char *argv[])
         switch (opt){
 
         case 0:
-            ierr = testFromDataFile(tcomm,numParts, imbalance,fname,
+            ierr = testFromDataFile<znode_t>(tcomm,numParts, imbalance,fname,
+                    pqParts, paramFile, k,
+                    migration_check_option,
+                    migration_all_to_all_type,
+                    migration_imbalance_cut_off,
+                    migration_processor_assignment_type,
+                    migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option, mj_premigration_coordinate_cutoff);
+
+
+	    // TODO: Temporary setup to run UVM on and off at same time
+            ierr = testFromDataFile<uvm_off_node_t>(tcomm,numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
