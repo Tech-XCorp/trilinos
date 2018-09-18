@@ -1372,7 +1372,7 @@ int main(int argc, char *argv[])
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option, mj_premigration_coordinate_cutoff);
 
-
+/*
 	    // TODO: Temporary setup to run UVM on and off at same time
             ierr = testFromDataFile<uvm_off_node_t>(tcomm,numParts, imbalance,fname,
                     pqParts, paramFile, k,
@@ -1381,6 +1381,7 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option, mj_premigration_coordinate_cutoff);
+*/
             break;
 #ifdef hopper_separate_test
         case 1:
