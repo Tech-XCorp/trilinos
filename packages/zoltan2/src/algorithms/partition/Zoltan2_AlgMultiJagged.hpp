@@ -2163,14 +2163,26 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     RCP<mj_partBoxVector_t> output_part_boxes,
     mj_part_t atomic_part_count
 ){
+
+printf("int 1\n");
+
         //how many parts that will be obtained after this dimension.
     mj_part_t output_num_parts = 0;
     if(this->kokkos_part_no_array.size()) // TODO can this work as NULL did?
     {
+printf("int 2\n");
         //when the partNo array is provided as input,
         //each current partition will be partition to the same number of parts.
         //we dont need to use the future_num_part_in_parts vector in this case.
-        mj_part_t p = this->kokkos_part_no_array(current_iteration);
+
+        // TODO - what is the right way to read a single value to host
+        auto local_kokkos_part_no_array = this->kokkos_part_no_array;
+        mj_part_t p;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int i, mj_part_t & running_max) {
+            running_max = local_kokkos_part_no_array(current_iteration);
+        }, Kokkos::Max<mj_part_t>(p));
+
         if (p < 1){
             std::cout << "i:" << current_iteration << " p is given as:" << p << std::endl;
             exit(1);
@@ -2178,10 +2190,11 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if (p == 1){
             return current_num_parts;
         }
-
+printf("int 3\n");
         for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
             num_partitioning_in_current_dim.push_back(p);
         }
+printf("int 4\n");
         //cout << "me:" << this->myRank << " current_iteration" << current_iteration <<
         //" current_num_parts:" << current_num_parts << std::endl;
         //cout << "num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0] << std::endl;
@@ -2192,10 +2205,10 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         << " num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0]
                         << future_num_parts/ num_partitioning_in_current_dim[0] << std::endl;
         */
-
+printf("int 5\n");
         future_num_parts /= num_partitioning_in_current_dim[0];
         output_num_parts = current_num_parts * num_partitioning_in_current_dim[0];
-
+printf("int 6\n");
         if (this->mj_keep_part_boxes){
             for (mj_part_t k = 0; k < current_num_parts; ++k){
                 //initialized the output boxes as its ancestor.
@@ -2204,15 +2217,17 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
             }
         }
-
+printf("int 7\n");
         //set the how many more parts each part will be divided.
         //this is obvious when partNo array is provided as input.
         //however, fill this so that weights will be calculated according to this array.
         for (mj_part_t ii = 0; ii < output_num_parts; ++ii){
             next_future_num_parts_in_parts->push_back(future_num_parts);
         }
+printf("int 8\n");
     }
     else {
+printf("int 9\n");
         //if partNo array is not provided as input,
         //future_num_part_in_parts  holds how many parts each part should be divided.
         //initially it holds a single number equal to the total number of global parts.
@@ -2222,7 +2237,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         future_num_parts = 1;
 
         //cout << "i:" << i << std::endl;
-
+printf("int 10\n");
         for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
             //get how many parts a part should be divided.
             mj_part_t future_num_parts_of_part_ii = (*future_num_part_in_parts)[ii];
@@ -2234,7 +2249,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                                 future_num_parts_of_part_ii,
                                                                 1.0 / (this->recursion_depth - current_iteration)
                                         );
-
+printf("int 11\n");
             if (num_partitions_in_current_dim > this->max_num_part_along_dim){
                 std::cerr << "ERROR: maxPartNo calculation is wrong. num_partitions_in_current_dim: "
                           << num_partitions_in_current_dim <<  "this->max_num_part_along_dim:"
@@ -2248,16 +2263,16 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
             //add this number to num_partitioning_in_current_dim vector.
             num_partitioning_in_current_dim.push_back(num_partitions_in_current_dim);
-
+printf("int 12\n");
             mj_part_t largest_prime_factor = num_partitions_in_current_dim;
             if (this->divide_to_prime_first){
-
+printf("int 13\n");
               //increase the output number of parts.
               output_num_parts += num_partitions_in_current_dim;
               if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
                 atomic_part_count = 1;
               }
-
+printf("int 14\n");
               largest_prime_factor = this->find_largest_prime_factor(future_num_parts_of_part_ii / atomic_part_count);
 
               //we divide to  num_partitions_in_current_dim. But we adjust the weights based on largest prime/
@@ -2266,7 +2281,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               if (largest_prime_factor < num_partitions_in_current_dim){
                 largest_prime_factor = num_partitions_in_current_dim;
               }
-
+printf("int 15\n");
               //ideal number of future partitions for each part.
               mj_part_t ideal_num_future_parts_in_part = (future_num_parts_of_part_ii / atomic_part_count) / largest_prime_factor;
               //if num_partitions_in_current_dim = 2, largest prime = 5 then ideal weight is 2x
@@ -2282,7 +2297,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
                 //scale with 'x';
                 mj_part_t num_future_parts_for_part_iii = ideal_num_future_parts_in_part * my_ideal_primescale;
-
+printf("int 16\n");
                 //if there is a remainder in the part increase the part weight.
                 if (iii < (future_num_parts_of_part_ii / atomic_part_count) % largest_prime_factor){
                   //if not uniform, add 1 for the extra parts.
@@ -2295,7 +2310,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 if (this->mj_keep_part_boxes){
                   output_part_boxes->push_back((*input_part_boxes)[ii]);
                 }
-
+printf("int 17\n");
                 //set num future_num_parts to maximum in this part.
                 if (num_future_parts_for_part_iii > future_num_parts) future_num_parts = num_future_parts_for_part_iii;
 
@@ -2304,13 +2319,14 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
             }
             else {
-
+printf("int 18\n");
               //increase the output number of parts.
               output_num_parts += num_partitions_in_current_dim;
 
               if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
                 atomic_part_count = 1;
               }
+printf("int 19\n");
               //ideal number of future partitions for each part.
               mj_part_t ideal_num_future_parts_in_part = (future_num_parts_of_part_ii / atomic_part_count) / num_partitions_in_current_dim;
               for (mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii){
@@ -2328,7 +2344,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 if (this->mj_keep_part_boxes){
                   output_part_boxes->push_back((*input_part_boxes)[ii]);
                 }
-
+printf("int 20\n");
                 //set num future_num_parts to maximum in this part.
                 if (num_future_parts_for_part_iii > future_num_parts) future_num_parts = num_future_parts_for_part_iii;
               }
@@ -2961,7 +2977,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS, Kokkos::AUTO());
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS, 1); // Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     {
@@ -3720,7 +3736,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
           ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS,
-          Kokkos::AUTO());
+          1); // Kokkos::AUTO());
         Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
                 //now if the rectilinear partitioning is allowed we decide how
                 //much weight each thread should put to left and right.
@@ -6271,15 +6287,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
     RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
     compute_global_box();
+printf("check 1\n");
     if(this->mj_keep_part_boxes){
         this->init_part_boxes(output_part_boxes);
     }
-
+printf("check 2\n");
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
     for (int i = 0; i < this->recursion_depth; ++i){
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
-
+printf("check 2b\n");
         //partitioning array. size will be as the number of current partitions and this
         //holds how many parts that each part will be in the current dimension partitioning.
         std::vector <mj_part_t> num_partitioning_in_current_dim;
@@ -6299,7 +6316,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         std::vector<mj_part_t> *tmpPartVect= future_num_part_in_parts;
         future_num_part_in_parts = next_future_num_parts_in_parts;
         next_future_num_parts_in_parts = tmpPartVect;
-
+printf("check 2c\n");
         //clear next_future_num_parts_in_parts array as
         //getPartitionArrays expects it to be empty.
         //it also expects num_partitioning_in_current_dim to be empty as well.
@@ -6310,6 +6327,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
+printf("check 2d\n");
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6321,6 +6339,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         i,
                                         input_part_boxes,
                                         output_part_boxes, 1);
+printf("check 2d1\n");
         //if the number of obtained parts equal to current number of parts,
         //skip this dimension. For example, this happens when 1 is given in the input
         //part array is given. P=4,5,1,2
@@ -6337,6 +6356,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             }
             continue;
         }
+printf("check 2e\n");
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
@@ -6357,7 +6377,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
         mj_part_t obtained_part_index = 0;
         //run for all available parts.
-
+printf("check 3\n");
         for (; current_work_part < current_num_parts;
                  current_work_part += current_concurrent_num_parts){
 
@@ -6667,18 +6687,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         if(!is_migrated_in_current_dimension){
             this->total_dim_num_reduce_all -= current_num_parts;
             current_num_parts = output_part_count_in_dimension;
-        }
+      }
 
-{
+      {
 
         this->kokkos_part_xadj = this->kokkos_new_part_xadj;
         local_kokkos_part_xadj = this->kokkos_new_part_xadj;
 
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
-}
-
-
+      }
     }
     // Partitioning is done
     delete future_num_part_in_parts;
