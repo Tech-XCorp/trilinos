@@ -1464,6 +1464,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     ////temporary memory. It is not used here, but the functions require these to be allocated.
     ////will copy the memory to this->current_mj_gnos[j].
+
+    printf("### allocate this->kokkos_initial_mj_gnos\n");
     this->kokkos_initial_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
 
@@ -2497,7 +2499,7 @@ printf("Check 14\n");
         }
       );
     }
-printf("Check 15\n");
+
     this->kokkos_mj_coordinates = coord;
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
@@ -2510,30 +2512,33 @@ printf("Check 15\n");
         }
       );
     }
-printf("Check 16\n");
+
     this->kokkos_mj_weights = weights;
     this->kokkos_current_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", local_num_local_coords);
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
     auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos; // See comment above - Cuda local/this issues
 
+printf("Check 17\n");
+
     // For the cuda runs this loop seems to be problematic, and crashes
     // So I try just running it in serial and it's ok.
     // TODO: Why? This seems like it should be fine - must be something before or
     // how these views are setup. Allocating a new view seems like a good way to
     // to determine if the Kokkos/Cuda system has been trashed somehow.
-    for(int j = 0; j < local_num_local_coords; ++j) {
-      local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
-    }
-printf("Check 17\n");
-/*
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
-      }
-    );
+    });
+
+/*
+    for(int j = 0; j < local_num_local_coords; ++j) {
+      local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
+    }
 */
+
+printf("Check 18\n");
 
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
     auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
@@ -2544,7 +2549,7 @@ printf("Check 17\n");
         local_kokkos_owner_of_coordinate(j) = local_myActualRank;
       }
     );
-printf("Check 18\n");
+printf("Check 19\n");
 }
 
 /* \brief compute the global bounding box
@@ -6266,6 +6271,8 @@ printf("begin multi_jagged_part check 1\n");
         this->num_local_coords = num_local_coords_;
         this->num_global_coords = num_global_coords_;
         this->kokkos_mj_coordinates = kokkos_mj_coordinates_; //will copy the memory to this->mj_coordinates.
+
+printf("### multi_jagged_part is copying input kokkos_initial_mj_gnos_ to this->kokkos_initial_mj_gnos\n");
         this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_; // see note below ... was original copying? seems cannot be...
         this->num_weights_per_coord = num_weights_per_coord_;
         this->kokkos_mj_uniform_weights = kokkos_mj_uniform_weights_;
@@ -6634,6 +6641,7 @@ printf("mj_create_new_partitions\n");
                             this->kokkos_assigned_part_ids,
                             this->kokkos_new_coordinate_permutations
                             );
+printf("end mj_create_new_partitions\n");
                     }
                     else {
                         //if this part is partitioned into 1 then just copy
@@ -6671,6 +6679,8 @@ printf("mj_create_new_partitions\n");
                 }
             }
         }
+
+printf("Check 5\n");
         // end of this partitioning dimension
         int current_world_size = this->comm->getSize();
         long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
@@ -7118,7 +7128,9 @@ printf("mj_partitioner.set_partitioning_parameters\n");
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_result_mj_coordinates = this->kokkos_mj_coordinates;
    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_result_mj_weights = this->kokkos_mj_weights;
    int *result_actual_owner_rank = NULL;
-    Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
+
+   printf("### setting up kokkos_result_initial_mj_gnos_ from Zoltan2_AlgMJ member this->kokkos_initial_mj_gnos\n");
+   Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
 
    //TODO: MD 08/2017: Further discussion is required.
    //MueLu calls MJ when it has very few coordinates per processors, such as 10. 
@@ -7153,6 +7165,7 @@ printf("mj_partitioner.set_partitioning_parameters\n");
 
      int used_num_ranks = int (this->num_global_coords / float (threshold_num_local_coords) + 0.5);
      if (used_num_ranks == 0) used_num_ranks = 1;
+printf("### calling this->mj_premigrate_to_subset which passes this->kokkos_initial_mj_gnos\n");
      am_i_in_subset = this->mj_premigrate_to_subset(
    	 used_num_ranks,
          migration_selection_option,
@@ -7173,7 +7186,9 @@ printf("mj_partitioner.set_partitioning_parameters\n");
          kokkos_result_mj_coordinates,
          kokkos_result_mj_weights,
          result_actual_owner_rank);
-         kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
+
+      printf("### copied kokkos_result_initial_mj_gnos to kokkos_result_initial_mj_gnos_ for mj_premigration_option > 0\n");
+      kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
    }
 
   Kokkos::View<mj_part_t *, typename mj_node_t::device_type> kokkos_result_assigned_part_ids;
@@ -7279,6 +7294,8 @@ printf("Done with mj_partitioner.multi_jagged_part\n");
 #if defined(__cplusplus) && __cplusplus >= 201103L
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
+
+printf("### reading values from this->kokkos_initial_mj_gnos on HOST\n");
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
         localGidToLid2[this->kokkos_initial_mj_gnos(i)] = i;
 
@@ -7289,6 +7306,8 @@ printf("Done with mj_partitioner.multi_jagged_part\n");
 #else
       Teuchos::Hashtable<mj_gno_t, mj_lno_t>
 	      localGidToLid2(this->num_local_coords);
+
+printf("### reading values from this->kokkos_initial_mj_gnos on HOST\n");
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
         localGidToLid2.put(this->kokkos_initial_mj_gnos(i), i);
 
@@ -7342,7 +7361,8 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_wgts;
         this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
         //obtain global ids.
-        this->kokkos_initial_mj_gnos = kokkos_gnos;
+printf("### this->kokkos_initial_mj_gnos = kokkos_gnos\n");  
+      this->kokkos_initial_mj_gnos = kokkos_gnos;
         //extract coordinates from multivector.
         this->kokkos_mj_coordinates = kokkos_xyz;
         //if no weights are provided set uniform weight.
@@ -7369,8 +7389,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
                   Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_weights_per_coord),
                   KOKKOS_LAMBDA (const int wdim) {
                     local_kokkos_mj_uniform_weights(wdim) = false;
-                  }
-                );
+                });
         }
         // originally did this
         // for (int wdim = 0; wdim < criteria_dim; wdim++){

@@ -301,21 +301,21 @@ public:
     entries = kokkos_entries_;
   }
 
-private:
+// private: // For Kokkos Cuda refactor making this public - TODO: Clean up and resolve
 
   lno_t numIds_;
   const gno_t *idList_;
 
   int numEntriesPerID_;
-  ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
+  ArrayRCP<StridedData<lno_t, scalar_t> > entries_;
 
-  Kokkos::View<scalar_t **, Kokkos::LayoutLeft> kokkos_entries_;
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_entries_;
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
 
   void createBasicVector(
-    std::vector<const scalar_t *> &entries,  std::vector<int> &entryStride,
+    std::vector<const scalar_t *> &entries, std::vector<int> &entryStride,
     std::vector<const scalar_t *> &weights, std::vector<int> &weightStrides)
   {
     typedef StridedData<lno_t,scalar_t> input_t;
@@ -329,7 +329,7 @@ private:
         entries_[v] = input_t(eltV, stride);
       }
 
-      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft>(
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>(
         "entries", numIds_, numEntriesPerID_);
 
       for (int v=0; v < numEntriesPerID_; v++) {
@@ -337,11 +337,18 @@ private:
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
 
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, static_cast<int>(length)),
+          KOKKOS_LAMBDA (int n) {
+            kokkos_entries_(n*stride,v) = entriesPtr[n];
+        });
+/*
         // TODO - optimize - if we can? Need this into Kokkos view ...
         int fill_index = 0;
         for(int n = 0; n < static_cast<int>(length); n += stride) {
           kokkos_entries_(fill_index++,v) = entriesPtr[n];
         }
+*/
       }
     }
 
