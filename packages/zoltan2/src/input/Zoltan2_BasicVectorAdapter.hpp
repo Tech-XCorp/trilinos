@@ -326,6 +326,7 @@ public:
 
     if (numIds_){
       // make kokkos ids
+      {
       typedef Kokkos::View<int *> view_t; // TODO: should be gno_t - won't compile.... not sure why yet
       view_t device_temp_values("temp device values", numIds_);
       view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
@@ -335,14 +336,16 @@ public:
       // copy to device
       Kokkos::deep_copy(device_temp_values, host_temp_values);
       kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>("ids", numIds_);
-      auto local_kokkos_ids_ = this->kokkos_ids_;
+      auto local_kokkos_ids = this->kokkos_ids_;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
         KOKKOS_LAMBDA (int n) {
-        local_kokkos_ids_ = device_temp_values(n);
+        local_kokkos_ids(n) = device_temp_values(n);
       });
+      } // end kokkos ids
 
       // make coordinates
+      {
       int stride = 1;
       entries_ = arcp(new input_t[numEntriesPerID_], 0, numEntriesPerID_, true);
       for (int v=0; v < numEntriesPerID_; v++) {
@@ -382,6 +385,7 @@ public:
             local_kokkos_entries(n,v) = device_temp_values(n);
         });
       }
+      } // end coordinates
     }
 
     if (numWeights_) {
