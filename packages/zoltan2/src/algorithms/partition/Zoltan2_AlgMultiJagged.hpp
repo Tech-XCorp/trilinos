@@ -2179,9 +2179,9 @@ printf("int 2\n");
         auto local_kokkos_part_no_array = this->kokkos_part_no_array;
         mj_part_t p;
         Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int i, mj_part_t & running_max) {
-            running_max = local_kokkos_part_no_array(current_iteration);
-        }, Kokkos::Max<mj_part_t>(p));
+          KOKKOS_LAMBDA(int i, mj_part_t & set_single) {
+            set_single = local_kokkos_part_no_array(current_iteration);
+        }, p);;
 
         if (p < 1){
             std::cout << "i:" << current_iteration << " p is given as:" << p << std::endl;
@@ -6387,6 +6387,7 @@ printf("check 3\n");
             //initialization for 1D partitioning.
             //get the min and max coordinates of each part
             //together with the part weights of each part.
+printf("check 3b\n");
             for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
                 mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
                 //if this part wont be partitioned any further
@@ -6394,10 +6395,12 @@ printf("check 3\n");
                 if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
                     continue;
                 }
+printf("check 3c\n");
                 ++actual_work_part_count;
                 mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
+printf("check 3d\n");
                 mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
-
+printf("check 4\n");
 /*
                 cout << "i:" << i << " j:" << current_work_part + kk
                                 << " coordinate_begin_index:" << coordinate_begin_index
@@ -6413,6 +6416,8 @@ printf("check 3\n");
                             this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max_coordinate
                             this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts)); //total_weight
             }
+
+printf("check 5\n");
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
@@ -6451,7 +6456,7 @@ printf("check 3\n");
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_part_shift,
                           kokkos_target_part_weights.size()));
-
+printf("check 6\n");
                     //shift the usedCutCoordinate array as noCuts.
                     concurrent_part_cut_shift += partition_count - 1;
                     //shift the partRatio array as noParts.
@@ -6482,7 +6487,7 @@ printf("check 3\n");
                                         obtained_part_index);
 
 
-
+printf("check 7\n");
                         mj_lno_t coordinate_end_index= local_kokkos_part_xadj(concurrent_current_part_index);
                         mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
                         //get the initial estimated part assignments of the
@@ -6506,7 +6511,7 @@ printf("check 3\n");
                     }
                     obtained_part_index += partition_count;
                 }
-
+printf("check 8\n");
                 //used imbalance, it is always 0, as it is difficult to
                 //estimate a range.
                 mj_scalar_t used_imbalance = 0;
@@ -6585,6 +6590,7 @@ printf("check 3\n");
                             }
                         }
                         // Rewrite the indices based on the computed cuts.
+printf("check 9\n");
                         this->mj_create_new_partitions(
                             num_parts,
                             kokkos_mj_current_dim_coords,
@@ -6627,7 +6633,7 @@ printf("check 3\n");
                 //shift cut coordinates so that all cut coordinates are stored.
                 //no shift now because we dont keep the cuts.
                 //current_cut_coordinates += cut_shift;
-
+printf("check 10\n");
                 //mj_create_new_partitions from coordinates partitioned the parts and
                 //write the indices as if there were a single part.
                 //now we need to shift the beginning indices.
