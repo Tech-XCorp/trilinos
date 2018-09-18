@@ -1465,7 +1465,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     ////temporary memory. It is not used here, but the functions require these to be allocated.
     ////will copy the memory to this->current_mj_gnos[j].
 
-    printf("### allocate this->kokkos_initial_mj_gnos\n");
     this->kokkos_initial_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", this->num_local_coords);
 
@@ -2097,8 +2096,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
         }
 
-printf("set_part_specifications check 2\n");
-
         this->total_num_cut = this->total_num_part - 1;
         this->max_num_cut_along_dim = this->max_num_part_along_dim - 1;
         this->max_num_total_part_along_dim = this->max_num_part_along_dim + size_t(this->max_num_cut_along_dim);
@@ -2113,7 +2110,6 @@ printf("set_part_specifications check 2\n");
           }
           this->max_concurrent_part_calculation = this->last_dim_num_part;
         }
-printf("set_part_specifications check end\n");
 }
 /* \brief Tries to determine the part number for current dimension,
  * by trying to make the partitioning as square as possible.
@@ -2354,13 +2350,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //points to process that initially owns the coordinate.
         Kokkos::resize(this->kokkos_owner_of_coordinate, 0);
 
-printf("begin allocate_set_work_memory B1\n");
         //Throughout the partitioning execution,
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
         Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
 
-printf("begin allocate_set_work_memory  B2\n");
         //initial configuration, set each pointer-i to i.
         // Cuda local/this issues
         // use local view to avoid capturing this which is problematic for CUDA
@@ -2374,7 +2368,6 @@ printf("begin allocate_set_work_memory  B2\n");
             temp(i) = i;
           }
         );
-printf("Check 10\n");
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
 
         //new_coordinate_permutations holds the current permutation.
@@ -2384,7 +2377,6 @@ printf("Check 10\n");
         if(this->num_local_coords > 0){
                 this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>("assigned part ids", this->num_local_coords);
         }
-printf("Check 11\n");
         //single partition starts at index-0, and ends at numLocalCoords
         //inTotalCounts array holds the end points in coordinate_permutations array
         //for each partition. Initially sized 1, and single element is set to numLocalCoords.
@@ -2412,8 +2404,6 @@ printf("Check 11\n");
         this->kokkos_max_min_coords =  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>("max min coords", 2);
         this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("empty"); //how much weight percentage should a MPI put left side of the each cutline
         this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, typename mj_node_t::device_type>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
-
-printf("Check 12\n");
 
         //distribute_points_on_cut_lines = false;
         if(this->distribute_points_on_cut_lines){
@@ -2462,7 +2452,6 @@ printf("Check 12\n");
     //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
     this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, typename mj_node_t::device_type>(
       "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
-printf("Check 13\n");
     //local part weights of each thread.
     this->kokkos_thread_part_weights = Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type>("thread_part_weights",
       this->max_num_total_part_along_dim * this->max_concurrent_part_calculation);
@@ -2489,7 +2478,6 @@ printf("Check 13\n");
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
-printf("Check 14\n");
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
     for (int i=0; i < this->coord_dim; i++){
       Kokkos::parallel_for(
@@ -2519,7 +2507,7 @@ printf("Check 14\n");
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
     auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos; // See comment above - Cuda local/this issues
 
-printf("Check 17\n");
+printf("-- before\n");
 
     // For the cuda runs this loop seems to be problematic, and crashes
     // So I try just running it in serial and it's ok.
@@ -2532,15 +2520,12 @@ printf("Check 17\n");
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
     });
 
-/*
-    for(int j = 0; j < local_num_local_coords; ++j) {
-      local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
-    }
-*/
-
-printf("Check 18\n");
+printf("-- after 1st loop\n");
 
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
+
+printf("-- made a view\n");
+
     auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
     auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
     Kokkos::parallel_for(
@@ -2549,7 +2534,6 @@ printf("Check 18\n");
         local_kokkos_owner_of_coordinate(j) = local_myActualRank;
       }
     );
-printf("Check 19\n");
 }
 
 /* \brief compute the global bounding box
@@ -6226,8 +6210,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 )
 {
 
-printf("begin multi_jagged_part\n");
-
 #ifdef print_debug
     if(comm->getRank() == 0){
         std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
@@ -6259,7 +6241,6 @@ printf("begin multi_jagged_part\n");
     }
     */
 
-printf("begin multi_jagged_part check 1\n");    
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "In MultiJagged Jagged");
     {
@@ -6271,8 +6252,6 @@ printf("begin multi_jagged_part check 1\n");
         this->num_local_coords = num_local_coords_;
         this->num_global_coords = num_global_coords_;
         this->kokkos_mj_coordinates = kokkos_mj_coordinates_; //will copy the memory to this->mj_coordinates.
-
-printf("### multi_jagged_part is copying input kokkos_initial_mj_gnos_ to this->kokkos_initial_mj_gnos\n");
         this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_; // see note below ... was original copying? seems cannot be...
         this->num_weights_per_coord = num_weights_per_coord_;
         this->kokkos_mj_uniform_weights = kokkos_mj_uniform_weights_;
@@ -6281,11 +6260,8 @@ printf("### multi_jagged_part is copying input kokkos_initial_mj_gnos_ to this->
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
     }
 
-printf("begin multi_jagged_part set_part_specifications\n");
     //this->set_input_data();
     this->set_part_specifications();
-
-printf("begin allocate_set_work_memory\n");
     this->allocate_set_work_memory();
 
 
@@ -6311,8 +6287,6 @@ printf("begin allocate_set_work_memory\n");
     if(this->mj_keep_part_boxes){
         this->init_part_boxes(output_part_boxes);
     }
-
-printf("Begin recursion loop\n");
 
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
     for (int i = 0; i < this->recursion_depth; ++i){
@@ -6343,14 +6317,12 @@ printf("Begin recursion loop\n");
         //getPartitionArrays expects it to be empty.
         //it also expects num_partitioning_in_current_dim to be empty as well.
         next_future_num_parts_in_parts->clear();
-printf("mj_keep_part_boxes\n");
         if(this->mj_keep_part_boxes){
             RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
             input_part_boxes = output_part_boxes;
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
-printf("update_part_num_arrays\n");
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6362,7 +6334,6 @@ printf("update_part_num_arrays\n");
                                         i,
                                         input_part_boxes,
                                         output_part_boxes, 1);
-printf("Checking stuff\n");
         //if the number of obtained parts equal to current number of parts,
         //skip this dimension. For example, this happens when 1 is given in the input
         //part array is given. P=4,5,1,2
@@ -6384,7 +6355,6 @@ printf("Checking stuff\n");
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
-printf("Checking stuff 2\n");
         //alloc Memory to point the indices
         //of the parts in the permutation array.
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("new part xadj", output_part_count_in_dimension);
@@ -6401,30 +6371,24 @@ printf("Checking stuff 2\n");
         mj_part_t obtained_part_index = 0;
         //run for all available parts.
 
-printf("Checking stuff 3\n");
         for (; current_work_part < current_num_parts;
                  current_work_part += current_concurrent_num_parts){
 
             current_concurrent_num_parts = std::min(current_num_parts - current_work_part,
                                  this->max_concurrent_part_calculation);
-printf("Checking stuff 4\n");
             mj_part_t actual_work_part_count = 0;
             //initialization for 1D partitioning.
             //get the min and max coordinates of each part
             //together with the part weights of each part.
             for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
                 mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
-printf("Checking stuff 5\n");
                 //if this part wont be partitioned any further
                 //dont do any work for this part.
                 if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
                     continue;
                 }
-printf("Checking stuff 6\n");
                 ++actual_work_part_count;
-printf("Checking stuff 7\n");
                 mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-printf("Checking stuff 8\n");
                 mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
 
 /*
@@ -6433,7 +6397,6 @@ printf("Checking stuff 8\n");
                                 << " coordinate_end_index:" << coordinate_end_index
                                 << " total:" << coordinate_end_index - coordinate_begin_index<< endl;
                                 */
-printf("mj_get_local_min_max_coord_totW\n");
                 this->mj_get_local_min_max_coord_totW(
                             coordinate_begin_index,
                             coordinate_end_index,
@@ -6499,7 +6462,6 @@ printf("mj_get_local_min_max_coord_totW\n");
                         this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
                         //get the target weights of the parts.
 
-printf("mj_get_initial_cut_coords_target_weights\n");
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
                                         max_coordinate,
@@ -6520,7 +6482,6 @@ printf("mj_get_initial_cut_coords_target_weights\n");
                         //coordinates.
                         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
 
-printf("set_initial_coordinate_parts\n");
                         this->set_initial_coordinate_parts(
                             max_coordinate,
                             min_coordinate,
@@ -6544,7 +6505,6 @@ printf("set_initial_coordinate_parts\n");
                 mj_scalar_t used_imbalance = 0;
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
-printf("mj_1D_part\n");
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
                     used_imbalance,
@@ -6617,7 +6577,6 @@ printf("mj_1D_part\n");
                                    updateMinMax(kokkos_current_concurrent_cut_coordinate(j), 0 /*update max*/, coordInd);
                             }
                         }
-printf("mj_create_new_partitions\n");
                         // Rewrite the indices based on the computed cuts.
                         this->mj_create_new_partitions(
                             num_parts,
@@ -6641,7 +6600,6 @@ printf("mj_create_new_partitions\n");
                             this->kokkos_assigned_part_ids,
                             this->kokkos_new_coordinate_permutations
                             );
-printf("end mj_create_new_partitions\n");
                     }
                     else {
                         //if this part is partitioned into 1 then just copy
@@ -6680,7 +6638,6 @@ printf("end mj_create_new_partitions\n");
             }
         }
 
-printf("Check 5\n");
         // end of this partitioning dimension
         int current_world_size = this->comm->getSize();
         long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
@@ -7108,13 +7065,11 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     this->set_up_partitioning_data(solution);
 
-printf("set_input_parameters\n");
     this->set_input_parameters(this->mj_env->getParameters());
     if (this->mj_keep_part_boxes){
         this->mj_partitioner.set_to_keep_part_boxes();
     }
 
-printf("mj_partitioner.set_partitioning_parameters\n");
     this->mj_partitioner.set_partitioning_parameters(
                 this->distribute_points_on_cut_lines,
                 this->max_concurrent_part_calculation,
@@ -7129,7 +7084,6 @@ printf("mj_partitioner.set_partitioning_parameters\n");
    Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> kokkos_result_mj_weights = this->kokkos_mj_weights;
    int *result_actual_owner_rank = NULL;
 
-   printf("### setting up kokkos_result_initial_mj_gnos_ from Zoltan2_AlgMJ member this->kokkos_initial_mj_gnos\n");
    Kokkos::View<const mj_gno_t*, typename mj_node_t::device_type> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
 
    //TODO: MD 08/2017: Further discussion is required.
@@ -7165,7 +7119,6 @@ printf("mj_partitioner.set_partitioning_parameters\n");
 
      int used_num_ranks = int (this->num_global_coords / float (threshold_num_local_coords) + 0.5);
      if (used_num_ranks == 0) used_num_ranks = 1;
-printf("### calling this->mj_premigrate_to_subset which passes this->kokkos_initial_mj_gnos\n");
      am_i_in_subset = this->mj_premigrate_to_subset(
    	 used_num_ranks,
          migration_selection_option,
@@ -7187,7 +7140,6 @@ printf("### calling this->mj_premigrate_to_subset which passes this->kokkos_init
          kokkos_result_mj_weights,
          result_actual_owner_rank);
 
-      printf("### copied kokkos_result_initial_mj_gnos to kokkos_result_initial_mj_gnos_ for mj_premigration_option > 0\n");
       kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
    }
 
@@ -7200,7 +7152,6 @@ printf("### calling this->mj_premigrate_to_subset which passes this->kokkos_init
 
     if (am_i_in_subset){
 
-printf("Calling mj_partitioner.multi_jagged_part\n");
       this->mj_partitioner.multi_jagged_part(
           this->mj_env,
           result_problemComm, //this->mj_problemComm,
@@ -7221,7 +7172,6 @@ printf("Calling mj_partitioner.multi_jagged_part\n");
           kokkos_result_assigned_part_ids,
           kokkos_result_mj_gnos
       );
-printf("Done with mj_partitioner.multi_jagged_part\n");
     }
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - call multi_jagged_part()");
@@ -7295,7 +7245,6 @@ printf("Done with mj_partitioner.multi_jagged_part\n");
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
 
-printf("### reading values from this->kokkos_initial_mj_gnos on HOST\n");
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
         localGidToLid2[this->kokkos_initial_mj_gnos(i)] = i;
 
@@ -7307,7 +7256,6 @@ printf("### reading values from this->kokkos_initial_mj_gnos on HOST\n");
       Teuchos::Hashtable<mj_gno_t, mj_lno_t>
 	      localGidToLid2(this->num_local_coords);
 
-printf("### reading values from this->kokkos_initial_mj_gnos on HOST\n");
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
         localGidToLid2.put(this->kokkos_initial_mj_gnos(i), i);
 
@@ -7361,7 +7309,6 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         Kokkos::View<mj_scalar_t **, typename mj_node_t::device_type> kokkos_wgts;
         this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
         //obtain global ids.
-printf("### this->kokkos_initial_mj_gnos = kokkos_gnos\n");  
       this->kokkos_initial_mj_gnos = kokkos_gnos;
         //extract coordinates from multivector.
         this->kokkos_mj_coordinates = kokkos_xyz;
