@@ -239,8 +239,10 @@ public:
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
   void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
-    ids = Kokkos::View<const gno_t*, typename node_t::device_type,
-      Kokkos::MemoryTraits<Kokkos::Unmanaged> >(idList_, numIds_);
+    // note we are converting from a non-const to a const gno_t type here since
+    // we built this one manually. In th MultiVector case it has to be const gno_t due to
+    // the way we read the sub view.
+    ids = this->kokkos_ids_;
   }
 
   int getNumWeightsPerID() const { return numWeights_;}
@@ -309,6 +311,8 @@ public:
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_;
 
+  Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids_;
+
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_entries_;
 
   int numWeights_;
@@ -321,6 +325,24 @@ public:
     typedef StridedData<lno_t,scalar_t> input_t;
 
     if (numIds_){
+      // make kokkos ids
+      typedef Kokkos::View<int *> view_t; // TODO: should be gno_t - won't compile.... not sure why yet
+      view_t device_temp_values("temp device values", numIds_);
+      view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
+      for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
+        host_temp_values(n) = idList_[n];
+      }
+      // copy to device
+      Kokkos::deep_copy(device_temp_values, host_temp_values);
+      kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>("ids", numIds_);
+      auto local_kokkos_ids_ = this->kokkos_ids_;
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
+        KOKKOS_LAMBDA (int n) {
+        local_kokkos_ids_ = device_temp_values(n);
+      });
+
+      // make coordinates
       int stride = 1;
       entries_ = arcp(new input_t[numEntriesPerID_], 0, numEntriesPerID_, true);
       for (int v=0; v < numEntriesPerID_; v++) {
@@ -329,29 +351,38 @@ public:
         entries_[v] = input_t(eltV, stride);
       }
 
-      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>(
-        "entries", numIds_, numEntriesPerID_);
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>
+        ("entries", numIds_, numEntriesPerID_);
 
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
 
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, static_cast<int>(length)),
-          KOKKOS_LAMBDA (int n) {
-            kokkos_entries_(n*stride,v) = entriesPtr[n];
-        });
-/*
-        // TODO - optimize - if we can? Need this into Kokkos view ...
-        int fill_index = 0;
-        for(int n = 0; n < static_cast<int>(length); n += stride) {
-          kokkos_entries_(fill_index++,v) = entriesPtr[n];
+        // TODO: Clean up generally
+        // I'm allocating a host mirror, copy the values in, then deep copy to the device
+        // The MultiVector Adapter gets the values directly as a view and dosn't have this issue.
+        // Not sure why but this HostMirror method won't compile with the scalar_t but replacing
+        // with double workks. Then we also want to make the view copy directly to the kokkos_entries_
+        typedef Kokkos::View<double *> view_t;
+        view_t device_temp_values("temp device values", numIds_);
+        view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
+         for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
+          host_temp_values(n) = entriesPtr[n*stride];
         }
-*/
+        // copy to device
+        Kokkos::deep_copy(device_temp_values, host_temp_values);
+
+        // now fill this->kokkos_entries on device
+        // TODO: Above deep_copy eventually should be straight to the this->kokkos_entries_
+        auto local_kokkos_entries = this->kokkos_entries_;
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
+          KOKKOS_LAMBDA (int n) {
+            local_kokkos_entries(n,v) = device_temp_values(n);
+        });
       }
     }
-
 
     if (numWeights_) {
       int stride = 1;
