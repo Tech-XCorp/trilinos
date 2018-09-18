@@ -2507,8 +2507,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
     auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos; // See comment above - Cuda local/this issues
 
-printf("-- before\n");
-
     // For the cuda runs this loop seems to be problematic, and crashes
     // So I try just running it in serial and it's ok.
     // TODO: Why? This seems like it should be fine - must be something before or
@@ -2520,11 +2518,7 @@ printf("-- before\n");
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
     });
 
-printf("-- after 1st loop\n");
-
     this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
-
-printf("-- made a view\n");
 
     auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
     auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
@@ -2544,6 +2538,8 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
           mj_node_t>::compute_global_box()
 {
+printf("begin in compute_global_box\n");
+
     //local min coords
     mj_scalar_t *mins = allocMemory<mj_scalar_t>(this->coord_dim);
     //global min coords
@@ -2553,36 +2549,29 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
     //global max coords
     mj_scalar_t *gmaxs = allocMemory<mj_scalar_t>(this->coord_dim);
 
+    auto local_kokkos_mj_coordinates = this->kokkos_mj_coordinates;
     for (int i = 0; i < this->coord_dim; ++i){
-        mj_scalar_t localMin = std::numeric_limits<mj_scalar_t>::max();
-        mj_scalar_t localMax = -localMin;
-        if (localMax > 0) localMax = 0;
-
-
-        for (mj_lno_t j = 0; j < this->num_local_coords; ++j){
-            if (this->kokkos_mj_coordinates(j,i) < localMin){
-                localMin = this->kokkos_mj_coordinates(j,i);
-            }
-            if (this->kokkos_mj_coordinates(j,i) > localMax){
-                localMax = this->kokkos_mj_coordinates(j,i);
-            }
+      Kokkos::parallel_reduce("MinReduce", this->num_local_coords,
+        KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_min) {
+        if(local_kokkos_mj_coordinates(j,i) < running_min) {
+          running_min = local_kokkos_mj_coordinates(j,i);
         }
-        //cout << " localMin:" << localMin << endl;
-        //cout << " localMax:" << localMax << endl;
-        mins[i] = localMin;
-        maxs[i] = localMax;
-
+      }, Kokkos::Min<mj_scalar_t>(mins[i]));
+      Kokkos::parallel_reduce("MaxReduce", this->num_local_coords,
+        KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_max) {
+        if(local_kokkos_mj_coordinates(j,i) > running_max) {
+          running_max = local_kokkos_mj_coordinates(j,i);
+        }
+      }, Kokkos::Max<mj_scalar_t>(maxs[i]));
     }
+
     reduceAll<int, mj_scalar_t>(*this->comm, Teuchos::REDUCE_MIN,
             this->coord_dim, mins, gmins
     );
 
-
     reduceAll<int, mj_scalar_t>(*this->comm, Teuchos::REDUCE_MAX,
             this->coord_dim, maxs, gmaxs
     );
-
-
 
     //create single box with all areas.
     global_box = rcp(new mj_partBox_t(0,this->coord_dim,gmins,gmaxs));
@@ -2591,6 +2580,8 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
     freeArray<mj_scalar_t>(gmins);
     freeArray<mj_scalar_t>(maxs);
     freeArray<mj_scalar_t>(gmaxs);
+
+printf("end compute_global_box\n");
 }
 
 /* \brief for part communication we keep track of the box boundaries.
@@ -6264,23 +6255,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->set_part_specifications();
     this->allocate_set_work_memory();
 
-
     //We duplicate the comm as we create subcommunicators during migration.
     //We keep the problemComm as it is, while comm changes after each migration.
     this->comm = this->mj_problemComm->duplicate();
     //initially there is a single partition
     mj_part_t current_num_parts = 1;
-
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
-
     mj_part_t output_part_begin_index = 0;
     mj_part_t future_num_parts = this->total_num_part;
     bool is_data_ever_migrated = false;
     std::vector<mj_part_t> *future_num_part_in_parts = new std::vector<mj_part_t> ();
     std::vector<mj_part_t> *next_future_num_parts_in_parts = new std::vector<mj_part_t> ();
     next_future_num_parts_in_parts->push_back(this->num_global_parts);
-
     RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
     RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
     compute_global_box();
