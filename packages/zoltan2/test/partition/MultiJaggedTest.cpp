@@ -1383,8 +1383,8 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option, mj_premigration_coordinate_cutoff);
-            break;
 #endif
+            break;
 
 #ifdef hopper_separate_test
         case 1:

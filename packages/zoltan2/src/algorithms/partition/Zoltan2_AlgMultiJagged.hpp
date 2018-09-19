@@ -6414,10 +6414,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 // I'd like to focus on mj_1d_part
                 // When this loop goes parallel the internal loops for mj_get_local_min_max_coord_totW
                 // will need to be updated for nested hierachy, which should be straight forward
-
-                //mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-                //mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
-
                 // read coordinate_end_index
                 mj_lno_t coordinate_end_index;
                 Kokkos::parallel_reduce("Read single", 1,
@@ -6440,32 +6436,25 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 << " coordinate_end_index:" << coordinate_end_index
                                 << " total:" << coordinate_end_index - coordinate_begin_index<< endl;
                 */
-
-                // TODO: Also messy and convoluted but just want to avoid working on these loops yet
-                // Pull to host the three values we need for passing to this->mj_get_local_min_max_coord_totW
-                mj_scalar_t host1, host2, host3;
-                auto local_kokkos_process_local_min_max_coord_total_weight = kokkos_process_local_min_max_coord_total_weight;
-                Kokkos::parallel_reduce("Read single", 1,
-                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk);
-                }, host1);
-                Kokkos::parallel_reduce("Read single", 1,
-                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-                }, host2);
-                Kokkos::parallel_reduce("Read single", 1,
-                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts);
-                }, host3);
-
+                mj_scalar_t read_min_coordinate, read_max_coordinate, read_total_weight;
                 this->mj_get_local_min_max_coord_totW(
                             coordinate_begin_index,
                             coordinate_end_index,
                             this->kokkos_coordinate_permutations,
                             kokkos_mj_current_dim_coords,
-                            host1, //min_coordinate
-                            host2, //max_coordinate
-                            host3); //total_weight
+                            read_min_coordinate,
+                            read_max_coordinate,
+                            read_total_weight);
+  
+                // write to device - TODO: use subview and deep copy - this may change later anyways
+                auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+                  KOKKOS_LAMBDA (const int dummy) {
+                  local_kokkos_process_local_min_max_coord_total_weight(kk) = read_min_coordinate;
+                  local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = read_max_coordinate;
+                  local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = read_total_weight;
+                });
             }
 
             //1D partitioning
@@ -6487,7 +6476,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t concurrent_part_part_shift = 0;
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
 
-/*
                     // same as above - temporary measure to pull these values to host
                     // I want to avoid making a parallel loop here for now so I get internal loops running
                     // Then revisit this. TODO: clean it up
@@ -6510,17 +6498,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                       set_single = local_kokkos_global_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts);
                     }, global_total_weight);
 
-*/
-                    // Above temporarily refactors below
-                    mj_scalar_t min_coordinate = this->kokkos_global_min_max_coord_total_weight(kk);
-                    mj_scalar_t max_coordinate = this->kokkos_global_min_max_coord_total_weight(kk +
-                                                     current_concurrent_num_parts);
-
-                    mj_scalar_t global_total_weight = this->kokkos_global_min_max_coord_total_weight(kk +
-                                                        2 * current_concurrent_num_parts);
-
                     mj_part_t concurrent_current_part_index = current_work_part + kk;
-
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
 
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_usedCutCoordinate =
