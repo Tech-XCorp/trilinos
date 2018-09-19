@@ -1364,6 +1364,7 @@ int main(int argc, char *argv[])
         switch (opt){
 
         case 0:
+
             ierr = testFromDataFile<znode_t>(tcomm,numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,

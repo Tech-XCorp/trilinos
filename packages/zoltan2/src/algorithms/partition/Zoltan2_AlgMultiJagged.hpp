@@ -2944,8 +2944,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                                  current_work_part ,
                                  current_concurrent_num_parts);
 
-printf("check 1\n");
-
     // TODO: I'm using a 1 element view in the refactor but needs to be cleaned up
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_total_incomplete_cut_count("view_total_incomplete_cut_count", 1);
     Kokkos::parallel_for(
@@ -3021,9 +3019,6 @@ printf("check 1\n");
     {
 
 if(team_member.league_rank() == 0) {
-
-
-printf("Begin single\n");
         Kokkos::single(Kokkos::PerTeam(team_member), [=]()
         {
           //initialize the lower and upper bounds of the cuts.
@@ -3046,8 +3041,6 @@ printf("Begin single\n");
           }
         });
         team_member.team_barrier();  // for end of Kokkos::single
-printf("End single\n");
-
 }
 
 if(team_member.league_rank() == 0) {
@@ -3115,7 +3108,6 @@ if(team_member.league_rank() == 0) {
                         local_kokkos_mj_uniform_weights);
 
                 }
-
                 concurrent_cut_shifts += num_cuts;
                 total_part_shift += total_part_count;
             }
@@ -3271,7 +3263,6 @@ if(team_member.league_rank() == 0) {
                                 local_kokkos_process_rectilinear_cut_weight,
                                 local_kokkos_my_incomplete_cut_count
                                 );
-
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
                 Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
@@ -6053,16 +6044,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 //      KOKKOS_LAMBDA (const int i) {
     for(int i = 0; i < current_num_parts; ++i) {
         mj_lno_t begin = 0;
-        mj_lno_t end = local_kokkos_part_xadj(i);
-        if(i > 0) begin = local_kokkos_part_xadj(i-1);
+
+        mj_lno_t coordinate1;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+          set_single = local_kokkos_part_xadj(i);
+        }, coordinate1);
+
+        mj_lno_t coordinate2;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+          set_single = local_kokkos_part_xadj(i-1);
+        }, coordinate2);
+
+        mj_lno_t end = coordinate1;
+        if(i > 0) begin = coordinate2;
         mj_part_t part_to_set_index = i + output_part_begin_index;
         if (local_mj_keep_part_boxes){
                 (*output_part_boxes)[i].setpId(part_to_set_index);
         }
-        for (mj_lno_t ii = begin; ii < end; ++ii){
+
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (begin, end),
+          KOKKOS_LAMBDA (const int ii) {
           mj_lno_t k = local_kokkos_coordinate_permutations(ii);
           local_kokkos_assigned_part_ids(k) = part_to_set_index;
-        }
+        });
 //    });
     }
 
@@ -6631,22 +6638,38 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t cut_shift = 0;
                 size_t tlr_shift = 0;
                 size_t partweight_array_shift = 0;
+
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
                     mj_part_t current_concurrent_work_part = current_work_part + kk;
+
+                    // TODO: num_partitioning_in_current_dim to vector onto device
                     mj_part_t num_parts = num_partitioning_in_current_dim[current_concurrent_work_part];
 
                     //if the part is empty, skip the part.
-                    if((num_parts != 1  )
-                                &&
-                                this->kokkos_global_min_max_coord_total_weight(kk) >
-                             this->kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts)) {
 
+                    // TODO: Clean up later - for now pull some values to host and keep the algorithm serial host at this point
+                    
+                    mj_scalar_t coordinateA, coordinateB;
+                    auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk);
+                    }, coordinateA);
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+                    }, coordinateB);
+
+                    if((num_parts != 1) && (coordinateA > coordinateB)) {
                         //we still need to write the begin and end point of the
-                        //empty part. simply set it zero, the array indices will be shifted later.
-                        for(mj_part_t jj = 0; jj < num_parts; ++jj){
-                                this->kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
+                        //empty part. simply set it zero, the array indices will be shifted later
+                        auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
+                        Kokkos::parallel_for(
+                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_parts),
+                          KOKKOS_LAMBDA (const int jj) {
+                            local_kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
+                        });
 
-                        }
                         cut_shift += num_parts - 1;
                         tlr_shift += (4 *(num_parts - 1) + 1);
                         output_array_shift += num_parts;
@@ -6654,9 +6677,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         continue;
                     }
 
-                    mj_lno_t coordinate_end= local_kokkos_part_xadj[current_concurrent_work_part];
-                    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
-                                                                current_concurrent_work_part -1);
+                    mj_lno_t coordinate_end;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                      set_single = local_kokkos_part_xadj[current_concurrent_work_part];;
+                    }, coordinate_end);
+
+                    mj_lno_t coordinate_begin;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                      set_single = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
+                                                                current_concurrent_work_part -1);;
+                    }, coordinate_begin);
+
+
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
@@ -6667,7 +6701,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           cut_shift,
                           kokkos_process_cut_line_weight_to_put_left.size()));
-
                     //mj_scalar_t *used_tlr_array =  this->total_part_weight_left_right_closests + tlr_shift;
                     this->kokkos_thread_part_weight_work =
                       Kokkos::subview(
@@ -6675,15 +6708,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         std::pair<mj_lno_t, mj_lno_t>(
                           partweight_array_shift,
                           this->kokkos_thread_part_weights.extent(0)));
-
                     if(num_parts > 1){
                         if(this->mj_keep_part_boxes){
                                 //if part boxes are to be stored update the boundaries.
                             for (mj_part_t j = 0; j < num_parts - 1; ++j){
+                                // TODO: need to refactor output_part_boxes to a View form
+                                // Then refactor this loop to a parallel_for so it's all on device
+                                mj_scalar_t temp_get_val;
+                                Kokkos::parallel_reduce("Read single", 1,
+                                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                                  set_single = kokkos_current_concurrent_cut_coordinate(j);
+                                }, temp_get_val);
+   
                                 (*output_part_boxes)[output_array_shift + output_part_index + j].
-                                   updateMinMax(kokkos_current_concurrent_cut_coordinate(j), 1 /*update max*/, coordInd);
+                                   updateMinMax(temp_get_val, 1 /*update max*/, coordInd);
                                 (*output_part_boxes)[output_array_shift + output_part_index + j + 1].
-                                   updateMinMax(kokkos_current_concurrent_cut_coordinate(j), 0 /*update max*/, coordInd);
+                                   updateMinMax(temp_get_val, 0 /*update max*/, coordInd);
                             }
                         }
                         // Rewrite the indices based on the computed cuts.
@@ -6734,12 +6774,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //now we need to shift the beginning indices.
                 for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
                     mj_part_t num_parts = num_partitioning_in_current_dim[ current_work_part + kk];
-                    for (mj_part_t ii = 0;ii < num_parts ; ++ii){
-                        //shift it by previousCount
-                        this->kokkos_new_part_xadj(output_part_index+ii) += output_coordinate_end_index;
-                    }
+                    auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
+                    Kokkos::parallel_for(
+                      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_parts),
+                      KOKKOS_LAMBDA (const int ii) {
+                      local_kokkos_new_part_xadj(output_part_index+ii) += output_coordinate_end_index;
+                    });
                     //increase the previous count by current end.
-                    output_coordinate_end_index = this->kokkos_new_part_xadj(output_part_index + num_parts - 1);
+
+                    mj_part_t temp_get;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+                      set_single = local_kokkos_new_part_xadj(output_part_index + num_parts - 1);
+                    }, temp_get);
+                    output_coordinate_end_index = temp_get;
                     //increase the current out.
                     output_part_index += num_parts ;
                 }
@@ -6789,7 +6837,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->total_dim_num_reduce_all -= current_num_parts;
             current_num_parts = output_part_count_in_dimension;
       }
-
       {
 
         this->kokkos_part_xadj = this->kokkos_new_part_xadj;
@@ -7285,17 +7332,39 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
 
     // Reorder results so that they match the order of the input
-
 #if defined(__cplusplus) && __cplusplus >= 201103L
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
-    for (mj_lno_t i = 0; i < result_num_local_coords; i++)
-      localGidToLid[kokkos_result_initial_mj_gnos_(i)] = i;
+    for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
+
+      // TODO: Change loop so we don't read device to host
+      mj_gno_t p;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
+          set_single = kokkos_result_initial_mj_gnos_(i);
+      }, p);
+
+      localGidToLid[p] = i;
+    }
+
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
+
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      mj_lno_t origLID = localGidToLid[kokkos_result_mj_gnos(i)];
-      partId[origLID] = kokkos_result_assigned_part_ids(i);
+      // TODO: Change loop so we don't read device to host
+      mj_gno_t p;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
+          set_single = kokkos_result_initial_mj_gnos_(i);
+      }, p);
+      mj_gno_t p2;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
+          set_single = kokkos_result_assigned_part_ids(i);
+      }, p2);
+
+      mj_lno_t origLID = localGidToLid[p];
+      partId[origLID] = p2;
     }
 
 #else
@@ -7312,7 +7381,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       partId[origLID] = kokkos_result_assigned_part_ids(i);
     }
 #endif // C++11 is enabled
-
 
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
@@ -7351,8 +7419,18 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
 
+      auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos;
       for (mj_lno_t i = 0; i < this->num_local_coords; i++)
-        localGidToLid2[this->kokkos_initial_mj_gnos(i)] = i;
+      {
+        // TODO: Change loop so we don't read device to host
+        mj_gno_t p;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
+            set_single = local_kokkos_initial_mj_gnos(i);
+        }, p);
+
+        localGidToLid2[p] = i; 
+      }
 
       for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
         mj_lno_t origLID = localGidToLid2[received_gnos[i]];
@@ -7372,7 +7450,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
 #endif // C++11 is enabled
       }
-
       {
 
         freeArray<int> (result_actual_owner_rank);
