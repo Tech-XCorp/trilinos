@@ -6505,7 +6505,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
 
-printf("Check views\n");
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_usedCutCoordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
@@ -6531,19 +6530,16 @@ printf("Check views\n");
                         //set the number of cut lines that should be determined
                         //for this part.
 
-printf("Check views 2\n");
-
                         // TODO: eventually this is already in a parallel loop or we clean this up
                         // write to device
                         auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
                         Kokkos::parallel_for(
                           Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-                          KOKKOS_LAMBDA (const int ii) {
-                            local_kokkos_my_incomplete_cut_count(ii) = partition_count - 1;
+                          KOKKOS_LAMBDA (const int dummy) {
+                            local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
                         });
 
                         //get the target weights of the parts.
-printf("check 2\n");
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
                                         max_coordinate,
@@ -6556,13 +6552,23 @@ printf("check 2\n");
                                         concurrent_current_part_index,
                                         obtained_part_index);
 
+                        // TODO: refactor clean up
+                        mj_lno_t coordinate_end_index;
+                        Kokkos::parallel_reduce("Read single", 1,
+                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                          set_single = local_kokkos_part_xadj(concurrent_current_part_index);
+                        }, coordinate_end_index);
 
-                        mj_lno_t coordinate_end_index= local_kokkos_part_xadj(concurrent_current_part_index);
-                        mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
+                        // TODO: refactor clean up
+                        mj_lno_t coordinate_begin_index;
+                        Kokkos::parallel_reduce("Read single", 1,
+                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                          set_single = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
+                        }, coordinate_begin_index);
+
                         //get the initial estimated part assignments of the
                         //coordinates.
                         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
-
                         this->set_initial_coordinate_parts(
                             max_coordinate,
                             min_coordinate,
@@ -6576,7 +6582,12 @@ printf("check 2\n");
                     }
                     else {
                         // e.g., if have fewer coordinates than parts, don't need to do next dim.
-                        this->kokkos_my_incomplete_cut_count(kk) = 0;
+                        auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
+                        Kokkos::parallel_for(
+                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+                          KOKKOS_LAMBDA (const int dummy) {
+                            local_kokkos_my_incomplete_cut_count(kk) = 0;
+                        });
                     }
                     obtained_part_index += partition_count;
                 }
@@ -6585,6 +6596,7 @@ printf("check 2\n");
                 mj_scalar_t used_imbalance = 0;
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
+printf("begin mj_1D_part\n");
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
                     used_imbalance,
@@ -6594,6 +6606,7 @@ printf("check 2\n");
                     total_incomplete_cut_count,
                     num_partitioning_in_current_dim
                     );
+printf("end mj_1D_part\n");
                 this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
             }
             //create new part chunks
