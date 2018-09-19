@@ -1625,7 +1625,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     mj_scalar_t best_min_coord = 0;
                     mj_scalar_t best_max_coord = 0;
                     //MD:same for all coordinates, but I will still use this for now.
-
                     this->mj_get_local_min_max_coord_totW(
                         coordinate_begin_index,
                         coordinate_end_index,
@@ -1635,7 +1634,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         best_max_coord, //max coordinate
                         best_weight_coord //total weight);
                     );
-
                     coord_dim_mins[coord_traverse_ind] = best_min_coord;
                     coord_dim_maxs[coord_traverse_ind] = best_max_coord;
                     mj_scalar_t best_range = best_max_coord - best_min_coord;
@@ -1656,12 +1654,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
                   }
                   */
-
                   kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
                   this->kokkos_process_local_min_max_coord_total_weight(kk) = coord_dim_mins[coordInd];
                   this->kokkos_process_local_min_max_coord_total_weight(kk+ current_concurrent_num_parts) = coord_dim_maxs[coordInd];
                   this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = best_weight_coord;
-
                 }
                 else{
                   this->mj_get_local_min_max_coord_totW(
@@ -1680,6 +1676,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
+
                 this->mj_get_global_min_max_coord_totW(
                                 current_concurrent_num_parts,
                                 this->kokkos_process_local_min_max_coord_total_weight,
@@ -2164,13 +2161,10 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t atomic_part_count
 ){
 
-printf("int 1\n");
-
-        //how many parts that will be obtained after this dimension.
+    //how many parts that will be obtained after this dimension.
     mj_part_t output_num_parts = 0;
     if(this->kokkos_part_no_array.size()) // TODO can this work as NULL did?
     {
-printf("int 2\n");
         //when the partNo array is provided as input,
         //each current partition will be partition to the same number of parts.
         //we dont need to use the future_num_part_in_parts vector in this case.
@@ -2181,7 +2175,7 @@ printf("int 2\n");
         Kokkos::parallel_reduce("Read single", 1,
           KOKKOS_LAMBDA(int i, mj_part_t & set_single) {
             set_single = local_kokkos_part_no_array(current_iteration);
-        }, p);;
+        }, p);
 
         if (p < 1){
             std::cout << "i:" << current_iteration << " p is given as:" << p << std::endl;
@@ -2190,11 +2184,9 @@ printf("int 2\n");
         if (p == 1){
             return current_num_parts;
         }
-printf("int 3\n");
         for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
             num_partitioning_in_current_dim.push_back(p);
         }
-printf("int 4\n");
         //cout << "me:" << this->myRank << " current_iteration" << current_iteration <<
         //" current_num_parts:" << current_num_parts << std::endl;
         //cout << "num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0] << std::endl;
@@ -2205,10 +2197,8 @@ printf("int 4\n");
                         << " num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0]
                         << future_num_parts/ num_partitioning_in_current_dim[0] << std::endl;
         */
-printf("int 5\n");
         future_num_parts /= num_partitioning_in_current_dim[0];
         output_num_parts = current_num_parts * num_partitioning_in_current_dim[0];
-printf("int 6\n");
         if (this->mj_keep_part_boxes){
             for (mj_part_t k = 0; k < current_num_parts; ++k){
                 //initialized the output boxes as its ancestor.
@@ -2217,17 +2207,14 @@ printf("int 6\n");
                 }
             }
         }
-printf("int 7\n");
         //set the how many more parts each part will be divided.
         //this is obvious when partNo array is provided as input.
         //however, fill this so that weights will be calculated according to this array.
         for (mj_part_t ii = 0; ii < output_num_parts; ++ii){
             next_future_num_parts_in_parts->push_back(future_num_parts);
         }
-printf("int 8\n");
     }
     else {
-printf("int 9\n");
         //if partNo array is not provided as input,
         //future_num_part_in_parts  holds how many parts each part should be divided.
         //initially it holds a single number equal to the total number of global parts.
@@ -2237,7 +2224,6 @@ printf("int 9\n");
         future_num_parts = 1;
 
         //cout << "i:" << i << std::endl;
-printf("int 10\n");
         for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
             //get how many parts a part should be divided.
             mj_part_t future_num_parts_of_part_ii = (*future_num_part_in_parts)[ii];
@@ -2249,7 +2235,6 @@ printf("int 10\n");
                                                                 future_num_parts_of_part_ii,
                                                                 1.0 / (this->recursion_depth - current_iteration)
                                         );
-printf("int 11\n");
             if (num_partitions_in_current_dim > this->max_num_part_along_dim){
                 std::cerr << "ERROR: maxPartNo calculation is wrong. num_partitions_in_current_dim: "
                           << num_partitions_in_current_dim <<  "this->max_num_part_along_dim:"
@@ -2263,16 +2248,13 @@ printf("int 11\n");
             }
             //add this number to num_partitioning_in_current_dim vector.
             num_partitioning_in_current_dim.push_back(num_partitions_in_current_dim);
-printf("int 12\n");
             mj_part_t largest_prime_factor = num_partitions_in_current_dim;
             if (this->divide_to_prime_first){
-printf("int 13\n");
               //increase the output number of parts.
               output_num_parts += num_partitions_in_current_dim;
               if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
                 atomic_part_count = 1;
               }
-printf("int 14\n");
               largest_prime_factor = this->find_largest_prime_factor(future_num_parts_of_part_ii / atomic_part_count);
 
               //we divide to  num_partitions_in_current_dim. But we adjust the weights based on largest prime/
@@ -2281,7 +2263,6 @@ printf("int 14\n");
               if (largest_prime_factor < num_partitions_in_current_dim){
                 largest_prime_factor = num_partitions_in_current_dim;
               }
-printf("int 15\n");
               //ideal number of future partitions for each part.
               mj_part_t ideal_num_future_parts_in_part = (future_num_parts_of_part_ii / atomic_part_count) / largest_prime_factor;
               //if num_partitions_in_current_dim = 2, largest prime = 5 then ideal weight is 2x
@@ -2297,7 +2278,6 @@ printf("int 15\n");
                 }
                 //scale with 'x';
                 mj_part_t num_future_parts_for_part_iii = ideal_num_future_parts_in_part * my_ideal_primescale;
-printf("int 16\n");
                 //if there is a remainder in the part increase the part weight.
                 if (iii < (future_num_parts_of_part_ii / atomic_part_count) % largest_prime_factor){
                   //if not uniform, add 1 for the extra parts.
@@ -2310,7 +2290,6 @@ printf("int 16\n");
                 if (this->mj_keep_part_boxes){
                   output_part_boxes->push_back((*input_part_boxes)[ii]);
                 }
-printf("int 17\n");
                 //set num future_num_parts to maximum in this part.
                 if (num_future_parts_for_part_iii > future_num_parts) future_num_parts = num_future_parts_for_part_iii;
 
@@ -2319,14 +2298,12 @@ printf("int 17\n");
 
             }
             else {
-printf("int 18\n");
               //increase the output number of parts.
               output_num_parts += num_partitions_in_current_dim;
 
               if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
                 atomic_part_count = 1;
               }
-printf("int 19\n");
               //ideal number of future partitions for each part.
               mj_part_t ideal_num_future_parts_in_part = (future_num_parts_of_part_ii / atomic_part_count) / num_partitions_in_current_dim;
               for (mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii){
@@ -2344,7 +2321,6 @@ printf("int 19\n");
                 if (this->mj_keep_part_boxes){
                   output_part_boxes->push_back((*input_part_boxes)[ii]);
                 }
-printf("int 20\n");
                 //set num future_num_parts to maximum in this part.
                 if (num_future_parts_for_part_iii > future_num_parts) future_num_parts = num_future_parts_for_part_iii;
               }
@@ -2554,8 +2530,6 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
           mj_node_t>::compute_global_box()
 {
-printf("begin in compute_global_box\n");
-
     //local min coords
     mj_scalar_t *mins = allocMemory<mj_scalar_t>(this->coord_dim);
     //global min coords
@@ -2596,8 +2570,6 @@ printf("begin in compute_global_box\n");
     freeArray<mj_scalar_t>(gmins);
     freeArray<mj_scalar_t>(maxs);
     freeArray<mj_scalar_t>(gmaxs);
-
-printf("end compute_global_box\n");
 }
 
 /* \brief for part communication we keep track of the box boundaries.
@@ -2665,7 +2637,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     // I think it might be ignored.
     mj_scalar_t my_thread_min_coord;
     mj_scalar_t my_thread_max_coord;
-
     // get min
     Kokkos::parallel_reduce("MinReduce",
       coordinate_end_index - coordinate_begin_index,
@@ -2674,7 +2645,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) < running_min)
           running_min = kokkos_mj_current_dim_coords(i);
-      }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
+    }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
+
     // get max
     Kokkos::parallel_reduce("MaxReduce",
       coordinate_end_index - coordinate_begin_index,
@@ -2683,35 +2655,45 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) > running_max)
           running_max = kokkos_mj_current_dim_coords(i);
-      }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
+    }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
+
+    auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
+    mj_scalar_t weight0;
+    Kokkos::parallel_reduce("Read single", 1,
+      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+      set_single = local_kokkos_mj_uniform_weights(0);
+    }, weight0);
+
     mj_scalar_t my_total_weight = 0;
-    if (this->kokkos_mj_uniform_weights(0)) {
+    if(weight0) {
       my_total_weight = coordinate_end_index - coordinate_begin_index;
     }
     else {
-      /*
-      Kokkos::parallel_reduce ("Sum weights",
-        coordinate_end_index - coordinate_begin_index,
-        KOKKOS_LAMBDA(int & ii, mj_scalar_t & lsum) {
-          int i =
-            kokkos_mj_current_coordinate_permutations(coordinate_begin_index+ii);
-          lsum += this->kokkos_mj_weights(i,0);
-      }, my_total_weight);
-      */
 
-      for(int ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
-        int i = kokkos_mj_current_coordinate_permutations(ii);
-        my_total_weight += this->kokkos_mj_weights(i,0);
-      }
+      auto local_kokkos_mj_weights = this->kokkos_mj_weights;
+
+      Kokkos::parallel_reduce("sum weights", coordinate_end_index - coordinate_begin_index,
+        KOKKOS_LAMBDA(int ii, mj_scalar_t & lsum) {
+        int i = kokkos_mj_current_coordinate_permutations(coordinate_begin_index + ii);
+        lsum += local_kokkos_mj_weights(i,0);
+      }, my_total_weight);
     }
-    total_weight = my_total_weight;
 
     // TODO: Now with refactor this can be cleaned up / simplfied
-    this->kokkos_max_min_coords(0) = my_thread_min_coord;
-    this->kokkos_max_min_coords(1) = my_thread_max_coord;
+    auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 2),
+      KOKKOS_LAMBDA (const int ii) {
+      if(ii == 0) {
+        local_kokkos_max_min_coords(ii) = my_thread_min_coord;
+      }
+      if(ii == 1) {
+        local_kokkos_max_min_coords(ii) = my_thread_max_coord;
+      }
+    });
 
-    min_coordinate = this->kokkos_max_min_coords(0);
-    max_coordinate = this->kokkos_max_min_coords(1);
+    min_coordinate = my_thread_min_coord;
+    max_coordinate = my_thread_max_coord;
   }
 }
 
@@ -2753,9 +2735,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
         else {
                 mj_part_t s = 3 * current_concurrent_num_parts;
-                for (mj_part_t i = 0; i < s; ++i){
-                        kokkos_global_min_max_total(i) = kokkos_local_min_max_total(i);
-                }
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, s),
+                  KOKKOS_LAMBDA (const mj_part_t i) {
+                    kokkos_global_min_max_total(i) = kokkos_local_min_max_total(i);
+                });
         }
 }
 
@@ -2798,13 +2782,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 ){
 
     mj_scalar_t coord_range = max_coord - min_coord;
-    if(this->kokkos_mj_uniform_parts(0))
+
+   
+    // TODO: needs clean up - for now just copy device to host and use
+    auto local_kokkos_mj_uniform_parts = this->kokkos_mj_uniform_parts;
+    mj_part_t part0;
+    Kokkos::parallel_reduce("Read single", 1,
+      KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+      set_single = local_kokkos_mj_uniform_parts(0);
+    }, part0);
+
+    if(part0)
     {
         {
             mj_part_t cumulative = 0;
             //how many total future parts the part will be partitioned into.
             mj_scalar_t total_future_part_count_in_part = mj_scalar_t((*future_num_part_in_parts)[concurrent_current_part]);
-
 
             //how much each part should weigh in ideal case.
             mj_scalar_t unit_part_weight = global_weight / total_future_part_count_in_part;
@@ -2816,27 +2809,37 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             for(mj_part_t i = 0; i < num_cuts; ++i){
                 cumulative += (*next_future_num_parts_in_parts)[i + obtained_part_index];
 
-                /*
-                cout << "obtained_part_index:" << obtained_part_index <<
-                                " (*next_future_num_parts_in_parts)[i + obtained_part_index]:" << (*next_future_num_parts_in_parts)[i + obtained_part_index] <<
-                                " cumulative:" << cumulative << endl;
-                */
-                //set target part weight.
-                current_target_part_weights[i] = cumulative * unit_part_weight;
-                //cout <<"i:" << i << " current_target_part_weights:" << current_target_part_weights[i] << endl;
-                //set initial cut coordinate.
-                kokkos_initial_cut_coords(i) = min_coord + (coord_range * cumulative) / total_future_part_count_in_part;
+                // TODO: We want to refactor these loops - for now do a temp host to device write
+                Kokkos::parallel_for(
+                   Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0,1), // dummy single loop - to refactor
+                   KOKKOS_LAMBDA (const int dummy) {
+                     current_target_part_weights[i] = cumulative * unit_part_weight; //set target part weight.
+                     kokkos_initial_cut_coords(i) = min_coord + (coord_range * cumulative) / total_future_part_count_in_part;
+                });
             }
-            current_target_part_weights[num_cuts] = 1;
+
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0,1), // dummy single loop - to refactor
+              KOKKOS_LAMBDA (const int dummy) {
+              current_target_part_weights[num_cuts] = 1;
+            });
         }
+        // TODO: needs clean up - for now just copy device to host and use
+        auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
+        mj_scalar_t uniform_weight0;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+          set_single = local_kokkos_mj_uniform_weights(0);
+        }, uniform_weight0);
 
         //round the target part weights.
-        if (this->kokkos_mj_uniform_weights(0))
+        if (uniform_weight0)
         {
-                for(mj_part_t i = 0; i < num_cuts + 1; ++i){
-
-                current_target_part_weights[i] = long(current_target_part_weights[i] + 0.5);
-            }
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0,num_cuts+1),
+              KOKKOS_LAMBDA (const int i) {
+              current_target_part_weights[i] = long(current_target_part_weights[i] + 0.5);
+            });
         }
     }
     else {
@@ -6287,16 +6290,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
     RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
     compute_global_box();
-printf("check 1\n");
     if(this->mj_keep_part_boxes){
         this->init_part_boxes(output_part_boxes);
     }
-printf("check 2\n");
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
     for (int i = 0; i < this->recursion_depth; ++i){
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
-printf("check 2b\n");
         //partitioning array. size will be as the number of current partitions and this
         //holds how many parts that each part will be in the current dimension partitioning.
         std::vector <mj_part_t> num_partitioning_in_current_dim;
@@ -6316,7 +6316,6 @@ printf("check 2b\n");
         std::vector<mj_part_t> *tmpPartVect= future_num_part_in_parts;
         future_num_part_in_parts = next_future_num_parts_in_parts;
         next_future_num_parts_in_parts = tmpPartVect;
-printf("check 2c\n");
         //clear next_future_num_parts_in_parts array as
         //getPartitionArrays expects it to be empty.
         //it also expects num_partitioning_in_current_dim to be empty as well.
@@ -6327,7 +6326,6 @@ printf("check 2c\n");
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
-printf("check 2d\n");
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6339,7 +6337,6 @@ printf("check 2d\n");
                                         i,
                                         input_part_boxes,
                                         output_part_boxes, 1);
-printf("check 2d1\n");
         //if the number of obtained parts equal to current number of parts,
         //skip this dimension. For example, this happens when 1 is given in the input
         //part array is given. P=4,5,1,2
@@ -6356,7 +6353,6 @@ printf("check 2d1\n");
             }
             continue;
         }
-printf("check 2e\n");
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
@@ -6377,7 +6373,6 @@ printf("check 2e\n");
 
         mj_part_t obtained_part_index = 0;
         //run for all available parts.
-printf("check 3\n");
         for (; current_work_part < current_num_parts;
                  current_work_part += current_concurrent_num_parts){
 
@@ -6387,37 +6382,72 @@ printf("check 3\n");
             //initialization for 1D partitioning.
             //get the min and max coordinates of each part
             //together with the part weights of each part.
-printf("check 3b\n");
-            for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+
+           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
                 mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
                 //if this part wont be partitioned any further
                 //dont do any work for this part.
                 if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
                     continue;
                 }
-printf("check 3c\n");
                 ++actual_work_part_count;
-                mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-printf("check 3d\n");
-                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
-printf("check 4\n");
-/*
-                cout << "i:" << i << " j:" << current_work_part + kk
+
+                // TODO: Probably refactor this whole loop onto device but for now I need some values on host
+                // I'd like to focus on mj_1d_part
+                // When this loop goes parallel the internal loops for mj_get_local_min_max_coord_totW
+                // will need to be updated for nested hierachy, which should be straight forward
+
+                //mj_lno_t coordinate_end_index= local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
+                //mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
+
+                // read coordinate_end_index
+                mj_lno_t coordinate_end_index;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                  set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
+                }, coordinate_end_index);
+
+                // read coordinate_begin_index
+                mj_lno_t coordinate_begin_index;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                  set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
+                }, coordinate_begin_index);
+
+                /*
+                    cout << "i:" << i << " j:" << current_work_part + kk
                                 << " coordinate_begin_index:" << coordinate_begin_index
                                 << " coordinate_end_index:" << coordinate_end_index
                                 << " total:" << coordinate_end_index - coordinate_begin_index<< endl;
-                                */
+                */
+
+                // TODO: Also messy and convoluted but just want to avoid working on these loops yet
+                // Pull to host the three values we need for passing to this->mj_get_local_min_max_coord_totW
+                mj_scalar_t host1, host2, host3;
+                auto local_kokkos_process_local_min_max_coord_total_weight = kokkos_process_local_min_max_coord_total_weight;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk);
+                }, host1);
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+                }, host2);
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                  set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts);
+                }, host3);
+
                 this->mj_get_local_min_max_coord_totW(
                             coordinate_begin_index,
                             coordinate_end_index,
                             this->kokkos_coordinate_permutations,
                             kokkos_mj_current_dim_coords,
-                            this->kokkos_process_local_min_max_coord_total_weight(kk), //min_coordinate
-                            this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max_coordinate
-                            this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts)); //total_weight
+                            host1, //min_coordinate
+                            host2, //max_coordinate
+                            host3); //total_weight
             }
 
-printf("check 5\n");
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
@@ -6425,6 +6455,7 @@ printf("check 5\n");
                                 current_concurrent_num_parts,
                                 this->kokkos_process_local_min_max_coord_total_weight,
                                 this->kokkos_global_min_max_coord_total_weight);
+
                 //represents the total number of cutlines
                 //whose coordinate should be determined.
                 mj_part_t total_incomplete_cut_count = 0;
@@ -6435,17 +6466,46 @@ printf("check 5\n");
                 mj_part_t concurrent_part_cut_shift = 0;
                 mj_part_t concurrent_part_part_shift = 0;
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+
+
+                    // same as above - temporary measure to pull these values to host
+                    // I want to avoid making a parallel loop here for now so I get internal loops running
+                    // Then revisit this. TODO: clean it up
+                    mj_scalar_t min_coordinate;
+                    auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk);
+                    }, min_coordinate);
+
+                    mj_scalar_t max_coordinate;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+                    }, max_coordinate);
+
+                    mj_scalar_t global_total_weight;
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts);
+                    }, global_total_weight);
+
+
+                    // Above temporarily refactors below
+/*
                     mj_scalar_t min_coordinate = this->kokkos_global_min_max_coord_total_weight(kk);
                     mj_scalar_t max_coordinate = this->kokkos_global_min_max_coord_total_weight(kk +
                                                      current_concurrent_num_parts);
 
                     mj_scalar_t global_total_weight = this->kokkos_global_min_max_coord_total_weight(kk +
                                                         2 * current_concurrent_num_parts);
+*/
+
                     mj_part_t concurrent_current_part_index = current_work_part + kk;
 
                     mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
 
-
+printf("Check views\n");
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_usedCutCoordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
                         std::pair<mj_lno_t, mj_lno_t>(
@@ -6456,7 +6516,6 @@ printf("check 5\n");
                         std::pair<mj_lno_t, mj_lno_t>(
                           concurrent_part_part_shift,
                           kokkos_target_part_weights.size()));
-printf("check 6\n");
                     //shift the usedCutCoordinate array as noCuts.
                     concurrent_part_cut_shift += partition_count - 1;
                     //shift the partRatio array as noParts.
@@ -6471,9 +6530,20 @@ printf("check 6\n");
                         total_incomplete_cut_count += partition_count - 1;
                         //set the number of cut lines that should be determined
                         //for this part.
-                        this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
-                        //get the target weights of the parts.
 
+printf("Check views 2\n");
+
+                        // TODO: eventually this is already in a parallel loop or we clean this up
+                        // write to device
+                        auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
+                        Kokkos::parallel_for(
+                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+                          KOKKOS_LAMBDA (const int ii) {
+                            local_kokkos_my_incomplete_cut_count(ii) = partition_count - 1;
+                        });
+
+                        //get the target weights of the parts.
+printf("check 2\n");
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
                                         max_coordinate,
@@ -6487,7 +6557,6 @@ printf("check 6\n");
                                         obtained_part_index);
 
 
-printf("check 7\n");
                         mj_lno_t coordinate_end_index= local_kokkos_part_xadj(concurrent_current_part_index);
                         mj_lno_t coordinate_begin_index = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
                         //get the initial estimated part assignments of the
@@ -6511,7 +6580,6 @@ printf("check 7\n");
                     }
                     obtained_part_index += partition_count;
                 }
-printf("check 8\n");
                 //used imbalance, it is always 0, as it is difficult to
                 //estimate a range.
                 mj_scalar_t used_imbalance = 0;
@@ -6590,7 +6658,6 @@ printf("check 8\n");
                             }
                         }
                         // Rewrite the indices based on the computed cuts.
-printf("check 9\n");
                         this->mj_create_new_partitions(
                             num_parts,
                             kokkos_mj_current_dim_coords,
@@ -6633,7 +6700,6 @@ printf("check 9\n");
                 //shift cut coordinates so that all cut coordinates are stored.
                 //no shift now because we dont keep the cuts.
                 //current_cut_coordinates += cut_shift;
-printf("check 10\n");
                 //mj_create_new_partitions from coordinates partitioned the parts and
                 //write the indices as if there were a single part.
                 //now we need to shift the beginning indices.
