@@ -1374,7 +1374,7 @@ int main(int argc, char *argv[])
 
 	    // TODO: Temporary setup to run UVM on and off at same time
 
-//#define RUN_UVM_OFF_TEST
+#define RUN_UVM_OFF_TEST
 #ifdef RUN_UVM_OFF_TEST
             ierr = testFromDataFile<uvm_off_node_t>(tcomm,numParts, imbalance,fname,
                     pqParts, paramFile, k,
