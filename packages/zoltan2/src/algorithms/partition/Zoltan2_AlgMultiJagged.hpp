@@ -2925,10 +2925,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim){
-    // TODO: Remove this view? How to clean this up?
 
+    // TODO: Remove this view? How to clean this up?
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
-    view_rectilinear_cut_count(0) = 0;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA (const int dummy) {
+       view_rectilinear_cut_count(0) = 0;    
+    });
 
     this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 
@@ -2940,19 +2944,49 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                                  current_work_part ,
                                  current_concurrent_num_parts);
 
-    // TODO: Determine why need view - how to do this elegantly?
+printf("check 1\n");
+
+    // TODO: I'm using a 1 element view in the refactor but needs to be cleaned up
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_total_incomplete_cut_count("view_total_incomplete_cut_count", 1);
-    view_total_incomplete_cut_count(0) = total_incomplete_cut_count;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA (const int dummy) {
+       view_total_incomplete_cut_count(0) = total_incomplete_cut_count;
+    });
+
+    // TODO: I'm using a 1 element view in the refactor but needs to be cleaned up
     Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
-    view_total_reduction_size(0) = 0;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA (const int dummy) {
+       view_total_reduction_size(0) = 0;;
+    });
 
     bool bSingleProcess = (this->comm->getSize() == 1);
-    // TEMP HACK for CUDA for std::vector 
+
+    // For now copy the std::vector to a host and then to the device
+    // TODO: The original std::vector should be refactored to a view
+    // I didn't do this yet to keep the refactor steps contained
+
+    // Same thing here - should be mj_part_t, not int - but can't compile HostMirror
+    typedef Kokkos::View<int *> view_vector_t;
+    view_vector_t device_num_partitioning_in_current_dim("device_num_partitioning_in_current_dim", num_partitioning_in_current_dim.size());
+    view_vector_t::HostMirror host_num_partitioning_in_current_dim = Kokkos::create_mirror_view(device_num_partitioning_in_current_dim);
+    // now fill host with values currently stored in std::vector on host
+    for(int n = 0; n < static_cast<int>(num_partitioning_in_current_dim.size()); ++n) {
+      host_num_partitioning_in_current_dim(n) = num_partitioning_in_current_dim[n];
+    }
+
+    // copy to the device
+    Kokkos::deep_copy(device_num_partitioning_in_current_dim, host_num_partitioning_in_current_dim);
+    // Fill to device working vector
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> pTemp_num_partitioning_in_current_dim(
       "pTemp_num_partitioning_in_current_dim", num_partitioning_in_current_dim.size());
-    for(size_t n = 0; n < num_partitioning_in_current_dim.size(); ++n) {
-      pTemp_num_partitioning_in_current_dim(n) = num_partitioning_in_current_dim[n];
-    }
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, static_cast<int>(num_partitioning_in_current_dim.size())),
+      KOKKOS_LAMBDA (int n) {
+      pTemp_num_partitioning_in_current_dim(n) = device_num_partitioning_in_current_dim(n);
+    });
 
     // use locals to avoid capturing this for cuda  
     auto local_kokkos_thread_part_weights = kokkos_thread_part_weights;
@@ -2987,6 +3021,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     {
 
 if(team_member.league_rank() == 0) {
+
+
+printf("Begin single\n");
         Kokkos::single(Kokkos::PerTeam(team_member), [=]()
         {
           //initialize the lower and upper bounds of the cuts.
@@ -3009,6 +3046,8 @@ if(team_member.league_rank() == 0) {
           }
         });
         team_member.team_barrier();  // for end of Kokkos::single
+printf("End single\n");
+
 }
 
 if(team_member.league_rank() == 0) {
@@ -6575,7 +6614,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_scalar_t used_imbalance = 0;
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
-printf("begin mj_1D_part\n");
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
                     used_imbalance,
@@ -6585,7 +6623,6 @@ printf("begin mj_1D_part\n");
                     total_incomplete_cut_count,
                     num_partitioning_in_current_dim
                     );
-printf("end mj_1D_part\n");
                 this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
             }
             //create new part chunks
