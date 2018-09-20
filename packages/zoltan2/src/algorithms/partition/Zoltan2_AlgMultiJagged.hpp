@@ -3013,12 +3013,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS, 1); // Kokkos::AUTO());
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy (ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS, Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
     {
 
-if(team_member.league_rank() == 0) {
+      // TODO: This currently runs on a single team, single thread
+      if(team_member.league_rank() == 0) {
         Kokkos::single(Kokkos::PerTeam(team_member), [=]()
         {
           //initialize the lower and upper bounds of the cuts.
@@ -3041,9 +3042,11 @@ if(team_member.league_rank() == 0) {
           }
         });
         team_member.team_barrier();  // for end of Kokkos::single
-}
+      }
 
-if(team_member.league_rank() == 0) {
+      // TODO: Currently running the main thread on a single team
+//      if(team_member.league_rank() == 0) {
+
         int iteration = 0;
         while (view_total_incomplete_cut_count(0) != 0) {
             iteration += 1;
@@ -3273,10 +3276,11 @@ if(team_member.league_rank() == 0) {
                 );
                 team_member.team_barrier(); // for end of Kokkos::single
             }
+
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
               Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
               {
-                  //swap the cut coordinates for next iteration
+                  // swap the cut coordinates for next iteration
 		  // TODO: Need to figure this out - how to swap cleanly with Cuda/Kokkos
                   // This is inefficient as a test to get some basic cuda up and running
                   for(int n = 0; n < (int) local_kokkos_temp_cut_coords.size(); ++n) {
@@ -3284,27 +3288,23 @@ if(team_member.league_rank() == 0) {
                     local_kokkos_temp_cut_coords(n) = local_kokkos_cut_coordinates_work_array(n);
                     local_kokkos_cut_coordinates_work_array(n) = t;
                   }
-/*.
-                  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> t = this->kokkos_temp_cut_coords;
-                  this->kokkos_temp_cut_coords = this->kokkos_cut_coordinates_work_array;
-                  this->kokkos_cut_coordinates_work_array = t;
-*/
               });
               team_member.team_barrier(); // for end of Kokkos::single
             }
-        } // end of the while loop
-}
 
-        //if (myRank == 0)
-        //std::cout << "iteration:" << iteration << " partition:" << num_partitioning_in_current_dim[current_work_part] << std::endl;
-        // Needed only if keep_cuts; otherwise can simply swap array pointers
-        // cutCoordinates and cutCoordinatesWork.
-        // (at first iteration, cutCoordinates == cutCoorindates_tmp).
-        // computed cuts must be in cutCoordinates.
-        if (kokkos_current_cut_coordinates != local_kokkos_temp_cut_coords){
-if(team_member.league_rank() == 0) {
-          Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
-          {
+        } // end of the while loop
+//      } // end of check to run on a single team - TODO: fix improve later
+
+      //if (myRank == 0)
+      //std::cout << "iteration:" << iteration << " partition:" << num_partitioning_in_current_dim[current_work_part] << std::endl;
+      // Needed only if keep_cuts; otherwise can simply swap array pointers
+      // cutCoordinates and cutCoordinatesWork.
+      // (at first iteration, cutCoordinates == cutCoorindates_tmp).
+      // computed cuts must be in cutCoordinates.
+      if (kokkos_current_cut_coordinates != local_kokkos_temp_cut_coords){
+
+          if(team_member.league_rank() == 0) {
+            Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
                     mj_part_t next = 0;
                     for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
                             mj_part_t num_parts = -1;
@@ -3315,25 +3315,25 @@ if(team_member.league_rank() == 0) {
                             }
                             next += num_cuts;
                     }
-          });
-          team_member.team_barrier();  // for end of Kokkos::single
-}
+            });
+            team_member.team_barrier();  // for end of Kokkos::single
+          }
 
-if(team_member.league_rank() == 0) {
-          Kokkos::single(Kokkos::PerTeam(team_member), [=] ()
-          {
-	          // TODO Same as above - need to optimize fix this
-            // Work around for the ptr swap setup just to get some cuda running
-            // But this is inefficient
-            for(int n = 0; n < (int) local_kokkos_cut_coordinates_work_array.size(); ++n) {
-              local_kokkos_cut_coordinates_work_array(n) = local_kokkos_temp_cut_coords(n);
-            }
-//            this->kokkos_cut_coordinates_work_array = this->kokkos_temp_cut_coords;
-          });
-          team_member.team_barrier();  // for end of Kokkos::single
-}
-        } // end of if
-    }); // end of the outer mj_1D_part loop
+          if(team_member.league_rank() == 0) {
+            Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+	      // TODO Same as above - need to optimize fix this
+              // Work around for the ptr swap setup just to get some cuda running
+              // But this is inefficient
+              for(int n = 0; n < (int) local_kokkos_cut_coordinates_work_array.size(); ++n) {
+                local_kokkos_cut_coordinates_work_array(n) = local_kokkos_temp_cut_coords(n);
+              }
+            });
+            team_member.team_barrier();  // for end of Kokkos::single
+          }
+
+      } // end of if league_rank == 0
+   
+     }); // end of the outer mj_1D_part loop which sets teams and Kokkos::AUTO for threads
 
     delete reductionOp;
 }
@@ -4058,10 +4058,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member,
                 mj_scalar_t local_sEpsilon,
                 bool local_distribute_points_on_cut_lines,
-             Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
+                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_process_rectilinear_cut_weight,
                 Kokkos::View<mj_part_t *, typename mj_node_t::device_type> local_kokkos_my_incomplete_cut_count
         ){
+
+        printf("calling mj_get_new_cut_coordinates with thread: %d\n", (int) team_member.team_rank());
 
         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
           [=] (int & i) {
@@ -4133,7 +4135,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                           //then assign everything on the cut to the left of the cut.
                                           kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
                                           //for this cut all the weight on cut will be put to left.
-                                          kokkos_current_part_cut_line_weight_to_put_left(i) = kokkos_current_local_part_weights(i * 2 + 1) - kokkos_current_local_part_weights(i * 2);
+                                          kokkos_current_part_cut_line_weight_to_put_left(i) =
+                                            kokkos_current_local_part_weights(i * 2 + 1) -
+                                            kokkos_current_local_part_weights(i * 2);
                                           bContinue = true;
                                   }
                                   else if (kokkos_current_global_part_weights(i * 2 + 1) > expected_weight_in_part){
@@ -4146,8 +4150,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                           //increase the num cuts to be determined with rectilinear partitioning.
                                           Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
                                           kokkos_new_current_cut_coordinates(i) = kokkos_current_cut_coordinates(i);
-                                          local_kokkos_process_rectilinear_cut_weight[i] = kokkos_current_local_part_weights(i * 2 + 1) -
-                                                          kokkos_current_local_part_weights(i * 2);
+                                          local_kokkos_process_rectilinear_cut_weight[i] =
+                                            kokkos_current_local_part_weights(i * 2 + 1) -
+                                            kokkos_current_local_part_weights(i * 2);
                                           bContinue = true;
                                   }
                           }
