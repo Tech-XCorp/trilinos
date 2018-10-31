@@ -846,14 +846,12 @@ public: // For CUDA Temp
      * \param my_current_right_closest is the array holding the coordinate of the closest points to the cut lines from right for the calling thread.
      * \param partIds is the array that holds the part ids of the coordinates
      */
-    KOKKOS_INLINE_FUNCTION
     void mj_1D_part_get_thread_part_weights(
+        mj_part_t current_concurrent_num_parts,
+        mj_part_t kk,
+        mj_part_t current_work_part,
         size_t total_part_count,
         mj_part_t num_cuts,
-        mj_scalar_t max_coord,
-        mj_scalar_t min_coord,
-        mj_lno_t coordinate_begin_index,
-        mj_lno_t coordinate_end_index,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords,
         Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status,
@@ -864,8 +862,7 @@ public: // For CUDA Temp
         Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_coordinate_permutations,
         Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
         Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> local_kokkos_mj_weights,
-        Kokkos::View<bool*, typename mj_node_t::device_type> local_kokkos_mj_uniform_weights,
-        typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member
+        Kokkos::View<bool*, typename mj_node_t::device_type> local_kokkos_mj_uniform_weights
         );
     /*! \brief Function that reduces the result of multiple threads
      * for left and right closest points and part weights in a single mpi process.
@@ -3079,38 +3076,27 @@ printf("In check....\n");
                           total_part_shift,
                           local_kokkos_thread_part_weights.size()));
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest =
-                    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
+                      Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
                       std::pair<mj_lno_t, mj_lno_t>(
                         concurrent_cut_shifts,
                         local_kokkos_thread_cut_left_closest_point.size()));
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest =
-                    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-                      std::pair<mj_lno_t, mj_lno_t>(
-                        concurrent_cut_shifts,
-                        local_kokkos_thread_cut_right_closest_point.size()));
-
-    // I'd like to move this into the mj_1D_part_get_thread_part_weights method
-    // will try this first - then refactor these bits to be passed throug and read inside
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
-    Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
-                    mj_part_t conccurent_current_part = current_work_part + kk;
-                    mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
-                    mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
+                      Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
+                        std::pair<mj_lno_t, mj_lno_t>(
+                          concurrent_cut_shifts,
+                          local_kokkos_thread_cut_right_closest_point.size()));
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords =
                       Kokkos::subview(local_kokkos_temp_cut_coords,
                         std::pair<mj_lno_t, mj_lno_t>(
-                          concurrent_cut_shifts,
-                          local_kokkos_temp_cut_coords.size()));
-                    mj_scalar_t min_coord = local_kokkos_global_min_max_coord_total_weight(kk);
-                    mj_scalar_t max_coord = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-                    // compute part weights using existing cuts
+                        concurrent_cut_shifts,
+                        local_kokkos_temp_cut_coords.size()));
+
                     this->mj_1D_part_get_thread_part_weights(
+                        current_concurrent_num_parts,
+                        kk,
+                        current_work_part, 
                         total_part_count,
                         num_cuts,
-                        max_coord,//globalMinMaxTotal[kk + concurrentPartCount],//maxScalar,
-                        min_coord,//globalMinMaxTotal[kk]//minScalar,
-                        coordinate_begin_index,
-                        coordinate_end_index,
                         kokkos_mj_current_dim_coords,
                         kokkos_temp_current_cut_coords,
                         kokkos_current_cut_status,
@@ -3121,9 +3107,7 @@ printf("In check....\n");
                         local_kokkos_coordinate_permutations,
                         local_kokkos_assigned_part_ids,
                         local_kokkos_mj_weights,
-                        local_kokkos_mj_uniform_weights,
-                        team_member);
-     });
+                        local_kokkos_mj_uniform_weights);
                 }
                 concurrent_cut_shifts += num_cuts;
                 total_part_shift += total_part_count;
@@ -3402,12 +3386,11 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::mj_1D_part_get_thread_part_weights(
+    mj_part_t current_concurrent_num_parts,
+    mj_part_t working_kk,
+    mj_part_t current_work_part,
     size_t total_part_count,
     mj_part_t num_cuts,
-    mj_scalar_t max_coord,
-    mj_scalar_t min_coord,
-    mj_lno_t coordinate_begin_index,
-    mj_lno_t coordinate_end_index,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_temp_current_cut_coords,
     Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status,
@@ -3418,9 +3401,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_coordinate_permutations,
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> local_kokkos_mj_weights,
-    Kokkos::View<bool*, typename mj_node_t::device_type> local_kokkos_mj_uniform_weights,
-    typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member 
+    Kokkos::View<bool*, typename mj_node_t::device_type> local_kokkos_mj_uniform_weights
     ){
+
+    auto local_kokkos_part_xadj = kokkos_part_xadj;
+    auto local_kokkos_global_min_max_coord_total_weight = kokkos_global_min_max_coord_total_weight;
+
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
+typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+
+        mj_part_t conccurent_current_part = current_work_part + working_kk;
+        mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
+        mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
+        mj_scalar_t min_coord = local_kokkos_global_min_max_coord_total_weight(working_kk);
+        mj_scalar_t max_coord = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts);
+
         // initializations for part weights, left/right closest
         Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, 0, total_part_count),
           [=] (size_t i) {
@@ -3645,6 +3641,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 kokkos_my_current_part_weights(i) += kokkos_my_current_part_weights(i-1);
           }
         }
+   });
 }
 
 /*! \brief Function that reduces the result of multiple threads
