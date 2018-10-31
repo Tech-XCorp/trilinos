@@ -908,13 +908,11 @@ public: // For CUDA Temp
      * \param rectilinear_cut_count is the count of cut lines whose balance can be achived via distributing the points in same coordinate to different parts.
      * \param my_num_incomplete_cut is the number of cutlines whose position has not been determined yet. For K > 1 it is the count in a single part (whose cut lines are determined).
      */
-    KOKKOS_INLINE_FUNCTION // eventually would like to remove this - keep the kernels loaded inside and avoid the large lambda block
     void mj_get_new_cut_coordinates(
+        mj_part_t current_concurrent_num_parts,
+        mj_part_t kk,
         const size_t &num_total_part,
         const mj_part_t &num_cuts,
-        const mj_scalar_t &max_coordinate,
-        const mj_scalar_t &min_coordinate,
-        const mj_scalar_t &global_total_weight,
         const mj_scalar_t &used_imbalance_tolerance,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights,
         Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights,
@@ -929,14 +927,7 @@ public: // For CUDA Temp
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_new_current_cut_coordinates,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> current_part_cut_line_weight_to_put_left,
-        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
-        size_t kk,
-        mj_scalar_t local_sEpsilon,
-        bool local_distribute_points_on_cut_lines,
-        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
-        Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_process_rectilinear_cut_weight,
-        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> local_kokkos_my_incomplete_cut_count,
-        typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member
+        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count
     );
 
     /*! \brief
@@ -2996,7 +2987,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_cut_coordinates_work_array = kokkos_cut_coordinates_work_array;
     auto local_kokkos_part_xadj = kokkos_part_xadj;
     auto local_kokkos_global_min_max_coord_total_weight = kokkos_global_min_max_coord_total_weight;
-    auto local_sEpsilon = this->sEpsilon;
     auto local_kokkos_target_part_weights = kokkos_target_part_weights;
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
@@ -3192,13 +3182,6 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
 
                 mj_part_t initial_incomplete_cut_count = kk_kokkos_my_incomplete_cut_count;
 
-    // I'd like to move this into the mj_get_new_cut_coordinates method
-    // will try this first - then refactor these bits to be passed throug and read inside
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
-    Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
-                mj_scalar_t min_coordinate = local_kokkos_global_min_max_coord_total_weight(kk);
-                mj_scalar_t max_coordinate = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-                mj_scalar_t global_total_weight = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts * 2);
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_lower_bound_weights =
                   Kokkos::subview(local_kokkos_cut_lower_bound_weights,
                     std::pair<mj_lno_t, mj_lno_t>(
@@ -3222,11 +3205,10 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
 
                 // Now compute the new cut coordinates.
                 this->mj_get_new_cut_coordinates(
+                                current_concurrent_num_parts,
+                                kk,
                                 num_total_part,
                                 num_cuts,
-                                max_coordinate,
-                                min_coordinate,
-                                global_total_weight,
                                 used_imbalance_tolerance,
                                 kokkos_current_global_part_weights,
                                 kokkos_current_local_part_weights,
@@ -3245,16 +3227,8 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                                   std::pair<mj_lno_t, mj_lno_t>(
                                     cut_shift, local_kokkos_cut_coordinates_work_array.size())),
                                 kokkos_current_part_cut_line_weight_to_put_left,
-                                view_rectilinear_cut_count,
-                                kk,
-                                local_sEpsilon,
-                                local_distribute_points_on_cut_lines,
-                                local_kokkos_global_rectilinear_cut_weight,
-                                local_kokkos_process_rectilinear_cut_weight,
-                                local_kokkos_my_incomplete_cut_count,
-                                team_member
+                                view_rectilinear_cut_count
                                 );
-        });
 
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
@@ -3629,6 +3603,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_total_part_weight_left_right_closests,
     Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> local_kokkos_thread_part_weights
     ){
+
 typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
 Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
 Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
@@ -3776,7 +3751,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_new_coordinate_permutations
     ){
         mj_part_t num_cuts = num_parts - 1;
-
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
           ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS,
@@ -4044,11 +4018,10 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::mj_get_new_cut_coordinates(
+                mj_part_t current_concurrent_num_parts,
+                mj_part_t kk,
                 const size_t &num_total_part,
                 const mj_part_t &num_cuts,
-                const mj_scalar_t &max_coordinate,
-                const mj_scalar_t &min_coordinate,
-                const mj_scalar_t &global_total_weight,
                 const mj_scalar_t &used_imbalance_tolerance,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights,
                 Kokkos::View<const mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_local_part_weights,
@@ -4063,15 +4036,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_upper_weights,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_new_current_cut_coordinates,
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_part_cut_line_weight_to_put_left,
-                Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
-                size_t kk,
-                mj_scalar_t local_sEpsilon,
-                bool local_distribute_points_on_cut_lines,
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_global_rectilinear_cut_weight,
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> local_kokkos_process_rectilinear_cut_weight,
-                Kokkos::View<mj_part_t *, typename mj_node_t::device_type> local_kokkos_my_incomplete_cut_count,
-                typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type team_member
+                Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count
         ){
+
+    auto local_sEpsilon = sEpsilon;
+    auto local_distribute_points_on_cut_lines = distribute_points_on_cut_lines;
+    auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
+    auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
+    auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
+    auto local_kokkos_global_min_max_coord_total_weight = kokkos_global_min_max_coord_total_weight;
+
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+
+
+        mj_scalar_t min_coordinate = local_kokkos_global_min_max_coord_total_weight(kk);
+        mj_scalar_t max_coordinate = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+        mj_scalar_t global_total_weight = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts * 2);
 
         Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
           [=] (int & i) {
@@ -4398,6 +4380,8 @@ for(int i = 0; i < num_cuts; ++i) { // temporary - reduce to sequential
         team_member.team_barrier(); // for end of Kokkos::single
 
         } // TODO: This may not be necessary anymore? See comment above
+
+});
 
 });
 }
