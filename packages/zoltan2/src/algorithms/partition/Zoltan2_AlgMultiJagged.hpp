@@ -2917,8 +2917,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     mj_part_t total_incomplete_cut_count,
     std::vector <mj_part_t> &num_partitioning_in_current_dim){
 
-printf("Begin...\n");
-
     // TODO: Remove this view? How to clean this up?
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
     Kokkos::parallel_for(
@@ -3004,7 +3002,6 @@ printf("Begin...\n");
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-printf("First loop...\n");
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
     Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
 
@@ -3035,7 +3032,6 @@ printf("First loop...\n");
       }
     });
 
-printf("Begin while loop...\n");
         while (total_incomplete_cut_count != 0) {
             mj_part_t concurrent_cut_shifts = 0;
             size_t total_part_shift = 0;
@@ -3044,7 +3040,6 @@ printf("Begin while loop...\n");
                 mj_part_t num_cuts = num_parts - 1;
                 size_t total_part_count = num_parts + size_t (num_cuts);
 
-printf("First reduce read single...\n");
         // TODO Clean up                 
         mj_part_t kk_kokkos_my_incomplete_cut_count;
         Kokkos::parallel_reduce("Read single", 1,
@@ -3052,9 +3047,7 @@ printf("First reduce read single...\n");
           set_single = local_kokkos_my_incomplete_cut_count(kk);
         }, kk_kokkos_my_incomplete_cut_count);
 
-printf("Got it!...\n");
                 if (kk_kokkos_my_incomplete_cut_count > 0){
-printf("In check....\n");
                     //although isDone shared, currentDone is private and same for all.
                     Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status =
                       Kokkos::subview(local_kokkos_is_cut_line_determined,
@@ -3102,7 +3095,6 @@ printf("In check....\n");
             // TODO: Now with the threads eliminated we should eliminate a lot of this code
             // There is only 1 thread block in the new cuda refactor setup
 
-printf("Begin mj_accumulate_thread_results\n");
             this->mj_accumulate_thread_results(
                 pTemp_num_partitioning_in_current_dim,
                 current_work_part,
@@ -3113,8 +3105,6 @@ printf("Begin mj_accumulate_thread_results\n");
                 local_kokkos_total_part_weight_left_right_closests,
                 local_kokkos_thread_part_weights
             );
-
-printf("Done mj_accumulate_thread_results\n");
 
 Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
             //now sum up the results of mpi processors.
@@ -3136,8 +3126,6 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                         }
                 }
 });
-
-printf("Done reduce all...\n");
 
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
@@ -3233,8 +3221,6 @@ printf("Done reduce all...\n");
                       local_kokkos_cut_lower_bound_coordinates.size()));
 
                 // Now compute the new cut coordinates.
-
-printf("Begin mj_get_new_cut_coordinates\n");
                 this->mj_get_new_cut_coordinates(
                                 num_total_part,
                                 num_cuts,
@@ -3270,8 +3256,6 @@ printf("Begin mj_get_new_cut_coordinates\n");
                                 );
         });
 
-printf("Done mj_get_new_cut_coordinates\n");
-
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
 
@@ -3282,7 +3266,6 @@ printf("Done mj_get_new_cut_coordinates\n");
 
                   mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
                   Kokkos::atomic_add(&total_incomplete_cut_count, -iteration_complete_cut_count);             
-printf("Done parallel for parallel_for\n");
      }
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
  
@@ -3296,10 +3279,7 @@ Kokkos::parallel_for((int) local_kokkos_temp_cut_coords.size(), KOKKOS_LAMBDA(in
                     local_kokkos_cut_coordinates_work_array(n) = t;
                   });
             }
-printf("Done local_kokkos_temp_cut_coords.size loop\n");
         } // end of the while loop
-
-printf("Next check\n");
 
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy3 (1, 1);
     Kokkos::parallel_for (policy3, KOKKOS_LAMBDA(member_type team_member) {
@@ -3342,7 +3322,6 @@ printf("Next check\n");
    
      }); // end of the outer mj_1D_part loop which sets teams and Kokkos::AUTO for threads
 
-printf("Deleting...\n");
     delete reductionOp;
 }
 
@@ -6681,7 +6660,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_part_t cut_shift = 0;
                 size_t tlr_shift = 0;
                 size_t partweight_array_shift = 0;
-printf("Making parts\n");
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
                     mj_part_t current_concurrent_work_part = current_work_part + kk;
 
@@ -6835,7 +6813,6 @@ printf("Making parts\n");
                     output_part_index += num_parts ;
                 }
             }
-printf("End Making parts\n");
         }
 
         // end of this partitioning dimension
@@ -6874,8 +6851,6 @@ printf("End Making parts\n");
                 }
         }
 
-printf("Check A\n");
-
         //swap the coordinate permutations for the next dimension.
         Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> tmp = this->kokkos_coordinate_permutations;
         this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
@@ -6892,9 +6867,7 @@ printf("Check A\n");
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
       }
-printf("Check A1\n");
     }
-printf("Check B\n");
     // Partitioning is done
     delete future_num_part_in_parts;
     delete next_future_num_parts_in_parts;
@@ -6913,7 +6886,6 @@ printf("Check B\n");
     kokkos_result_mj_gnos_ = this->kokkos_current_mj_gnos;
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
-printf("Check C\n");
 }
 
 
@@ -7380,7 +7352,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - call multi_jagged_part()");
 
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
-printf("Check D\n");
 
     // Reorder results so that they match the order of the input
 #if defined(__cplusplus) && __cplusplus >= 201103L
@@ -7397,7 +7368,6 @@ printf("Check D\n");
 
       localGidToLid[p] = i;
     }
-printf("Check E\n");
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
 
@@ -7417,9 +7387,7 @@ printf("Check E\n");
       mj_lno_t origLID = localGidToLid[p];
       partId[origLID] = p2;
     }
-printf("Check F\n");
 #else
-printf("Check G\n");
     Teuchos::Hashtable<mj_gno_t, mj_lno_t>
     localGidToLid(result_num_local_coords);
     for (mj_lno_t i = 0; i < result_num_local_coords; i++)
@@ -7468,7 +7436,6 @@ printf("Check G\n");
 
       {
 #if defined(__cplusplus) && __cplusplus >= 201103L
-printf("Check G\n"); 
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
 
@@ -7490,7 +7457,6 @@ printf("Check G\n");
         partId[origLID] = received_partids[i];
       }
 #else
-printf("Check H\n");
       Teuchos::Hashtable<mj_gno_t, mj_lno_t>
 	      localGidToLid2(this->num_local_coords);
 
@@ -7511,13 +7477,11 @@ printf("Check H\n");
       mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
 
     }
-printf("Check I\n");
     solution->setParts(partId);
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
 }
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
-printf("Check J\n");
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
