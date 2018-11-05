@@ -3336,6 +3336,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest
     ){
+      // this could eventually be a more general set value
+      // but currently just focusing on this method right now
+      int num_teams = 1024;
+
+      // this is very abitrary and needs to be tuned
+      // probably need some kind of minimum per team to keep things efficient
+      // so just picking 10 points per thread minimum as a starting point.
+      if(num_teams > static_cast<int>(kokkos_mj_current_dim_coords.size()) / 10) {
+        num_teams = static_cast<int>(kokkos_mj_current_dim_coords.size()) / 10;
+      }
+      if(num_teams < 1) {
+        num_teams = 1;
+      }
+num_teams = 1;
+
       // Create some locals so we don't use this inside the kernels which causes problems
       auto local_sEpsilon = this->sEpsilon;
       auto local_kokkos_assigned_part_ids = this->kokkos_assigned_part_ids;
@@ -3362,23 +3377,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       mj_scalar_t minus_EPSILON = -local_sEpsilon;
 
       // start the outer loop on teams
-      Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(1, Kokkos::AUTO());
+      Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(num_teams, Kokkos::AUTO());
       Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
         // setup some values which are loaded from device
         // Note these used to be outside this method but we're moved here so the two nested loops
         // could be contained in this method. We may eventually want to reorganize what gets
         // passed to this method.
-
         mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
         mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
 
-        printf("Team %d begines internal loop over %d coordinates from %d to %d.\n", (int) team_member.team_rank(), (int)(coordinate_end_index - coordinate_begin_index),
-          (int) coordinate_begin_index, (int) coordinate_end_index);
-
         // Now begin the internal loop
+        // Divide up the coordinates between the teams
+        mj_lno_t stride = (coordinate_end_index - coordinate_begin_index) / num_teams;
+        mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
+        mj_lno_t team_end_index = team_begin_index + stride;
+        if(team_end_index > coordinate_end_index) {
+          team_end_index = coordinate_end_index;
+        }
+
+        printf("Team %d Thread: %d begines internal loop over %d coordinates from %d to %d - the team coorinrange is %d to %d.\n",
+          (int) team_member.league_rank(), (int) team_member.team_rank(), (int)(coordinate_end_index - coordinate_begin_index),
+          (int) coordinate_begin_index, (int) coordinate_end_index,
+          (int) team_begin_index, (int) team_end_index);
+
         Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+          Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
           [=] (mj_lno_t & ii) {
                 int i = local_kokkos_coordinate_permutations(ii);
                 mj_part_t j = local_kokkos_assigned_part_ids(i) / 2;
@@ -3398,66 +3422,50 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
                 while(upper_cut_index >= lower_cut_index)
                 {
-                        //comparison_count++;
                         last_compared_part = -1;
                         is_on_left_of_cut = false;
                         is_on_right_of_cut = false;
                         mj_scalar_t cut = kokkos_temp_current_cut_coords(j);
                         mj_scalar_t distance_to_cut = coord - cut;
                         mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
-                        //if it is on the line.
                         if(abs_distance_to_cut < local_sEpsilon){
-                        
-                                // Need to be atomic
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(j * 2 + 1), w);
-                                // kokkos_my_current_part_weights(j * 2 + 1) += w;
-
                                 local_kokkos_assigned_part_ids(i) = j * 2 + 1;
-                                //assign left and right closest point to cut as the point is on the cut.
-                                kokkos_my_current_left_closest(j) = coord;
-                                kokkos_my_current_right_closest(j) = coord;
-
-                                //now we need to check if there are other cuts on the same cut coordinate.
-                                //if there are, then we add the weight of the cut to all cuts in the same coordinate.
+/*
+                                Kokkos::atomic_exchange(&kokkos_my_current_left_closest(j), coord);
+                                Kokkos::atomic_exchange(&kokkos_my_current_right_closest(j), coord);
+*/
                                 mj_part_t kk = j + 1;
                                 while(kk < num_cuts){
-                                        // Needed when cuts shared the same position
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
                                         if(distance_to_cut < local_sEpsilon){
-                                           //     kokkos_my_current_part_weights(2 * kk + 1) += w;
                                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(kk * 2 + 1), w);
-                                                kokkos_my_current_left_closest(kk) = coord;
-                                                kokkos_my_current_right_closest(kk) = coord;
+/*
+                                                Kokkos::atomic_exchange(&kokkos_my_current_left_closest(kk), coord);
+                                                Kokkos::atomic_exchange(&kokkos_my_current_right_closest(kk), coord);
+*/
                                                 kk++;
                                         }
                                         else{
-                                                //cut is far away.
-                                                //just check the left closest point for the next cut.
+/*
                                                 if(coord - kokkos_my_current_left_closest(kk) > local_sEpsilon){
-                                                        kokkos_my_current_left_closest(kk) = coord;
+                                                         Kokkos::atomic_exchange(&kokkos_my_current_left_closest(kk), coord);
                                                 }
+*/
                                                 break;
                                         }
                                 }
 
                                 kk = j - 1;
-                                //continue checking for the cuts on the left if they share the same coordinate.
                                 while(kk >= 0){
                                         distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
                                         if(distance_to_cut < local_sEpsilon){
-                                             //   kokkos_my_current_part_weights(2 * kk + 1) += w;
-                                                //try to write the partId as the leftmost cut.
-                                             //   local_kokkos_assigned_part_ids(i) = kk * 2 + 1;
-                                             //   kokkos_my_current_left_closest(kk) = coord;
-                                             //   kokkos_my_current_right_closest(kk) = coord;
                                                 kk--;
                                         }
                                         else{
-                                                //if cut is far away on the left of the point.
-                                                //then just compare for right closest point.
-                                                if(kokkos_my_current_right_closest(kk) - coord > local_sEpsilon){
-                                                        kokkos_my_current_right_closest(kk) = coord;
-                                                }
+//                                                if(kokkos_my_current_right_closest(kk) - coord > local_sEpsilon){
+//                                                    Kokkos::atomic_exchange(&kokkos_my_current_right_closest(kk), coord);
+//                                                }
                                                 break;
                                         }
                                 }
@@ -3466,31 +3474,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                 break;
                         }
                         else {
-                                //if point is on the left of the cut.
                                 if (distance_to_cut < 0) {
                                         bool _break = false;
                                         if(j > 0){
-                                                //check distance to the cut on the left the current cut compared.
-                                                //if point is on the right, then we find the part of the point.
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j - 1);
                                                 if(distance_to_next_cut > local_sEpsilon){
                                                         _break = true;
                                                 }
                                         }
-                                        //if point is not on the right of the next cut, then
-                                        //set the upper bound to this cut.
                                         upper_cut_index = j - 1;
-                                        //set the last part, and mark it as on the left of the last part.
                                         is_on_left_of_cut = true;
                                         last_compared_part = j;
                                         if(_break) break;
                                 }
                                 else {
-                                        //if point is on the right of the cut.
                                         bool _break = false;
                                         if(j < num_cuts - 1){
-                                                //check distance to the cut on the left the current cut compared.
-                                                //if point is on the right, then we find the part of the point.
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j + 1);
 
                                                 if(distance_to_next_cut < minus_EPSILON){
@@ -3498,13 +3497,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                                 }
                                         }
 
-                                        //if point is not on the left of the next cut, then
-                                        //set the upper bound to this cut.
                                         lower_cut_index = j + 1;
-                                        //set the last part, and mark it as on the right of the last part.
                                         is_on_right_of_cut = true;
                                         last_compared_part = j;
-                                        //  if(j < 0) throw std::logic_error("Bad setlast_compared_part");
                                         if(_break) break;
                                 }
                         }
@@ -3513,44 +3508,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
                 if(!is_inserted){
                         if(is_on_right_of_cut){
-
-                                //add it to the right of the last compared part.
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part + 2), w);
-                                //kokkos_my_current_part_weights(2 * last_compared_part + 2) += w;
                                 local_kokkos_assigned_part_ids(i) = 2 * last_compared_part + 2;
-
-                                //update the right closest point of last compared cut.
+/*
                                 if(kokkos_my_current_right_closest(last_compared_part) - coord > local_sEpsilon){
-                                        kokkos_my_current_right_closest(last_compared_part) = coord;
+                                    Kokkos::atomic_exchange(&kokkos_my_current_right_closest(last_compared_part), coord);
                                 }
-
-                                //update the left closest point of the cut on the right of the last compared cut.
                                 if(last_compared_part+1 < num_cuts){
                                         if(coord - kokkos_my_current_left_closest(last_compared_part + 1) > local_sEpsilon){
-                                                kokkos_my_current_left_closest(last_compared_part + 1) = coord;
+                                           Kokkos::atomic_exchange(&kokkos_my_current_left_closest(last_compared_part + 1), coord);
                                         }
                                 }
-
+*/
                         }
                         else if(is_on_left_of_cut){
-
-                                //add it to the left of the last compared part.
-                                //kokkos_my_current_part_weights(2 * last_compared_part) += w;
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part), w);
-
                                 local_kokkos_assigned_part_ids(i) = 2 * last_compared_part;
-
-                                //update the left closest point of last compared cut.
+/*
                                 if(coord - kokkos_my_current_left_closest(last_compared_part) > local_sEpsilon){
-                                        kokkos_my_current_left_closest(last_compared_part) = coord;
+                                       Kokkos::atomic_exchange(&kokkos_my_current_left_closest(last_compared_part), coord);
                                 }
-
-                                //update the right closest point of the cut on the left of the last compared cut.
                                 if(last_compared_part-1 >= 0){
                                         if(kokkos_my_current_right_closest(last_compared_part -1) - coord > local_sEpsilon){
-                                                kokkos_my_current_right_closest(last_compared_part -1) = coord;
+                                            Kokkos::atomic_exchange(&kokkos_my_current_right_closest(last_compared_part-1), coord);
                                         }
                                 }
+*/
                         }
                 }
         }); // ends the nested 2nd loop
@@ -3580,6 +3563,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
 
      }); // ends the outer loop over teams
+
+     // TODO: optimize this further ....
+     Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t cut) {
+       mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
+       mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
+       mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
+
+       for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
+         int i = local_kokkos_coordinate_permutations(ii);
+         mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
+         mj_scalar_t distance_to_cut = coord - coord_cut;
+         mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
+         if(abs_distance_to_cut < local_sEpsilon) {
+           Kokkos::atomic_exchange(&kokkos_my_current_left_closest(cut), coord);
+           Kokkos::atomic_exchange(&kokkos_my_current_right_closest(cut), coord);
+         }
+         else if(coord > coord_cut) {
+           if(coord < kokkos_my_current_right_closest(cut)) {
+             kokkos_my_current_right_closest(cut) = coord;
+           }
+         } else if(coord < coord_cut) {
+           if(coord > kokkos_my_current_left_closest(cut)) {
+             kokkos_my_current_left_closest(cut) = coord;
+           }
+         }
+       }
+    });
 }
 
 /*! \brief Function that reduces the result of multiple threads
