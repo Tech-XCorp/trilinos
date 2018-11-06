@@ -3336,21 +3336,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest
     ){
-      // this could eventually be a more general set value
-      // but currently just focusing on this method right now
-      int num_teams = 1024;
-
-      // this is very abitrary and needs to be tuned
-      // probably need some kind of minimum per team to keep things efficient
-      // so just picking 10 points per thread minimum as a starting point.
-      if(num_teams > static_cast<int>(kokkos_mj_current_dim_coords.size()) / 10) {
-        num_teams = static_cast<int>(kokkos_mj_current_dim_coords.size()) / 10;
-      }
-      if(num_teams < 1) {
-        num_teams = 1;
-      }
-num_teams = 1;
-
       // Create some locals so we don't use this inside the kernels which causes problems
       auto local_sEpsilon = this->sEpsilon;
       auto local_kokkos_assigned_part_ids = this->kokkos_assigned_part_ids;
@@ -3359,48 +3344,108 @@ num_teams = 1;
       auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
       auto local_kokkos_part_xadj = this->kokkos_part_xadj;
       auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
+//      mj_scalar_t minus_EPSILON = -local_sEpsilon;
 
-      typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+      // Pull these values from device so we can set up a good team count estimate.
+      // This should probably eventually be refactored.
+      mj_part_t conccurent_current_part = current_work_part + working_kk;
+      mj_lno_t coordinate_begin_index;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+        set_single = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
+      }, coordinate_begin_index);
+      mj_lno_t coordinate_end_index;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+        set_single = local_kokkos_part_xadj(conccurent_current_part);
+      }, coordinate_end_index);
+
+      // total points to be processed by all teams
+      mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+
+      // determine a stride for each team
+      // TODO: How to best determine this and should we be concerned if teams
+      // get smaller coord counts than their warp sizes?
+      const int min_coords_per_team = 32; // abrbitrary ... TODO
+      int stride = min_coords_per_team;
+      if(stride > num_working_points) {
+        stride = num_working_points;
+      }
+
+      int num_teams = num_working_points / stride;
+      if((num_working_points % stride) > 0) {
+        ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
+      }
+
+      const int max_teams = 1024;
+      if(num_teams > max_teams) {
+        num_teams = max_teams;
+        stride = num_teams / num_working_points + 1;
+      }
 
       // initializations for part weights
       Kokkos::parallel_for (total_part_count, KOKKOS_LAMBDA(size_t i) {
         kokkos_my_current_part_weights(i) = 0;
       });
 
-      //initialize the left and right closest coordinates to their max value.
-      Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t i) {
-        kokkos_my_current_left_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
-        kokkos_my_current_right_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
-      });
-
-      mj_part_t conccurent_current_part = current_work_part + working_kk;
-      mj_scalar_t minus_EPSILON = -local_sEpsilon;
-
       // start the outer loop on teams
       Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(num_teams, Kokkos::AUTO());
+      typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
       Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-        // setup some values which are loaded from device
-        // Note these used to be outside this method but we're moved here so the two nested loops
-        // could be contained in this method. We may eventually want to reorganize what gets
-        // passed to this method.
-        mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
-        mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
 
         // Now begin the internal loop
         // Divide up the coordinates between the teams
-        mj_lno_t stride = (coordinate_end_index - coordinate_begin_index) / num_teams;
         mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
         mj_lno_t team_end_index = team_begin_index + stride;
         if(team_end_index > coordinate_end_index) {
-          team_end_index = coordinate_end_index;
+          team_end_index = coordinate_end_index; // the last team may have less work than the other teams
         }
 
-        printf("Team %d Thread: %d begines internal loop over %d coordinates from %d to %d - the team coorinrange is %d to %d.\n",
-          (int) team_member.league_rank(), (int) team_member.team_rank(), (int)(coordinate_end_index - coordinate_begin_index),
+        printf("Cnt: %d   Team %d of %d teams, Thread: %d begines internal loop over %d coordinates from %d to %d - the team coord range is %d to %d,    stride: %d.\n",
+          (int) num_working_points,
+          (int) team_member.league_rank(), (int) num_teams, (int) team_member.team_rank(), (int)(coordinate_end_index - coordinate_begin_index),
           (int) coordinate_begin_index, (int) coordinate_end_index,
-          (int) team_begin_index, (int) team_end_index);
+          (int) team_begin_index, (int) team_end_index, (int) stride);
 
+        Kokkos::parallel_for(
+          Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
+          [=] (mj_lno_t & ii) {
+
+          int i = local_kokkos_coordinate_permutations(ii);
+          mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
+          mj_scalar_t w = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(i,0);
+
+          bool bOnCut = false;
+          for(mj_lno_t cut = 0; cut < num_cuts; ++cut) {
+            mj_scalar_t cut_coord = kokkos_temp_current_cut_coords(cut);
+            mj_scalar_t distance_to_cut = coord - cut_coord;
+            mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
+
+            if(abs_distance_to_cut < local_sEpsilon) {
+              bOnCut = true;
+              int assign_index = cut * 2 + 1;
+              Kokkos::atomic_add(&kokkos_my_current_part_weights(assign_index), w);
+              local_kokkos_assigned_part_ids(i) = assign_index;
+            }
+          }
+
+          if(!bOnCut) {
+            for(mj_lno_t part = 0; part <= num_cuts; ++part) {
+              mj_scalar_t a = (part>0) ? kokkos_temp_current_cut_coords(part-1) : -99999999.9;
+              mj_scalar_t b = (part<num_cuts) ? kokkos_temp_current_cut_coords(part) : 9999999.9; // temp test
+              if(coord > a && coord < b) {
+                int assign_index = part * 2;
+                Kokkos::atomic_add(&kokkos_my_current_part_weights(assign_index), w);
+                local_kokkos_assigned_part_ids(i) = assign_index;
+              }
+            }
+          }
+
+        });
+
+
+
+/*
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
           [=] (mj_lno_t & ii) {
@@ -3431,41 +3476,25 @@ num_teams = 1;
                         if(abs_distance_to_cut < local_sEpsilon){
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(j * 2 + 1), w);
                                 local_kokkos_assigned_part_ids(i) = j * 2 + 1;
-/*
-                                Kokkos::atomic_exchange(&kokkos_my_current_left_closest(j), coord);
-                                Kokkos::atomic_exchange(&kokkos_my_current_right_closest(j), coord);
-*/
                                 mj_part_t kk = j + 1;
                                 while(kk < num_cuts){
-                                        distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
+                                        distance_to_cut = ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
                                         if(distance_to_cut < local_sEpsilon){
                                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(kk * 2 + 1), w);
-/*
-                                                Kokkos::atomic_exchange(&kokkos_my_current_left_closest(kk), coord);
-                                                Kokkos::atomic_exchange(&kokkos_my_current_right_closest(kk), coord);
-*/
                                                 kk++;
                                         }
                                         else{
-/*
-                                                if(coord - kokkos_my_current_left_closest(kk) > local_sEpsilon){
-                                                         Kokkos::atomic_exchange(&kokkos_my_current_left_closest(kk), coord);
-                                                }
-*/
                                                 break;
                                         }
                                 }
 
                                 kk = j - 1;
                                 while(kk >= 0){
-                                        distance_to_cut =ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
+                                        distance_to_cut = ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
                                         if(distance_to_cut < local_sEpsilon){
                                                 kk--;
                                         }
                                         else{
-//                                                if(kokkos_my_current_right_closest(kk) - coord > local_sEpsilon){
-//                                                    Kokkos::atomic_exchange(&kokkos_my_current_right_closest(kk), coord);
-//                                                }
                                                 break;
                                         }
                                 }
@@ -3510,41 +3539,27 @@ num_teams = 1;
                         if(is_on_right_of_cut){
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part + 2), w);
                                 local_kokkos_assigned_part_ids(i) = 2 * last_compared_part + 2;
-/*
-                                if(kokkos_my_current_right_closest(last_compared_part) - coord > local_sEpsilon){
-                                    Kokkos::atomic_exchange(&kokkos_my_current_right_closest(last_compared_part), coord);
-                                }
-                                if(last_compared_part+1 < num_cuts){
-                                        if(coord - kokkos_my_current_left_closest(last_compared_part + 1) > local_sEpsilon){
-                                           Kokkos::atomic_exchange(&kokkos_my_current_left_closest(last_compared_part + 1), coord);
-                                        }
-                                }
-*/
                         }
                         else if(is_on_left_of_cut){
                                 Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part), w);
                                 local_kokkos_assigned_part_ids(i) = 2 * last_compared_part;
-/*
-                                if(coord - kokkos_my_current_left_closest(last_compared_part) > local_sEpsilon){
-                                       Kokkos::atomic_exchange(&kokkos_my_current_left_closest(last_compared_part), coord);
-                                }
-                                if(last_compared_part-1 >= 0){
-                                        if(kokkos_my_current_right_closest(last_compared_part -1) - coord > local_sEpsilon){
-                                            Kokkos::atomic_exchange(&kokkos_my_current_right_closest(last_compared_part-1), coord);
-                                        }
-                                }
-*/
                         }
                 }
         }); // ends the nested 2nd loop
+*/
 
-        team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
+     }); // ends the outer loop over teams
 
-        if(team_member.team_rank() == 0) {
-
-          // prefix sum computation.
-          //we need prefix sum for each part to determine cut positions.
-          for (size_t i = 1; i < total_part_count; ++i){
+     // Finalize the loop - TODO: optimize
+     // Putting this inside above loop surrounded by barriers and executing
+     // only for league 0 team 0 did not work .... but not sure why yet.
+     // Seems it should be the same result.
+     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
+     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+     Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+       // prefix sum computation.
+       //we need prefix sum for each part to determine cut positions.
+       for (size_t i = 1; i < total_part_count; ++i){
                 // check for cuts sharing the same position; all cuts sharing a position
                 // have the same weight == total weight for all cuts sharing the position.
                 // don't want to accumulate that total weight more than once.
@@ -3557,19 +3572,21 @@ num_teams = 1;
                         kokkos_my_current_part_weights(i) = kokkos_my_current_part_weights(i-2);
                         continue;
                 }
-                //otherwise do the prefix sum.
-                kokkos_my_current_part_weights(i) += kokkos_my_current_part_weights(i-1);
-          }
-        }
 
-     }); // ends the outer loop over teams
+          //otherwise do the prefix sum.
+          kokkos_my_current_part_weights(i) += kokkos_my_current_part_weights(i-1);
+        }
+     });     
 
      // TODO: optimize this further ....
-     Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t cut) {
-       mj_lno_t coordinate_begin_index = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
-       mj_lno_t coordinate_end_index = local_kokkos_part_xadj(conccurent_current_part);
-       mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
+      //initialize the left and right closest coordinates to their max value.
+      Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t i) {
+        kokkos_my_current_left_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
+        kokkos_my_current_right_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
+      });
 
+     Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t cut) {
+       mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
        for(mj_lno_t ii = coordinate_begin_index; ii < coordinate_end_index; ++ii) {
          int i = local_kokkos_coordinate_permutations(ii);
          mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
