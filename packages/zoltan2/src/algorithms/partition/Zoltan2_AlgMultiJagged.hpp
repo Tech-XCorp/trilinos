@@ -825,7 +825,9 @@ public: // For CUDA Temp
         mj_part_t current_concurrent_num_parts,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
         mj_part_t total_incomplete_cut_count,
-        std::vector <mj_part_t> &num_partitioning_in_current_dim);
+        std::vector <mj_part_t> &num_partitioning_in_current_dim,
+        Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
+        Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size);
 
     /*! \brief Function that calculates the weights of each part according to given part cut coordinates.
      * Function is called inside the parallel region. Thread specific work arrays are provided
@@ -1493,6 +1495,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     std::vector <mj_scalar_t> coord_dim_mins(this->coord_dim);
     std::vector <mj_scalar_t> coord_dim_maxs(this->coord_dim);
 
+    // Need a device counter - how best to allocate?
+    // Putting this allocation in the loops is very costly so moved out here.
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
+    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
+
     for (int i = 0; i < this->recursion_depth; ++i){
 
         //partitioning array. size will be as the number of current partitions and this
@@ -1754,7 +1761,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     current_concurrent_num_parts,
                     kokkos_current_cut_coordinates,
                     total_incomplete_cut_count,
-                    num_partitioning_in_current_dim);
+                    num_partitioning_in_current_dim,
+                    view_rectilinear_cut_count,
+                    view_total_reduction_size);
                 this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part B()");
             }
             else {
@@ -2906,16 +2915,43 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
-    std::vector <mj_part_t> &num_partitioning_in_current_dim){
+    std::vector <mj_part_t> &num_partitioning_in_current_dim,
+    Kokkos::View<mj_part_t *, typename mj_node_t::device_type> view_rectilinear_cut_count,
+    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size){
 
-    // TODO: Remove this view? How to clean this up?
-    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-      KOKKOS_LAMBDA (const int dummy) {
-       view_rectilinear_cut_count(0) = 0;    
+
+static int counter = 0;
+++counter;
+auto start = std::chrono::steady_clock::now();
+
+#define NUM_SUMS 10
+double sums[NUM_SUMS];
+for(int n = 0; n < NUM_SUMS; ++n) {
+  sums[n] = 0.0;
+}
+#define START_CLOCK(n) auto start_##n = std::chrono::steady_clock::now();
+#define END_CLOCK(n) \
+auto finish_##n = std::chrono::steady_clock::now(); \
+double elapsed_seconds_##n = std::chrono::duration_cast< \
+  std::chrono::duration<double> >(finish_##n - start_##n).count(); \
+sums[n] += elapsed_seconds_##n * 1000.0;
+
+
+START_CLOCK(0)
+
+    // reset the 2 counters
+    // TODO: Not completely sure these need resetting - I moved them outside the loop to avoid
+    // expensive view allocations at this level which were killing performance.
+    // TODO: Probably refactor the handling of these counters anyways.
+    Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA (int n) {
+      view_rectilinear_cut_count(0) = 0;
+      view_total_reduction_size(0) = 0;
     });
 
+END_CLOCK(0)
+
+START_CLOCK(1)
     this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 
     Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
@@ -2925,25 +2961,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                                  &num_partitioning_in_current_dim ,
                                  current_work_part ,
                                  current_concurrent_num_parts);
-/*
-    // TODO: I'm using a 1 element view in the refactor but needs to be cleaned up
-    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_total_incomplete_cut_count("view_total_incomplete_cut_count", 1);
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-      KOKKOS_LAMBDA (const int dummy) {
-       view_total_incomplete_cut_count(0) = total_incomplete_cut_count;
-    });
-*/
+END_CLOCK(1)
 
-    // TODO: I'm using a 1 element view in the refactor but needs to be cleaned up
-    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-      KOKKOS_LAMBDA (const int dummy) {
-       view_total_reduction_size(0) = 0;;
-    });
+START_CLOCK(2)
+
+END_CLOCK(2)
 
     bool bSingleProcess = (this->comm->getSize() == 1);
+
+
+START_CLOCK(3)
 
     // For now copy the std::vector to a host and then to the device
     // TODO: The original std::vector should be refactored to a view
@@ -2969,6 +2996,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       pTemp_num_partitioning_in_current_dim(n) = device_num_partitioning_in_current_dim(n);
     });
 
+END_CLOCK(3)
+
+START_CLOCK(4)
+
     // use locals to avoid capturing this for cuda  
     auto local_kokkos_thread_part_weights = kokkos_thread_part_weights;
     auto local_kokkos_thread_cut_left_closest_point = kokkos_thread_cut_left_closest_point;
@@ -2990,6 +3021,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_target_part_weights = kokkos_target_part_weights;
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
+
+END_CLOCK(4)
 
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
@@ -3064,6 +3097,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                         std::pair<mj_lno_t, mj_lno_t>(
                         concurrent_cut_shifts,
                         local_kokkos_temp_cut_coords.size()));
+
                     this->mj_1D_part_get_thread_part_weights(
                         current_concurrent_num_parts,
                         kk,
@@ -3296,6 +3330,13 @@ Kokkos::parallel_for((int) local_kokkos_temp_cut_coords.size(), KOKKOS_LAMBDA(in
    
      }); // end of the outer mj_1D_part loop which sets teams and Kokkos::AUTO for threads
 
+auto finish = std::chrono::steady_clock::now();
+double elapsed_seconds = std::chrono::duration_cast<
+  std::chrono::duration<double> >(finish - start).count();
+
+printf("Cnt: %d   Sum time for mj_1D_part: %.3f: %.3f %.3f %.3f %.3f %.3f %.3f\n", counter, (float) (1000.0*elapsed_seconds),
+    sums[0], sums[1], sums[2], sums[3], sums[4], sums[5]);
+
     delete reductionOp;
 }
 
@@ -3344,7 +3385,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
       auto local_kokkos_part_xadj = this->kokkos_part_xadj;
       auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
-//      mj_scalar_t minus_EPSILON = -local_sEpsilon;
 
       // Pull these values from device so we can set up a good team count estimate.
       // This should probably eventually be refactored.
@@ -3401,12 +3441,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           team_end_index = coordinate_end_index; // the last team may have less work than the other teams
         }
 
+/*
         printf("Cnt: %d   Team %d of %d teams, Thread: %d begines internal loop over %d coordinates from %d to %d - the team coord range is %d to %d,    stride: %d.\n",
           (int) num_working_points,
           (int) team_member.league_rank(), (int) num_teams, (int) team_member.team_rank(), (int)(coordinate_end_index - coordinate_begin_index),
           (int) coordinate_begin_index, (int) coordinate_end_index,
           (int) team_begin_index, (int) team_end_index, (int) stride);
+*/
 
+/*
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
           [=] (mj_lno_t & ii) {
@@ -3442,10 +3485,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
 
         });
+*/
 
 
-
-/*
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
           [=] (mj_lno_t & ii) {
@@ -3521,7 +3563,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                                         if(j < num_cuts - 1){
                                                 mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j + 1);
 
-                                                if(distance_to_next_cut < minus_EPSILON){
+                                                if(distance_to_next_cut < (-local_sEpsilon)){
                                                   _break = true;
                                                 }
                                         }
@@ -3546,7 +3588,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                         }
                 }
         }); // ends the nested 2nd loop
-*/
 
      }); // ends the outer loop over teams
 
@@ -6375,12 +6416,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     }
     auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
-printf("begin main recursion loop\n");
+auto start = std::chrono::steady_clock::now();
+
+    // Need a device counter - how best to allocate?
+    // Putting this allocation in the loops is very costly so moved out here.
+    Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
+    Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
 
     for (int i = 0; i < this->recursion_depth; ++i){
-
-
-printf("recursion depth %d\n", i);
 
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
@@ -6662,8 +6705,6 @@ printf("recursion depth %d\n", i);
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
 
-printf("mj_1D_part current_work_part: %d  current_concurrent_num_parts: %d\n",
-  (int) current_work_part, (int) current_concurrent_num_parts);
 
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
@@ -6672,8 +6713,9 @@ printf("mj_1D_part current_work_part: %d  current_concurrent_num_parts: %d\n",
                     current_concurrent_num_parts,
                     kokkos_current_cut_coordinates,
                     total_incomplete_cut_count,
-                    num_partitioning_in_current_dim
-                    );
+                    num_partitioning_in_current_dim,
+                    view_rectilinear_cut_count,
+                    view_total_reduction_size);
                 this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
             }
             //create new part chunks
@@ -6890,6 +6932,13 @@ printf("mj_1D_part current_work_part: %d  current_concurrent_num_parts: %d\n",
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
       }
     }
+
+
+auto finish = std::chrono::steady_clock::now();
+double elapsed_seconds = std::chrono::duration_cast<
+  std::chrono::duration<double> >(finish - start).count();
+printf("Elapsed ms: %.6f\n", (float)(elapsed_seconds*1000.0));
+
     // Partitioning is done
     delete future_num_part_in_parts;
     delete next_future_num_parts_in_parts;
