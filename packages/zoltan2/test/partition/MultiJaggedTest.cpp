@@ -599,7 +599,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     }
 
     delete gg;
-/*
+
     // Run 1st test with MV
     // Always uses UVM
     RCP<Tpetra::Map<zlno_t, zgno_t, znode_t> > mp = rcp(
@@ -713,7 +713,6 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     delete problem;
     delete ia;
     return ierr;
-*/
 }
 
 // Run this node type for the BasicVectorAdapter
@@ -1294,7 +1293,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-#define RUN_UVM_OFF_TEST
+// #define RUN_UVM_OFF_TEST
 
 int main(int argc, char *argv[])
 {
@@ -1327,8 +1326,10 @@ int main(int argc, char *argv[])
     bool test_boxes = false;
     bool rectilinear = false;
 
+#ifdef RUN_UVM_OFF_TEST
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  uvm_off_node_t;
+#endif
 
     try{
         try {

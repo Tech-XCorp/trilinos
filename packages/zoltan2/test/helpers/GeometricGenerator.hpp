@@ -68,6 +68,11 @@
 
 #include <zoltan.h>
 
+// some tm vector code will block a conversion to uvm off
+// for now I'm just disabling anything not used in the tests and will return
+// to determine which pieces we really need.
+#define TEMP_DISABLE_TMVECTOR_CODE // refactoring temp
+
 #ifdef _MSC_VER
 #define NOMINMAX
 #include <windows.h>
@@ -119,6 +124,9 @@ int getNumObj(void *data, int *ierr)
   return dots_->coordinates->getLocalLength();
 }
 //////////////////////////
+
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
+
 template <typename tMVector_t>
 void getCoords(void *data, int numGid, int numLid,
   int numObj, ZOLTAN_ID_PTR gids, ZOLTAN_ID_PTR lids,
@@ -152,6 +160,9 @@ void getCoords(void *data, int numGid, int numLid,
     }
   }
 }
+#endif // TEMP_DISABLE_TMVECTOR_CODE
+
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
 
 template <typename tMVector_t>
 int getDim(void *data, int *ierr)
@@ -162,6 +173,10 @@ int getDim(void *data, int *ierr)
 
   return dim;
 }
+
+#endif // TEMP_DISABLE_TMVECTOR_CODE
+
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
 
 //////////////////////////
 template <typename tMVector_t>
@@ -192,6 +207,7 @@ void getObjList(void *data, int numGid, int numLid,
   }
 }
 
+#endif // TEMP_DISABLE_TMVECTOR_CODE
 
 enum shape {SQUARE, RECTANGLE, CIRCLE, CUBE, RECTANGULAR_PRISM, SPHERE};
 const std::string shapes[] = {"SQUARE", "RECTANGLE", "CIRCLE", "CUBE", "RECTANGULAR_PRISM", "SPHERE"};
@@ -937,9 +953,10 @@ private:
   std::string outfile;
   float perturbation_ratio;
 
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> tMVector_t;
   typedef Tpetra::Map<lno_t, gno_t, node_t> tMap_t;
-
+#endif
 
   template <typename tt>
   tt getParamVal( const Teuchos::ParameterEntry& pe, const std::string &paramname){
@@ -1736,7 +1753,10 @@ public:
 
 
     if (this->predistribution){
+      throw std::logic_error("Temp disabled predistribution code for cuda refactoring. This needs to be reimplemented.\n");
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
     	redistribute();
+#endif // TEMP_DISABLE_TMVECTOR_CODE
     }
 
 
@@ -2393,6 +2413,8 @@ public:
 	  }
   }
 
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
+
   //calls MJ for p = numProcs
   int predistributeMJ(int *coordinate_grid_parts){
 	  int coord_dim = this->coordinate_dimension;
@@ -2473,8 +2495,13 @@ public:
 	  return 0;
   }
 
+#endif // #ifndef TEMP_DISABLE_TMVECTOR_CODE
+
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
+
   //calls RCP for p = numProcs
   int predistributeRCB(int *coordinate_grid_parts){
+
 	  int rank = this->myRank;
 	  int nprocs = this->worldSize;
 	  DOTS<tMVector_t> dots_;
@@ -2657,29 +2684,35 @@ public:
 	  MEMORY_CHECK(doMemory && rank==0, "After Zoltan_Destroy");
 
 	  delete dots_.coordinates;
+
 	  return 0;
-}
-  void redistribute(){
-	  int *coordinate_grid_parts = new int[this->numLocalCoords];
-	  switch (this->predistribution){
-	  case 1:
-		  this->predistributeRCB(coordinate_grid_parts);
-		  break;
-	  case 2:
-
-		  this->predistributeMJ(coordinate_grid_parts);
-		  break;
-	  case 3:
-		  //block
-		  blockPartition(coordinate_grid_parts);
-		  break;
-	  }
-	  this->distribute_points(coordinate_grid_parts);
-
-	  delete []coordinate_grid_parts;
-
-
   }
+
+#endif // TEMP_DISABLE_TMVECTOR_CODE
+
+#ifndef TEMP_DISABLE_TMVECTOR_CODE
+
+  void redistribute(){
+      int *coordinate_grid_parts = new int[this->numLocalCoords];
+      switch (this->predistribution){
+      case 1:
+        this->predistributeRCB(coordinate_grid_parts);
+        break;
+      case 2:
+
+        this->predistributeMJ(coordinate_grid_parts);
+        break;
+      case 3:
+        //block
+        blockPartition(coordinate_grid_parts);
+        break;
+      }
+      this->distribute_points(coordinate_grid_parts);
+
+      delete []coordinate_grid_parts;
+  }
+
+#endif // TEMP_DISABLE_TMVECTOR_CODE
 
   //############################################################//
   ///########END Predistribution functions######################//

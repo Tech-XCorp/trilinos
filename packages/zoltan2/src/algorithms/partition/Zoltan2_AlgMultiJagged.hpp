@@ -6127,11 +6127,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           set_single = local_kokkos_part_xadj(i);
         }, coordinate1);
 
-        mj_lno_t coordinate2;
-        Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-          set_single = local_kokkos_part_xadj(i-1);
-        }, coordinate2);
+        mj_lno_t coordinate2 = 0;
+        if(i > 0) {
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+            set_single = local_kokkos_part_xadj(i-1);
+          }, coordinate2);
+        }
 
         mj_lno_t end = coordinate1;
         if(i > 0) begin = coordinate2;
