@@ -2964,19 +2964,7 @@ double elapsed_seconds_##n = std::chrono::duration_cast< \
   std::chrono::duration<double> >(finish_##n - start_##n).count(); \
 sums[n] += elapsed_seconds_##n * 1000.0;
 
-
-START_CLOCK(0)
-
-    // reset the 2 counters
-    // TODO: Not completely sure these need resetting - I moved them outside the loop to avoid
-    // expensive view allocations at this level which were killing performance.
-    // TODO: Probably refactor the handling of these counters anyways.
-    Kokkos::parallel_for(Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-      KOKKOS_LAMBDA (int n) {
-      view_rectilinear_cut_count(0) = 0;
-      view_total_reduction_size(0) = 0;
-    });
-
+START_CLOCK(1)
 
     this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 
@@ -2987,6 +2975,10 @@ START_CLOCK(0)
                                  &num_partitioning_in_current_dim ,
                                  current_work_part ,
                                  current_concurrent_num_parts);
+
+END_CLOCK(1)
+
+START_CLOCK(2)
 
     bool bSingleProcess = (this->comm->getSize() == 1);
 
@@ -3012,9 +3004,9 @@ START_CLOCK(0)
     auto local_kokkos_global_rectilinear_cut_weight = kokkos_global_rectilinear_cut_weight;
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
-END_CLOCK(0)
+END_CLOCK(2)
 
-START_CLOCK(1)
+START_CLOCK(3)
 
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
@@ -3024,6 +3016,11 @@ START_CLOCK(1)
       if(team_member.league_rank() == 0) {
         Kokkos::single(Kokkos::PerTeam(team_member), [=]()
         {
+   
+          // these need to be initialized
+          view_rectilinear_cut_count(0) = 0;
+          view_total_reduction_size(0) = 0;
+
           //initialize the lower and upper bounds of the cuts.
           mj_part_t next = 0;
           for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i){
@@ -3047,9 +3044,9 @@ START_CLOCK(1)
       }
     });
 
-END_CLOCK(1)
+END_CLOCK(3)
 
-START_CLOCK(2)
+START_CLOCK(4)
 
         while (total_incomplete_cut_count != 0) {
             mj_part_t concurrent_cut_shifts = 0;
@@ -3059,12 +3056,12 @@ START_CLOCK(2)
                 mj_part_t num_cuts = num_parts - 1;
                 size_t total_part_count = num_parts + size_t (num_cuts);
 
-        // TODO Clean up                 
-        mj_part_t kk_kokkos_my_incomplete_cut_count;
-        Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-          set_single = local_kokkos_my_incomplete_cut_count(kk);
-        }, kk_kokkos_my_incomplete_cut_count);
+                // TODO Clean up                 
+                mj_part_t kk_kokkos_my_incomplete_cut_count;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+                  set_single = local_kokkos_my_incomplete_cut_count(kk);
+                }, kk_kokkos_my_incomplete_cut_count);
 
                 if (kk_kokkos_my_incomplete_cut_count > 0){
                     //although isDone shared, currentDone is private and same for all.
@@ -3125,17 +3122,18 @@ START_CLOCK(2)
                 local_kokkos_thread_part_weights
             );
 
-Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
-            //now sum up the results of mpi processors.
+            // Rewrite as single TODO
+            Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
+                //now sum up the results of mpi processors.
                 if(!bSingleProcess){
                         // TODO: Ignore this code for cuda right now - not worrying about parallel build yet
-#ifndef KOKKOS_ENABLE_CUDA
+              #ifndef KOKKOS_ENABLE_CUDA
                         // TODO: Remove use of data() - refactor in progress
                         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
                                         view_total_reduction_size(0),
                                         this->kokkos_total_part_weight_left_right_closests.data(),
                                         this->kokkos_global_total_part_weight_left_right_closests.data());
-#endif
+              #endif
                 }
                 else {
                         // TODO: Optimize and fix this c cast - clean up use of the view
@@ -3144,7 +3142,7 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                             local_kokkos_total_part_weight_left_right_closests(n);
                         }
                 }
-});
+            });
 
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
@@ -3157,12 +3155,13 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                 //if the cuts of this cut has already been completed.
                 //nothing to do for this part.
                 //just update the shift amount and proceed.
-        // TODO Clean up                 
-        mj_part_t kk_kokkos_my_incomplete_cut_count;
-        Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-          set_single = local_kokkos_my_incomplete_cut_count(kk);
-        }, kk_kokkos_my_incomplete_cut_count);
+
+                // TODO Clean up                 
+                mj_part_t kk_kokkos_my_incomplete_cut_count;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+                  set_single = local_kokkos_my_incomplete_cut_count(kk);
+                }, kk_kokkos_my_incomplete_cut_count);
 
                 if (kk_kokkos_my_incomplete_cut_count == 0) {
                         cut_shift += num_cuts;
@@ -3262,33 +3261,35 @@ Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                 cut_shift += num_cuts;
                 tlr_shift += (num_total_part + 2 * num_cuts);
 
-        Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-          set_single = local_kokkos_my_incomplete_cut_count(kk);
-        }, kk_kokkos_my_incomplete_cut_count);
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+                  set_single = local_kokkos_my_incomplete_cut_count(kk);
+                }, kk_kokkos_my_incomplete_cut_count);
 
-                  mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
-                  Kokkos::atomic_add(&total_incomplete_cut_count, -iteration_complete_cut_count);             
-     }
+                mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
+                Kokkos::atomic_add(&total_incomplete_cut_count, -iteration_complete_cut_count);             
+            }
+
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
  
                   // swap the cut coordinates for next iteration
 		  // TODO: Need to figure this out - how to swap cleanly with Cuda/Kokkos
                   // This is inefficient as a test to get some basic cuda up and running
-Kokkos::parallel_for((int) local_kokkos_temp_cut_coords.size(), KOKKOS_LAMBDA(int n) { 
-              //    for(int n = 0; n < (int) local_kokkos_temp_cut_coords.size(); ++n) {
+                  Kokkos::parallel_for((int) local_kokkos_temp_cut_coords.size(), KOKKOS_LAMBDA(int n) { 
+                    // for(int n = 0; n < (int) local_kokkos_temp_cut_coords.size(); ++n) {
                     auto t = local_kokkos_temp_cut_coords(n);
                     local_kokkos_temp_cut_coords(n) = local_kokkos_cut_coordinates_work_array(n);
                     local_kokkos_cut_coordinates_work_array(n) = t;
                   });
             }
+
         } // end of the while loop
 
-END_CLOCK(2)
+END_CLOCK(4)
 
-START_CLOCK(3)
+START_CLOCK(5)
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy3 (1, 1);
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy3 (1, Kokkos::AUTO());
     Kokkos::parallel_for (policy3, KOKKOS_LAMBDA(member_type team_member) {
 
       // Needed only if keep_cuts; otherwise can simply swap array pointers
@@ -3329,14 +3330,14 @@ START_CLOCK(3)
    
      }); // end of the outer mj_1D_part loop which sets teams and Kokkos::AUTO for threads
 
-END_CLOCK(3)
+END_CLOCK(5)
 
 auto finish = std::chrono::steady_clock::now();
 double elapsed_seconds = std::chrono::duration_cast<
   std::chrono::duration<double> >(finish - start).count();
 
-printf("Cnt: %d   Sum time for mj_1D_part: %.3f: %.3f %.3f %.3f %.3f %.3f %.3f\n", counter, (float) (1000.0*elapsed_seconds),
-    sums[0], sums[1], sums[2], sums[3], sums[4], sums[5]);
+//printf("Cnt: %d   Sum time for mj_1D_part: %.3f:         %.3f %.3f %.3f %.3f %.3f %.3f\n", counter, (float) (1000.0*elapsed_seconds),
+//    sums[0], sums[1], sums[2], sums[3], sums[4], sums[5]);
 
     delete reductionOp;
 }
