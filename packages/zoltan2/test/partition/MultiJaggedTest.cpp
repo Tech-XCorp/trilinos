@@ -563,6 +563,9 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   Teuchos::RCP<Teuchos::ParameterList> params,
   Zoltan2::PartitioningProblem<Zoltan2::XpetraMultiVectorAdapter<tMVector_t>> *problem,
   RCP<tMVector_t> coords) {
+
+printf("##### compareWithBasicVectorAdapterTest\n");
+
   
   typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     
@@ -631,7 +634,14 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
            << "; BMV " << bvproblem->getSolution().getPartListView()[i]
            << "  :  FAIL" << endl;
         ++ierr;
-      }
+    }
+    else {
+      cout << bvme << " " << i << " "
+           << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
+           << ": XMV " << problem->getSolution().getPartListView()[i]
+           << "; BMV " << bvproblem->getSolution().getPartListView()[i]
+           << "  :  PASS" << endl;
+    }
   }
 
   delete [] bvgids;
@@ -672,9 +682,11 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     int ierr = 0;
     Teuchos::ParameterList geoparams("geo params");
     readGeoGenParams(paramFile, geoparams, comm);
-    GeometricGen::GeometricGenerator<zscalar_t, zlno_t, zgno_t, bv_use_node_t> *gg =
-    new GeometricGen::GeometricGenerator<zscalar_t,zlno_t,zgno_t, bv_use_node_t>(geoparams,
+
+    GeometricGen::GeometricGenerator<zscalar_t, zlno_t, zgno_t, znode_t> *gg =
+      new GeometricGen::GeometricGenerator<zscalar_t,zlno_t,zgno_t, znode_t>(geoparams,
                                                                       comm);
+
     int coord_dim = gg->getCoordinateDimension();
     int numWeightsPerCoord = gg->getNumWeights();
     zlno_t numLocalPoints = gg->getNumLocalCoords();
@@ -774,7 +786,10 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         problem->solve();
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
-
+    {
+      ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
+        comm, params, problem, coords);
+    }
 
     // create metric object
 
@@ -788,7 +803,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr = run_pointAssign_tests<inputAdapter_t>(problem, coords);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, coords);
     }
 
@@ -893,7 +908,7 @@ int testFromDataFile(
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
-      compareWithBasicVectorAdapterTest<bv_use_node_t>(
+      ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
         comm, params, problem, coords);
     }
 
@@ -1074,7 +1089,7 @@ int testFromSeparateDataFiles(
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
-      compareWithBasicVectorAdapterTest<bv_use_node_t>(
+      ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
         comm, params, problem, coords);
     }
 
@@ -1102,7 +1117,7 @@ int testFromSeparateDataFiles(
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr = run_pointAssign_tests<inputAdapter_t>(problem, coords);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, coords);
     }
 
@@ -1307,13 +1322,12 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-// #define RUN_UVM_OFF_TEST
+#define RUN_UVM_OFF_TEST
 
 int main(int argc, char *argv[])
 {
     Teuchos::GlobalMPISession session(&argc, &argv);
-    Kokkos::initialize (argc, argv);
-    //cout << argv << endl;
+    Kokkos::ScopeGuard kokkosScope(argc, argv);
 
     RCP<const Teuchos::Comm<int> > tcomm = Teuchos::DefaultComm<int>::getComm();
 
@@ -1426,6 +1440,7 @@ int main(int argc, char *argv[])
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
 #ifdef RUN_UVM_OFF_TEST
+/*
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
@@ -1433,6 +1448,7 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
+*/
 #endif
 
             break;
@@ -1455,6 +1471,5 @@ int main(int argc, char *argv[])
             cerr << s << endl;
     }
 
-    Kokkos::finalize ();
     return 0;
 }
