@@ -558,6 +558,7 @@ void readGeoGenParams(string paramFileName, Teuchos::ParameterList &geoparams, c
     }
 }
 
+template<class bv_use_node_t>
 int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         int numParts, float imbalance,
         std::string paramFile, std::string pqParts,
@@ -576,8 +577,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     int ierr = 0;
     Teuchos::ParameterList geoparams("geo params");
     readGeoGenParams(paramFile, geoparams, comm);
-    GeometricGen::GeometricGenerator<zscalar_t, zlno_t, zgno_t, znode_t> *gg =
-    new GeometricGen::GeometricGenerator<zscalar_t,zlno_t,zgno_t,znode_t>(geoparams,
+    GeometricGen::GeometricGenerator<zscalar_t, zlno_t, zgno_t, bv_use_node_t> *gg =
+    new GeometricGen::GeometricGenerator<zscalar_t,zlno_t,zgno_t, bv_use_node_t>(geoparams,
                                                                       comm);
     int coord_dim = gg->getCoordinateDimension();
     int numWeightsPerCoord = gg->getNumWeights();
@@ -598,7 +599,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     }
 
     delete gg;
-
+/*
+    // Run 1st test with MV
+    // Always uses UVM
     RCP<Tpetra::Map<zlno_t, zgno_t, znode_t> > mp = rcp(
                 new Tpetra::Map<zlno_t, zgno_t, znode_t>(numGlobalPoints,
                                                       numLocalPoints, 0, comm));
@@ -640,10 +643,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     else {
         params =RCP<Teuchos::ParameterList>(new Teuchos::ParameterList, true);
     }
-/*
     params->set("memory_output_stream" , "std::cout");
     params->set("memory_procs" , 0);
-    */
+
     params->set("timer_output_stream" , "std::cout");
 
     params->set("algorithm", "multijagged");
@@ -711,6 +713,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     delete problem;
     delete ia;
     return ierr;
+*/
 }
 
 // Run this node type for the BasicVectorAdapter
@@ -1291,6 +1294,8 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
+#define RUN_UVM_OFF_TEST
+
 int main(int argc, char *argv[])
 {
     Teuchos::GlobalMPISession session(&argc, &argv);
@@ -1375,7 +1380,6 @@ int main(int argc, char *argv[])
 
 	    // TODO: Temporary setup to run UVM on and off at same time
 
-#define RUN_UVM_OFF_TEST
 #ifdef RUN_UVM_OFF_TEST
             ierr = testFromDataFile<uvm_off_node_t>(tcomm,numParts, imbalance,fname,
                     pqParts, paramFile, k,
@@ -1399,13 +1403,23 @@ int main(int argc, char *argv[])
             break;
 #endif
         default:
-            ierr = GeometricGenInterface(tcomm, numParts, imbalance, fname,
+            ierr = GeometricGenInterface<znode_t>(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
+#ifdef RUN_UVM_OFF_TEST
+            ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
+                    pqParts, paramFile, k,
+                    migration_check_option,
+                    migration_all_to_all_type,
+                    migration_imbalance_cut_off,
+                    migration_processor_assignment_type,
+                    migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
+#endif
+
             break;
         }
 
