@@ -920,6 +920,7 @@ private:
 
 };
 
+
 template <typename scalar_t, typename lno_t, typename gno_t, typename node_t>
 class GeometricGenerator {
 private:

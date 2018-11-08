@@ -7888,21 +7888,22 @@ void Zoltan2_AlgMJ<Adapter>::boxAssign(
           if ((*partBoxes)[i].boxesOverlap(dim, lower, upper)) {
             nPartsFound++;
             partlist.push_back((*partBoxes)[i].getpId());
-
-//            std::cout << "Given box (";
-//            for (int j = 0; j < dim; j++)
-//              std::cout << lower[j] << " ";
-//            std::cout << ") x (";
-//            for (int j = 0; j < dim; j++)
-//              std::cout << upper[j] << " ";
-//            std::cout << ") overlaps PartBox "
-//                      << (*partBoxes)[i].getpId() << " (";
-//            for (int j = 0; j < dim; j++)
-//              std::cout << (*partBoxes)[i].getlmins()[j] << " ";
-//            std::cout << ") x (";
-//            for (int j = 0; j < dim; j++)
-//              std::cout << (*partBoxes)[i].getlmaxs()[j] << " ";
-//            std::cout << ")" << std::endl;
+/*
+            std::cout << "Given box (";
+            for (int j = 0; j < dim; j++)
+              std::cout << lower[j] << " ";
+            std::cout << ") x (";
+            for (int j = 0; j < dim; j++)
+              std::cout << upper[j] << " ";
+            std::cout << ") overlaps PartBox "
+                      << (*partBoxes)[i].getpId() << " (";
+            for (int j = 0; j < dim; j++)
+              std::cout << (*partBoxes)[i].getlmins()[j] << " ";
+            std::cout << ") x (";
+            for (int j = 0; j < dim; j++)
+              std::cout << (*partBoxes)[i].getlmaxs()[j] << " ";
+            std::cout << ")" << std::endl;
+*/
           }
         }
         Z2_FORWARD_EXCEPTIONS;
@@ -8089,12 +8090,14 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
     for (int j = 0; j < dim; ++j){
       localPartMins[dim * pId + j] = lmins[j];
       localPartMaxs[dim * pId + j] = lmaxs[j];
+      
       /*
-      cout << "me:" << comm->getRank()  <<
+      std::cout << "me:" << comm->getRank()  <<
               " dim * pId + j:"<< dim * pId + j <<
               " localMin:" << localPartMins[dim * pId + j] <<
-              " localMax:" << localPartMaxs[dim * pId + j] << endl;
+              " localMax:" << localPartMaxs[dim * pId + j] << std::endl;
       */
+      
     }
   }
 
@@ -8110,12 +8113,13 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
 
     /*
     for (int j = 0; j < dim; ++j){
-        cout << "me:" << comm->getRank()  <<
+        std::cout << "me:" << comm->getRank()  <<
                 " dim * pId + j:"<< dim * i + j <<
                 " globalMin:" << globalPartMins[dim * i + j] <<
-                " globalMax:" << globalPartMaxs[dim * i + j] << endl;
+                " globalMax:" << globalPartMaxs[dim * i + j] << std::endl;
     }
     */
+    
     pB->push_back(tpb);
   }
   delete []localPartBoundaries;

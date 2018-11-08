@@ -562,11 +562,9 @@ template<class bv_use_node_t>
 int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   Teuchos::RCP<Teuchos::ParameterList> params,
   Zoltan2::PartitioningProblem<Zoltan2::XpetraMultiVectorAdapter<tMVector_t>> *problem,
-  RCP<tMVector_t> coords) {
+  RCP<tMVector_t> coords,
+  Zoltan2::XpetraMultiVectorAdapter<tMVector_t>::scalar_t ** weights = NULL, int numWeightsPerCoord = 0) {
 
-printf("##### compareWithBasicVectorAdapterTest\n");
-
-  
   typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     
   // Run a test with BasicVectorAdapter and xyzxyz format coordinates
@@ -605,7 +603,18 @@ printf("##### compareWithBasicVectorAdapterTest\n");
   }
   std::vector<const inputAdapter_t::scalar_t *> bvwgts;
   std::vector<int> bvwgtstrides;
-
+  
+  if(numWeightsPerCoord > 0) {
+    bvwgts = std::vector<const inputAdapter_t::scalar_t *>(numWeightsPerCoord);
+    bvwgtstrides = std::vector<int>(coords->getLocalLength());
+    for (size_t i = 0; i < coords->getLocalLength(); i++) {
+      bvwgtstrides[i] = numWeightsPerCoord;
+    }
+    for (size_t i = 0; i < numWeightsPerCoord; i++) {
+      bvwgts[i] = weights[i];
+    }
+  }
+    
   bvadapter_t bvia(bvlen, bvgids, bvcoords, bvstrides,
                      bvwgts, bvwgtstrides);
 
@@ -635,6 +644,7 @@ printf("##### compareWithBasicVectorAdapterTest\n");
            << "  :  FAIL" << endl;
         ++ierr;
     }
+    /*  For debugging - plot all success as well
     else {
       cout << bvme << " " << i << " "
            << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
@@ -642,6 +652,7 @@ printf("##### compareWithBasicVectorAdapterTest\n");
            << "; BMV " << bvproblem->getSolution().getPartListView()[i]
            << "  :  PASS" << endl;
     }
+    */
   }
 
   delete [] bvgids;
@@ -735,8 +746,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     vector <int> stride;
     typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     typedef Zoltan2::EvaluatePartition<inputAdapter_t> quality_t;
-    //inputAdapter_t ia(coordsConst);
-    inputAdapter_t *ia = new inputAdapter_t(coords,weights, stride);
+    //inputAdapter_t ia(coordsConst); 
+    inputAdapter_t *ia = new inputAdapter_t(coords, weights, stride);
 
     Teuchos::RCP<Teuchos::ParameterList> params;
 
@@ -788,7 +799,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
       ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
-        comm, params, problem, coords);
+        comm, params, problem, coords,
+        weight, numWeightsPerCoord);
     }
 
     // create metric object
@@ -1322,7 +1334,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-#define RUN_UVM_OFF_TEST
+// #define RUN_UVM_OFF_TEST
 
 int main(int argc, char *argv[])
 {
@@ -1440,7 +1452,6 @@ int main(int argc, char *argv[])
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
 #ifdef RUN_UVM_OFF_TEST
-/*
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
@@ -1448,7 +1459,6 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
-*/
 #endif
 
             break;
