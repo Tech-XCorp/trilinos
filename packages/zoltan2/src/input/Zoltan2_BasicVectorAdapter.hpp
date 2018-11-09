@@ -240,7 +240,7 @@ public:
 
   void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
     // note we are converting from a non-const to a const gno_t type here since
-    // we built this one manually. In th MultiVector case it has to be const gno_t due to
+    // we built this one manually. In the MultiVector case it has to be const gno_t due to
     // the way we read the sub view.
     ids = this->kokkos_ids_;
   }
@@ -248,23 +248,7 @@ public:
   int getNumWeightsPerID() const { return numWeights_;}
 
   virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
-
-    if(numWeights_ > 0) {
-      int stride;
-      size_t length;
-      const scalar_t * weights;
-
-      // call just to get length for 2d setup
-      weights_[0].getStridedList(length, weights, stride);
-      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>("wgts", length, numWeights_);
-      for(int idx = 0; idx < numWeights_; ++idx) {
-        weights_[idx].getStridedList(length, weights, stride);
-        size_t fill_index = 0;
-        for(size_t n = 0; n < length; n += stride) {
-          wgt(fill_index++,idx) = weights[n];
-        }
-      }
-    }
+    wgt = kokkos_weights_;
   }
 
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
@@ -318,6 +302,8 @@ public:
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
 
+  Kokkos::View<scalar_t**, typename node_t::device_type> kokkos_weights_;
+
   void createBasicVector(
     std::vector<const scalar_t *> &entries, std::vector<int> &entryStride,
     std::vector<const scalar_t *> &weights, std::vector<int> &weightStrides)
@@ -326,7 +312,6 @@ public:
 
     if (numIds_){
       // make kokkos ids
-      {
       typedef Kokkos::View<int *> view_t; // TODO: should be gno_t - won't compile.... not sure why yet
       view_t device_temp_values("temp device values", numIds_);
       view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
@@ -342,10 +327,8 @@ public:
         KOKKOS_LAMBDA (int n) {
         local_kokkos_ids(n) = device_temp_values(n);
       });
-      } // end kokkos ids
 
       // make coordinates
-      {
       int stride = 1;
       entries_ = arcp(new input_t[numEntriesPerID_], 0, numEntriesPerID_, true);
       for (int v=0; v < numEntriesPerID_; v++) {
@@ -385,10 +368,9 @@ public:
             local_kokkos_entries(n,v) = device_temp_values(n);
         });
       }
-      } // end coordinates
     }
 
-    if (numWeights_) {
+    if(numWeights_) {
       int stride = 1;
       weights_ = arcp(new input_t [numWeights_], 0, numWeights_, true);
       for (int w=0; w < numWeights_; w++){
@@ -396,6 +378,46 @@ public:
         ArrayRCP<const scalar_t> wgtV(weights[w], 0, stride*numIds_, false);
         weights_[w] = input_t(wgtV, stride);
       }
+
+      // set up final view with weights
+      kokkos_weights_ = Kokkos::View<scalar_t**, typename node_t::device_type>("kokkos weights", numIds_, numWeights_);
+
+      // setup kokkos weights
+      const scalar_t * weightsPtr;
+      size_t length;
+
+      // call just to get length for 2d setup
+      weights_[0].getStridedList(length, weightsPtr, stride);
+
+      // TODO: Clean up generally
+      // I'm allocating a host mirror, copy the values in, then deep copy to the device
+      // The MultiVector Adapter gets the values directly as a view and dosn't have this issue.
+      // Not sure why but this HostMirror method won't compile with the scalar_t but replacing
+      // with double workks. Then we also want to make the view copy directly to the kokkos_weights_
+      typedef Kokkos::View<double**> weight_view_t;
+      weight_view_t device_weight_temp_values("temp weight device values", length, numWeights_);
+      weight_view_t::HostMirror host_weight_temp_values = Kokkos::create_mirror_view(device_weight_temp_values);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        weights_[idx].getStridedList(length, weightsPtr, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          host_weight_temp_values(fill_index++,idx) = weightsPtr[n];
+        }
+      }
+    
+      // copy to device
+      Kokkos::deep_copy(device_weight_temp_values, host_weight_temp_values);
+
+      // now fill this->kokkos_weights_ on device
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        auto local_kokkos_weights = this->kokkos_weights_; // don't use this-> in kernel
+        Kokkos::parallel_for(
+          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
+          KOKKOS_LAMBDA (const int i) {
+          local_kokkos_weights(i, idx) = device_weight_temp_values(i, idx);
+        });
+      }
+
     }
   }
 };

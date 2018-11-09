@@ -610,7 +610,7 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
     for (size_t i = 0; i < coords->getLocalLength(); i++) {
       bvwgtstrides[i] = numWeightsPerCoord;
     }
-    for (size_t i = 0; i < numWeightsPerCoord; i++) {
+    for (int i = 0; i < numWeightsPerCoord; i++) {
       bvwgts[i] = weights[i];
     }
   }
@@ -625,12 +625,10 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
                                                comm);
   }
   CATCH_EXCEPTIONS_AND_RETURN("PartitioningProblem()")
-
   try {
       bvproblem->solve();
   }
   CATCH_EXCEPTIONS_AND_RETURN("solve()")
-
   int ierr = 0;
 
   // Compare with MultiVectorAdapter result
@@ -1334,7 +1332,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-// #define RUN_UVM_OFF_TEST
+#define RUN_UVM_OFF_TEST
 
 int main(int argc, char *argv[])
 {
@@ -1451,6 +1449,7 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
+
 #ifdef RUN_UVM_OFF_TEST
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
