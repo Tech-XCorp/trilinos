@@ -6426,9 +6426,7 @@ auto start = std::chrono::steady_clock::now();
     // Putting this allocation in the loops is very costly so moved out here.
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
     Kokkos::View<size_t*, typename mj_node_t::device_type> view_total_reduction_size("view_total_reduction_size", 1);
-
     for (int i = 0; i < this->recursion_depth; ++i){
-
         //convert i to string to be used for debugging purposes.
         std::string istring = Teuchos::toString<int>(i);
         //partitioning array. size will be as the number of current partitions and this
@@ -6461,6 +6459,7 @@ auto start = std::chrono::steady_clock::now();
             output_part_boxes = tmpPartBoxes;
             output_part_boxes->clear();
         }
+
         //returns the total no. of output parts for this dimension partitioning.
         mj_part_t output_part_count_in_dimension =
                         this->update_part_num_arrays(
@@ -6489,6 +6488,7 @@ auto start = std::chrono::steady_clock::now();
             }
             continue;
         }
+
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
@@ -6511,7 +6511,6 @@ auto start = std::chrono::steady_clock::now();
         //run for all available parts.
         for (; current_work_part < current_num_parts;
                  current_work_part += current_concurrent_num_parts){
-
             current_concurrent_num_parts = std::min(current_num_parts - current_work_part,
                                  this->max_concurrent_part_calculation);
             mj_part_t actual_work_part_count = 0;
@@ -6548,12 +6547,6 @@ auto start = std::chrono::steady_clock::now();
                   }, coordinate_begin_index);
                 }
 
-                /*
-                    cout << "i:" << i << " j:" << current_work_part + kk
-                                << " coordinate_begin_index:" << coordinate_begin_index
-                                << " coordinate_end_index:" << coordinate_end_index
-                                << " total:" << coordinate_end_index - coordinate_begin_index<< endl;
-                */
                 mj_scalar_t read_min_coordinate, read_max_coordinate, read_total_weight;
                 this->mj_get_local_min_max_coord_totW(
                             coordinate_begin_index,
@@ -6563,7 +6556,6 @@ auto start = std::chrono::steady_clock::now();
                             read_min_coordinate,
                             read_max_coordinate,
                             read_total_weight);
-  
                 // write to device - TODO: use subview and deep copy - this may change later anyways
                 auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
                 Kokkos::parallel_for(
@@ -6574,7 +6566,6 @@ auto start = std::chrono::steady_clock::now();
                   local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = read_total_weight;
                 });
             }
-
             //1D partitioning
             if (actual_work_part_count > 0){
                 //obtain global Min max of the part.
@@ -6593,7 +6584,6 @@ auto start = std::chrono::steady_clock::now();
                 mj_part_t concurrent_part_cut_shift = 0;
                 mj_part_t concurrent_part_part_shift = 0;
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
-
                     // same as above - temporary measure to pull these values to host
                     // I want to avoid making a parallel loop here for now so I get internal loops running
                     // Then revisit this. TODO: clean it up
@@ -6643,7 +6633,6 @@ auto start = std::chrono::steady_clock::now();
                         total_incomplete_cut_count += partition_count - 1;
                         //set the number of cut lines that should be determined
                         //for this part.
-
                         // TODO: eventually this is already in a parallel loop or we clean this up
                         // write to device
                         auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
@@ -6652,7 +6641,6 @@ auto start = std::chrono::steady_clock::now();
                           KOKKOS_LAMBDA (const int dummy) {
                             local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
                         });
-
                         //get the target weights of the parts.
                         this->mj_get_initial_cut_coords_target_weights(
                                         min_coordinate,
@@ -6679,7 +6667,6 @@ auto start = std::chrono::steady_clock::now();
                           KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
                           set_single = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
                         }, coordinate_begin_index);
-
                         //get the initial estimated part assignments of the
                         //coordinates.
                         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
@@ -6710,8 +6697,6 @@ auto start = std::chrono::steady_clock::now();
                 mj_scalar_t used_imbalance = 0;
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
                     used_imbalance,
@@ -6740,7 +6725,6 @@ auto start = std::chrono::steady_clock::now();
                     //if the part is empty, skip the part.
 
                     // TODO: Clean up later - for now pull some values to host and keep the algorithm serial host at this point
-                    
                     mj_scalar_t coordinateA, coordinateB;
                     auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
                     Kokkos::parallel_reduce("Read single", 1,
@@ -6751,7 +6735,6 @@ auto start = std::chrono::steady_clock::now();
                       KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
                       set_single = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
                     }, coordinateB);
-
                     if((num_parts != 1) && (coordinateA > coordinateB)) {
                         //we still need to write the begin and end point of the
                         //empty part. simply set it zero, the array indices will be shifted later
@@ -6768,7 +6751,6 @@ auto start = std::chrono::steady_clock::now();
                         partweight_array_shift += (2 * (num_parts - 1) + 1);
                         continue;
                     }
-
                     mj_lno_t coordinate_end;
                     Kokkos::parallel_reduce("Read single", 1,
                       KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
@@ -6781,7 +6763,6 @@ auto start = std::chrono::steady_clock::now();
                       set_single = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
                                                                 current_concurrent_work_part -1);;
                     }, coordinate_begin);
-
 
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
@@ -6846,18 +6827,29 @@ auto start = std::chrono::steady_clock::now();
                         //if this part is partitioned into 1 then just copy
                         //the old values.
                         mj_lno_t part_size = coordinate_end - coordinate_begin;
-                        this->kokkos_new_part_xadj(output_part_index + output_array_shift) = part_size;
-                        for(int n = 0; n < part_size; ++n) {
-                          this->kokkos_new_coordinate_permutations(n+coordinate_begin) =
-                            this->kokkos_coordinate_permutations(n+coordinate_begin);
-                        }
+
+                        // TODO: how to best set 1 value...
+                        auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;                        
+                        Kokkos::parallel_for(
+                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+                          KOKKOS_LAMBDA (const int dummy) {
+                          local_kokkos_new_part_xadj(output_part_index + output_array_shift) = part_size;
+                        });
+
+                        auto local_kokkos_new_coordinate_permutations = this->kokkos_new_coordinate_permutations;
+                        auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
+                        Kokkos::parallel_for(
+                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, part_size),
+                          KOKKOS_LAMBDA (const int n) {
+                          local_kokkos_new_coordinate_permutations(n+coordinate_begin) =
+                            local_kokkos_coordinate_permutations(n+coordinate_begin);
+                        });
                     }
                     cut_shift += num_parts - 1;
                     tlr_shift += (4 *(num_parts - 1) + 1);
                     output_array_shift += num_parts;
                     partweight_array_shift += (2 * (num_parts - 1) + 1);
                 }
-
                 //shift cut coordinates so that all cut coordinates are stored.
                 //no shift now because we dont keep the cuts.
                 //current_cut_coordinates += cut_shift;
@@ -6885,7 +6877,6 @@ auto start = std::chrono::steady_clock::now();
                 }
             }
         }
-
         // end of this partitioning dimension
         int current_world_size = this->comm->getSize();
         long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
@@ -6939,7 +6930,6 @@ auto start = std::chrono::steady_clock::now();
         this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
       }
     }
-
 
 auto finish = std::chrono::steady_clock::now();
 double elapsed_seconds = std::chrono::duration_cast<

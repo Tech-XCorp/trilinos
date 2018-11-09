@@ -1449,7 +1449,6 @@ int main(int argc, char *argv[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
-
 #ifdef RUN_UVM_OFF_TEST
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
                     pqParts, paramFile, k,
@@ -1459,7 +1458,6 @@ int main(int argc, char *argv[])
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
 #endif
-
             break;
         }
 

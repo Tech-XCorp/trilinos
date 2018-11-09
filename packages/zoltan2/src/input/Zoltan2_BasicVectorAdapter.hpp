@@ -312,9 +312,9 @@ public:
 
     if (numIds_){
       // make kokkos ids
-      typedef Kokkos::View<int *> view_t; // TODO: should be gno_t - won't compile.... not sure why yet
-      view_t device_temp_values("temp device values", numIds_);
-      view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
+      typedef Kokkos::View<int *> ids_view_t; // TODO: should be gno_t - won't compile.... not sure why yet
+      ids_view_t device_temp_values("temp device values", numIds_);
+      ids_view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
       for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
         host_temp_values(n) = idList_[n];
       }
@@ -350,14 +350,14 @@ public:
         // The MultiVector Adapter gets the values directly as a view and dosn't have this issue.
         // Not sure why but this HostMirror method won't compile with the scalar_t but replacing
         // with double workks. Then we also want to make the view copy directly to the kokkos_entries_
-        typedef Kokkos::View<double *> view_t;
-        view_t device_temp_values("temp device values", numIds_);
-        view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
+        typedef Kokkos::View<double *> coords_view_t;
+        coords_view_t device_coord_temp_values("temp device values", numIds_);
+        coords_view_t::HostMirror host_coord_temp_values = Kokkos::create_mirror_view(device_coord_temp_values);
          for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
-          host_temp_values(n) = entriesPtr[n*stride];
+          host_coord_temp_values(n) = entriesPtr[n*stride];
         }
         // copy to device
-        Kokkos::deep_copy(device_temp_values, host_temp_values);
+        Kokkos::deep_copy(device_coord_temp_values, host_coord_temp_values);
 
         // now fill this->kokkos_entries on device
         // TODO: Above deep_copy eventually should be straight to the this->kokkos_entries_
@@ -365,11 +365,12 @@ public:
         Kokkos::parallel_for(
           Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
           KOKKOS_LAMBDA (int n) {
-            local_kokkos_entries(n,v) = device_temp_values(n);
+            local_kokkos_entries(n,v) = device_coord_temp_values(n);
         });
       }
     }
 
+    // weights
     if(numWeights_) {
       int stride = 1;
       weights_ = arcp(new input_t [numWeights_], 0, numWeights_, true);
@@ -417,7 +418,6 @@ public:
           local_kokkos_weights(i, idx) = device_weight_temp_values(i, idx);
         });
       }
-
     }
   }
 };
