@@ -776,13 +776,10 @@ public: // For CUDA Temp
      *
      */
     void mj_get_local_min_max_coord_totW(
-                mj_lno_t coordinate_begin_index,
-                mj_lno_t coordinate_end_index,
-                Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_mj_current_coordinate_permutations,
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
-                mj_scalar_t &min_coordinate,
-                mj_scalar_t &max_coordinate,
-                mj_scalar_t &total_weight);
+      mj_part_t current_work_part,
+      mj_part_t current_concurrent_num_parts,
+      int kk,
+      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords);
 
     /*! \brief Function that reduces global minimum and maximum coordinates with global total weight from given local arrays.
      * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
@@ -1531,11 +1528,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     RCP<mj_partBoxVector_t> t1;
     RCP<mj_partBoxVector_t> t2;
 
-
     std::vector <uSignedSortItem<int, mj_scalar_t, char> > coord_dimension_range_sorted(this->coord_dim);
     uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted = &(coord_dimension_range_sorted[0]);
-    std::vector <mj_scalar_t> coord_dim_mins(this->coord_dim);
-    std::vector <mj_scalar_t> coord_dim_maxs(this->coord_dim);
 
     // Need a device counter - how best to allocate?
     // Putting this allocation in the loops is very costly so moved out here.
@@ -1643,65 +1637,46 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 mj_lno_t coordinate_end_index= this->kokkos_part_xadj(current_work_part_in_concurrent_parts);
                 mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->kokkos_part_xadj(current_work_part_in_concurrent_parts -1);
 
-                /*
-                std::cout << "i:" << i << " j:" << current_work_part + kk
-                                << " coordinate_begin_index:" << coordinate_begin_index
-                                << " coordinate_end_index:" << coordinate_end_index
-                                << " total:" << coordinate_end_index - coordinate_begin_index<< std::endl;
-                                */
-
-
                 if(partition_along_longest_dim){
-
-                  mj_scalar_t best_weight_coord = 0;
                   for (int coord_traverse_ind = 0; coord_traverse_ind < this->coord_dim; ++coord_traverse_ind){
-                    mj_scalar_t best_min_coord = 0;
-                    mj_scalar_t best_max_coord = 0;
                     //MD:same for all coordinates, but I will still use this for now.
                     this->mj_get_local_min_max_coord_totW(
-                        coordinate_begin_index,
-                        coordinate_end_index,
-                        this->kokkos_coordinate_permutations,
-                        Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coord_traverse_ind),
-                        best_min_coord, //min coordinate
-                        best_max_coord, //max coordinate
-                        best_weight_coord //total weight);
-                    );
-                    coord_dim_mins[coord_traverse_ind] = best_min_coord;
-                    coord_dim_maxs[coord_traverse_ind] = best_max_coord;
-                    mj_scalar_t best_range = best_max_coord - best_min_coord;
-                    coord_dimension_range_sorted[coord_traverse_ind].id = coord_traverse_ind;
-                    coord_dimension_range_sorted[coord_traverse_ind].val = best_range;
-                    coord_dimension_range_sorted[coord_traverse_ind].signbit = 1;
-                  }
+                        current_work_part,
+                        current_concurrent_num_parts,
+                        kk,
+                        Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coord_traverse_ind));
 
+                    coord_dimension_range_sorted[coord_traverse_ind].id = coord_traverse_ind;
+                    coord_dimension_range_sorted[coord_traverse_ind].signbit = 1;
+
+                    // Temporary - in refactor progress - will need to redo this formatting: TODO
+                    auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
+
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) - 
+                        local_kokkos_process_local_min_max_coord_total_weight(kk);
+                    }, coord_dimension_range_sorted[coord_traverse_ind].val);
+                  }
 
                   uqSignsort(this->coord_dim, p_coord_dimension_range_sorted);
                   coordInd = p_coord_dimension_range_sorted[this->coord_dim - 1].id;
-
-                  /*
-                  for (int coord_traverse_ind = 0; coord_traverse_ind < this->coord_dim; ++coord_traverse_ind){
-                    std::cout << "i:" << p_coord_dimension_range_sorted[coord_traverse_ind].id << " range:" << p_coord_dimension_range_sorted[coord_traverse_ind].val << std::endl;
-                    std::cout << "i:" << p_coord_dimension_range_sorted[coord_traverse_ind].id << " coord_dim_mins:" << coord_dim_mins[p_coord_dimension_range_sorted[coord_traverse_ind].id]<< std::endl;
-                    std::cout << "i:" << p_coord_dimension_range_sorted[coord_traverse_ind].id << " coord_dim_maxs:" << coord_dim_maxs[p_coord_dimension_range_sorted[coord_traverse_ind].id] << std::endl;
-
-                  }
-                  */
                   kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
-                  this->kokkos_process_local_min_max_coord_total_weight(kk) = coord_dim_mins[coordInd];
-                  this->kokkos_process_local_min_max_coord_total_weight(kk+ current_concurrent_num_parts) = coord_dim_maxs[coordInd];
-                  this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = best_weight_coord;
                 }
                 else{
+                  throw std::logic_error("Disabled this mj_get_local_min_max_coord_totW B call for refactor. Need to implement device form.");
+
+                  /*
                   this->mj_get_local_min_max_coord_totW(
-                                  coordinate_begin_index,
-                                  coordinate_end_index,
-                                  this->kokkos_coordinate_permutations,
-                                  kokkos_mj_current_dim_coords,
-                                  this->kokkos_process_local_min_max_coord_total_weight(kk), //min coordinate
-                                  this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max coordinate
-                                  this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) //total weight);
+                    current_work_part,
+                    current_concurrent_num_parts,
+                    kk,
+                    kokkos_mj_current_dim_coords,
+                    this->kokkos_process_local_min_max_coord_total_weight(kk), //min coordinate
+                    this->kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts), //max coordinate
+                    this->kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) //total weight);
                   );
+                  */
                 }
             }
 
@@ -2660,47 +2635,59 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_get_local_min_max_coord_totW(
-                mj_lno_t coordinate_begin_index,
-                mj_lno_t coordinate_end_index,
-                Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_mj_current_coordinate_permutations,
-                Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
-                mj_scalar_t &min_coordinate,
-                mj_scalar_t &max_coordinate,
-                mj_scalar_t &total_weight){
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_min_max_coord_totW(
+  mj_part_t current_work_part,
+  mj_part_t current_concurrent_num_parts,
+  int kk,
+  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords) {
+
+  mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
+  auto local_kokkos_part_xadj = this->kokkos_part_xadj;
+  auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
+
+                // TODO: Probably refactor this whole loop onto device but for now I need some values on host
+                // I'd like to focus on mj_1d_part
+                // When this loop goes parallel the internal loops for mj_get_local_min_max_coord_totW
+                // will need to be updated for nested hierachy, which should be straight forward
+                // read coordinate_end_index
+                mj_lno_t coordinate_end_index;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                  set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
+                }, coordinate_end_index);
+
+                mj_lno_t coordinate_begin_index = 0;
+                if(current_work_part_in_concurrent_parts != 0) {
+                  // read coordinate_begin_index
+                  Kokkos::parallel_reduce("Read single", 1,
+                    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                    set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
+                  }, coordinate_begin_index);
+                }
+
+    mj_scalar_t my_thread_min_coord;
+    mj_scalar_t my_thread_max_coord;
+    mj_scalar_t my_total_weight = 0;
 
   //if the part is empty.
   //set the min and max coordinates as reverse.
   if(coordinate_begin_index >= coordinate_end_index)
   {
-    min_coordinate = this->maxScalar_t;
-    max_coordinate = this->minScalar_t;
-    total_weight = 0;
+    my_thread_min_coord = this->maxScalar_t;
+    my_thread_max_coord = this->minScalar_t;
+    my_total_weight = 0;
   }
   else {
 
-    // TODO: In general I refactored this loop to have less nested but I think
-    // the original code had redundancy. Not sure if something was planned for
-    // the future but this seems simpler and sufficient. If there is a
-    // performance reason I have missed we can restore the outer for loop
-    // and put the singles in. Note I added barriers for all the singles but
-    // these particular singles were nowait and shouldn't need them, in case
-    // we do make those changes.
-    // Otherwise delete this comment above.
+//    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
+//    Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
 
-    // Don't initialize and then run the loop starting at index 1 for min and
-    // max. That leads to a rare race condition and failure. I think we have to
-    // loop over all the elements. TODO: Do we need to initialize at all?
-    // I think it might be ignored.
-    mj_scalar_t my_thread_min_coord;
-    mj_scalar_t my_thread_max_coord;
     // get min
     Kokkos::parallel_reduce("MinReduce",
       coordinate_end_index - coordinate_begin_index,
       KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_min) {
         int i =
-          kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
+          local_kokkos_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) < running_min)
           running_min = kokkos_mj_current_dim_coords(i);
     }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
@@ -2710,7 +2697,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       coordinate_end_index - coordinate_begin_index,
       KOKKOS_LAMBDA(const int& j, mj_scalar_t & running_max) {
         int i =
-          kokkos_mj_current_coordinate_permutations(coordinate_begin_index+j);
+          local_kokkos_coordinate_permutations(coordinate_begin_index+j);
         if(kokkos_mj_current_dim_coords(i) > running_max)
           running_max = kokkos_mj_current_dim_coords(i);
     }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
@@ -2724,7 +2711,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       set_single = local_kokkos_mj_uniform_weights(0) ? 1 : 0;
     }, weight0);
 
-    mj_scalar_t my_total_weight = 0;
     if(weight0) {
       my_total_weight = coordinate_end_index - coordinate_begin_index;
     }
@@ -2732,11 +2718,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       auto local_kokkos_mj_weights = this->kokkos_mj_weights;
       Kokkos::parallel_reduce("sum weights", coordinate_end_index - coordinate_begin_index,
         KOKKOS_LAMBDA(int ii, mj_scalar_t & lsum) {
-        int i = kokkos_mj_current_coordinate_permutations(coordinate_begin_index + ii);
+        int i = local_kokkos_coordinate_permutations(coordinate_begin_index + ii);
         lsum += local_kokkos_mj_weights(i,0);
       }, my_total_weight);
     }
-    total_weight = my_total_weight;
 
     // TODO: Now with refactor this can be cleaned up / simplfied
     auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
@@ -2751,9 +2736,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       }
     });
 
-    min_coordinate = my_thread_min_coord;
-    max_coordinate = my_thread_max_coord;
+
+//    });
   }
+
+                // write to device - TODO: use subview and deep copy - this may change later anyways
+                auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
+                Kokkos::parallel_for(
+                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
+                  KOKKOS_LAMBDA (const int dummy) {
+                  local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
+                  local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
+                  local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
+                });
 }
 
 /*! \brief Function that reduces global minimum and maximum coordinates with global total weight from given local arrays.
@@ -6505,44 +6500,11 @@ clock_loop_first_setup.start();
                 }
                 ++actual_work_part_count;
 
-                // TODO: Probably refactor this whole loop onto device but for now I need some values on host
-                // I'd like to focus on mj_1d_part
-                // When this loop goes parallel the internal loops for mj_get_local_min_max_coord_totW
-                // will need to be updated for nested hierachy, which should be straight forward
-                // read coordinate_end_index
-                mj_lno_t coordinate_end_index;
-                Kokkos::parallel_reduce("Read single", 1,
-                  KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                  set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-                }, coordinate_end_index);
-
-                mj_lno_t coordinate_begin_index = 0;
-                if(current_work_part_in_concurrent_parts != 0) {
-                  // read coordinate_begin_index
-                  Kokkos::parallel_reduce("Read single", 1,
-                    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                    set_single = local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
-                  }, coordinate_begin_index);
-                }
-
-                mj_scalar_t read_min_coordinate, read_max_coordinate, read_total_weight;
                 this->mj_get_local_min_max_coord_totW(
-                            coordinate_begin_index,
-                            coordinate_end_index,
-                            this->kokkos_coordinate_permutations,
-                            kokkos_mj_current_dim_coords,
-                            read_min_coordinate,
-                            read_max_coordinate,
-                            read_total_weight);
-                // write to device - TODO: use subview and deep copy - this may change later anyways
-                auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-                  KOKKOS_LAMBDA (const int dummy) {
-                  local_kokkos_process_local_min_max_coord_total_weight(kk) = read_min_coordinate;
-                  local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = read_max_coordinate;
-                  local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = read_total_weight;
-                });
+                  current_work_part,
+                  current_concurrent_num_parts,
+                  kk,
+                  kokkos_mj_current_dim_coords);
             }
 
 clock_loop_first_setup.stop();
