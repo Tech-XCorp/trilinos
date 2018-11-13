@@ -94,7 +94,7 @@ class Clock {
       }
     }
     void print() {
-      printf("Clock %s: %.2f ms\n", name.c_str(), (float)(time_sum * 1000.0));
+      printf("Clock %s: %.2f ms\n", name.c_str(), (float)(time() * 1000.0));
     }
   private:
     std::string name;
@@ -766,16 +766,20 @@ public: // For CUDA Temp
 
     /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
      * in the given set of local points.
-     * \param coordinate_begin_index is the start index of the given partition on partitionedPointPermutations.
-     * \param coordinate_end_index is the end index of the given partition on partitionedPointPermutations.
-     * \param mj_current_coordinate_permutations is the permutation array that point to the actual coordinate index. Sized as numLocalCoords.
-     * \param mj_current_dim_coords float-like array representing the coordinates in a single dimension. Sized as numLocalCoords.
-     * \param min_coordinate is the output to represent the local minimumCoordinate in  given range of coordinates.
-     * \param max_coordinate is the output to represent the local maximum coordinate in the given range of coordinates.
-     * \param total_weight is the output to represent the local total weight in the coordinate in the given range of coordinates.
-     *
+     * TODO: Fix parameters
      */
     void mj_get_local_min_max_coord_totW(
+      mj_part_t current_work_part,
+      mj_part_t current_concurrent_num_parts,
+      int kk,
+      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords);
+
+
+    /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
+     * in the given set of local points.
+     * TODO: Fix parameters
+     */
+    void mj_taskmapper_get_local_min_max_coord_totW(
       mj_part_t current_work_part,
       mj_part_t current_concurrent_num_parts,
       int kk,
@@ -1640,7 +1644,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
                   for (int coord_traverse_ind = 0; coord_traverse_ind < this->coord_dim; ++coord_traverse_ind){
                     //MD:same for all coordinates, but I will still use this for now.
-                    this->mj_get_local_min_max_coord_totW(
+                    this->mj_taskmapper_get_local_min_max_coord_totW(
                         current_work_part,
                         current_concurrent_num_parts,
                         kk,
@@ -1693,10 +1697,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   });
                 }
                 else{
-                  throw std::logic_error("Disabled this mj_get_local_min_max_coord_totW B call for refactor. Need to implement device form.");
+                  throw std::logic_error("Disabled this mj_taskmapper_get_local_min_max_coord_totW B call for refactor. Need to implement device form.");
 
                   /*
-                  this->mj_get_local_min_max_coord_totW(
+                  this->mj_taskmapper_get_local_min_max_coord_totW(
                     current_work_part,
                     current_concurrent_num_parts,
                     kk,
@@ -2653,18 +2657,115 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
 /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
  *  in the given set of local points.
- * \param coordinate_begin_index is the start index of the given partition on partitionedPointPermutations.
- * \param coordinate_end_index is the end index of the given partition on partitionedPointPermutations.
- * \param mj_current_coordinate_permutations is the permutation array that point to the actual coordinate index. Sized as numLocalCoords.
- * \param mj_current_dim_coords float-like array representing the coordinates in a single dimension. Sized as numLocalCoords.
- * \param min_coordinate is the output to represent the local minimumCoordinate in  given range of coordinates.
- * \param max_coordinate is the output to represent the local maximum coordinate in the given range of coordinates.
- * \param total_weight is the output to represent the local total weight in the coordinate in the given range of coordinates.
+ *  TODO: Repair parameters
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_part_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_min_max_coord_totW(
+  mj_part_t current_work_part,
+  mj_part_t current_concurrent_num_parts,
+  int kk,
+  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords) {
+
+  mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
+  auto local_kokkos_part_xadj = this->kokkos_part_xadj;
+  auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
+  auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
+  auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
+  auto local_maxScalar_t = this->maxScalar_t;
+  auto local_minScalar_t = this->minScalar_t;
+  auto local_kokkos_mj_weights = this->kokkos_mj_weights;
+  auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
+/*
+           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+
+                mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
+                //if this part wont be partitioned any further
+                //dont do any work for this part.
+                if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
+                    continue;
+                }
+                ++actual_work_part_count;
+
+                this->mj_get_local_min_max_coord_totW(
+                  current_work_part,
+                  current_concurrent_num_parts,
+                  kk,
+                  kokkos_mj_current_dim_coords);
+            }
+*/
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, Kokkos::AUTO());
+  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+  Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
+
+    mj_lno_t coordinate_end_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
+    mj_lno_t coordinate_begin_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
+
+    mj_scalar_t my_thread_min_coord = 0;
+    mj_scalar_t my_thread_max_coord = 0;
+    mj_scalar_t my_total_weight;
+
+    //if the part is empty.
+    //set the min and max coordinates as reverse.
+    if(coordinate_begin_index >= coordinate_end_index)
+    {
+      my_thread_min_coord = local_maxScalar_t;
+      my_thread_max_coord = local_minScalar_t;
+      my_total_weight = 0;
+    }
+    else {
+      // get min
+      Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+        [=] (const int& j, mj_scalar_t & running_min) {
+        int i = local_kokkos_coordinate_permutations(j);
+        if(kokkos_mj_current_dim_coords(i) < running_min)
+          running_min = kokkos_mj_current_dim_coords(i);
+      }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
+
+      // get max
+      Kokkos::parallel_reduce(
+        Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+        [=] (const int& j, mj_scalar_t & running_max) {
+        int i = local_kokkos_coordinate_permutations(j);
+        if(kokkos_mj_current_dim_coords(i) > running_max)
+          running_max = kokkos_mj_current_dim_coords(i);
+      }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
+
+      // TODO: Note reading the single value should be bool
+      // But that doesn't seem to be supported
+      int weight0 = local_kokkos_mj_uniform_weights(0) ? 1 : 0;
+      if(weight0) {
+        my_total_weight = coordinate_end_index - coordinate_begin_index;
+      }
+      else {
+        my_total_weight = 0;
+        Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
+          [=] (int ii, mj_scalar_t & lsum) {
+          int i = local_kokkos_coordinate_permutations(ii);
+          lsum += local_kokkos_mj_weights(i,0);
+        }, my_total_weight);
+      }
+    }
+
+    local_kokkos_max_min_coords(0) = my_thread_min_coord;
+    local_kokkos_max_min_coords(1) = my_thread_max_coord;
+    local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
+    local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
+    local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
+  });
+}
+
+/*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
+ *  in the given set of local points.
+ *  TODO: Repair parameters
+ */
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+          typename mj_part_t,
+          typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_taskmapper_get_local_min_max_coord_totW(
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
   int kk,
@@ -6480,9 +6581,9 @@ recursion_initial_round.stop();
             //get the min and max coordinates of each part
             //together with the part weights of each part.
 
-           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
-
 clock_loop_first_setup.start();
+
+           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
 
                 mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
                 //if this part wont be partitioned any further
