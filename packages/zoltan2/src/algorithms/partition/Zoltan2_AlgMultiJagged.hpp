@@ -1530,6 +1530,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     std::vector <uSignedSortItem<int, mj_scalar_t, char> > coord_dimension_range_sorted(this->coord_dim);
     uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted = &(coord_dimension_range_sorted[0]);
+    std::vector <mj_scalar_t> coord_dim_mins(this->coord_dim);
+    std::vector <mj_scalar_t> coord_dim_maxs(this->coord_dim);
 
     // Need a device counter - how best to allocate?
     // Putting this allocation in the loops is very costly so moved out here.
@@ -1634,10 +1636,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
                 ++actual_work_part_count;
 
-                mj_lno_t coordinate_end_index= this->kokkos_part_xadj(current_work_part_in_concurrent_parts);
-                mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts==0 ? 0: this->kokkos_part_xadj(current_work_part_in_concurrent_parts -1);
-
                 if(partition_along_longest_dim){
+                  auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
                   for (int coord_traverse_ind = 0; coord_traverse_ind < this->coord_dim; ++coord_traverse_ind){
                     //MD:same for all coordinates, but I will still use this for now.
                     this->mj_get_local_min_max_coord_totW(
@@ -1649,9 +1649,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     coord_dimension_range_sorted[coord_traverse_ind].id = coord_traverse_ind;
                     coord_dimension_range_sorted[coord_traverse_ind].signbit = 1;
 
-                    // Temporary - in refactor progress - will need to redo this formatting: TODO
-                    auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
+                    // TODO: Refactoring and optimizing general MJ leaves us with some awkward issues here
+                    // for the Task Mapper code. For now just brute force the reads
 
+                    // This is the original code we are effecting here
+                    //coord_dim_mins[coord_traverse_ind] = best_min_coord;
+                    //coord_dim_maxs[coord_traverse_ind] = best_max_coord;
+
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_process_local_min_max_coord_total_weight(kk);
+                    }, coord_dim_mins[coord_traverse_ind]);
+                    Kokkos::parallel_reduce("Read single", 1,
+                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                      set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts);
+                    }, coord_dim_maxs[coord_traverse_ind]);
+
+                    // Temporary - in refactor progress - will need to redo this formatting: TODO
+                    coord_dimension_range_sorted[coord_traverse_ind].val;
                     Kokkos::parallel_reduce("Read single", 1,
                       KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
                       set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) - 
@@ -1662,6 +1677,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   uqSignsort(this->coord_dim, p_coord_dimension_range_sorted);
                   coordInd = p_coord_dimension_range_sorted[this->coord_dim - 1].id;
                   kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+             
+                  // Note original code tracked unsorted weight but this should be set already
+                  // So nothing to do ... but need to investigate if that was intended. TODO:
+
+                  // TODO: This also was a relic of the refactor and we might consider a different format
+                  // Related to above issues - need to clean this up
+                  auto set_min = coord_dim_mins[coordInd];
+                  auto set_max = coord_dim_maxs[coordInd];
+                  Kokkos::parallel_for(
+                    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+                    KOKKOS_LAMBDA (const int dummy) {
+                    local_kokkos_process_local_min_max_coord_total_weight(kk) = set_min;
+                    local_kokkos_process_local_min_max_coord_total_weight(kk+ current_concurrent_num_parts) = set_max;
+                  });
                 }
                 else{
                   throw std::logic_error("Disabled this mj_get_local_min_max_coord_totW B call for refactor. Need to implement device form.");
@@ -2667,7 +2696,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
 
     mj_scalar_t my_thread_min_coord;
     mj_scalar_t my_thread_max_coord;
-    mj_scalar_t my_total_weight = 0;
+    mj_scalar_t my_total_weight;
 
   //if the part is empty.
   //set the min and max coordinates as reverse.
@@ -2715,6 +2744,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
       my_total_weight = coordinate_end_index - coordinate_begin_index;
     }
     else {
+      my_total_weight = 0;
       auto local_kokkos_mj_weights = this->kokkos_mj_weights;
       Kokkos::parallel_reduce("sum weights", coordinate_end_index - coordinate_begin_index,
         KOKKOS_LAMBDA(int ii, mj_scalar_t & lsum) {
