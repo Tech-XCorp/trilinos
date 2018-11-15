@@ -69,23 +69,37 @@ class Clock {
   typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
   public:
     Clock(std::string clock_name, bool bStart) :
-      name(clock_name), time_sum(0), counter_start(0), counter_stop(0) {
+      name(clock_name) {
+      reset();
       if(bStart) {
         start();
       }
     }
+    void reset() {
+      time_sum = 0;
+      counter_start = 0;
+      counter_stop = 0;
+    }
     double time() const {
       if(counter_start != counter_stop) {
-        printf("Clock %s bad counters!\n", name.c_str());
-        throw std::logic_error("bad timer counters!\n");
+        printf("Clock %s bad counters for time!\n", name.c_str());
+        throw std::logic_error("bad timer counters for time!\n");
       }
       return time_sum;
     }
     void start() {
+      if(counter_start != counter_stop) {
+        printf("Clock %s bad counters for start!\n", name.c_str());
+        throw std::logic_error("bad timer counters for start!\n");
+      }
       ++counter_start;
       start_time = std::chrono::steady_clock::now();
     }
     void stop(bool bPrint = false) {
+      if(counter_start-1 != counter_stop) {
+        printf("Clock %s bad counters for stop!\n", name.c_str());
+        throw std::logic_error("bad timer counters for stop!\n");
+      }
       ++counter_stop;
       clock_t now_time = std::chrono::steady_clock::now();
       time_sum += std::chrono::duration_cast<std::chrono::duration<double> >(now_time - start_time).count();
@@ -94,7 +108,7 @@ class Clock {
       }
     }
     void print() {
-      printf("Clock %s: %.2f ms\n", name.c_str(), (float)(time() * 1000.0));
+      printf("Clock %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
     }
   private:
     std::string name;
@@ -104,6 +118,10 @@ class Clock {
     double time_sum;
 };
 
+static Clock mj_1D_part_init("mj_1D_part_init", false);
+static Clock mj_1D_part_loop("mj_1D_part_loop", false);
+static Clock do_weights("do_weights", false);
+static Clock mj_1D_part_end("mj_1D_part_end", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -142,10 +160,6 @@ class Clock {
 
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
-
-// TODO: This is temporary - probably should be a member variable
-// But not sure yet how we want to organize this
-#define ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS 1
 
 namespace Teuchos{
 
@@ -646,7 +660,6 @@ public: // For CUDA Temp
     mj_scalar_t minScalar_t; //min scalar
 
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_all_cut_coordinates;
-    Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_max_min_coords;
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
     Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
 
@@ -771,8 +784,8 @@ public: // For CUDA Temp
     void mj_get_local_min_max_coord_totW(
       mj_part_t current_work_part,
       mj_part_t current_concurrent_num_parts,
-      int kk,
-      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords);
+      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+      Kokkos::View<mj_part_t*, typename mj_node_t::device_type> & view_num_partitioning_in_current_dim);
 
 
     /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
@@ -1004,10 +1017,9 @@ public: // For CUDA Temp
      */
     void mj_create_new_partitions(
         mj_part_t num_parts,
+        mj_part_t current_concurrent_work_part,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate,
-        mj_lno_t coordinate_begin,
-        mj_lno_t coordinate_end,
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left,
         Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> used_thread_part_weight_work,
         Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj,
@@ -2459,7 +2471,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
           "all cut coordinates",
           this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-        this->kokkos_max_min_coords =  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>("max min coords", 2);
         this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>("empty"); //how much weight percentage should a MPI put left side of the each cutline
         this->kokkos_thread_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, typename mj_node_t::device_type>("empty");; //how much weight percentage should each thread in MPI put left side of the each outline
 
@@ -2665,39 +2676,31 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_min_max_coord_totW(
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
-  int kk,
-  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords) {
+  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
+  Kokkos::View<mj_part_t*, typename mj_node_t::device_type> & view_num_partitioning_in_current_dim) {
 
-  mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
   auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
-  auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
   auto local_maxScalar_t = this->maxScalar_t;
   auto local_minScalar_t = this->minScalar_t;
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
-/*
-           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
 
-                mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
-                //if this part wont be partitioned any further
-                //dont do any work for this part.
-                if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
-                    continue;
-                }
-                ++actual_work_part_count;
-
-                this->mj_get_local_min_max_coord_totW(
-                  current_work_part,
-                  current_concurrent_num_parts,
-                  kk,
-                  kokkos_mj_current_dim_coords);
-            }
-*/
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, Kokkos::AUTO());
+  // Will come back to this TODO:
+  // I thought putting the parts across the outer loop would help as it did in other places
+  // but saw no benefit in this case.  
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (current_concurrent_num_parts, Kokkos::AUTO());
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
   Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
+    
+    int kk = team_member.league_rank();
+    mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
+
+    // TODO: Not sure this help
+    //if this part wont be partitioned any further
+    //dont do any work for this part.
+ //  if (view_num_partitioning_in_current_dim(current_work_part_in_concurrent_parts) != 1) {
 
     mj_lno_t coordinate_end_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
     mj_lno_t coordinate_begin_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
@@ -2750,11 +2753,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
       }
     }
 
-    local_kokkos_max_min_coords(0) = my_thread_min_coord;
-    local_kokkos_max_min_coords(1) = my_thread_max_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
+
+//    } // end of check for parts != 1, so some teams currently do nothing ...
   });
 }
 
@@ -2775,7 +2778,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_taskmapper
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
   auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
-  auto local_kokkos_max_min_coords = this->kokkos_max_min_coords;
   auto local_maxScalar_t = this->maxScalar_t;
   auto local_minScalar_t = this->minScalar_t;
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
@@ -2836,8 +2838,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_taskmapper
       }
     }
 
-    local_kokkos_max_min_coords(0) = my_thread_min_coord;
-    local_kokkos_max_min_coords(1) = my_thread_max_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
     local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
@@ -3110,13 +3110,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     auto local_kokkos_process_rectilinear_cut_weight = kokkos_process_rectilinear_cut_weight;
 
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
-    Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
+
+mj_1D_part_init.start();
+
+    Kokkos::parallel_for(1, KOKKOS_LAMBDA(int dummy) {
+
+//    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, Kokkos::AUTO());
+//    Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
 
       // TODO: This currently runs on a single team, single thread
-      if(team_member.league_rank() == 0) {
-        Kokkos::single(Kokkos::PerTeam(team_member), [=]()
-        {
+//      if(team_member.league_rank() == 0) {
+//        Kokkos::single(Kokkos::PerTeam(team_member), [=]()
+//        {
    
           // these need to be initialized
           view_rectilinear_cut_count(0) = 0;
@@ -3128,6 +3133,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             mj_part_t num_part_in_dim = view_num_partitioning_in_current_dim(current_work_part + i);
             mj_part_t num_cut_in_dim = num_part_in_dim - 1;
             view_total_reduction_size(0) += (4 * num_cut_in_dim + 1);
+
             for(mj_part_t ii = 0; ii < num_cut_in_dim; ++ii){
               local_kokkos_is_cut_line_determined(next) = false;
               local_kokkos_cut_lower_bound_coordinates(next) = local_kokkos_global_min_max_coord_total_weight(i); //min coordinate
@@ -3140,10 +3146,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
               ++next;
             }
           }
-        });
-        team_member.team_barrier();  // for end of Kokkos::single
-      }
+
+//        });
+//        team_member.team_barrier();  // for end of Kokkos::single
+//      }
     });
+
+mj_1D_part_init.stop();
+mj_1D_part_loop.start();
 
         while (total_incomplete_cut_count != 0) {
             mj_part_t concurrent_cut_shifts = 0;
@@ -3207,6 +3217,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             //sum up the results of threads
             // TODO: Now with the threads eliminated we should eliminate a lot of this code
             // There is only 1 thread block in the new cuda refactor setup
+do_weights.start();
 
             this->mj_accumulate_thread_results(
                 view_num_partitioning_in_current_dim,
@@ -3218,6 +3229,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
                 local_kokkos_total_part_weight_left_right_closests,
                 local_kokkos_thread_part_weights
             );
+
+do_weights.stop();
 
             // Rewrite as single TODO
             Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
@@ -3382,6 +3395,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
         } // end of the while loop
 
+mj_1D_part_loop.stop();
+mj_1D_part_end.start();
 
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy3 (1, Kokkos::AUTO());
     Kokkos::parallel_for (policy3, KOKKOS_LAMBDA(member_type team_member) {
@@ -3423,6 +3438,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       } // end of if league_rank == 0
    
      }); // end of the outer mj_1D_part loop which sets teams and Kokkos::AUTO for threads
+
+mj_1D_part_end.stop();
 
     delete reductionOp;
 }
@@ -3504,10 +3521,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
       }
 
-      const int max_teams = 1024;
+      const int max_teams = 1024; // arbitrary right now TODO
       if(num_teams > max_teams) {
         num_teams = max_teams;
-        stride = num_teams / num_working_points + 1;
+        stride = num_working_points / num_teams + 1;
       }
 
       // initializations for part weights
@@ -3536,7 +3553,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           (int) team_begin_index, (int) team_end_index, (int) stride);
 */
 
-/*
+#define SIMPLE_OPTION
+#ifdef SIMPLE_OPTION
+
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
           [=] (mj_lno_t & ii) {
@@ -3572,8 +3591,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
 
         });
-*/
 
+#else
 
         Kokkos::parallel_for(
           Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
@@ -3676,7 +3695,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 }
         }); // ends the nested 2nd loop
 
+#endif
+
      }); // ends the outer loop over teams
+
 
      // Finalize the loop - TODO: optimize
      // Putting this inside above loop surrounded by barriers and executing
@@ -3888,10 +3910,9 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::mj_create_new_partitions(
     mj_part_t num_parts,
+    mj_part_t current_concurrent_work_part,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate,
-    mj_lno_t coordinate_begin,
-    mj_lno_t coordinate_end,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_used_local_cut_line_weight_to_left,
     Kokkos::View<double *, Kokkos::LayoutLeft, typename mj_node_t::device_type> kokkos_used_thread_part_weight_work,
     Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> kokkos_out_part_xadj,
@@ -3905,12 +3926,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_new_coordinate_permutations
     ){
+        auto local_kokkos_part_xadj = this->kokkos_part_xadj;
+
         mj_part_t num_cuts = num_parts - 1;
         typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
         Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-          ZOLTAN2_ALGMULTIJAGGED_NUM_TEAMS,
+          1, // teams
           1); // Kokkos::AUTO());
         Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+
+                mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
+                mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
+                  local_kokkos_part_xadj(current_concurrent_work_part - 1);
+
                 //now if the rectilinear partitioning is allowed we decide how
                 //much weight each thread should put to left and right.
                 if (local_distribute_points_on_cut_lines){
@@ -3983,6 +4011,10 @@ if(team_member.league_rank() == 0) {
         Kokkos::fence();
         // start it up again
         Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+
+                mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
+                mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
+                  local_kokkos_part_xadj(current_concurrent_work_part - 1);
 
 // This loop not currently safe for the cuda run so disabled to a serial single
 // TODO: Needs optimization and refactoring
@@ -6412,6 +6444,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 )
 {
+mj_1D_part_init.reset();
+mj_1D_part_loop.reset();
+do_weights.reset();
+mj_1D_part_end.reset();
+
 Clock clock_multi_jagged_part("multi_jagged_part", true);
 Clock clock_multi_jagged_part_init("multi_jagged_part init", true);
 Clock mj_1D_part_clock("mj_1D_part", false);
@@ -6420,6 +6457,10 @@ Clock clock_create_new_part_chunks("clock_create_new_part_chunks", false);
 Clock clock_loop_first_setup("loop_first_setup", false);
 Clock recursion_initial_round("recursion_initial_round", false);
 Clock clock_rec_loop_finish_up("clock_rec_loop_finish_up", false);
+Clock clock_create_new_partitions("clock_create_new_partitions", false);
+Clock clock_update_boxes("clock_update_boxes", false);
+Clock clock_shift_partitions("clock_shift_partitions", false);
+Clock clock_create_new_part_chunks_prep("clock_create_new_part_chunks_prep", false);
 
 #ifdef print_debug
     if(comm->getRank() == 0){
@@ -6546,6 +6587,7 @@ recursion_initial_round.start();
                 input_part_boxes = output_part_boxes;
                 output_part_boxes = tmpPartBoxes;
             }
+recursion_initial_round.stop();
             continue;
         }
 
@@ -6576,35 +6618,32 @@ recursion_initial_round.stop();
                  current_work_part += current_concurrent_num_parts){
             current_concurrent_num_parts = std::min(current_num_parts - current_work_part,
                                  this->max_concurrent_part_calculation);
-            mj_part_t actual_work_part_count = 0;
-            //initialization for 1D partitioning.
-            //get the min and max coordinates of each part
-            //together with the part weights of each part.
 
 clock_loop_first_setup.start();
 
-           for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
-
-                mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
-                //if this part wont be partitioned any further
-                //dont do any work for this part.
-                if (num_partitioning_in_current_dim[current_work_part_in_concurrent_parts] == 1){
-                    continue;
-                }
-                ++actual_work_part_count;
-
-                this->mj_get_local_min_max_coord_totW(
-                  current_work_part,
-                  current_concurrent_num_parts,
-                  kk,
-                  kokkos_mj_current_dim_coords);
+            // TODO: This loop could be a kernel but I think it will usually exit right away so probably not worth it
+            // Could also be read from activity of mj_get_local_min_max_coord_totW below but may not be worth the
+            // device to host transfer - later if this section becomes device code we can optimize this a bit.
+            bool bDoingWork = false;
+            for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+              if(num_partitioning_in_current_dim[current_work_part + kk] != 1) {
+                bDoingWork = true;
+                break;
+              }
             }
+
+            this->mj_get_local_min_max_coord_totW(
+              current_work_part,
+              current_concurrent_num_parts,
+              kokkos_mj_current_dim_coords,
+              view_num_partitioning_in_current_dim);
 
 clock_loop_first_setup.stop();
 
 clock_sub_loop.start();
+
             //1D partitioning
-            if (actual_work_part_count > 0){
+            if (bDoingWork){
                 //obtain global Min max of the part.
                 this->mj_get_global_min_max_coord_totW(
                                 current_concurrent_num_parts,
@@ -6734,6 +6773,7 @@ clock_sub_loop.start();
                 mj_scalar_t used_imbalance = 0;
                 // Determine cut lines for all concurrent parts parts here.
                 this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
+
 mj_1D_part_clock.start();
                 this->mj_1D_part(
                     kokkos_mj_current_dim_coords,
@@ -6760,6 +6800,8 @@ clock_create_new_part_chunks.start();
                 size_t tlr_shift = 0;
                 size_t partweight_array_shift = 0;
                 for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
+clock_create_new_part_chunks_prep.start();
+
                     mj_part_t current_concurrent_work_part = current_work_part + kk;
 
                     // TODO: num_partitioning_in_current_dim to vector onto device
@@ -6768,17 +6810,13 @@ clock_create_new_part_chunks.start();
                     //if the part is empty, skip the part.
 
                     // TODO: Clean up later - for now pull some values to host and keep the algorithm serial host at this point
-                    mj_scalar_t coordinateA, coordinateB;
+                    int coordinateA_bigger_than_coordinateB = false;
                     auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
                     Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk);
-                    }, coordinateA);
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-                    }, coordinateB);
-                    if((num_parts != 1) && (coordinateA > coordinateB)) {
+                      KOKKOS_LAMBDA(int dummy, int & set_single) {
+                      set_single = local_kokkos_global_min_max_coord_total_weight(kk) > (local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts));
+                    }, coordinateA_bigger_than_coordinateB);
+                    if((num_parts != 1) && coordinateA_bigger_than_coordinateB) {
                         //we still need to write the begin and end point of the
                         //empty part. simply set it zero, the array indices will be shifted later
                         auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
@@ -6792,20 +6830,9 @@ clock_create_new_part_chunks.start();
                         tlr_shift += (4 *(num_parts - 1) + 1);
                         output_array_shift += num_parts;
                         partweight_array_shift += (2 * (num_parts - 1) + 1);
+clock_create_new_part_chunks_prep.stop();
                         continue;
                     }
-                    mj_lno_t coordinate_end;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                      set_single = local_kokkos_part_xadj[current_concurrent_work_part];;
-                    }, coordinate_end);
-
-                    mj_lno_t coordinate_begin;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                      set_single = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
-                                                                current_concurrent_work_part -1);;
-                    }, coordinate_begin);
 
                     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_concurrent_cut_coordinate =
                       Kokkos::subview(kokkos_current_cut_coordinates,
@@ -6824,9 +6851,13 @@ clock_create_new_part_chunks.start();
                         std::pair<mj_lno_t, mj_lno_t>(
                           partweight_array_shift,
                           this->kokkos_thread_part_weights.extent(0)));
+
+clock_create_new_part_chunks_prep.stop();
+
                     if(num_parts > 1){
                         if(this->mj_keep_part_boxes){
                                 //if part boxes are to be stored update the boundaries.
+clock_update_boxes.start();
                             for (mj_part_t j = 0; j < num_parts - 1; ++j){
                                 // TODO: need to refactor output_part_boxes to a View form
                                 // Then refactor this loop to a parallel_for so it's all on device
@@ -6841,14 +6872,15 @@ clock_create_new_part_chunks.start();
                                 (*output_part_boxes)[output_array_shift + output_part_index + j + 1].
                                    updateMinMax(temp_get_val, 0 /*update max*/, coordInd);
                             }
+clock_update_boxes.stop();
                         }
                         // Rewrite the indices based on the computed cuts.
+clock_create_new_partitions.start();
                         this->mj_create_new_partitions(
                             num_parts,
+                            current_concurrent_work_part,
                             kokkos_mj_current_dim_coords,
                             kokkos_current_concurrent_cut_coordinate,
-                            coordinate_begin,
-                            coordinate_end,
                             kokkos_used_local_cut_line_weight_to_left,
                             this->kokkos_thread_part_weight_work,
                             Kokkos::subview(this->kokkos_new_part_xadj,
@@ -6865,8 +6897,23 @@ clock_create_new_part_chunks.start();
                             this->kokkos_assigned_part_ids,
                             this->kokkos_new_coordinate_permutations
                             );
+clock_create_new_partitions.stop();
                     }
                     else {
+                        // This should all get simplified into device code
+                        mj_lno_t coordinate_end;
+                        Kokkos::parallel_reduce("Read single", 1,
+                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                          set_single = local_kokkos_part_xadj[current_concurrent_work_part];;
+                        }, coordinate_end);
+
+                        mj_lno_t coordinate_begin;
+                        Kokkos::parallel_reduce("Read single", 1,
+                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+                          set_single = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
+                                                                current_concurrent_work_part -1);;
+                        }, coordinate_begin);
+
                         //if this part is partitioned into 1 then just copy
                         //the old values.
                         mj_lno_t part_size = coordinate_end - coordinate_begin;
@@ -6899,6 +6946,7 @@ clock_create_new_part_chunks.start();
                 //mj_create_new_partitions from coordinates partitioned the parts and
                 //write the indices as if there were a single part.
                 //now we need to shift the beginning indices.
+clock_shift_partitions.start();
                 for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
                     mj_part_t num_parts = num_partitioning_in_current_dim[ current_work_part + kk];
                     auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
@@ -6918,6 +6966,7 @@ clock_create_new_part_chunks.start();
                     //increase the current out.
                     output_part_index += num_parts ;
                 }
+clock_shift_partitions.stop();
             }
 clock_create_new_part_chunks.stop();
         }
@@ -7007,9 +7056,19 @@ clock_sub_loop.print();
 clock_loop_first_setup.print();
 mj_1D_part_clock.print();
 clock_create_new_part_chunks.print();
+clock_create_new_part_chunks_prep.print();
 clock_multi_jagged_part_clean_up.stop(true);
 clock_rec_loop_finish_up.print();
+clock_create_new_partitions.print();
+clock_shift_partitions.print();
 clock_multi_jagged_part.stop(true);
+clock_update_boxes.print();
+
+printf("##################################\n");
+mj_1D_part_init.print();
+mj_1D_part_loop.print();
+do_weights.print();
+mj_1D_part_end.print();
 }
 
 
