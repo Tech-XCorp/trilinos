@@ -4227,7 +4227,7 @@ mj_create_new_partitions(
     member_type member_type;
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
    1, // teams
-   1); // Kokkos::AUTO());
+   Kokkos::AUTO());
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
     mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
@@ -4238,6 +4238,9 @@ mj_create_new_partitions(
     // much weight each thread should put to left and right.
     if (local_distribute_points_on_cut_lines) {
       if(team_member.league_rank() == 0) {
+
+        Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+
         for(mj_part_t i = 0; i < num_cuts; ++i) {
 //      Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
 //        [=] (mj_part_t & i) {
@@ -4263,6 +4266,10 @@ mj_create_new_partitions(
             local_kokkos_thread_cut_line_weight_to_put_left(i) = 0;
           }
         }
+
+        }); // Kokkos::single
+        team_member.team_barrier(); // for end of Kokkos::single
+
       }
       team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
@@ -4407,19 +4414,30 @@ mj_create_new_partitions(
     // first we find the out_part_xadj, by marking the begin and end points of each part found.
     // the below loop find the number of points in each part, and writes it to out_part_xadj
     if(team_member.league_rank() == 0) {
-       for(mj_part_t j = 0; j < num_parts; ++j) {
-  //   Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-  //     [=] (mj_part_t & j) {
+
+      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+
+      for(mj_part_t j = 0; j < num_parts; ++j) {
+  //  Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
+  //    [=] (mj_part_t & j) {
         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
         mj_lno_t thread_num_points_in_part_j = local_kokkos_thread_point_counts(j);
         local_kokkos_thread_point_counts(j) = num_points_in_part_j_upto_thread_i;
         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
         kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
       }
+
+      }); // Kokkos::single
+      team_member.team_barrier(); // for end of Kokkos::single
+
       team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
     }
+
     // now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
     if(team_member.league_rank() == 0) {
+
+      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+
       for(mj_part_t j = 1; j < num_parts; ++j) {
         kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
         local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
@@ -4427,10 +4445,13 @@ mj_create_new_partitions(
       for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
         mj_lno_t i = local_kokkos_coordinate_permutations(ii);
         mj_part_t p =  local_kokkos_assigned_part_ids(i);
-
         local_kokkos_new_coordinate_permutations(coordinate_begin +
           local_kokkos_thread_point_counts(p)++) = i;
       }
+
+      }); // Kokkos::single
+      team_member.team_barrier(); // for end of Kokkos::single
+
     }
   });
 }
