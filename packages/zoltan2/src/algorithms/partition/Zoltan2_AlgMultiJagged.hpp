@@ -3780,6 +3780,11 @@ do_weights5.start();
       mj_part_t cut = static_cast<mj_part_t>(team_member.league_rank());
       mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
 
+      mj_scalar_t right = kokkos_my_current_right_closest(cut);
+      mj_scalar_t left = kokkos_my_current_left_closest(cut);
+
+      team_member.team_barrier();
+
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, coordinate_end_index - coordinate_begin_index),
         [=] (const mj_lno_t & ii, mj_scalar_t & running_min) {
          int i = local_kokkos_coordinate_permutations(ii + coordinate_begin_index);
@@ -3793,9 +3798,9 @@ do_weights5.start();
 //         if(running_min > local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1) {
 //           running_min = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
 //         }
-      }, Kokkos::Min<mj_scalar_t>(kokkos_my_current_right_closest(cut)));
+      }, Kokkos::Min<mj_scalar_t>(right));
 
-//      team_member.team_barrier();
+      team_member.team_barrier();
 
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, coordinate_end_index - coordinate_begin_index),
         [=] (const mj_lno_t & ii, mj_scalar_t & running_max) {
@@ -3810,10 +3815,12 @@ do_weights5.start();
 //        if(running_max < local_kokkos_global_min_max_coord_total_weight(working_kk) - 1) {
 //          running_max = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
 //        }
-      }, Kokkos::Max<mj_scalar_t>(kokkos_my_current_left_closest(cut)));
+      }, Kokkos::Max<mj_scalar_t>(left));
 
-//      team_member.team_barrier();
+      team_member.team_barrier();
 
+      kokkos_my_current_right_closest(cut) = right;
+      kokkos_my_current_left_closest(cut) = left;
     });
 
 /*
