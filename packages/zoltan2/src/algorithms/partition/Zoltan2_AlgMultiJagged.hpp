@@ -1688,7 +1688,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                     }, coord_dim_maxs[coord_traverse_ind]);
 
                     // Temporary - in refactor progress - will need to redo this formatting: TODO
-                    coord_dimension_range_sorted[coord_traverse_ind].val;
                     Kokkos::parallel_reduce("Read single", 1,
                       KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
                       set_single = local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) - 
@@ -3487,18 +3486,13 @@ struct ThreadReducer {
 
   typedef ThreadReducer reducer;
   typedef ArrayType<scalar_t> value_type;
-  typedef Kokkos::View<part_t*> parts_view_t;
-  typedef typename parts_view_t::size_type size_type;
   value_type * value;
-  parts_view_t parts_;
-  size_type value_count;
+  size_t value_count;
 
   KOKKOS_INLINE_FUNCTION ThreadReducer(
     value_type &val,
-    const parts_view_t& parts,
-    const size_type& n_parts) :
-    parts_(parts), value_count(n_parts),
-    value(&val)
+    const size_t & n_parts) :
+    value_count(n_parts), value(&val)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -3527,24 +3521,44 @@ struct ThreadReducer {
   }
 };
 
-template<class policy_t, class scalar_t, class part_t, class index_t>
+template<class policy_t, class scalar_t, class part_t, class index_t, class node_t>
 struct TeamArrayReduceFunctor {
   typedef typename policy_t::member_type member_type;
-  typedef Kokkos::View<part_t*> parts_view_t;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
-  typedef typename parts_view_t::size_type size_type;
   typedef scalar_t value_type[];
 
-  size_type value_count;
-  index_t coordinate_begin_index;
-  index_t coordinate_end_index;
+  size_t value_count;
+  index_t all_begin;
+  index_t all_end;
+  Kokkos::View<index_t*, typename node_t::device_type> permutations;
+  Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
+  Kokkos::View<scalar_t**, typename node_t::device_type> weights;
+  Kokkos::View<part_t*, typename node_t::device_type> parts;
+  Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
+  bool bUniformWeights;
+  scalar_t sEpsilon;
+  
   TeamArrayReduceFunctor(
-    const index_t & coord_begin_index,
-    const index_t & coord_end_index,
-    const part_t n_parts) :
-    coordinate_begin_index(coord_begin_index),
-    coordinate_end_index(coord_end_index),
-    value_count(n_parts) {
+    const index_t & coordinate_begin_index,
+    const index_t & coordinate_end_index,
+    const part_t mj_weight_array_size,
+    Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
+    Kokkos::View<scalar_t**, typename node_t::device_type> mj_weights,
+    Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
+    bool mj_bUniformWeights,
+    scalar_t mj_sEpsilon) :
+    value_count(mj_weight_array_size),
+    all_begin(coordinate_begin_index),
+    all_end(coordinate_end_index),
+    permutations(mj_permutations),
+    coordinates(mj_coordinates),
+    weights(mj_weights),
+    parts(mj_parts),
+    cut_coordinates(mj_cut_coordinates),
+    bUniformWeights(mj_bUniformWeights),
+    sEpsilon(mj_sEpsilon) {
   }
 
   size_t team_shmem_size (int team_size) const {
@@ -3556,16 +3570,16 @@ struct TeamArrayReduceFunctor {
 
     int num_teams = teamMember.league_size();
     
-    index_t num_working_points = coordinate_end_index - coordinate_begin_index;
+    index_t num_working_points = all_end - all_begin;
     index_t stride = num_working_points / num_teams;
     if((num_working_points % num_teams) > 0) {
       stride += 1; // make sure we have coverage for the final points
     }
         
-    index_t begin = coordinate_begin_index + stride * teamMember.league_rank();
+    index_t begin = all_begin + stride * teamMember.league_rank();
     index_t end = begin + stride;
-    if(end > coordinate_end_index) {
-      end = coordinate_end_index; // the last team may have less work than the other teams
+    if(end > all_end) {
+      end = all_end; // the last team may have less work than the other teams
     }
 
     // create the team shared data - each thread gets one of the arrays
@@ -3575,15 +3589,47 @@ struct TeamArrayReduceFunctor {
     // select the array for this thread
     ArrayType<scalar_t> array(&shared_ptr[teamMember.team_rank() * value_count]);
 
-/*
     // create reducer which handles the ArrayType class
     ThreadReducer<policy_t, scalar_t, part_t> threadReducer(
-      array, parts_, value_count);
+      array, value_count);
 
     // call the reduce
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_type i, ArrayType<scalar_t>& threadSum) {
-      threadSum.ptr[parts_(i)] += 1.0; // this model assumes uniform weights  
+      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      
+      int i = permutations(ii);
+      scalar_t coord = coordinates(i);
+      scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+      bool bOnCut = false;
+
+      int num_cuts = value_count / 2;
+
+      for(index_t cut = 0; cut < num_cuts; ++cut) {
+        scalar_t cut_coord = cut_coordinates(cut);
+        scalar_t distance_to_cut = coord - cut_coord;
+        scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
+
+        if(abs_distance_to_cut < sEpsilon) {
+          bOnCut = true;
+          int assign_index = cut * 2 + 1;
+          threadSum.ptr[assign_index] += w;
+          parts(i) = assign_index;
+        }
+      }
+
+      if(!bOnCut) {
+        for(index_t part = 0; part <= num_cuts; ++part) {
+          scalar_t a = (part>0) ? cut_coordinates(part-1) : -99999999.9;
+          scalar_t b = (part<num_cuts) ? cut_coordinates(part) : 9999999.9; // temp test
+          if(coord >= a + sEpsilon  && coord <= b - sEpsilon) {
+            int assign_index = part * 2;
+            threadSum.ptr[assign_index] += w;
+            parts(i) = assign_index;
+          }
+        }
+      }
+          
     }, threadReducer);
 
     // collect all the team's results
@@ -3592,7 +3638,6 @@ struct TeamArrayReduceFunctor {
         teamSum[n] += array.ptr[n];
       }
     });
-*/
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -3711,20 +3756,26 @@ do_weights1.stop();
 
 do_weights2.start();
 
-// #define USE_REDUCE_ON_ARRAYS
+#define USE_REDUCE_ON_ARRAYS
 #ifdef USE_REDUCE_ON_ARRAYS
-
+    
   int weight_array_size = num_cuts * 2 + 1;
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
-  TeamArrayReduceFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t> teamFunctor(
-      coordinate_begin_index, coordinate_end_index, weight_array_size);
-
-  mj_scalar_t * pArray = new mj_scalar_t[weight_array_size];
+  TeamArrayReduceFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
+    teamFunctor(coordinate_begin_index,
+                coordinate_end_index,
+                weight_array_size,
+                kokkos_coordinate_permutations,
+                kokkos_mj_current_dim_coords,
+                kokkos_mj_weights,
+                kokkos_assigned_part_ids,
+                kokkos_temp_current_cut_coords,
+                kokkos_mj_uniform_weights(0),
+                sEpsilon);
 
   auto policy = policy_t(num_teams, Kokkos::AUTO);
-  Kokkos::parallel_reduce(policy, teamFunctor, pArray);
-  
-  delete [] pArray;
+  Kokkos::parallel_reduce(policy, teamFunctor,
+    kokkos_my_current_part_weights.data());
   
 #else // USE_REDUCE_ON_ARRAYS
 
