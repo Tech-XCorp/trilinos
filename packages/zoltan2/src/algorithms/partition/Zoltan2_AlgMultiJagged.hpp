@@ -3765,11 +3765,21 @@ do_weights3.stop();
 
 do_weights5.start();
 
+    // Note that the original algorithm would write on the cut values to be the coord instead of
+    // the cut itself. This would mean the result is not really deterministic and I've changed it
+    // so it writes the cut value. I don't think it matter necessarily for any practical result.
+
+    // this was a bottleneck I improved by putting one cut for each team but I think on a large
+    // gpu system this may be wasteful. This was a big improvement but needs further work later.
+    // TODO: Improve algorithm and perhaps make a combinmatin min/max reducer to be faster.
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_max_min(num_cuts, Kokkos::AUTO());
     Kokkos::parallel_for (policy_max_min, KOKKOS_LAMBDA(member_type team_member) {
       mj_part_t cut = static_cast<mj_part_t>(team_member.league_rank());
       mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
 
+      // Passing kokkos_my_current_right_closest(cut) directly to the reduce will create
+      // intermittent failures for just one of the tests. Not certain yet why it doesn't
+      // work but copying out and then back seems perfectly fine.
       mj_scalar_t right = kokkos_my_current_right_closest(cut);
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, coordinate_end_index - coordinate_begin_index),
         [=] (const mj_lno_t & ii, mj_scalar_t & running_min) {
@@ -3799,35 +3809,6 @@ do_weights5.start();
 
       kokkos_my_current_left_closest(cut) = left;
     });
-
-/*
-Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t cut) {
-
-for(int ii = 0; ii < coordinate_end_index - coordinate_begin_index; ++ii) {
-
-       int i = local_kokkos_coordinate_permutations(ii + coordinate_begin_index);
-       mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
-
-         mj_scalar_t coord_cut = kokkos_temp_current_cut_coords(cut);
-         mj_scalar_t distance_to_cut = coord - coord_cut;
-         mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
-         if(abs_distance_to_cut < local_sEpsilon) {
-           Kokkos::atomic_exchange(&kokkos_my_current_left_closest(cut), coord);
-           Kokkos::atomic_exchange(&kokkos_my_current_right_closest(cut), coord);
-         }
-         else if(coord > coord_cut) {
-           if(coord < kokkos_my_current_right_closest(cut)) {
-             Kokkos::atomic_exchange(&kokkos_my_current_right_closest(cut), coord);
-           }
-         } else if(coord < coord_cut) {
-           if(coord > kokkos_my_current_left_closest(cut)) {
-             Kokkos::atomic_exchange(&kokkos_my_current_left_closest(cut), coord);
-           }
-         }
-}
-});
-*/
-
 do_weights5.stop();
 }
 
