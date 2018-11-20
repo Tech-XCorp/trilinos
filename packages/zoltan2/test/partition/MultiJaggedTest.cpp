@@ -1332,7 +1332,9 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
+#ifdef KOKKOS_HAVE_CUDA
 #define RUN_UVM_OFF_TEST
+#endif
 
 int main(int argc, char *argv[])
 {
