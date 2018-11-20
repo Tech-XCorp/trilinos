@@ -3762,16 +3762,16 @@ do_weights3.start();
      });     
 do_weights3.stop();
 
-do_weights4.start();
+//do_weights4.start();
 
 
      // TODO: optimize this further ....
       //initialize the left and right closest coordinates to their max value.
-      Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t i) {
-        kokkos_my_current_left_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
-        kokkos_my_current_right_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
-      });
-do_weights4.stop();
+//      Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t i) {
+ //       kokkos_my_current_left_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
+ //       kokkos_my_current_right_closest(i) = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
+ //     });
+//do_weights4.stop();
 
 do_weights5.start();
 
@@ -3790,10 +3790,12 @@ do_weights5.start();
          else if(coord > coord_cut && coord < running_min) {
            running_min = coord;
          }
-         if(running_min > local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1) {
-           running_min = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
-         }
+//         if(running_min > local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1) {
+//           running_min = local_kokkos_global_min_max_coord_total_weight(working_kk + current_concurrent_num_parts) + 1;
+//         }
       }, Kokkos::Min<mj_scalar_t>(kokkos_my_current_right_closest(cut)));
+
+//      team_member.team_barrier();
 
       Kokkos::parallel_reduce(Kokkos::TeamThreadRange(team_member, coordinate_end_index - coordinate_begin_index),
         [=] (const mj_lno_t & ii, mj_scalar_t & running_max) {
@@ -3805,10 +3807,12 @@ do_weights5.start();
         else if(coord < coord_cut && coord > running_max) {
           running_max = coord;
         }
-        if(running_max < local_kokkos_global_min_max_coord_total_weight(working_kk) - 1) {
-          running_max = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
-        }
+//        if(running_max < local_kokkos_global_min_max_coord_total_weight(working_kk) - 1) {
+//          running_max = local_kokkos_global_min_max_coord_total_weight(working_kk) - 1;
+//        }
       }, Kokkos::Max<mj_scalar_t>(kokkos_my_current_left_closest(cut)));
+
+//      team_member.team_barrier();
 
     });
 
