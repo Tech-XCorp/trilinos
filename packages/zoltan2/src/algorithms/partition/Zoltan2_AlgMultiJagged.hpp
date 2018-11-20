@@ -3527,7 +3527,7 @@ struct TeamArrayReduceFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
-  size_t value_count;
+  int value_count;
   index_t all_begin;
   index_t all_end;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
@@ -3541,7 +3541,7 @@ struct TeamArrayReduceFunctor {
   TeamArrayReduceFunctor(
     const index_t & coordinate_begin_index,
     const index_t & coordinate_end_index,
-    const part_t mj_weight_array_size,
+    const int & mj_weight_array_size,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
     Kokkos::View<scalar_t**, typename node_t::device_type> mj_weights,
@@ -3596,7 +3596,6 @@ struct TeamArrayReduceFunctor {
     // call the reduce
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
-      
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
       scalar_t w = bUniformWeights ? 1 : weights(i,0);
@@ -3604,7 +3603,6 @@ struct TeamArrayReduceFunctor {
       bool bOnCut = false;
 
       int num_cuts = value_count / 2;
-
       for(index_t cut = 0; cut < num_cuts; ++cut) {
         scalar_t cut_coord = cut_coordinates(cut);
         scalar_t distance_to_cut = coord - cut_coord;
@@ -3629,7 +3627,6 @@ struct TeamArrayReduceFunctor {
           }
         }
       }
-          
     }, threadReducer);
 
     // collect all the team's results
@@ -3708,7 +3705,7 @@ do_weights1.start();
       auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
 
       // Pull these values from device so we can set up a good team count estimate.
-      // This should probably eventually be refactored.
+      // This should probabOBly eventually be refactored.
       mj_part_t conccurent_current_part = current_work_part + working_kk;
       mj_lno_t coordinate_begin_index;
       Kokkos::parallel_reduce("Read single", 1,
@@ -3716,10 +3713,17 @@ do_weights1.start();
         set_single = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
       }, coordinate_begin_index);
       mj_lno_t coordinate_end_index;
+
       Kokkos::parallel_reduce("Read single", 1,
         KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
         set_single = local_kokkos_part_xadj(conccurent_current_part);
       }, coordinate_end_index);
+
+      int uniform_weights;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, int & set_single) {
+        set_single = local_kokkos_mj_uniform_weights(0);
+      }, uniform_weights);
 
       // total points to be processed by all teams
       mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
@@ -3756,9 +3760,9 @@ do_weights1.stop();
 
 do_weights2.start();
 
-#define USE_REDUCE_ON_ARRAYS
+ #define USE_REDUCE_ON_ARRAYS
 #ifdef USE_REDUCE_ON_ARRAYS
-    
+
   int weight_array_size = num_cuts * 2 + 1;
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
   TeamArrayReduceFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
@@ -3770,13 +3774,28 @@ do_weights2.start();
                 kokkos_mj_weights,
                 kokkos_assigned_part_ids,
                 kokkos_temp_current_cut_coords,
-                kokkos_mj_uniform_weights(0),
+                uniform_weights ? true : false,
                 sEpsilon);
 
   auto policy = policy_t(num_teams, Kokkos::AUTO);
-  Kokkos::parallel_reduce(policy, teamFunctor,
-    kokkos_my_current_part_weights.data());
-  
+
+  mj_scalar_t * part_weights = new mj_scalar_t[weight_array_size];
+
+  Kokkos::parallel_reduce(policy, teamFunctor, part_weights);
+ 
+  // Move it from global memory to device memory
+  // Need to figure out how we can better manage this
+  Kokkos::View<double *> deviceArray("weight_array_size", weight_array_size);
+  Kokkos::View<double *>::HostMirror hostArray = 
+    Kokkos::create_mirror_view(deviceArray);
+  for(int i = 0; i < weight_array_size; ++i) {
+    hostArray(i) = part_weights[i];
+  }
+  Kokkos::deep_copy(deviceArray, hostArray);
+  Kokkos::parallel_for (weight_array_size, KOKKOS_LAMBDA(size_t i) {
+    kokkos_my_current_part_weights(i) = deviceArray(i);
+  });
+
 #else // USE_REDUCE_ON_ARRAYS
 
       // start the outer loop on teams
