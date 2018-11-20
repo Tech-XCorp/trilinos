@@ -4222,11 +4222,15 @@ mj_create_new_partitions(
 {
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
+
   mj_part_t num_cuts = num_parts - 1;
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
+
+  const int num_teams = 1024; // arbitrary right now
+
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-   1, // teams
+   num_teams, // teams
    Kokkos::AUTO());
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
