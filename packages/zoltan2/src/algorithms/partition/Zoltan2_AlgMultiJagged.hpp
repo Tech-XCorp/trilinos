@@ -2693,9 +2693,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
-  // Will come back to this TODO:
-  // I thought putting the parts across the outer loop would help as it did in other places
-  // but saw no benefit in this case.  
+  // TODO: Earlier evaluated this and was having difficulty getting performance but discovered later
+  // there was an indexing overflow - need to recheck these stats and check out the if below as well
+  // for no work parts.
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (current_concurrent_num_parts, Kokkos::AUTO());
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
   Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
@@ -2709,7 +2709,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
    if (view_num_partitioning_in_current_dim(current_work_part_in_concurrent_parts) != 1) {
 
     mj_lno_t coordinate_end_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-    mj_lno_t coordinate_begin_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts ? current_work_part_in_concurrent_parts-1 : 0);
+    mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts ?
+      local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1) : 0;
 
     mj_scalar_t my_thread_min_coord = 0;
     mj_scalar_t my_thread_max_coord = 0;
