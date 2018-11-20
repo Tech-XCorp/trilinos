@@ -4208,21 +4208,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_part_t*, typename mj_node_t::device_type> local_kokkos_assigned_part_ids,
     Kokkos::View<mj_lno_t*, typename mj_node_t::device_type> local_kokkos_new_coordinate_permutations
     ){
-        auto local_kokkos_part_xadj = this->kokkos_part_xadj;
+       auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
-        mj_part_t num_cuts = num_parts - 1;
-        typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-        Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-          1, // teams
-          1); // Kokkos::AUTO());
-        Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+       mj_part_t num_cuts = num_parts - 1;
+       typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+       Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
+         1, // teams
+         1); // Kokkos::AUTO());
+       Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
-                mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
-                mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
-                  local_kokkos_part_xadj(current_concurrent_work_part - 1);
+       mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
+       mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
+         local_kokkos_part_xadj(current_concurrent_work_part - 1);
 
-                //now if the rectilinear partitioning is allowed we decide how
-                //much weight each thread should put to left and right.
+       //now if the rectilinear partitioning is allowed we decide how
+       //much weight each thread should put to left and right.
                 if (local_distribute_points_on_cut_lines){
                         // TODO: Evaluate this comment in light of the new refactor to Kokkos...
                         // this for assumes the static scheduling in mj_1D_part calculation.
@@ -4390,66 +4390,33 @@ if(team_member.league_rank() == 0) {
                 //first we find the out_part_xadj, by marking the begin and end points of each part found.
                 //the below loop find the number of points in each part, and writes it to out_part_xadj
 if(team_member.league_rank() == 0) {
-for(mj_part_t j = 0; j < num_parts; ++j) {
+                for(mj_part_t j = 0; j < num_parts; ++j) {
 
-//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-//                    [=] (mj_part_t & j) {
+                //       Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
+                //       [=] (mj_part_t & j) {
                         mj_lno_t num_points_in_part_j_upto_thread_i = 0;
-
-                        // TODO: Refactored to remove num_threads - now clean this section up
                         mj_lno_t thread_num_points_in_part_j = local_kokkos_thread_point_counts(j);
-                        //prefix sum to thread point counts, so that each will have private space to write.
                         local_kokkos_thread_point_counts(j) = num_points_in_part_j_upto_thread_i;
                         num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
-
                         kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
                 }
 //);
                 team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 }
                 //now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
-
-if(team_member.league_rank() == 0) {
-for(mj_part_t j = 1; j < num_parts; ++j) {
-
-//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
-//                    [=] (mj_part_t & j) {
-                    //perform prefix sum for num_points in parts.
+                if(team_member.league_rank() == 0) {
+                  for(mj_part_t j = 1; j < num_parts; ++j) {
                     kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
-                }
-//);
-                team_member.team_barrier(); // for end of Kokkos::single
-
-for(mj_part_t j = 1; j < num_parts; ++j) {
-//                Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, 1, num_parts),
-//                    [=] (mj_part_t & j) {
                     local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
-                }
-//);
-                team_member.team_barrier(); // for end of Kokkos::single
-}
-                //now thread gets the coordinate and writes the index of coordinate to the permutation array
-                //using the part index we calculated.
-
-                // This needs to be optimized - I've refactored to a single because this code
-                // is not thread safe - in the original setup things were split between the
-                // threads so each could handle independently. TODO: Improve  
-                Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-// TODO: Temp delete - a test to verify setting multiple teams above was doing what I thought - this should work with this test
-if(team_member.league_rank() == 0) {
-                for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-                //Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
-                //  [=] (mj_lno_t & ii) {
+                  }
+                  for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
                         mj_lno_t i = local_kokkos_coordinate_permutations(ii);
                         mj_part_t p =  local_kokkos_assigned_part_ids(i);
 
                         local_kokkos_new_coordinate_permutations(coordinate_begin +
                                                           local_kokkos_thread_point_counts(p)++) = i;
-                //});
+                  }
                 }
-} // temp
-                });
-                team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
         });
 
 }
