@@ -1332,7 +1332,7 @@ void print_usage(char *executable){
     cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << endl;
 }
 
-#define RUN_UVM_OFF_TEST
+// #define RUN_UVM_OFF_TEST
 
 int main(int argc, char *argv[])
 {
