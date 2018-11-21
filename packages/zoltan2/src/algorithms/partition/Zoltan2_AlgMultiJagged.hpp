@@ -129,6 +129,13 @@ static Clock do_weights5("do_weights5", false);
 static Clock do_weights_control("do_weights_control", false);
 static Clock mj_1D_part_end("mj_1D_part_end", false);
 
+static Clock parts1("parts1", false);
+static Clock parts2("parts2", false);
+static Clock parts3("parts3", false);
+static Clock parts4("parts4", false);
+static Clock parts5("parts5", false);
+
+
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
 #else
@@ -4222,27 +4229,91 @@ mj_create_new_partitions(
 {
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
-
   mj_part_t num_cuts = num_parts - 1;
+
+parts1.start();
+
+  if (local_distribute_points_on_cut_lines) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
+      KOKKOS_LAMBDA (const mj_part_t & i) {
+      mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
+      if(left_weight > local_sEpsilon) {
+        // the weight of thread ii on cut.
+        mj_scalar_t thread_ii_weight_on_cut =
+          kokkos_used_thread_part_weight_work(i * 2 + 1) -
+          kokkos_used_thread_part_weight_work(i * 2);
+
+        if(thread_ii_weight_on_cut < left_weight) {
+          // if left weight is bigger than threads weight on cut.
+          local_kokkos_thread_cut_line_weight_to_put_left(i) = thread_ii_weight_on_cut;
+        }
+        else {
+          // if thread's weight is bigger than space, then put only a portion.
+          local_kokkos_thread_cut_line_weight_to_put_left(i) = left_weight;
+        }
+        left_weight -= thread_ii_weight_on_cut;
+      }
+      else {
+        local_kokkos_thread_cut_line_weight_to_put_left(i) = 0;
+      }      
+    });
+  }
+parts1.stop();
+
+parts2.start();
+
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
   const int num_teams = 1024; // arbitrary right now
 
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
+  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+
+  if(num_cuts > 0) {
+    // this is a special case. If cutlines share the same coordinate,
+    // their weights are equal. We need to adjust the ratio for that.
+    for (mj_part_t i = num_cuts - 1; i > 0 ; --i) {
+      if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
+        kokkos_current_concurrent_cut_coordinate(i -1)) < local_sEpsilon) {
+          local_kokkos_thread_cut_line_weight_to_put_left(i) -=
+            local_kokkos_thread_cut_line_weight_to_put_left(i - 1);
+      }
+      local_kokkos_thread_cut_line_weight_to_put_left(i) =
+        int ((local_kokkos_thread_cut_line_weight_to_put_left(i) +
+        LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
+        mj_scalar_t(SIGNIFICANCE_MUL);
+    }
+  }
+
+  });
+
+parts2.stop();
+
+parts3.start();
+
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
+    KOKKOS_LAMBDA (const mj_part_t & i) {
+    local_kokkos_thread_point_counts(i) = 0;
+  });
+
+parts3.stop();
+
+
+/*
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
    num_teams, // teams
    Kokkos::AUTO());
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
-    mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
-      local_kokkos_part_xadj(current_concurrent_work_part - 1);
-
     // now if the rectilinear partitioning is allowed we decide how
     // much weight each thread should put to left and right.
     if (local_distribute_points_on_cut_lines) {
-      if(team_member.league_rank() == 0) {
 
+      if(team_member.league_rank() == 0) {
+        
         Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
 
         for(mj_part_t i = 0; i < num_cuts; ++i) {
@@ -4317,9 +4388,14 @@ mj_create_new_partitions(
     team_member.team_barrier(); // for end of Kokkos::single
 
   }); // end it
-   
-  Kokkos::fence();
+*/
+
+parts4.start();
+ 
   // start it up again
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
+   num_teams, // teams
+   Kokkos::AUTO());
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
     mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
     mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
@@ -4458,6 +4534,8 @@ mj_create_new_partitions(
 
     }
   });
+ 
+  parts4.stop();
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
@@ -6741,6 +6819,11 @@ do_weights4.reset();
 do_weights5.reset();
 do_weights_control.reset();
 mj_1D_part_end.reset();
+parts1.reset();
+parts2.reset();
+parts3.reset();
+parts4.reset();
+parts5.reset();
 
 Clock clock_multi_jagged_part("multi_jagged_part", true);
 Clock clock_multi_jagged_part_init("multi_jagged_part init", true);
@@ -7229,7 +7312,6 @@ clock_create_new_partitions.stop();
                         });
                     }
                     cut_shift += num_parts - 1;
-                    tlr_shift += (4 *(num_parts - 1) + 1);
                     output_array_shift += num_parts;
                     partweight_array_shift += (2 * (num_parts - 1) + 1);
                 }
@@ -7368,6 +7450,12 @@ do_weights4.print();
 do_weights5.print();
 do_weights_control.print();
 mj_1D_part_end.print();
+
+parts1.print();
+parts2.print();
+parts3.print();
+parts4.print();
+parts5.print();
 }
 
 
