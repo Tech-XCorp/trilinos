@@ -134,7 +134,9 @@ static Clock parts2("parts2", false);
 static Clock parts3("parts3", false);
 static Clock parts4("parts4", false);
 static Clock parts5("parts5", false);
-
+static Clock parts6("parts6", false);
+static Clock parts7("parts7", false);
+static Clock parts8("parts8", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -3210,31 +3212,6 @@ mj_1D_part_loop.start();
                         concurrent_cut_shifts,
                         local_kokkos_temp_cut_coords.size()));
 
-
-
-// This is just a test to see the overhead of calling the nested loop at this level
-// mj_1D_part_get_thread_part_weights will do the same thing
-// TODO: Delete me completely .... this is junk code which does nothing ...
-do_weights_control.start();
-
-      // start the outer loop on teams
-      const int dummy_num_teams = 1024;
-      Kokkos::TeamPolicy<typename mj_node_t::execution_space> dummy_policy(dummy_num_teams, Kokkos::AUTO());
-      Kokkos::parallel_for (dummy_policy, KOKKOS_LAMBDA(member_type team_member) {
-
-        const int team_begin_index = 0;
-        const int team_end_index = 32;
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
-          [=] (mj_lno_t & ii) {
-
-        });
-      });
-
-do_weights_control.stop();
-
-
-
 do_weights.start();
                     this->mj_1D_part_get_thread_part_weights(
                         current_concurrent_num_parts,
@@ -4300,96 +4277,6 @@ parts3.start();
   });
 
 parts3.stop();
-
-
-/*
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-   num_teams, // teams
-   Kokkos::AUTO());
-  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-    // now if the rectilinear partitioning is allowed we decide how
-    // much weight each thread should put to left and right.
-    if (local_distribute_points_on_cut_lines) {
-
-      if(team_member.league_rank() == 0) {
-        
-        Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-
-        for(mj_part_t i = 0; i < num_cuts; ++i) {
-//      Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-//        [=] (mj_part_t & i) {
-          // the left to be put on the left of the cut.
-          mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
-          if(left_weight > local_sEpsilon) {
-          //the weight of thread ii on cut.
-            mj_scalar_t thread_ii_weight_on_cut =
-              kokkos_used_thread_part_weight_work(i * 2 + 1) -
-              kokkos_used_thread_part_weight_work(i * 2);
-
-            if(thread_ii_weight_on_cut < left_weight) {
-            //if left weight is bigger than threads weight on cut.
-              local_kokkos_thread_cut_line_weight_to_put_left(i) = thread_ii_weight_on_cut;
-            }
-            else {
-              // if thread's weight is bigger than space, then put only a portion.
-              local_kokkos_thread_cut_line_weight_to_put_left(i) = left_weight;
-            }
-            left_weight -= thread_ii_weight_on_cut;
-          }
-          else {
-            local_kokkos_thread_cut_line_weight_to_put_left(i) = 0;
-          }
-        }
-
-        }); // Kokkos::single
-        team_member.team_barrier(); // for end of Kokkos::single
-
-      }
-      team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-
-      // Note I'm inserting this single now that we have no thread chunks
-      // We used to take a subview for local_kokkos_thread_cut_line_weight_to_put_left so
-      // this could run for each sub chunk but now it's all back together.
-      // For now we call this once
-      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-        // TODO: Temp delete - a test to verify setting multiple teams above was
-        // doing what I thought - this should work with this test
-        if(team_member.league_rank() == 0) {
-          if(num_cuts > 0) {
-            // this is a special case. If cutlines share the same coordinate,
-            // their weights are equal. We need to adjust the ratio for that.
-            for (mj_part_t i = num_cuts - 1; i > 0 ; --i) {
-              if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
-                kokkos_current_concurrent_cut_coordinate(i -1)) < local_sEpsilon) {
-                local_kokkos_thread_cut_line_weight_to_put_left(i) -=
-                local_kokkos_thread_cut_line_weight_to_put_left(i - 1);
-              }
-              local_kokkos_thread_cut_line_weight_to_put_left(i) =
-                int ((local_kokkos_thread_cut_line_weight_to_put_left(i) +
-                LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
-                mj_scalar_t(SIGNIFICANCE_MUL);
-            }
-          }
-        } // temp handle multiple teams
-      }); // end of single
-
-      team_member.team_barrier(); // for end of Kokkos::single
-    }
-
-    // Note this single inserted with refactor since we don't have multple thread chunks anymore
-    // if(team_member.league_rank() == 0) {
-    // for(mj_part_t ii = 0; ii < num_parts; ++ii) {
-    Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-      [=] (mj_part_t & ii) {
-      local_kokkos_thread_point_counts(ii) = 0;
-    });
-    
-    team_member.team_barrier(); // for end of Kokkos::single
-
-  }); // end it
-*/
-
 parts4.start();
  
   // start it up again
@@ -4490,55 +4377,87 @@ parts4.start();
     }); // temporary single setup
     team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
-    // now we calculate where each thread will write in new_coordinate_permutations array.
-    // first we find the out_part_xadj, by marking the begin and end points of each part found.
-    // the below loop find the number of points in each part, and writes it to out_part_xadj
-    if(team_member.league_rank() == 0) {
+  });
 
-      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+  parts4.stop();
 
-      for(mj_part_t j = 0; j < num_parts; ++j) {
-  //  Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_parts),
-  //    [=] (mj_part_t & j) {
-        mj_lno_t num_points_in_part_j_upto_thread_i = 0;
-        mj_lno_t thread_num_points_in_part_j = local_kokkos_thread_point_counts(j);
-        local_kokkos_thread_point_counts(j) = num_points_in_part_j_upto_thread_i;
-        num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
-        kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
-      }
+  parts5.start();
 
-      }); // Kokkos::single
-      team_member.team_barrier(); // for end of Kokkos::single
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
+    KOKKOS_LAMBDA (const mj_part_t & j) {
+    kokkos_out_part_xadj(j) = local_kokkos_thread_point_counts(j);
+  });
 
-      team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-    }
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_parts),
+    KOKKOS_LAMBDA (const mj_part_t & j) {
+    local_kokkos_thread_point_counts(j) = 0;
+  });
 
-    // now we need to do a prefix sum to out_part_xadj[j], to point begin and end of each part.
-    if(team_member.league_rank() == 0) {
+  parts5.stop();
+  parts6.start();
 
-      Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (1, num_parts),
+    KOKKOS_LAMBDA (const mj_part_t & i) {
+    local_kokkos_thread_point_counts(i) = 0;
+  });
 
-      for(mj_part_t j = 1; j < num_parts; ++j) {
-        kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
-        local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
-      }
-      for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-        mj_lno_t i = local_kokkos_coordinate_permutations(ii);
-        mj_part_t p =  local_kokkos_assigned_part_ids(i);
-        local_kokkos_new_coordinate_permutations(coordinate_begin +
-          local_kokkos_thread_point_counts(p)++) = i;
-      }
+  parts6.stop();
 
-      }); // Kokkos::single
-      team_member.team_barrier(); // for end of Kokkos::single
+  parts7.start();
 
+  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+    for(mj_part_t j = 1; j < num_parts; ++j) {
+      kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
+      local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
     }
   });
- 
-  parts4.stop();
+
+  parts7.stop();
+
+  parts8.start();
+
+  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+    mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
+    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
+      local_kokkos_part_xadj(current_concurrent_work_part - 1);
+/*
+    mj_lno_t num_working_points = coordinate_end - coordinate_begin;
+    mj_lno_t stride = num_working_points / num_teams;
+    if((num_working_points % num_teams) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
+
+    mj_lno_t team_begin_index = coordinate_begin + stride * team_member.league_rank();
+    mj_lno_t team_end_index = team_begin_index + stride;
+    if(team_end_index > coordinate_end) {
+      team_end_index = coordinate_end; // the last team may have less work than the other teams
+    }
+
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
+      [=] (mj_lno_t & ii) {
+        mj_lno_t i = local_kokkos_coordinate_permutations(ii);
+        mj_part_t p = local_kokkos_assigned_part_ids(i);
+        local_kokkos_new_coordinate_permutations(coordinate_begin +
+          local_kokkos_thread_point_counts(p)++) = i;
+    });
+*/
+    for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
+      mj_lno_t i = local_kokkos_coordinate_permutations(ii);
+      mj_part_t p = local_kokkos_assigned_part_ids(i);
+      local_kokkos_new_coordinate_permutations(coordinate_begin +
+        local_kokkos_thread_point_counts(p)++) = i;
+    }
+  });
+
+  parts8.stop();
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
+  parts4.stop();
  *
  * \param num_total_part is the sum of number of cutlines and number of parts. Simply it is 2*P - 1.
  * \param num_cuts is the number of cut lines. P - 1.
@@ -6824,6 +6743,9 @@ parts2.reset();
 parts3.reset();
 parts4.reset();
 parts5.reset();
+parts6.reset();
+parts7.reset();
+parts8.reset();
 
 Clock clock_multi_jagged_part("multi_jagged_part", true);
 Clock clock_multi_jagged_part_init("multi_jagged_part init", true);
@@ -7456,6 +7378,10 @@ parts2.print();
 parts3.print();
 parts4.print();
 parts5.print();
+parts6.print();
+parts7.print();
+parts8.print();
+
 }
 
 
