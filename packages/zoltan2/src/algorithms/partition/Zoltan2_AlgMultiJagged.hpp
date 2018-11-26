@@ -2389,35 +2389,17 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
     }
 
-    // Issue here is tha we have this num_partitioning_in_current_dim on host as a std::vector but also
-    // need a view of these values written to device.
-    // At same time there is a compile issue which for reasons not clear yet, prevents this view from
-    // being allocated as mj_part_t is we want to generate a HostMirror.
-    // This code also caused performance issues so as a first step I'm moving it here to be called
-    // once per recursion depth loop.
-    // TODO: This all needs to be cleaned up
-    // The duplication of the host form needs to be eliminated
-
-    // Same thing here - should be mj_part_t, not int - but can't compile HostMirror
-    typedef Kokkos::View<int *> view_vector_t;
-    view_vector_t device_num_partitioning_in_current_dim("device_num_partitioning_in_current_dim", num_partitioning_in_current_dim.size());
-    view_vector_t::HostMirror host_num_partitioning_in_current_dim = Kokkos::create_mirror_view(device_num_partitioning_in_current_dim);
-
-    // now fill host with values currently stored in std::vector on host
-    for(int n = 0; n < static_cast<int>(num_partitioning_in_current_dim.size()); ++n) {
-      host_num_partitioning_in_current_dim(n) = num_partitioning_in_current_dim[n];
-    }
-
-    // copy to the device
-    Kokkos::deep_copy(device_num_partitioning_in_current_dim, host_num_partitioning_in_current_dim);
-    // Fill to device working vector
-    view_num_partitioning_in_current_dim = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>(
+    // TODO: Issue here is tha we have this num_partitioning_in_current_dim on host as a std::vector but also
+    // need a view of these values written to device. Need to clean it up and eliminate the std::vector.
+    Kokkos::View<mj_part_t*> temp = Kokkos::View<mj_part_t*>(
       "view_num_partitioning_in_current_dim", num_partitioning_in_current_dim.size());
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, static_cast<int>(num_partitioning_in_current_dim.size())),
-      KOKKOS_LAMBDA (int n) {
-      view_num_partitioning_in_current_dim(n) = device_num_partitioning_in_current_dim(n);
-    });
+    typename decltype(temp)::HostMirror
+      host_view_num_partitioning_in_current_dim = Kokkos::create_mirror_view(temp);
+    for(int n = 0; n < static_cast<int>(num_partitioning_in_current_dim.size()); ++n) {
+      host_view_num_partitioning_in_current_dim(n) = num_partitioning_in_current_dim[n];
+    }
+    Kokkos::deep_copy(temp, host_view_num_partitioning_in_current_dim);
+    view_num_partitioning_in_current_dim = temp;
 
     return output_num_parts;
 }
