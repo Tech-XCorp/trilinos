@@ -3752,22 +3752,17 @@ do_weights2.start();
   mj_scalar_t * part_weights = new mj_scalar_t[weight_array_size];
 
   Kokkos::parallel_reduce(policy, teamFunctor, part_weights);
- 
+
   // Move it from global memory to device memory
-  // Need to figure out how we can better manage this
-  Kokkos::View<double *> deviceArray("weight_array_size", weight_array_size);
-  Kokkos::View<double *>::HostMirror hostArray = 
-    Kokkos::create_mirror_view(deviceArray);
+  // TODO: Need to figure out how we can better manage this
+  typename decltype(kokkos_my_current_part_weights)::HostMirror::HostMirror hostArray = 
+    Kokkos::create_mirror_view(kokkos_my_current_part_weights);
   for(int i = 0; i < weight_array_size; ++i) {
     hostArray(i) = part_weights[i];
   }
+  Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
  
   delete [] part_weights;
-
-  Kokkos::deep_copy(deviceArray, hostArray);
-  Kokkos::parallel_for (weight_array_size, KOKKOS_LAMBDA(size_t i) {
-    kokkos_my_current_part_weights(i) = deviceArray(i);
-  });
 
 #else // USE_REDUCE_ON_ARRAYS
 
