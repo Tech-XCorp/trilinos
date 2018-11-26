@@ -7454,7 +7454,6 @@ clock_shift_partitions.print();
 clock_multi_jagged_part.stop(true);
 clock_update_boxes.print();
 
-printf("##################################\n");
 mj_1D_part_init.print();
 mj_1D_part_loop.print();
 do_weights.print();
@@ -7825,6 +7824,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 {
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
 {
+printf("########## Doing partition call ... ##########\n");
+
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
 
     this->set_up_partitioning_data(solution);
@@ -7942,39 +7943,32 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
 
+
     // Reorder results so that they match the order of the input
 #if defined(__cplusplus) && __cplusplus >= 201103L
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
+
+    // copy to host
+    typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
+      host_kokkos_result_initial_mj_gnos_ =
+      Kokkos::create_mirror_view(kokkos_result_initial_mj_gnos_);
+    Kokkos::deep_copy(host_kokkos_result_initial_mj_gnos_, kokkos_result_initial_mj_gnos_);
+
+    typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
+      host_kokkos_result_assigned_part_ids =
+      Kokkos::create_mirror_view(kokkos_result_assigned_part_ids);
+    Kokkos::deep_copy(host_kokkos_result_assigned_part_ids, kokkos_result_assigned_part_ids);
+
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
-
-      // TODO: Change loop so we don't read device to host
-      mj_gno_t p;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
-          set_single = kokkos_result_initial_mj_gnos_(i);
-      }, p);
-
-      localGidToLid[p] = i;
+      localGidToLid[host_kokkos_result_initial_mj_gnos_(i)] = i;
     }
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
 
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      // TODO: Change loop so we don't read device to host
-      mj_gno_t p;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
-          set_single = kokkos_result_initial_mj_gnos_(i);
-      }, p);
-      mj_gno_t p2;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
-          set_single = kokkos_result_assigned_part_ids(i);
-      }, p2);
-
-      mj_lno_t origLID = localGidToLid[p];
-      partId[origLID] = p2;
+      mj_lno_t origLID = localGidToLid[host_kokkos_result_initial_mj_gnos_(i)];
+      partId[origLID] = host_kokkos_result_assigned_part_ids(i);
     }
 #else
     Teuchos::Hashtable<mj_gno_t, mj_lno_t>
@@ -8066,6 +8060,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
 
     }
+
     solution->setParts(partId);
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");

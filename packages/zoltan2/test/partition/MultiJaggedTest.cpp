@@ -564,6 +564,7 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   Zoltan2::PartitioningProblem<Zoltan2::XpetraMultiVectorAdapter<tMVector_t>> *problem,
   RCP<tMVector_t> coords,
   Zoltan2::XpetraMultiVectorAdapter<tMVector_t>::scalar_t ** weights = NULL, int numWeightsPerCoord = 0) {
+Clock basicTestInit("Basic test init", true);
 
   typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     
@@ -618,6 +619,10 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   bvadapter_t bvia(bvlen, bvgids, bvcoords, bvstrides,
                      bvwgts, bvwgtstrides);
 
+basicTestInit.stop();
+
+Clock basicTestProblem("Basic test make problem", true);
+
   Zoltan2::PartitioningProblem<bvadapter_t> *bvproblem;
   try {
     bvproblem = new Zoltan2::PartitioningProblem<bvadapter_t>(&bvia,
@@ -625,11 +630,23 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
                                                comm);
   }
   CATCH_EXCEPTIONS_AND_RETURN("PartitioningProblem()")
+
+basicTestProblem.stop(true);
+
+printf("BEGIN SOLVE ..... ######################################################\n");
+Clock basicTestSolve("Basic test solve", true);
+
   try {
       bvproblem->solve();
   }
   CATCH_EXCEPTIONS_AND_RETURN("solve()")
+
+basicTestSolve.stop(true);
+printf("END SOLVE ..... ######################################################\n");
+
   int ierr = 0;
+
+Clock basicCompareMV("Basic compare to MV", true);
 
   // Compare with MultiVectorAdapter result
   for (inputAdapter_t::lno_t i = 0; i < bvlen; i++) {
@@ -657,6 +674,8 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   delete [] bvcoordarr;
   delete [] bvtpetravectors;
   delete bvproblem;
+
+basicCompareMV.stop();
 
   if (coords->getGlobalLength() < 40) {
       int len = coords->getLocalLength();
@@ -688,6 +707,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         int  mj_premigration_option
 )
 {
+Clock mvTest("mvTest", true);
+
     int ierr = 0;
     Teuchos::ParameterList geoparams("geo params");
     readGeoGenParams(paramFile, geoparams, comm);
@@ -796,10 +817,15 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
+mvTest.stop(true);
+Clock basicTest("basicTest", true);
       ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
         comm, params, problem, coords,
         weight, numWeightsPerCoord);
+basicTest.stop(true);
     }
+
+Clock metricClock("metrics", true);
 
     // create metric object
 
@@ -827,6 +853,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
             delete [] scalar_coords[i];
         delete [] scalar_coords;
     }
+
+metricClock.stop(true);
+
     delete problem;
     delete ia;
     return ierr;
