@@ -312,21 +312,13 @@ public:
 
     if (numIds_){
       // make kokkos ids
-      typedef Kokkos::View<int *> ids_view_t; // TODO: should be gno_t - won't compile.... not sure why yet
-      ids_view_t device_temp_values("temp device values", numIds_);
-      ids_view_t::HostMirror host_temp_values = Kokkos::create_mirror_view(device_temp_values);
+      kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>("ids", numIds_);
+      typename decltype(this->kokkos_ids_)::HostMirror
+        host_temp_values = Kokkos::create_mirror_view(this->kokkos_ids_);
       for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
         host_temp_values(n) = idList_[n];
       }
-      // copy to device
-      Kokkos::deep_copy(device_temp_values, host_temp_values);
-      kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>("ids", numIds_);
-      auto local_kokkos_ids = this->kokkos_ids_;
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
-        KOKKOS_LAMBDA (int n) {
-        local_kokkos_ids(n) = device_temp_values(n);
-      });
+      Kokkos::deep_copy(this->kokkos_ids_, host_temp_values);
 
       // make coordinates
       int stride = 1;
