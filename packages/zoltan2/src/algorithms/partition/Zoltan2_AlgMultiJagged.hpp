@@ -8106,7 +8106,8 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
         // TODO: This got created during the refactor but needs to be cleaned up so it doesn't happen in the first place. 
         typedef Kokkos::View<bool *> view_vector_t;
         view_vector_t device_hasUniformPartSizes("device criteriaHasUniformPartSizes", criteria_dim);
-        view_vector_t::HostMirror host_hasUniformPartSizes = Kokkos::create_mirror_view(device_hasUniformPartSizes);
+        typename decltype(device_hasUniformPartSizes)::HostMirror::HostMirror host_hasUniformPartSizes =
+          Kokkos::create_mirror_view(device_hasUniformPartSizes);
         for(int wdim = 0; wdim < criteria_dim; ++wdim) {
           host_hasUniformPartSizes(wdim) = solution->criteriaHasUniformPartSizes(wdim);
         }
