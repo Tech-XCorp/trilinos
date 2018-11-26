@@ -8123,37 +8123,18 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
                     local_kokkos_mj_uniform_weights(wdim) = false;
                 });
         }
-        // originally did this
-        // for (int wdim = 0; wdim < criteria_dim; wdim++){
 
-        // Here we need the criteriaHasUniformPartSizes on device
-        // I'd like to avoid refactoring solution at this phase so the new Kokkos View stuff doesn't spread too much
-        // Create a host view, fill it, then mirror to the device for the following loop
-        // TODO: Clean this up and eliminate!
-
-        // 1st create a device view - eventually this should probably live on device in solution
-   
-        // I'd like to use this memory space but this won't compile - I get an obscure '; expected' for the HostMirror line
-        // I suspect this is because of the way I'm using the node as a wrapper for device with a custom setting for exec space and
-        // memory space. That nodes does not exist as a true object that, for example, we can call ::name() on.
-        // For that reason I may need to refactot this all back to a exec and mem space templating to avoid node completely.
-        // I'm holding off for now to avoid committing to bigger changes like that unless necessary.
-        //     typedef typename mj_node_t::memory_space use_mem_space;
-
-        // instead of using the defined mem space, just use the default mem space
-        // for cuda will be UVM space here only
-        // but this is just a stop gap to get the solution data onto device anyways
-        // I'll need to rethink all of this
+        // Here we need solution->criteriaHasUniformPartSizes on device
+        // Create a host view and fill it, then copy to device
+        // TODO: This got created during the refactor but needs to be cleaned up so it doesn't happen in the first place. 
         typedef Kokkos::View<bool *> view_vector_t;
         view_vector_t device_hasUniformPartSizes("device criteriaHasUniformPartSizes", criteria_dim);
         view_vector_t::HostMirror host_hasUniformPartSizes = Kokkos::create_mirror_view(device_hasUniformPartSizes);
-        // now fill host with values currently stored in solution on host
         for(int wdim = 0; wdim < criteria_dim; ++wdim) {
           host_hasUniformPartSizes(wdim) = solution->criteriaHasUniformPartSizes(wdim);
         }
-
-        // copy to the device
         Kokkos::deep_copy(device_hasUniformPartSizes, host_hasUniformPartSizes);
+
         // now we are ready to initialize kokkos_mj_uniform_parts safely on device for UVM off
         // TODO: we could probably refactor this a bit and just copy the view ptr but I want to keep the error checking.
         // Also when we refactor above we may end up with a form similar to this.
@@ -8198,35 +8179,16 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &
                 auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
                 int mj_parts_size = static_cast<int>(mj_parts.size());
 
-                // build the final node we'll have data on
+                // build the view we'll have data on and copy values from host
                 this->kokkos_part_no_array = Kokkos::View<mj_part_t*, typename mj_node_t::device_type>(
                   "kokkos_part_no_array", mj_parts_size);
-
-                // TODO - similar to other place we have use of HostMirror I'll make a new view
-                // with default settings on device, a mirror host, write to the host, then deep copy
-                // to the device. Then we can write to above view. However I need to asses if the same
-                // problems I saw elsewhere happen here: where using mj_node_t::device_type for the
-                // view's here causes a ; compile error I don't understand.
-                // This all needs to be cleaned up.
-
-                // make device and mirror on host, write to the host, copy to the device
-
-                // TODO: Temp hack - I cannot get HostMirror below to compile if this int type is defined properly as mj_part_t
-                typedef Kokkos::View<int *> part_no_view_t; // should be mj_part_t ... will not compile   ; expected   - not sure why yet
-                part_no_view_t device_kokkos_part_no_array("device_kokkos_part_no_array", mj_parts_size);
-                part_no_view_t::HostMirror host_kokkos_part_no_array = Kokkos::create_mirror_view(device_kokkos_part_no_array);
+                typename decltype (this->kokkos_part_no_array)::HostMirror 
+                  host_kokkos_part_no_array = Kokkos::create_mirror_view(this->kokkos_part_no_array);
                 for(int i = 0; i < mj_parts_size; ++i) {
                   host_kokkos_part_no_array(i) = mj_parts.getRawPtr()[i];
                 }
-                Kokkos::deep_copy(device_kokkos_part_no_array, host_kokkos_part_no_array);
-                // Now copy to the final view - I'd like to refactor avoid all above steps
-                auto local_kokkos_part_no_array = this->kokkos_part_no_array;
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, mj_parts_size),
-                  KOKKOS_LAMBDA (const int i) {
-                    local_kokkos_part_no_array(i) = device_kokkos_part_no_array(i);
-                  }
-                );
+                Kokkos::deep_copy(this->kokkos_part_no_array, host_kokkos_part_no_array);
+
                 this->recursion_depth = mj_parts_size - 1;
                 this->mj_env->debug(2, "mj_parts provided by user");
         }
