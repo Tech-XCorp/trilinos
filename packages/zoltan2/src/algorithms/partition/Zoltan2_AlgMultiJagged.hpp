@@ -4282,8 +4282,8 @@ parts3.stop();
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
     set_single = current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
   }, coordinate_begin_index);
+  
   mj_lno_t coordinate_end_index;
-
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
     set_single = local_kokkos_part_xadj(current_concurrent_work_part);
@@ -4346,14 +4346,8 @@ printf("chck2\n");
       team_begin_index, team_end_index), [=] (mj_lno_t & ii)
     {
       mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
-      mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
       mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
-      mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
-      if(coordinate_assigned_place % 2 == 0) {
-        Kokkos::atomic_add(&local_kokkos_thread_point_counts(coordinate_assigned_part), 1);
-        local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
-      }
-      else {
+      if(coordinate_assigned_place % 2 == 1) {
         Kokkos::atomic_add(&record_total_on_cut(0), 1);
       }
     });
@@ -4391,7 +4385,6 @@ printf("chck4b    %d\n", (int) total_on_cut);
       team_begin_index, team_end_index), [=] (mj_lno_t & ii)
     {
       mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
-      mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
       mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
       mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
       if(coordinate_assigned_place % 2 == 0) {
@@ -4481,10 +4474,6 @@ printf("chck5    %d\n", (int) total_on_cut);
           local_kokkos_thread_point_counts(coordinate_assigned_part) += 1;
           local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
         }
-
-      // if it is already assigned to a part, then just put it to the corresponding part.
-      local_kokkos_thread_point_counts(coordinate_assigned_part) += 1;
-      local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
     }
   });
 
@@ -4518,6 +4507,7 @@ printf("chck7\n");
     for(mj_part_t j = 1; j < num_parts; ++j) {
       kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
       local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
+      printf("Counter %d: %d\n", (int)j, (int) local_kokkos_thread_point_counts(j));
     }
   });
 
@@ -4527,10 +4517,23 @@ printf("chck7\n");
 
 printf("chck8\n");
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(
-   num_teams,
-   Kokkos::AUTO());
-  Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+/*
+printf("Before %d %d\n", coordinate_begin_index, coordinate_end_index);
+
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+  }, coordinate_begin_index);
+  
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = local_kokkos_part_xadj(current_concurrent_work_part);
+  }, coordinate_end_index);
+  
+printf("After %d %d\n", coordinate_begin_index, coordinate_end_index);
+*/
+
+  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
@@ -4547,7 +4550,6 @@ printf("chck8\n");
 
         // We need to atomically read and then increment the write index
         mj_lno_t idx = Kokkos::atomic_fetch_add(&local_kokkos_thread_point_counts(p), 1);
-
         // The actual write is to a single slot so needs no atomic
         local_kokkos_new_coordinate_permutations(coordinate_begin_index + idx) = i;
     });
