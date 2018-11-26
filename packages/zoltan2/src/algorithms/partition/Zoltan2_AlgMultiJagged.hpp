@@ -4323,12 +4323,8 @@ parts3.stop();
 
 parts4.start();
 
-printf("chck1\n");
-
   Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> record_total_on_cut(
     "track_on_cuts", 1);
-
-printf("chck2\n");
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
    num_teams, // teams something arbitrary right now ... not determined yet
@@ -4353,9 +4349,6 @@ printf("chck2\n");
     });
   });
 
-printf("chck3\n");
-
-
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, int & set_single) {
@@ -4363,14 +4356,8 @@ printf("chck3\n");
     record_total_on_cut(0) = 0;
   }, total_on_cut);
 
-
-printf("chck4    %d\n", (int) total_on_cut);
-
-
   Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> track_on_cuts(
     "track_on_cuts", total_on_cut);
-
-printf("chck4b    %d\n", (int) total_on_cut);  
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
@@ -4398,8 +4385,6 @@ printf("chck4b    %d\n", (int) total_on_cut);
       }
     });
   });
-
-printf("chck5    %d\n", (int) total_on_cut);
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
@@ -4477,8 +4462,6 @@ printf("chck5    %d\n", (int) total_on_cut);
     }
   });
 
-printf("chck6\n");
-
   parts4.stop();
 
   parts5.start();
@@ -4495,8 +4478,6 @@ printf("chck6\n");
     local_kokkos_thread_point_counts(j) = 0;
   });
 
-printf("chck7\n");
-
   parts5.stop();
 
   parts7.start();
@@ -4507,31 +4488,12 @@ printf("chck7\n");
     for(mj_part_t j = 1; j < num_parts; ++j) {
       kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
       local_kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
-      printf("Counter %d: %d\n", (int)j, (int) local_kokkos_thread_point_counts(j));
     }
   });
 
   parts7.stop();
 
   parts8.start();
-
-printf("chck8\n");
-
-/*
-printf("Before %d %d\n", coordinate_begin_index, coordinate_end_index);
-
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
-  }, coordinate_begin_index);
-  
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_kokkos_part_xadj(current_concurrent_work_part);
-  }, coordinate_end_index);
-  
-printf("After %d %d\n", coordinate_begin_index, coordinate_end_index);
-*/
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
@@ -4556,12 +4518,9 @@ printf("After %d %d\n", coordinate_begin_index, coordinate_end_index);
   });
 
   parts8.stop();
-
-printf("chck9\n");
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
-  parts4.stop();
  *
  * \param num_total_part is the sum of number of cutlines and number of parts. Simply it is 2*P - 1.
  * \param num_cuts is the number of cut lines. P - 1.
