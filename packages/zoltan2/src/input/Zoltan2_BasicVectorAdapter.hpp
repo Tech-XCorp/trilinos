@@ -345,18 +345,12 @@ public:
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
 
-        // TODO: Clean up generally
-        // I'm allocating a host mirror, copy the values in, then deep copy to the device
-        // The MultiVector Adapter gets the values directly as a view and dosn't have this issue.
-        // Not sure why but this HostMirror method won't compile with the scalar_t but replacing
-        // with double workks. Then we also want to make the view copy directly to the kokkos_entries_
-        typedef Kokkos::View<double *> coords_view_t;
-        coords_view_t device_coord_temp_values("temp device values", numIds_);
-        coords_view_t::HostMirror host_coord_temp_values = Kokkos::create_mirror_view(device_coord_temp_values);
-         for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
+        Kokkos::View<scalar_t *> device_coord_temp_values("temp device values", numIds_);
+        typename decltype(device_coord_temp_values)::HostMirror
+          host_coord_temp_values = Kokkos::create_mirror_view(device_coord_temp_values);
+        for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
           host_coord_temp_values(n) = entriesPtr[n*stride];
         }
-        // copy to device
         Kokkos::deep_copy(device_coord_temp_values, host_coord_temp_values);
 
         // now fill this->kokkos_entries on device
@@ -390,14 +384,9 @@ public:
       // call just to get length for 2d setup
       weights_[0].getStridedList(length, weightsPtr, stride);
 
-      // TODO: Clean up generally
-      // I'm allocating a host mirror, copy the values in, then deep copy to the device
-      // The MultiVector Adapter gets the values directly as a view and dosn't have this issue.
-      // Not sure why but this HostMirror method won't compile with the scalar_t but replacing
-      // with double workks. Then we also want to make the view copy directly to the kokkos_weights_
-      typedef Kokkos::View<double**> weight_view_t;
-      weight_view_t device_weight_temp_values("temp weight device values", length, numWeights_);
-      weight_view_t::HostMirror host_weight_temp_values = Kokkos::create_mirror_view(device_weight_temp_values);
+      // setup weights
+      typename decltype(this->kokkos_weights_)::HostMirror
+        host_weight_temp_values = Kokkos::create_mirror_view(this->kokkos_weights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
         weights_[idx].getStridedList(length, weightsPtr, stride);
         size_t fill_index = 0;
@@ -405,19 +394,7 @@ public:
           host_weight_temp_values(fill_index++,idx) = weightsPtr[n];
         }
       }
-    
-      // copy to device
-      Kokkos::deep_copy(device_weight_temp_values, host_weight_temp_values);
-
-      // now fill this->kokkos_weights_ on device
-      for(int idx = 0; idx < numWeights_; ++idx) {
-        auto local_kokkos_weights = this->kokkos_weights_; // don't use this-> in kernel
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
-          KOKKOS_LAMBDA (const int i) {
-          local_kokkos_weights(i, idx) = device_weight_temp_values(i, idx);
-        });
-      }
+      Kokkos::deep_copy(this->kokkos_weights_, host_weight_temp_values);
     }
   }
 };
