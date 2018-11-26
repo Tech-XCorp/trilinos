@@ -3779,6 +3779,9 @@ do_weights2.start();
   for(int i = 0; i < weight_array_size; ++i) {
     hostArray(i) = part_weights[i];
   }
+ 
+  delete [] part_weights;
+
   Kokkos::deep_copy(deviceArray, hostArray);
   Kokkos::parallel_for (weight_array_size, KOKKOS_LAMBDA(size_t i) {
     kokkos_my_current_part_weights(i) = deviceArray(i);
@@ -4005,12 +4008,9 @@ do_weights5.start();
              running_min = coord;
            }
         }, Kokkos::Min<mj_scalar_t>(inner_min));
-
-        team_member.team_barrier();
-
         if(team_member.team_rank() == 0) {
           if(inner_min < outer_min) 
-          outer_min += inner_min;
+          outer_min = inner_min;
         }
       }, Kokkos::Min<mj_scalar_t>(right));
   
@@ -4035,9 +4035,6 @@ do_weights5.start();
             running_max = coord;
           }
         }, Kokkos::Max<mj_scalar_t>(inner_max));
- 
-        team_member.team_barrier();
-
         if(team_member.team_rank() == 0) {
           if(inner_max > outer_max) {
             outer_max = inner_max;
