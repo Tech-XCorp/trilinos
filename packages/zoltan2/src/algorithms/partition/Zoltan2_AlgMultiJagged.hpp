@@ -4275,106 +4275,220 @@ parts3.start();
   });
 
 parts3.stop();
+
+
+  mj_lno_t coordinate_begin_index;
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+  }, coordinate_begin_index);
+  mj_lno_t coordinate_end_index;
+
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = local_kokkos_part_xadj(current_concurrent_work_part);
+  }, coordinate_end_index);
+
+  int uniform_weights;
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, int & set_single) {
+    set_single = local_kokkos_mj_uniform_weights(0);
+  }, uniform_weights);
+
+  // total points to be processed by all teams
+  mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+
+  // determine a stride for each team
+  // TODO: How to best determine this and should we be concerned if teams
+  // get smaller coord counts than their warp sizes?
+  const int min_coords_per_team = 32; // abrbitrary ... TODO
+  int stride = min_coords_per_team;
+  if(stride > num_working_points) {
+    stride = num_working_points;
+  }
+
+  int num_teams = num_working_points / stride;
+  if((num_working_points % stride) > 0) {
+    ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
+  }
+
+  const int max_teams = 1024; // arbitrary right now TODO
+  if(num_teams > max_teams) {
+    num_teams = max_teams;
+    stride = num_working_points / num_teams;
+    if((num_working_points % num_teams) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
+  }
+
 parts4.start();
- 
+
+printf("chck1\n");
+
+  Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> record_total_on_cut(
+    "track_on_cuts", 1);
+
+printf("chck2\n");
+
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-   1024, // teams something arbitrary right now ... not determined yet
+   num_teams, // teams something arbitrary right now ... not determined yet
    Kokkos::AUTO());
+
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-    mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
-      local_kokkos_part_xadj(current_concurrent_work_part - 1);
 
-    // This loop not currently safe for the cuda run so disabled to a serial single
-    // TODO: Needs optimization and refactoring
-    Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-      if(team_member.league_rank() == 0) {
-        for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-          
-   //   Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, coordinate_begin, coordinate_end),
-   //     [=] (mj_lno_t & ii) {
+    mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
+    mj_lno_t team_end_index = team_begin_index + stride;
+    if(team_end_index > coordinate_end_index) {
+      team_end_index = coordinate_end_index; // the last team may have less work than the other teams
+    }
 
-        // dont change static scheduler. the static partitioner used later as well.
-        mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
-        mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
-        mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
-        mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
-
-        if(coordinate_assigned_place % 2 == 1) {
-          // if it is on the cut.
-          if(local_distribute_points_on_cut_lines
-            && local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) >
-            local_sEpsilon) {
-            // if the rectilinear partitioning is allowed,
-            // and the thread has still space to put on the left of the cut
-            // then thread puts the vertex to left.
-            local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) -= coordinate_weight;
-            // if putting the vertex to left increased the weight more than expected.
-            // and if the next cut is on the same coordinate,
-            // then we need to adjust how much weight next cut puts to its left as well,
-            // in order to take care of the imbalance.
-            if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) < 0
-              && coordinate_assigned_part < num_cuts - 1
-              && ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part+1) -
-                kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part)) < local_sEpsilon)
-            {
-                local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part + 1) +=
-                  local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part);
-            }
-
-            ++local_kokkos_thread_point_counts(coordinate_assigned_part);
-            local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
-          }
-          else {
-            // if there is no more space on the left, put the coordinate to the right of the cut.
-            ++coordinate_assigned_part;
-            // this while loop is necessary when a line is partitioned into more than 2 parts.
-            while(local_distribute_points_on_cut_lines && coordinate_assigned_part < num_cuts) {
-            // traverse all the cut lines having the same partitiong
-              if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part) -
-                kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part - 1))
-                 < local_sEpsilon)
-              {
-                // if line has enough space on left, put it there.
-                if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) >
-                  local_sEpsilon &&
-                  local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) >=
-                  ZOLTAN2_ABS(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) - coordinate_weight))
-                {
-                  local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) -= coordinate_weight;
-                  // Again if it put too much on left of the cut,
-                  // update how much the next cut sharing the same coordinate will put to its left.
-                  if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) < 0 &&
-                    coordinate_assigned_part < num_cuts - 1 &&
-                    ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part+1) -
-                      kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part)) < local_sEpsilon)
-                    {
-                      local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part + 1) +=
-                      local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part);
-                    }
-                    break;
-                  }  
-                }  
-                else {
-                  break;
-                }
-                ++coordinate_assigned_part;
-              }  
-              ++local_kokkos_thread_point_counts(coordinate_assigned_part);
-              local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
-            }
-          }
-          else {
-            // if it is already assigned to a part, then just put it to the corresponding part.
-            ++local_kokkos_thread_point_counts(coordinate_assigned_part);
-            local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
-          }
-        } // temporary serial for loop
-      } // temp 
-    }); // temporary single setup
-    team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member,
+      team_begin_index, team_end_index), [=] (mj_lno_t & ii)
+    {
+      mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
+      mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
+      mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
+      mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
+      if(coordinate_assigned_place % 2 == 0) {
+        Kokkos::atomic_add(&local_kokkos_thread_point_counts(coordinate_assigned_part), 1);
+        local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+      }
+      else {
+        Kokkos::atomic_add(&record_total_on_cut(0), 1);
+      }
+    });
   });
+
+printf("chck3\n");
+
+
+  mj_lno_t total_on_cut;
+  Kokkos::parallel_reduce("Read single", 1,
+    KOKKOS_LAMBDA(int dummy, int & set_single) {
+    set_single = record_total_on_cut(0);
+    record_total_on_cut(0) = 0;
+  }, total_on_cut);
+
+
+printf("chck4    %d\n", (int) total_on_cut);
+
+
+  Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> track_on_cuts(
+    "track_on_cuts", total_on_cut);
+
+printf("chck4b    %d\n", (int) total_on_cut);  
+
+  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+
+    mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
+    mj_lno_t team_end_index = team_begin_index + stride;
+    if(team_end_index > coordinate_end_index) {
+      team_end_index = coordinate_end_index; // the last team may have less work than the other teams
+    }
+
+    // First collect the number of assignments in our block for each part
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member,
+      team_begin_index, team_end_index), [=] (mj_lno_t & ii)
+    {
+      mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
+      mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
+      mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
+      mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
+      if(coordinate_assigned_place % 2 == 0) {
+        Kokkos::atomic_add(&local_kokkos_thread_point_counts(coordinate_assigned_part), 1);
+        local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+      }
+      else {
+        // fill a tracking array so we can process these slower points in next cycle
+        mj_lno_t set_index = Kokkos::atomic_fetch_add(&record_total_on_cut(0), 1);
+        track_on_cuts(set_index) = ii;
+      }
+    });
+  });
+
+printf("chck5    %d\n", (int) total_on_cut);
+
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+    KOKKOS_LAMBDA (const int & dummy) {
+
+    for(int j = 0; j < total_on_cut; ++j) {
+
+      int ii = track_on_cuts(j);
+
+      mj_lno_t coordinate_index = local_kokkos_coordinate_permutations(ii);
+      mj_scalar_t coordinate_weight = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(coordinate_index,0);
+      mj_part_t coordinate_assigned_place = local_kokkos_assigned_part_ids(coordinate_index);
+      mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
+
+        // if it is on the cut.
+        if(local_distribute_points_on_cut_lines &&
+          local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) > local_sEpsilon)
+        {
+          // if the rectilinear partitioning is allowed,
+          // and the thread has still space to put on the left of the cut
+          // then thread puts the vertex to left.
+          local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) -= coordinate_weight;
+          // if putting the vertex to left increased the weight more than expected.
+          // and if the next cut is on the same coordinate,
+          // then we need to adjust how much weight next cut puts to its left as well,
+          // in order to take care of the imbalance.
+          if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) < 0
+            && coordinate_assigned_part < num_cuts - 1
+            && ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part+1) -
+              kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part)) < local_sEpsilon)
+          {
+            local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part + 1) +=
+            local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part);
+          }
+          ++local_kokkos_thread_point_counts(coordinate_assigned_part);
+          local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+        }
+        else {
+          // if there is no more space on the left, put the coordinate to the right of the cut.
+          ++coordinate_assigned_part;
+          // this while loop is necessary when a line is partitioned into more than 2 parts.
+          while(local_distribute_points_on_cut_lines && coordinate_assigned_part < num_cuts)
+          {
+            // traverse all the cut lines having the same partitiong
+            if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part) -
+              kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part - 1)) < local_sEpsilon)
+            {
+              // if line has enough space on left, put it there.
+              if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) > local_sEpsilon &&
+                local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) >=
+                ZOLTAN2_ABS(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) - coordinate_weight))
+              {
+                local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) -= coordinate_weight;
+                // Again if it put too much on left of the cut,
+                // update how much the next cut sharing the same coordinate will put to its left.
+                if(local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part) < 0 &&
+                  coordinate_assigned_part < num_cuts - 1 &&
+                  ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part+1) -
+                  kokkos_current_concurrent_cut_coordinate(coordinate_assigned_part)) < local_sEpsilon)
+                {
+                  local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part + 1) +=
+                  local_kokkos_thread_cut_line_weight_to_put_left(coordinate_assigned_part);
+                }
+                break;
+              }    
+            }  
+            else {
+              break;
+            }
+            ++coordinate_assigned_part;
+          }
+          local_kokkos_thread_point_counts(coordinate_assigned_part) += 1;
+          local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+        }
+
+      // if it is already assigned to a part, then just put it to the corresponding part.
+      local_kokkos_thread_point_counts(coordinate_assigned_part) += 1;
+      local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+    }
+  });
+
+printf("chck6\n");
 
   parts4.stop();
 
@@ -4391,6 +4505,8 @@ parts4.start();
     KOKKOS_LAMBDA (const mj_part_t & j) {
     local_kokkos_thread_point_counts(j) = 0;
   });
+
+printf("chck7\n");
 
   parts5.stop();
 
@@ -4409,25 +4525,18 @@ parts4.start();
 
   parts8.start();
 
-  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-    const int num_teams = (int) team_member.league_size();
+printf("chck8\n");
 
-    mj_lno_t coordinate_end = local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t coordinate_begin = current_concurrent_work_part==0 ? 0 :
-      local_kokkos_part_xadj(current_concurrent_work_part - 1);
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(
+   num_teams,
+   Kokkos::AUTO());
+  Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
 
-    mj_lno_t num_working_points = coordinate_end - coordinate_begin;
-    mj_lno_t stride = num_working_points / num_teams;
-    if((num_working_points % num_teams) > 0) {
-      stride += 1; // make sure we have coverage for the final points
-    }
-
-    mj_lno_t team_begin_index = coordinate_begin + stride * team_member.league_rank();
+    mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
-    if(team_end_index > coordinate_end) {
-      team_end_index = coordinate_end; // the last team may have less work than the other teams
+    if(team_end_index > coordinate_end_index) {
+      team_end_index = coordinate_end_index; // the last team may have less work than the other teams
     }
-
    
     // First collect the number of assignments in our block for each part
     Kokkos::parallel_for(
@@ -4438,20 +4547,15 @@ parts4.start();
 
         // We need to atomically read and then increment the write index
         mj_lno_t idx = Kokkos::atomic_fetch_add(&local_kokkos_thread_point_counts(p), 1);
-        local_kokkos_new_coordinate_permutations(coordinate_begin + idx) = i;
-    });
 
-/*
-    for(mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
-      mj_lno_t i = local_kokkos_coordinate_permutations(ii);
-      mj_part_t p = local_kokkos_assigned_part_ids(i);
-      local_kokkos_new_coordinate_permutations(coordinate_begin +
-        local_kokkos_thread_point_counts(p)++) = i;
-    }
-*/
+        // The actual write is to a single slot so needs no atomic
+        local_kokkos_new_coordinate_permutations(coordinate_begin_index + idx) = i;
+    });
   });
 
   parts8.stop();
+
+printf("chck9\n");
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
