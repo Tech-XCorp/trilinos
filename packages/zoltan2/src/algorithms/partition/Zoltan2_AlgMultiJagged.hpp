@@ -799,8 +799,7 @@ public: // For CUDA Temp
     void mj_get_local_min_max_coord_totW(
       mj_part_t current_work_part,
       mj_part_t current_concurrent_num_parts,
-      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
-      Kokkos::View<mj_part_t*, typename mj_node_t::device_type> & view_num_partitioning_in_current_dim);
+      Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords);
 
 
     /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
@@ -2672,8 +2671,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_min_max_coord_totW(
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
-  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords,
-  Kokkos::View<mj_part_t*, typename mj_node_t::device_type> & view_num_partitioning_in_current_dim) {
+  Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords) {
 
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
@@ -2683,24 +2681,61 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
-  // TODO: Earlier evaluated this and was having difficulty getting performance but discovered later
-  // there was an indexing overflow - need to recheck these stats and check out the if below as well
-  // for no work parts.
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (current_concurrent_num_parts, Kokkos::AUTO());
+  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+
+      mj_part_t conccurent_current_part = current_work_part + kk;
+      mj_lno_t coordinate_begin_index;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+        set_single = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
+      }, coordinate_begin_index);
+      mj_lno_t coordinate_end_index;
+
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+        set_single = local_kokkos_part_xadj(conccurent_current_part);
+      }, coordinate_end_index);
+
+      int uniform_weights;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, int & set_single) {
+        set_single = local_kokkos_mj_uniform_weights(0);
+      }, uniform_weights);
+
+      // total points to be processed by all teams
+      mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+
+      // determine a stride for each team
+      // TODO: How to best determine this and should we be concerned if teams
+      // get smaller coord counts than their warp sizes?
+      const int min_coords_per_team = 32; // abrbitrary ... TODO
+      int stride = min_coords_per_team;
+      if(stride > num_working_points) {
+        stride = num_working_points;
+      }
+
+      int num_teams = num_working_points / stride;
+      if((num_working_points % stride) > 0) {
+        ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
+      }
+
+      const int max_teams = 1024; // arbitrary right now TODO
+      if(num_teams > max_teams) {
+        num_teams = max_teams;
+        stride = num_working_points / num_teams;
+        if((num_working_points % num_teams) > 0) {
+          stride += 1; // make sure we have coverage for the final points
+        }
+      }
+
+
+  // TODO: Refactor this to be a double nested loop and test for efficiency
+
+/*
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (num_teams, Kokkos::AUTO());
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
   Kokkos::parallel_for (policy1, KOKKOS_LAMBDA(member_type team_member) {
-    
-    int kk = team_member.league_rank();
-    mj_part_t current_work_part_in_concurrent_parts = current_work_part + kk;
-
-    // TODO: Not sure this help
-    //if this part wont be partitioned any further
-    //dont do any work for this part.
-   if (view_num_partitioning_in_current_dim(current_work_part_in_concurrent_parts) != 1) {
-
-    mj_lno_t coordinate_end_index = local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
-    mj_lno_t coordinate_begin_index = current_work_part_in_concurrent_parts ?
-      local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1) : 0;
+*/
 
     mj_scalar_t my_thread_min_coord = 0;
     mj_scalar_t my_thread_max_coord = 0;
@@ -2716,46 +2751,45 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
     }
     else {
       // get min
-      Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
-        [=] (const int& j, mj_scalar_t & running_min) {
-        int i = local_kokkos_coordinate_permutations(j);
+      Kokkos::parallel_reduce("get min",
+        coordinate_end_index - coordinate_begin_index,
+        KOKKOS_LAMBDA (const mj_lno_t & j, mj_scalar_t & running_min) {
+        int i = local_kokkos_coordinate_permutations(j + coordinate_begin_index);
         if(kokkos_mj_current_dim_coords(i) < running_min)
           running_min = kokkos_mj_current_dim_coords(i);
       }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
-
       // get max
-      Kokkos::parallel_reduce(
-        Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
-        [=] (const int& j, mj_scalar_t & running_max) {
-        int i = local_kokkos_coordinate_permutations(j);
+      Kokkos::parallel_reduce("get max",
+        coordinate_end_index - coordinate_begin_index,
+        KOKKOS_LAMBDA (const mj_lno_t & j, mj_scalar_t & running_max) {
+        int i = local_kokkos_coordinate_permutations(j + coordinate_begin_index);
         if(kokkos_mj_current_dim_coords(i) > running_max)
           running_max = kokkos_mj_current_dim_coords(i);
       }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
 
-      // TODO: Note reading the single value should be bool
-      // But that doesn't seem to be supported
-      int weight0 = local_kokkos_mj_uniform_weights(0) ? 1 : 0;
-      if(weight0) {
+      if(uniform_weights) {
         my_total_weight = coordinate_end_index - coordinate_begin_index;
       }
       else {
         my_total_weight = 0;
-        Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(team_member, coordinate_begin_index, coordinate_end_index),
-          [=] (int ii, mj_scalar_t & lsum) {
-          int i = local_kokkos_coordinate_permutations(ii);
+        Kokkos::parallel_reduce("get weight",
+          coordinate_end_index - coordinate_begin_index,
+          KOKKOS_LAMBDA (const mj_lno_t & ii, mj_scalar_t & lsum) {
+          int i = local_kokkos_coordinate_permutations(ii + coordinate_begin_index);
           lsum += local_kokkos_mj_weights(i,0);
         }, my_total_weight);
       }
     }
-
-    local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
-    local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
-    local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
-
-    } // end of check for parts != 1, so some teams currently do nothing ...
-  });
+    // single write
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+      local_kokkos_process_local_min_max_coord_total_weight(kk) = my_thread_min_coord;
+      local_kokkos_process_local_min_max_coord_total_weight(kk + current_concurrent_num_parts) = my_thread_max_coord;
+      local_kokkos_process_local_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts) = my_total_weight;
+    });
+//  });
+  }
 }
 
 /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
@@ -7003,8 +7037,7 @@ clock_loop_first_setup.start();
             this->mj_get_local_min_max_coord_totW(
               current_work_part,
               current_concurrent_num_parts,
-              kokkos_mj_current_dim_coords,
-              view_num_partitioning_in_current_dim);
+              kokkos_mj_current_dim_coords);
 
 clock_loop_first_setup.stop();
 
@@ -7428,7 +7461,6 @@ clock_multi_jagged_part_clean_up.stop(true);
 clock_rec_loop_finish_up.print();
 clock_create_new_partitions.print();
 clock_shift_partitions.print();
-clock_multi_jagged_part.stop(true);
 clock_update_boxes.print();
 
 mj_1D_part_init.print();
@@ -7451,6 +7483,8 @@ parts6.print();
 parts7.print();
 parts8.print();
 
+
+clock_multi_jagged_part.stop(true);
 }
 
 
