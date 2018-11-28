@@ -3668,8 +3668,8 @@ struct ArrayMinMaxReducer {
 
   KOKKOS_INLINE_FUNCTION ArrayMinMaxReducer(
     value_type &val,
-    const size_t & n_parts) :
-    value(&val), value_count(n_parts)
+    const size_t & count) :
+    value(&val), value_count(count)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -3679,11 +3679,11 @@ struct ArrayMinMaxReducer {
 
   KOKKOS_INLINE_FUNCTION
   void join(value_type& dst, const value_type& src)  const {
-    for(int n = 0; n < value_count; ++n) {
-      if(dst.ptr[n] > src.ptr[n]) {
+    for(int n = 0; n < value_count; n += 2) {
+      if(src.ptr[n] > dst.ptr[n]) {
         dst.ptr[n] = src.ptr[n];
       }
-      if(dst.ptr[n+1] < src.ptr[n+1]) {
+      if(src.ptr[n+1] < dst.ptr[n+1]) {
         dst.ptr[n+1] = src.ptr[n+1];
       }
     }
@@ -3692,18 +3692,20 @@ struct ArrayMinMaxReducer {
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type& dst, const volatile value_type& src) const {
     for(int n = 0; n < value_count; n += 2) {
-      if(dst[n] > src[n]) {
+      if(src[n] > dst[n]) {
         dst.ptr[n] = src.ptr[n];
       }
-      if(dst[n+1] < src[n+1]) {
+      if(src[n+1] < dst[n+1]) {
         dst.ptr[n+1] = src.ptr[n+1];
       }
     }
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
-    for(int n = 0; n < value_count; ++n) {
-      dst.ptr[n] = 0;
+    for(int n = 0; n < value_count; n += 2) {
+      // TODO: Fix min max init
+      dst.ptr[n]   = -999999999.99; // temp need cleaner init min
+      dst.ptr[n+1] = 33333; //   999999999.99; // temp need cleaner init max
     }
   }
 };
@@ -3773,15 +3775,30 @@ struct RightLeftClosestFunctor {
     // create reducer which handles the ArrayType class
     ArrayMinMaxReducer<policy_t, scalar_t, part_t> arrayMinMaxReducer(
       array, value_count);
-
     // call the reduce
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
       int i = permutations(ii);
-      
       part_t part_index = parts(i);
       part_t num_cuts = value_count / 2;
-      
+      scalar_t coord = coordinates(i);
+
+      for(int cut = 0; cut < num_cuts; ++cut) {
+        scalar_t cut_coord = cut_coordinates(cut);
+        if(coord > cut_coord - sEpsilon && coord < cut_coord + sEpsilon) {
+          threadSum.ptr[cut*2+1] = cut_coord;
+          threadSum.ptr[cut*2] = cut_coord;
+        }
+        else if(coord > cut_coord && coord < threadSum.ptr[cut*2+1]) {
+          threadSum.ptr[cut*2+1] = coord;
+
+        }
+        else if(coord < cut_coord && coord > threadSum.ptr[cut*2]) {
+          threadSum.ptr[cut*2] = coord;
+        }          
+      }
+
+/* 
       // this point is either on a cut or between 2 cuts or
       // left of the first cut or right of the last cut
       if(part_index / 2 == 1) {
@@ -3794,31 +3811,37 @@ struct RightLeftClosestFunctor {
       else {
         scalar_t coord = coordinates(i);
         part_t part = part_index / 2; // we are on this part ID
-        if(part > 0) {
-          // for cut to left determine min for right closest
+
+        while(part > 0) {
+          // for cuts to left determine min for right closest
           part_t cut_left = part - 1;
           if(coord < threadSum.ptr[cut_left*2+1]) {
             threadSum.ptr[cut_left*2+1] = coord;
           }
+          --part;
         }
-        if(part < num_cuts) {
-          // for cut to right determine max for left closest
+
+        part = part_index / 2;
+        while(part < num_cuts) {
+          // for cuts to right determine max for left closest
           part_t cut_right = part;
           if(coord > threadSum.ptr[cut_right*2]) {
             threadSum.ptr[cut_right*2] = coord;
           }
+          ++part;
         }
       }          
+*/
     }, arrayMinMaxReducer);
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count; n += 2) {
-        if(teamSum[n] > array.ptr[n]) {
-          array.ptr[n] = teamSum[n];
+        if(array.ptr[n] > teamSum[n]) {
+          teamSum[n] = array.ptr[n];
         }
-        if(teamSum[n+1] > array.ptr[n+1]) {
-          array.ptr[n+1] = teamSum[n+1];
+        if(array.ptr[n+1] < teamSum[n+1]) {
+          teamSum[n+1] = array.ptr[n+1];
         }
       }
     });
@@ -3827,10 +3850,10 @@ struct RightLeftClosestFunctor {
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count; n += 2) {
-      if(dst[n] > src[n]) {
+      if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
-      if(dst[n+1] < src[n+1]) {
+      if(src[n+1] < dst[n+1]) {
         dst[n+1] = src[n+1];
       }
     }
@@ -3839,18 +3862,20 @@ struct RightLeftClosestFunctor {
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type dst, const volatile value_type src) const {
     for(int n = 0; n < value_count; n += 2) {
-      if(dst[n] > src[n]) {
+      if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
-      if(dst[n+1] < src[n+1]) {
+      if(src[n+1] < dst[n+1]) {
         dst[n+1] = src[n+1];
       }
     }
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
-    for(int n = 0; n < value_count; ++n) {
-      dst[n] = 0;
+    for(int n = 0; n < value_count; n += 2) {
+      // TODO: Fix min max init
+      dst[n]   = -999999999.99; // temp need cleaner init min
+      dst[n+1] =  999999999.99; // temp need cleaner init max
     }
   }
 };
@@ -4026,6 +4051,7 @@ do_weights5.start();
 
 #define USE_ARRAYS // TODO eliminate me
 #ifdef USE_ARRAYS
+
     RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
       rightLeftClosestFunctor(coordinate_begin_index,
                   coordinate_end_index,
@@ -4038,21 +4064,25 @@ do_weights5.start();
 
     // will have them as left, right, left, right, etc   2 for each cut
     mj_scalar_t * left_max_right_min_values = new mj_scalar_t[num_cuts*2];
-
     Kokkos::parallel_reduce(policy, rightLeftClosestFunctor, left_max_right_min_values);
 
-    // write the values to device
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
-      KOKKOS_LAMBDA (const mj_part_t & cut) {
-      kokkos_my_current_left_closest(cut)  = left_max_right_min_values[cut*2+0];
-      kokkos_my_current_right_closest(cut) = left_max_right_min_values[cut*2+1];
-    });
-    
+    // Move it from global memory to device memory
+    // TODO: Need to figure out how we can better manage this
+    typename decltype(kokkos_my_current_left_closest)::HostMirror::HostMirror hostLeftArray =
+      Kokkos::create_mirror_view(kokkos_my_current_left_closest);
+    typename decltype(kokkos_my_current_right_closest)::HostMirror::HostMirror hostRightArray =
+      Kokkos::create_mirror_view(kokkos_my_current_right_closest);
+    for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
+      hostLeftArray(cut)  = left_max_right_min_values[cut*2+0];
+      hostRightArray(cut) = left_max_right_min_values[cut*2+1];
+
+    }
+    Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
+    Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
+
     // drop the temp global memory used by the functor
     delete [] left_max_right_min_values;
   
-    
 #else
 
     for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
@@ -4111,9 +4141,8 @@ do_weights5.start();
           }
         }
       }, Kokkos::Max<mj_scalar_t>(left));
-
-
       // write the values to device
+
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, 1),
         KOKKOS_LAMBDA (const mj_part_t & i) {
