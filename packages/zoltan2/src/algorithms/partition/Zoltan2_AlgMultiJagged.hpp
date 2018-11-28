@@ -3482,17 +3482,17 @@ struct ArrayType {
 };
 
 template<class policy_t, class scalar_t, class part_t>
-struct ThreadReducer {
+struct ArraySumReducer {
 
-  typedef ThreadReducer reducer;
+  typedef ArraySumReducer reducer;
   typedef ArrayType<scalar_t> value_type;
   value_type * value;
   size_t value_count;
 
-  KOKKOS_INLINE_FUNCTION ThreadReducer(
+  KOKKOS_INLINE_FUNCTION ArraySumReducer(
     value_type &val,
-    const size_t & n_parts) :
-    value_count(n_parts), value(&val)
+    const size_t & count) :
+    value(&val), value_count(count)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -3522,7 +3522,7 @@ struct ThreadReducer {
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class node_t>
-struct TeamArrayReduceFunctor {
+struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
@@ -3538,7 +3538,7 @@ struct TeamArrayReduceFunctor {
   bool bUniformWeights;
   scalar_t sEpsilon;
   
-  TeamArrayReduceFunctor(
+  ReduceWeightsFunctor(
     const index_t & coordinate_begin_index,
     const index_t & coordinate_end_index,
     const int & mj_weight_array_size,
@@ -3590,7 +3590,7 @@ struct TeamArrayReduceFunctor {
     ArrayType<scalar_t> array(&shared_ptr[teamMember.team_rank() * value_count]);
 
     // create reducer which handles the ArrayType class
-    ThreadReducer<policy_t, scalar_t, part_t> threadReducer(
+    ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
     // call the reduce
@@ -3627,7 +3627,7 @@ struct TeamArrayReduceFunctor {
           }
         }
       }
-    }, threadReducer);
+    }, arraySumReducer);
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
@@ -3648,6 +3648,203 @@ struct TeamArrayReduceFunctor {
   void join (volatile value_type dst, const volatile value_type src) const {
     for(int n = 0; n < value_count; ++n) {
       dst[n] += src[n];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst[n] = 0;
+    }
+  }
+};
+
+template<class policy_t, class scalar_t, class part_t>
+struct ArrayMinMaxReducer {
+
+  typedef ArrayMinMaxReducer reducer;
+  typedef ArrayType<scalar_t> value_type;
+  value_type * value;
+  size_t value_count;
+
+  KOKKOS_INLINE_FUNCTION ArrayMinMaxReducer(
+    value_type &val,
+    const size_t & n_parts) :
+    value(&val), value_count(n_parts)
+  {}
+
+  KOKKOS_INLINE_FUNCTION
+  value_type& reference() const {
+    return *value;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type& dst, const value_type& src)  const {
+    for(int n = 0; n < value_count; ++n) {
+      if(dst.ptr[n] > src.ptr[n]) {
+        dst.ptr[n] = src.ptr[n];
+      }
+      if(dst.ptr[n+1] < src.ptr[n+1]) {
+        dst.ptr[n+1] = src.ptr[n+1];
+      }
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join (volatile value_type& dst, const volatile value_type& src) const {
+    for(int n = 0; n < value_count; n += 2) {
+      if(dst[n] > src[n]) {
+        dst.ptr[n] = src.ptr[n];
+      }
+      if(dst[n+1] < src[n+1]) {
+        dst.ptr[n+1] = src.ptr[n+1];
+      }
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst.ptr[n] = 0;
+    }
+  }
+};
+
+template<class policy_t, class scalar_t, class part_t, class index_t, class node_t>
+struct RightLeftClosestFunctor {
+  typedef typename policy_t::member_type member_type;
+  typedef Kokkos::View<scalar_t*> scalar_view_t;
+  typedef scalar_t value_type[];
+
+  int value_count;
+  index_t all_begin;
+  index_t all_end;
+  Kokkos::View<index_t*, typename node_t::device_type> permutations;
+  Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
+  Kokkos::View<part_t*, typename node_t::device_type> parts;
+  Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
+  scalar_t sEpsilon;
+  
+  RightLeftClosestFunctor(
+    const index_t & coordinate_begin_index,
+    const index_t & coordinate_end_index,
+    const int & num_cuts,
+    Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
+    Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
+    scalar_t mj_sEpsilon) :
+    value_count(num_cuts*2),
+    all_begin(coordinate_begin_index),
+    all_end(coordinate_end_index),
+    permutations(mj_permutations),
+    coordinates(mj_coordinates),
+    parts(mj_parts),
+    cut_coordinates(mj_cut_coordinates),
+    sEpsilon(mj_sEpsilon) {
+  }
+
+  size_t team_shmem_size (int team_size) const {
+    return sizeof(scalar_t) * value_count * team_size;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const member_type & teamMember, value_type teamSum) const {
+
+    int num_teams = teamMember.league_size();
+    
+    index_t num_working_points = all_end - all_begin;
+    index_t stride = num_working_points / num_teams;
+    if((num_working_points % num_teams) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
+        
+    index_t begin = all_begin + stride * teamMember.league_rank();
+    index_t end = begin + stride;
+    if(end > all_end) {
+      end = all_end; // the last team may have less work than the other teams
+    }
+
+    // create the team shared data - each thread gets one of the arrays
+    scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
+      sizeof(scalar_t) * value_count * teamMember.team_size());
+
+    // select the array for this thread
+    ArrayType<scalar_t> array(&shared_ptr[teamMember.team_rank() * value_count]);
+
+    // create reducer which handles the ArrayType class
+    ArrayMinMaxReducer<policy_t, scalar_t, part_t> arrayMinMaxReducer(
+      array, value_count);
+
+    // call the reduce
+    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      int i = permutations(ii);
+      
+      part_t part_index = parts(i);
+      part_t num_cuts = value_count / 2;
+      
+      // this point is either on a cut or between 2 cuts or
+      // left of the first cut or right of the last cut
+      if(part_index / 2 == 1) {
+        // it's on the cut so set min and max to be the cut coord
+        part_t cut = part_index / 2;
+        scalar_t cut_coord = cut_coordinates(cut);
+        threadSum.ptr[cut*2] = cut_coord;
+        threadSum.ptr[cut*2+1] = cut_coord;
+      }
+      else {
+        scalar_t coord = coordinates(i);
+        part_t part = part_index / 2; // we are on this part ID
+        if(part > 0) {
+          // for cut to left determine min for right closest
+          part_t cut_left = part - 1;
+          if(coord < threadSum.ptr[cut_left*2+1]) {
+            threadSum.ptr[cut_left*2+1] = coord;
+          }
+        }
+        if(part < num_cuts) {
+          // for cut to right determine max for left closest
+          part_t cut_right = part;
+          if(coord > threadSum.ptr[cut_right*2]) {
+            threadSum.ptr[cut_right*2] = coord;
+          }
+        }
+      }          
+    }, arrayMinMaxReducer);
+
+    // collect all the team's results
+    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
+      for(int n = 0; n < value_count; n += 2) {
+        if(teamSum[n] > array.ptr[n]) {
+          array.ptr[n] = teamSum[n];
+        }
+        if(teamSum[n+1] > array.ptr[n+1]) {
+          array.ptr[n+1] = teamSum[n+1];
+        }
+      }
+    });
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type dst, const value_type src)  const {
+    for(int n = 0; n < value_count; n += 2) {
+      if(dst[n] > src[n]) {
+        dst[n] = src[n];
+      }
+      if(dst[n+1] < src[n+1]) {
+        dst[n+1] = src[n+1];
+      }
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join (volatile value_type dst, const volatile value_type src) const {
+    for(int n = 0; n < value_count; n += 2) {
+      if(dst[n] > src[n]) {
+        dst[n] = src[n];
+      }
+      if(dst[n+1] < src[n+1]) {
+        dst[n+1] = src[n+1];
+      }
     }
   }
 
@@ -3760,16 +3957,9 @@ do_weights1.stop();
 
 do_weights2.start();
 
-// This first option using the reduction on arrays is by far the fastest approach
-// so far. I'm keeping the other methods below in case they are useful for comparison
-// or developing further methods.
-// TODO: Delete all but this first one if it remains the best.
-#define USE_REDUCE_ON_ARRAYS
-#ifdef USE_REDUCE_ON_ARRAYS
-
   int weight_array_size = num_cuts * 2 + 1;
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
-  TeamArrayReduceFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
+  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
     teamFunctor(coordinate_begin_index,
                 coordinate_end_index,
                 weight_array_size,
@@ -3798,168 +3988,6 @@ do_weights2.start();
  
   delete [] part_weights;
 
-#else // USE_REDUCE_ON_ARRAYS
-
-      // start the outer loop on teams
-      Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(num_teams, Kokkos::AUTO());
-      typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
-      Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-        // Now begin the internal loop
-        // Divide up the coordinates between the teams
-        mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
-        mj_lno_t team_end_index = team_begin_index + stride;
-        if(team_end_index > coordinate_end_index) {
-          team_end_index = coordinate_end_index; // the last team may have less work than the other teams
-        }
-
-#define SIMPLE_OPTION
-#ifdef SIMPLE_OPTION
-
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
-          [=] (mj_lno_t & ii) {
-
-          int i = local_kokkos_coordinate_permutations(ii);
-          mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
-          mj_scalar_t w = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(i,0);
-
-          bool bOnCut = false;
-
-          for(mj_lno_t cut = 0; cut < num_cuts; ++cut) {
-            mj_scalar_t cut_coord = kokkos_temp_current_cut_coords(cut);
-            mj_scalar_t distance_to_cut = coord - cut_coord;
-            mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
-
-            if(abs_distance_to_cut < local_sEpsilon) {
-              bOnCut = true;
-              int assign_index = cut * 2 + 1;
-              Kokkos::atomic_add(&kokkos_my_current_part_weights(assign_index), w);
-              local_kokkos_assigned_part_ids(i) = assign_index;
-            }
-          }
-
-          if(!bOnCut) {
-            for(mj_lno_t part = 0; part <= num_cuts; ++part) {
-              mj_scalar_t a = (part>0) ? kokkos_temp_current_cut_coords(part-1) : -99999999.9;
-              mj_scalar_t b = (part<num_cuts) ? kokkos_temp_current_cut_coords(part) : 9999999.9; // temp test
-              if(coord >= a + local_sEpsilon  && coord <= b - local_sEpsilon) {
-                int assign_index = part * 2;
-                Kokkos::atomic_add(&kokkos_my_current_part_weights(assign_index), w);
-                local_kokkos_assigned_part_ids(i) = assign_index;
-              }
-            }
-          }
-        });
-
-#else
-
-        Kokkos::parallel_for(
-          Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
-          [=] (mj_lno_t & ii) {
-                int i = local_kokkos_coordinate_permutations(ii);
-                mj_part_t j = local_kokkos_assigned_part_ids(i) / 2;
-
-                if(j >= num_cuts){
-                  j = num_cuts - 1;
-                }
-
-                mj_part_t lower_cut_index = 0;
-                mj_part_t upper_cut_index = num_cuts - 1;
-                mj_scalar_t w = local_kokkos_mj_uniform_weights(0)? 1:local_kokkos_mj_weights(i,0);
-
-                bool is_inserted = false;
-                bool is_on_left_of_cut = false;
-                bool is_on_right_of_cut = false;
-                mj_part_t last_compared_part = -1;
-                mj_scalar_t coord = kokkos_mj_current_dim_coords(i);
-                while(upper_cut_index >= lower_cut_index)
-                {
-                        last_compared_part = -1;
-                        is_on_left_of_cut = false;
-                        is_on_right_of_cut = false;
-                        mj_scalar_t cut = kokkos_temp_current_cut_coords(j);
-                        mj_scalar_t distance_to_cut = coord - cut;
-                        mj_scalar_t abs_distance_to_cut = ZOLTAN2_ABS(distance_to_cut);
-                        if(abs_distance_to_cut < local_sEpsilon){
-                                Kokkos::atomic_add(&kokkos_my_current_part_weights(j * 2 + 1), w);
-                                local_kokkos_assigned_part_ids(i) = j * 2 + 1;
-                                mj_part_t kk = j + 1;
-                                while(kk < num_cuts){
-                                        distance_to_cut = ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-                                        if(distance_to_cut < local_sEpsilon){
-                                                Kokkos::atomic_add(&kokkos_my_current_part_weights(kk * 2 + 1), w);
-                                                kk++;
-                                        }
-                                        else{
-                                                break;
-                                        }
-                                }
-
-                                kk = j - 1;
-                                while(kk >= 0){
-                                        distance_to_cut = ZOLTAN2_ABS(kokkos_temp_current_cut_coords(kk) - cut);
-                                        if(distance_to_cut < local_sEpsilon){
-                                                kk--;
-                                        }
-                                        else{
-                                                break;
-                                        }
-                                }
-
-                                is_inserted = true;
-                                break;
-                        }
-                        else {
-                                if (distance_to_cut < 0) {
-                                        bool _break = false;
-                                        if(j > 0){
-                                                mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j - 1);
-                                                if(distance_to_next_cut > local_sEpsilon){
-                                                        _break = true;
-                                                }
-                                        }
-                                        upper_cut_index = j - 1;
-                                        is_on_left_of_cut = true;
-                                        last_compared_part = j;
-                                        if(_break) break;
-                                }
-                                else {
-                                        bool _break = false;
-                                        if(j < num_cuts - 1){
-                                                mj_scalar_t distance_to_next_cut = coord - kokkos_temp_current_cut_coords(j + 1);
-
-                                                if(distance_to_next_cut < (-local_sEpsilon)){
-                                                  _break = true;
-                                                }
-                                        }
-
-                                        lower_cut_index = j + 1;
-                                        is_on_right_of_cut = true;
-                                        last_compared_part = j;
-                                        if(_break) break;
-                                }
-                        }
-
-                        j = (upper_cut_index + lower_cut_index) / 2;
-                }
-                if(!is_inserted){
-                        if(is_on_right_of_cut){
-                                Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part + 2), w);
-                                local_kokkos_assigned_part_ids(i) = 2 * last_compared_part + 2;
-                        }
-                        else if(is_on_left_of_cut){
-                                Kokkos::atomic_add(&kokkos_my_current_part_weights(2 * last_compared_part), w);
-                                local_kokkos_assigned_part_ids(i) = 2 * last_compared_part;
-                        }
-                }
-        }); // ends the nested 2nd loop
-
-#endif
-
-     }); // ends the outer loop over teams
-
-#endif // USE_REDUCE_ON_ARRAYS
 
 do_weights2.stop();
 do_weights3.start();
@@ -3995,6 +4023,37 @@ do_weights3.stop();
 
 
 do_weights5.start();
+
+#define USE_ARRAYS // TODO eliminate me
+#ifdef USE_ARRAYS
+    RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
+      rightLeftClosestFunctor(coordinate_begin_index,
+                  coordinate_end_index,
+                  num_cuts,
+                  kokkos_coordinate_permutations,
+                  kokkos_mj_current_dim_coords,
+                  kokkos_assigned_part_ids,
+                  kokkos_temp_current_cut_coords,
+                  sEpsilon);
+
+    // will have them as left, right, left, right, etc   2 for each cut
+    mj_scalar_t * left_max_right_min_values = new mj_scalar_t[num_cuts*2];
+
+    Kokkos::parallel_reduce(policy, rightLeftClosestFunctor, left_max_right_min_values);
+
+    // write the values to device
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (0, num_cuts),
+      KOKKOS_LAMBDA (const mj_part_t & cut) {
+      kokkos_my_current_left_closest(cut)  = left_max_right_min_values[cut*2+0];
+      kokkos_my_current_right_closest(cut) = left_max_right_min_values[cut*2+1];
+    });
+    
+    // drop the temp global memory used by the functor
+    delete [] left_max_right_min_values;
+  
+    
+#else
 
     for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
 
@@ -4062,6 +4121,8 @@ do_weights5.start();
         kokkos_my_current_right_closest(cut) = right;
       });
     }
+
+#endif
 
 do_weights5.stop();
 }
