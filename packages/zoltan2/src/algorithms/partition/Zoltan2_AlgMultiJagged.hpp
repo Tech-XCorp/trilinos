@@ -122,6 +122,14 @@ class Clock {
 
 static Clock mj_1D_part_init("mj_1D_part_init", false);
 static Clock mj_1D_part_loop("mj_1D_part_loop", false);
+
+static Clock mj_1D_part_loop1("mj_1D_part_loop1", false);
+static Clock mj_1D_part_loop2("mj_1D_part_loop2", false);
+static Clock mj_1D_part_loop3("mj_1D_part_loop3", false);
+static Clock mj_1D_part_loop4("mj_1D_part_loop4", false);
+static Clock mj_1D_part_loop5("mj_1D_part_loop5", false);
+
+
 static Clock do_weights("do_weights", false);
 static Clock do_weights1("do_weights1", false);
 static Clock do_weights2("do_weights2", false);
@@ -3190,6 +3198,8 @@ mj_1D_part_loop.start();
 
         while (total_incomplete_cut_count != 0) {
             mj_part_t concurrent_cut_shifts = 0;
+
+mj_1D_part_loop5.start();
             size_t total_part_shift = 0;
             for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
               mj_part_t num_parts = num_partitioning_in_current_dim[current_work_part + kk];
@@ -3249,6 +3259,8 @@ do_weights.stop();
                 total_part_shift += total_part_count;
             }
 
+mj_1D_part_loop5.stop();
+mj_1D_part_loop1.start();
             //sum up the results of threads
             // TODO: Now with the threads eliminated we should eliminate a lot of this code
             // There is only 1 thread block in the new cuda refactor setup
@@ -3262,7 +3274,9 @@ do_weights.stop();
                 local_kokkos_total_part_weight_left_right_closests,
                 local_kokkos_thread_part_weights
             );
+mj_1D_part_loop1.stop();
 
+mj_1D_part_loop2.start();
             // Rewrite as single TODO
             Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
                 //now sum up the results of mpi processors.
@@ -3284,7 +3298,8 @@ do_weights.stop();
                         }
                 }
             });
-
+mj_1D_part_loop2.stop();
+mj_1D_part_loop3.start();
             //how much cut will be shifted for the next part in the concurrent part calculation.
             mj_part_t cut_shift = 0;
             //how much the concantaneted array will be shifted for the next part in concurrent part calculation.
@@ -3410,7 +3425,8 @@ do_weights.stop();
                 mj_part_t iteration_complete_cut_count = initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
                 Kokkos::atomic_add(&total_incomplete_cut_count, -iteration_complete_cut_count);             
             }
-
+mj_1D_part_loop3.stop();
+mj_1D_part_loop4.start();
             { //This unnecessary bracket works around a compiler bug in NVCC when compiling with OpenMP enabled
  
                   // swap the cut coordinates for next iteration
@@ -3423,7 +3439,7 @@ do_weights.stop();
                     local_kokkos_cut_coordinates_work_array(n) = t;
                   });
             }
-
+mj_1D_part_loop4.stop();
         } // end of the while loop
 
 mj_1D_part_loop.stop();
@@ -6818,6 +6834,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 {
 mj_1D_part_init.reset();
 mj_1D_part_loop.reset();
+
+mj_1D_part_loop1.reset();
+mj_1D_part_loop2.reset();
+mj_1D_part_loop3.reset();
+mj_1D_part_loop4.reset();
+mj_1D_part_loop5.reset();
+
 do_weights.reset();
 do_weights1.reset();
 do_weights2.reset();
@@ -7449,6 +7472,13 @@ clock_update_boxes.print();
 
 mj_1D_part_init.print();
 mj_1D_part_loop.print();
+
+mj_1D_part_loop1.print();
+mj_1D_part_loop2.print();
+mj_1D_part_loop3.print();
+mj_1D_part_loop4.print();
+mj_1D_part_loop5.print();
+
 do_weights.print();
 do_weights1.print();
 do_weights2.print();
