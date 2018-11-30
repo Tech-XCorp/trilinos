@@ -110,7 +110,7 @@ class Clock {
       }
     }
     void print() {
-      printf("Clock %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
+      printf("--------------------------------------------------------- Clock %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
     }
   private:
     std::string name;
@@ -2002,8 +2002,8 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 {
     // purpose of this code is to validate node and UVM status for the tests
     // TODO: Later can remove or make this debug code
-    std::cout << "  memory_space: " << mj_node_t::memory_space::name() << std::endl;
-    std::cout << "  execution_space: " << mj_node_t::execution_space::name() << std::endl;
+    std::cout << "Memory Space: " << mj_node_t::memory_space::name()
+      << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
 
     this->fEpsilon = std::numeric_limits<float>::epsilon();
     this->sEpsilon = std::numeric_limits<mj_scalar_t>::epsilon() * 100;

@@ -254,10 +254,12 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- Origin");
+/*
       std::cout << me << " OriginPoint (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
       if (coordDim > 2) std::cout << " " << pointDrop[2];
       std::cout << ")  part " << part << std::endl;
+*/
     }
 
     // test point with negative coordinates
@@ -267,10 +269,12 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- Negative Point");
+/*
       std::cout << me << " NegativePoint (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
       if (coordDim > 2) std::cout << " " << pointDrop[2];
       std::cout << ")  part " << part << std::endl;
+*/
     }
 
     // test a point that's way out there
@@ -280,10 +284,12 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- i*5 Point");
+/*
       std::cout << me << " i*5-Point (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
       if (coordDim > 2) std::cout << " " << pointDrop[2];
       std::cout << ")  part " << part << std::endl;
+*/
     }
 
     // test a point that's way out there
@@ -293,10 +299,12 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- WoopWoop");
+/*
       std::cout << me << " WoopWoop-Point (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
       if (coordDim > 2) std::cout << " " << pointDrop[2];
       std::cout << ")  part " << part << std::endl;
+*/
     }
 
     delete [] pointDrop;
@@ -811,7 +819,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     if (comm->getRank() == 0){
       metricObject->printMetrics(cout);
     }
-    problem->printTimers();
+    
+    // Temporarily turning off the timer print for some ongoing profiling work
+    // problem->printTimers();
 
     // run pointAssign tests
     if (test_boxes) {
