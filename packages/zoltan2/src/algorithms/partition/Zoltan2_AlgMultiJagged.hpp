@@ -2540,32 +2540,37 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     this->kokkos_global_total_part_weight_left_right_closests = Kokkos::View<mj_scalar_t*, typename mj_node_t::device_type>(
       "global_total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
+
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
-    for (int i=0; i < this->coord_dim; i++){
+    auto local_coord_dim = this->coord_dim;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
-          coord(j,i) = local_kokkos_mj_coordinates(j,i);
+          for (int i=0; i < local_coord_dim; i++){
+            coord(j,i) = local_kokkos_mj_coordinates(j,i);
+          }
         }
       );
-    }
 
     this->kokkos_mj_coordinates = coord;
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
+
     auto local_kokkos_mj_weights = kokkos_mj_weights; // See comment above - Cuda local/this issues
-    for (int i=0; i < this->num_weights_per_coord; i++){
+    auto local_num_weights_per_coord = this->num_weights_per_coord;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
         KOKKOS_LAMBDA (const int j) {
-          weights(j,i) = local_kokkos_mj_weights(j,i);
+          for (int i=0; i < local_num_weights_per_coord; i++){
+            weights(j,i) = local_kokkos_mj_weights(j,i);
+         }
         }
       );
-    }
 
     this->kokkos_mj_weights = weights;
+
     this->kokkos_current_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", local_num_local_coords);
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
@@ -6797,8 +6802,13 @@ Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
     }
 
     //this->set_input_data();
+Clock clock_set_part_specifications("    clock_set_part_specifications", true);
     this->set_part_specifications();
+clock_set_part_specifications.stop();
+Clock clock_allocate_set_work_memory("    clock_allocate_set_work_memory", true);
     this->allocate_set_work_memory();
+clock_allocate_set_work_memory.stop();
+
 
     //We duplicate the comm as we create subcommunicators during migration.
     //We keep the problemComm as it is, while comm changes after each migration.
@@ -7370,6 +7380,9 @@ clock_multi_jagged_part.stop();
 
 clock_multi_jagged_part.print();
 clock_multi_jagged_part_init.print();
+clock_set_part_specifications.print();
+clock_allocate_set_work_memory.print();
+
 clock_multi_jagged_part_loop.print();
 loopA.print();
 loopB.print();
