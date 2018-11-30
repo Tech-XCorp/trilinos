@@ -2693,17 +2693,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
 
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
-      mj_part_t conccurent_current_part = current_work_part + kk;
+      mj_part_t concurrent_current_part = current_work_part + kk;
       mj_lno_t coordinate_begin_index;
       Kokkos::parallel_reduce("Read single", 1,
         KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-        set_single = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
+        set_single = concurrent_current_part == 0 ? 0 : local_kokkos_part_xadj(concurrent_current_part -1);
       }, coordinate_begin_index);
       mj_lno_t coordinate_end_index;
 
       Kokkos::parallel_reduce("Read single", 1,
         KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-        set_single = local_kokkos_part_xadj(conccurent_current_part);
+        set_single = local_kokkos_part_xadj(concurrent_current_part);
       }, coordinate_end_index);
 
       int uniform_weights;
@@ -3545,37 +3545,37 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
+  part_t concurrent_current_part;
   int value_count;
-  index_t all_begin;
-  index_t all_end;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
   Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
   Kokkos::View<scalar_t**, typename node_t::device_type> weights;
   Kokkos::View<part_t*, typename node_t::device_type> parts;
   Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
-  bool bUniformWeights;
+  Kokkos::View<index_t *, typename node_t::device_type> part_xadj;
+  Kokkos::View<bool*, typename node_t::device_type> uniform_weights;
   scalar_t sEpsilon;
   
   ReduceWeightsFunctor(
-    const index_t & coordinate_begin_index,
-    const index_t & coordinate_end_index,
+    part_t mj_concurrent_current_part,
     const int & mj_weight_array_size,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
     Kokkos::View<scalar_t**, typename node_t::device_type> mj_weights,
     Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
-    bool mj_bUniformWeights,
+    Kokkos::View<index_t *, typename node_t::device_type> mj_part_xadj,
+    Kokkos::View<bool*, typename node_t::device_type> mj_uniform_weights,
     scalar_t mj_sEpsilon) :
+    concurrent_current_part(mj_concurrent_current_part),
     value_count(mj_weight_array_size),
-    all_begin(coordinate_begin_index),
-    all_end(coordinate_end_index),
     permutations(mj_permutations),
     coordinates(mj_coordinates),
     weights(mj_weights),
     parts(mj_parts),
     cut_coordinates(mj_cut_coordinates),
-    bUniformWeights(mj_bUniformWeights),
+    part_xadj(mj_part_xadj),
+    uniform_weights(mj_uniform_weights),
     sEpsilon(mj_sEpsilon) {
   }
 
@@ -3586,9 +3586,12 @@ struct ReduceWeightsFunctor {
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
 
+    index_t all_begin = (concurrent_current_part == 0) ? 0 : part_xadj(concurrent_current_part -1);
+    index_t all_end = part_xadj(concurrent_current_part);
+    bool bUniformWeights = uniform_weights(0);
+    index_t num_working_points = all_end - all_begin;
     int num_teams = teamMember.league_size();
     
-    index_t num_working_points = all_end - all_begin;
     index_t stride = num_working_points / num_teams;
     if((num_working_points % num_teams) > 0) {
       stride += 1; // make sure we have coverage for the final points
@@ -3734,31 +3737,31 @@ struct RightLeftClosestFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
+  part_t concurrent_current_part;
   int value_count;
-  index_t all_begin;
-  index_t all_end;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
   Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
   Kokkos::View<part_t*, typename node_t::device_type> parts;
   Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
+  Kokkos::View<index_t *, typename node_t::device_type> part_xadj;
   scalar_t sEpsilon;
 
   RightLeftClosestFunctor(
-    const index_t & coordinate_begin_index,
-    const index_t & coordinate_end_index,
+    part_t mj_concurrent_current_part,
     const int & num_cuts,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
     Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
+    Kokkos::View<index_t *, typename node_t::device_type> mj_part_xadj,
     scalar_t mj_sEpsilon) :
+    concurrent_current_part(mj_concurrent_current_part),
     value_count(num_cuts*2),
-    all_begin(coordinate_begin_index),
-    all_end(coordinate_end_index),
     permutations(mj_permutations),
     coordinates(mj_coordinates),
     parts(mj_parts),
     cut_coordinates(mj_cut_coordinates),
+    part_xadj(mj_part_xadj),
     sEpsilon(mj_sEpsilon) {
   }
 
@@ -3768,9 +3771,12 @@ struct RightLeftClosestFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
-    int num_teams = teamMember.league_size();
-    
+
+    index_t all_begin = (concurrent_current_part == 0) ? 0 : part_xadj(concurrent_current_part -1);
+    index_t all_end = part_xadj(concurrent_current_part);
     index_t num_working_points = all_end - all_begin;
+    int num_teams = teamMember.league_size();
+
     index_t stride = num_working_points / num_teams;
     if((num_working_points % num_teams) > 0) {
       stride += 1; // make sure we have coverage for the final points
@@ -3895,7 +3901,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_left_closest,
     Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_my_current_right_closest
     ){
-do_weights1.start();
       // Create some locals so we don't use this inside the kernels which causes problems
       auto local_sEpsilon = this->sEpsilon;
       auto local_kokkos_assigned_part_ids = this->kokkos_assigned_part_ids;
@@ -3905,61 +3910,12 @@ do_weights1.start();
       auto local_kokkos_part_xadj = this->kokkos_part_xadj;
       auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
 
-      // Pull these values from device so we can set up a good team count estimate.
-      // This should probabOBly eventually be refactored.
-      mj_part_t conccurent_current_part = current_work_part + working_kk;
-      mj_lno_t coordinate_begin_index;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-        set_single = conccurent_current_part == 0 ? 0 : local_kokkos_part_xadj(conccurent_current_part -1);
-      }, coordinate_begin_index);
-      mj_lno_t coordinate_end_index;
-
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-        set_single = local_kokkos_part_xadj(conccurent_current_part);
-      }, coordinate_end_index);
-
-      int uniform_weights;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, int & set_single) {
-        set_single = local_kokkos_mj_uniform_weights(0);
-      }, uniform_weights);
-
-      // total points to be processed by all teams
-      mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-
-      // determine a stride for each team
-      // TODO: How to best determine this and should we be concerned if teams
-      // get smaller coord counts than their warp sizes?
-      const int min_coords_per_team = 32; // abrbitrary ... TODO
-      int stride = min_coords_per_team;
-      if(stride > num_working_points) {
-        stride = num_working_points;
-      }
-
-      int num_teams = num_working_points / stride;
-      if((num_working_points % stride) > 0) {
-        ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
-      }
-
-      // On a local machine 100 teams turns out to be the best for following test (my study case)
-      // Used default GeomGenParam.txt except changed it to 100000 coordinates
-      // Test: .../packages/zoltan2/test/partition/Zoltan2_mjTest.exe P=2,3,5,2 C=16 O=1 F=GeomGenParam.txt TB=1  
-      const int max_teams = SET_MAX_TEAMS;
-      if(num_teams > max_teams) {
-        num_teams = max_teams;
-        stride = num_working_points / num_teams;
-        if((num_working_points % num_teams) > 0) {
-          stride += 1; // make sure we have coverage for the final points
-        }
-      }
+do_weights1.start();
 
       // initializations for part weights
       Kokkos::parallel_for (total_part_count, KOKKOS_LAMBDA(size_t i) {
         kokkos_my_current_part_weights(i) = 0;
       });
-
 do_weights1.stop();
 
 do_weights2.start();
@@ -3967,18 +3923,18 @@ do_weights2.start();
   int weight_array_size = num_cuts * 2 + 1;
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
-    teamFunctor(coordinate_begin_index,
-                coordinate_end_index,
+    teamFunctor(current_work_part + working_kk,
                 weight_array_size,
                 kokkos_coordinate_permutations,
                 kokkos_mj_current_dim_coords,
                 kokkos_mj_weights,
                 kokkos_assigned_part_ids,
                 kokkos_temp_current_cut_coords,
-                uniform_weights ? true : false,
+                kokkos_part_xadj,
+                kokkos_mj_uniform_weights,
                 sEpsilon);
 
-  auto policy = policy_t(num_teams, Kokkos::AUTO);
+  auto policy = policy_t(SET_MAX_TEAMS, Kokkos::AUTO);
 
   mj_scalar_t * part_weights = new mj_scalar_t[weight_array_size];
 
@@ -4030,13 +3986,13 @@ do_weights3.stop();
 
     RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
       rightLeftClosestFunctor(
-                  coordinate_begin_index,
-                  coordinate_end_index,
+                  current_work_part + working_kk,
                   num_cuts+2, // buffer beginning and end to skip if checks
                   kokkos_coordinate_permutations,
                   kokkos_mj_current_dim_coords,
                   kokkos_assigned_part_ids,
                   kokkos_temp_current_cut_coords,
+                  kokkos_part_xadj,
                   sEpsilon);
 
     // will have them as left, right, left, right, etc   2 for each cut
@@ -4622,6 +4578,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
     auto local_kokkos_global_min_max_coord_total_weight = kokkos_global_min_max_coord_total_weight;
 
+    // TODO: Work on this pattern to optimize it
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
     Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
