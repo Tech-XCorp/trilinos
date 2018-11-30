@@ -179,6 +179,7 @@ int run_pointAssign_tests(
     // pointAssign tests
     int coordDim = coords->getNumVectors();
     zscalar_t *pointDrop = new zscalar_t[coordDim];
+
     typename Adapter::part_t part = -1;
 
     char mechar[10];
@@ -254,6 +255,9 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- Origin");
+
+// Temp simplifying logs for profiling work
+      if(part != part) std::cout << "Temp warning disable" << std::endl; // TODO: Delete - restore logs below
 /*
       std::cout << me << " OriginPoint (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
@@ -269,6 +273,8 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- Negative Point");
+
+// Temp simplifying logs for profiling work
 /*
       std::cout << me << " NegativePoint (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
@@ -284,6 +290,8 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- i*5 Point");
+
+// Temp simplifying logs for profiling work
 /*
       std::cout << me << " i*5-Point (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
@@ -299,6 +307,8 @@ int run_pointAssign_tests(
         part = problem->getSolution().pointAssign(coordDim, pointDrop);
       }
       CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + " pointAssign -- WoopWoop");
+
+// Temp simplifying logs for profiling work
 /*
       std::cout << me << " WoopWoop-Point (" << pointDrop[0];
       if (coordDim > 1) std::cout << " " << pointDrop[1];
