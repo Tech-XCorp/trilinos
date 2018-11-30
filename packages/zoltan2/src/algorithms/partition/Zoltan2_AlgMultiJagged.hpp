@@ -3756,7 +3756,7 @@ struct RightLeftClosestFunctor {
 
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
-      part_t num_cuts = (value_count-2) / 2; // remove front end buffers - true count here
+      part_t num_cuts = value_count / 2 - 2; // remove front end buffers - true count here
       for(int cut = 0; cut < num_cuts; ++cut) {
         scalar_t cut_coord = cut_coordinates(cut);
         int index1 = (cut+1)*2;
