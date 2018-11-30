@@ -3219,7 +3219,6 @@ mj_1D_part_get_weights_init.stop();
                 if(kk_kokkos_my_incomplete_cut_count > 0) {
 mj_1D_part_get_weights_setup.start();
 
-                    //although isDone shared, currentDone is private and same for all.
                     Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_status =
                       Kokkos::subview(local_kokkos_is_cut_line_determined,
                         std::pair<mj_lno_t, mj_lno_t>(
@@ -3357,7 +3356,7 @@ clock_mj_get_new_cut_coordinates_init.start();
                       num_total_part + num_cuts,
                       kokkos_current_global_tlr.size()));
                 Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_current_global_part_weights = kokkos_current_global_tlr;
-                //although isDone shared, cuclock_mj_get_new_cut_coordinates.startrrentDone is private and same for all.
+
                 Kokkos::View<bool *, typename mj_node_t::device_type> kokkos_current_cut_line_determined =
                   Kokkos::subview(local_kokkos_is_cut_line_determined,
                     std::pair<mj_lno_t, mj_lno_t>(
@@ -6919,6 +6918,7 @@ loopA.start();
                 input_part_boxes = output_part_boxes;
                 output_part_boxes = tmpPartBoxes;
             }
+loopA.stop();
             continue;
         }
 
