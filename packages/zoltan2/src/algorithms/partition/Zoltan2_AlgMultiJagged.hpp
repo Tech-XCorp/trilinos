@@ -2090,21 +2090,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 //}
 
                 auto local_kokkos_part_no_array = this->kokkos_part_no_array;
-               
-                this->total_dim_num_reduce_all = this->total_num_part * this->recursion_depth;
-
-	        // TODO: What is cleanest way to do reduce multiply?
-                // For now I create UVM On equivalent, copy to it, then do multply manually on the host
-                Kokkos::View<mj_part_t *> temp_kokkos_part_no_array("temp_kokkos_part_no_array", this->kokkos_part_no_array.size());
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_kokkos_part_no_array.size()),
-                    KOKKOS_LAMBDA (const int i) {
-                    temp_kokkos_part_no_array(i) = local_kokkos_part_no_array(i); 
-                });
-                for (int i = 0; i < this->recursion_depth; ++i) {
-                  this->total_num_part *= temp_kokkos_part_no_array(i);
-                }
                 auto local_recursion_depth = this->recursion_depth; 
+ 
+                this->total_dim_num_reduce_all = this->total_num_part * this->recursion_depth;
+                Kokkos::parallel_reduce("Single Reduce", 1,
+                  KOKKOS_LAMBDA(const int& dummy, mj_part_t & running) {
+                  running = 1.0;
+                  for (int i = 0; i < local_recursion_depth; ++i) {
+                    running *= local_kokkos_part_no_array(i);
+                  }
+                }, this->total_num_part);
+
                 mj_part_t track_max;
                 Kokkos::parallel_reduce("MaxReduce", local_recursion_depth,
                   KOKKOS_LAMBDA(const int& i, mj_part_t & running_max) {
@@ -2112,8 +2108,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                       running_max = local_kokkos_part_no_array(i);
                     }	
                 }, Kokkos::Max<mj_part_t>(track_max));
+
+                auto local_total_num_part = this->total_num_part;
+                Kokkos::parallel_reduce("Single Reduce", 1,
+                  KOKKOS_LAMBDA(const int& dummy, mj_part_t & running) {
+                  running = local_total_num_part / local_kokkos_part_no_array(local_recursion_depth-1);
+                }, this->last_dim_num_part);
+                
                 this->max_num_part_along_dim = track_max;
-                this->last_dim_num_part = this->total_num_part / temp_kokkos_part_no_array(recursion_depth-1);
                 this->num_global_parts = this->total_num_part;
         } else {
                 mj_part_t future_num_parts = this->num_global_parts;
@@ -2412,6 +2414,9 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
           typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::allocate_set_work_memory(){
+
+Clock check1("check1", true);
+
         //points to process that initially owns the coordinate.
         Kokkos::resize(this->kokkos_owner_of_coordinate, 0);
 
@@ -2419,6 +2424,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
         Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
+
+check1.stop(true);
+Clock check2("check2", true);
 
         //initial configuration, set each pointer-i to i.
         // Cuda local/this issues
@@ -2434,6 +2442,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
         );
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
+
+check2.stop(true);
+Clock check3("check3", true);
 
         //new_coordinate_permutations holds the current permutation.
         this->kokkos_new_coordinate_permutations =
@@ -2459,6 +2470,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           }
         );
 
+check3.stop(true);
+
+Clock check4("check4", true);
+
         //the ends points of the output, this is allocated later.
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
         // only store this much if cuts are needed to be stored.
@@ -2481,6 +2496,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
             this->kokkos_global_rectilinear_cut_weight = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
               "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
         }
+
+check4.stop(true);
+
+Clock check5("check5", true);
         // work array to manipulate coordinate of cutlines in different iterations.
         //necessary because previous cut line information is used for determining
         //the next cutline information. therefore, cannot update the cut work array
@@ -2541,62 +2560,66 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       "global_total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
+check5.stop(true);
+
+Clock check6("check6", true);
+
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
     auto local_coord_dim = this->coord_dim;
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
-        KOKKOS_LAMBDA (const int j) {
-          for (int i=0; i < local_coord_dim; i++){
-            coord(j,i) = local_kokkos_mj_coordinates(j,i);
-          }
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
+      KOKKOS_LAMBDA (const int j) {
+        for (int i=0; i < local_coord_dim; i++){
+          coord(j,i) = local_kokkos_mj_coordinates(j,i);
         }
-      );
+      }
+    );
 
     this->kokkos_mj_coordinates = coord;
+
+check6.stop(true);
+
+Clock check7("check7", true);
+
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
 
     auto local_kokkos_mj_weights = kokkos_mj_weights; // See comment above - Cuda local/this issues
     auto local_num_weights_per_coord = this->num_weights_per_coord;
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
-        KOKKOS_LAMBDA (const int j) {
-          for (int i=0; i < local_num_weights_per_coord; i++){
-            weights(j,i) = local_kokkos_mj_weights(j,i);
-         }
-        }
-      );
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
+      KOKKOS_LAMBDA (const int j) {
+        for (int i=0; i < local_num_weights_per_coord; i++){
+          weights(j,i) = local_kokkos_mj_weights(j,i);
+       }
+      }
+    );
 
     this->kokkos_mj_weights = weights;
 
+check7.stop(true);
+
+Clock check8("check8", true);
     this->kokkos_current_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", local_num_local_coords);
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
     auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos; // See comment above - Cuda local/this issues
 
-    // For the cuda runs this loop seems to be problematic, and crashes
-    // So I try just running it in serial and it's ok.
-    // TODO: Why? This seems like it should be fine - must be something before or
-    // how these views are setup. Allocating a new view seems like a good way to
-    // to determine if the Kokkos/Cuda system has been trashed somehow.
+    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
+    auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
+    auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
+
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
       KOKKOS_LAMBDA (const int j) {
         local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
-    });
-
-    this->kokkos_owner_of_coordinate = Kokkos::View<int*, typename mj_node_t::device_type>("kokkos_owner_of_coordinate", this->num_local_coords);
-
-    auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate; // See comment above - Cuda local/this issues
-    auto local_myActualRank = this->myActualRank; // See comment above - Cuda local/this issues
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, local_num_local_coords),
-      KOKKOS_LAMBDA (const int j) {
         local_kokkos_owner_of_coordinate(j) = local_myActualRank;
       }
     );
+
+check8.stop(true);
 }
 
 /* \brief compute the global bounding box
@@ -6770,6 +6793,7 @@ Clock clock_multi_jagged_part("multi_jagged_part", true);
 
 Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
 
+Clock clock_multi_jagged_part_init_begin("    multi_jagged_part init begin", true);
 #ifdef print_debug
     if(comm->getRank() == 0){
         std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
@@ -6799,6 +6823,7 @@ Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
         this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
         this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
     }
+clock_multi_jagged_part_init_begin.stop();
 
     //this->set_input_data();
 Clock clock_set_part_specifications("    clock_set_part_specifications", true);
@@ -6924,6 +6949,7 @@ loopA.stop();
 
         //get the coordinate axis along which the partitioning will be done.
         int coordInd = i % this->coord_dim;
+
         Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 
         this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
@@ -7380,6 +7406,7 @@ clock_multi_jagged_part.stop();
 
 clock_multi_jagged_part.print();
 clock_multi_jagged_part_init.print();
+clock_multi_jagged_part_init_begin.print();
 clock_set_part_specifications.print();
 clock_allocate_set_work_memory.print();
 
