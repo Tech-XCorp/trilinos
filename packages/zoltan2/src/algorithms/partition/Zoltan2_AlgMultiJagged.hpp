@@ -128,6 +128,13 @@ static Clock mj_1D_part_get_weights_init("          mj_1D_part_get_weights_init"
 static Clock mj_1D_part_get_weights_setup("          mj_1D_part_get_weights_setup", false);
 static Clock mj_1D_part_get_weights("          mj_1D_part_get_weights", false);
 
+static Clock weights1("            weights1", false);
+static Clock weights2("            weights2", false);
+static Clock weights3("            weights3", false);
+static Clock weights4("            weights4", false);
+static Clock weights5("            weights5", false);
+static Clock weights6("            weights6", false);
+
 static Clock clock_mj_accumulate_thread_results("          clock_mj_accumulate_thread_results", false);
 
 static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
@@ -3918,10 +3925,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       auto local_kokkos_part_xadj = this->kokkos_part_xadj;
       auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
 
+weights1.start();
+
       // initializations for part weights
       Kokkos::parallel_for (total_part_count, KOKKOS_LAMBDA(size_t i) {
         kokkos_my_current_part_weights(i) = 0;
       });
+
+weights1.stop();
+
+weights2.start();
 
   int weight_array_size = num_cuts * 2 + 1;
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
@@ -3936,6 +3949,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                 kokkos_part_xadj,
                 kokkos_mj_uniform_weights,
                 sEpsilon);
+
+weights2.stop();
+
+weights3.start();
 
   auto policy = policy_t(SET_MAX_TEAMS, Kokkos::AUTO);
 
@@ -3953,6 +3970,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
  
   delete [] part_weights;
+
+weights3.stop();
+
+weights4.start();
 
      // Finalize the loop - TODO: optimize
      // Putting this inside above loop surrounded by barriers and executing
@@ -3982,6 +4003,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         }
      });     
 
+weights4.stop();
+weights5.start();
+
     RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
       rightLeftClosestFunctor(
                   current_work_part + working_kk,
@@ -3992,6 +4016,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
                   kokkos_temp_current_cut_coords,
                   kokkos_part_xadj,
                   sEpsilon);
+
+weights5.stop();
+
+weights6.start();
 
     // will have them as left, right, left, right, etc   2 for each cut
     // add a dummy cut beginning and end so we can skip if checks in the
@@ -4016,6 +4044,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
     Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
+
+weights6.stop();
+
 }
 
 /*! \brief Function that reduces the result of multiple threads
@@ -6751,6 +6782,13 @@ mj_1D_part_get_weights_init.reset();
 mj_1D_part_get_weights_setup.reset();
 mj_1D_part_get_weights.reset();
 
+weights1.reset();
+weights2.reset();
+weights3.reset();
+weights4.reset();
+weights5.reset();
+weights6.reset();
+
 clock_mj_accumulate_thread_results.reset();
 
 clock_mj_get_new_cut_coordinates_init.reset();
@@ -7401,6 +7439,13 @@ mj_1D_part_while_loop.print();
 mj_1D_part_get_weights_init.print();
 mj_1D_part_get_weights_setup.print();
 mj_1D_part_get_weights.print();
+
+weights1.print();
+weights2.print();
+weights3.print();
+weights4.print();
+weights5.print();
+weights6.print();
 
 clock_mj_accumulate_thread_results.print();
 
