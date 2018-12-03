@@ -2415,8 +2415,6 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           mj_node_t>::allocate_set_work_memory(){
 
-Clock check1("check1", true);
-
         //points to process that initially owns the coordinate.
         Kokkos::resize(this->kokkos_owner_of_coordinate, 0);
 
@@ -2424,9 +2422,6 @@ Clock check1("check1", true);
         //instead of the moving the coordinates, hold a permutation array for parts.
         //coordinate_permutations holds the current permutation.
         Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
-
-check1.stop(true);
-Clock check2("check2", true);
 
         //initial configuration, set each pointer-i to i.
         // Cuda local/this issues
@@ -2442,9 +2437,6 @@ Clock check2("check2", true);
           }
         );
         this->kokkos_coordinate_permutations = temp; // bring the local data back to the class
-
-check2.stop(true);
-Clock check3("check3", true);
 
         //new_coordinate_permutations holds the current permutation.
         this->kokkos_new_coordinate_permutations =
@@ -2470,10 +2462,6 @@ Clock check3("check3", true);
           }
         );
 
-check3.stop(true);
-
-Clock check4("check4", true);
-
         //the ends points of the output, this is allocated later.
         this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>("empty");
         // only store this much if cuts are needed to be stored.
@@ -2497,13 +2485,10 @@ Clock check4("check4", true);
               "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
         }
 
-check4.stop(true);
-
-Clock check5("check5", true);
-        // work array to manipulate coordinate of cutlines in different iterations.
-        //necessary because previous cut line information is used for determining
-        //the next cutline information. therefore, cannot update the cut work array
-        //until all cutlines are determined.
+    // work array to manipulate coordinate of cutlines in different iterations.
+    //necessary because previous cut line information is used for determining
+    //the next cutline information. therefore, cannot update the cut work array
+    //until all cutlines are determined.
     this->kokkos_cut_coordinates_work_array = Kokkos::View<mj_scalar_t *, typename mj_node_t::device_type>(
      "kokkos_cut_coordinates_work_array",
        this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -2560,10 +2545,6 @@ Clock check5("check5", true);
       "global_total_part_weight_left_right_closests",
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
-check5.stop(true);
-
-Clock check6("check6", true);
-
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, typename mj_node_t::device_type> coord(
       "coord", this->num_local_coords, this->coord_dim);
     auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; // See comment above - Cuda local/this issues
@@ -2578,10 +2559,6 @@ Clock check6("check6", true);
     );
 
     this->kokkos_mj_coordinates = coord;
-
-check6.stop(true);
-
-Clock check7("check7", true);
 
     Kokkos::View<mj_scalar_t**, typename mj_node_t::device_type> weights(
       "weights", this->num_local_coords, this->num_weights_per_coord);
@@ -2599,9 +2576,6 @@ Clock check7("check7", true);
 
     this->kokkos_mj_weights = weights;
 
-check7.stop(true);
-
-Clock check8("check8", true);
     this->kokkos_current_mj_gnos =
       Kokkos::View<mj_gno_t*, typename mj_node_t::device_type>("gids", local_num_local_coords);
     auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos; // See comment above - Cuda local/this issues
@@ -2618,8 +2592,6 @@ Clock check8("check8", true);
         local_kokkos_owner_of_coordinate(j) = local_myActualRank;
       }
     );
-
-check8.stop(true);
 }
 
 /* \brief compute the global bounding box
