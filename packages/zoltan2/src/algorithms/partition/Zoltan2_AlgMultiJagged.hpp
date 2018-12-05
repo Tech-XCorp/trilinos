@@ -3632,6 +3632,8 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
+    int num_cuts = value_count / 2;
+
     // call the reduce
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
@@ -3639,8 +3641,6 @@ struct ReduceWeightsFunctor {
       scalar_t coord = coordinates(i);
       scalar_t w = bUniformWeights ? 1 : weights(i,0);
 
-      int num_cuts = value_count / 2;
-    
       // check part 0
       scalar_t b = cut_coordinates(0);
       if(coord <= b - sEpsilon) {
@@ -3761,6 +3761,37 @@ struct ArrayMinMaxReducer {
   }
 };
 
+template<class policy_t, class scalar_t, class part_t>
+struct ArrayMinMaxReducer_Debug {
+
+  typedef ArrayMinMaxReducer_Debug reducer;
+  typedef ArrayType<scalar_t> value_type;
+  value_type * value;
+  size_t value_count;
+
+  KOKKOS_INLINE_FUNCTION ArrayMinMaxReducer_Debug(
+    value_type &val,
+    const size_t & count) :
+    value(&val), value_count(count)
+  {}
+
+  KOKKOS_INLINE_FUNCTION
+  value_type& reference() const {
+    return *value;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type& dst, const value_type& src)  const {
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join (volatile value_type& dst, const volatile value_type& src) const {
+  }
+
+  KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
+  }
+};
+
 template<class policy_t, class scalar_t, class part_t, class index_t, class node_t>
 struct DebugRightLeftClosestFunctor {
   typedef typename policy_t::member_type member_type;
@@ -3825,52 +3856,29 @@ struct DebugRightLeftClosestFunctor {
     ArrayType<scalar_t> array(&shared_ptr[teamMember.team_rank() * value_count]);
 
     // create reducer which handles the ArrayType class
-    ArrayMinMaxReducer<policy_t, scalar_t, part_t> arrayMinMaxReducer(
+    ArrayMinMaxReducer_Debug<policy_t, scalar_t, part_t> arrayMinMaxReducer(
       array, value_count);
     // call the reduce
     auto local_coordinates = coordinates;
     auto local_permutations = permutations;
     auto local_cut_coordinates = cut_coordinates;
 
-    part_t num_cuts = value_count / 2 - 2; // remove front end buffers - true count here
+//    part_t num_cuts = value_count / 2 - 2; // remove front end buffers - true count here
 
- 
+//if(teamMember.team_rank() > 31)
+//printf("CCC league: %d team:%d begin: %d end: %d\n", (int) teamMember.league_rank(), (int)teamMember.team_rank(), (int)begin, (int)end);
+
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
-      int i = local_permutations(ii);
-      const scalar_t & coord = local_coordinates(i);
-      scalar_t * p1 = &threadSum.ptr[2];
-      for(int cut = 0; cut < num_cuts; ++cut) {
-        scalar_t cut_coord = cut_coordinates(cut);
-        if(coord > cut_coord && coord < *(p1+1)) {
-          // Remove this line and line below to resolve bottleneck
-          // Not clear yet how to optimize and why this is pretty slow
-          // when above functor pattern is similar
-          *(p1+1) = coord;
-        }
-        if(coord < cut_coord && coord > *p1) {
-          // Remove this line and line above to resolve bottleneck
-          *p1 = coord;
-        }
-        p1 += 2;
-      }
+      int i = permutations(ii);
+      scalar_t & coord = coordinates(i);
+      if(coord == -333.333) printf("dummy\n");
     }, arrayMinMaxReducer);
-
-    // collect all the team's results
-    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
-      for(int n = 2; n < value_count - 2; n += 2) {
-        if(array.ptr[n] > teamSum[n]) {
-          teamSum[n] = array.ptr[n];
-        }
-        if(array.ptr[n+1] < teamSum[n+1]) {
-          teamSum[n+1] = array.ptr[n+1];
-        }
-      }
-    });
   }
 
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
+/*
     for(int n = 2; n < value_count - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
@@ -3879,10 +3887,12 @@ struct DebugRightLeftClosestFunctor {
         dst[n+1] = src[n+1];
       }
     }
+*/
   }
 
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type dst, const volatile value_type src) const {
+/*
     for(int n = 2; n < value_count - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
@@ -3891,16 +3901,17 @@ struct DebugRightLeftClosestFunctor {
         dst[n+1] = src[n+1];
       }
     }
+*/
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
+/*
     for(int n = 2; n < value_count - 2; n += 2) {
-      // TODO: Fix min max init
-      dst[n]   = -999999999.99; // temp need cleaner init min
-      dst[n+1] =  999999999.99; // temp need cleaner init max
+      dst[n]   = -1.0; // temp need cleaner init min
+      dst[n+1] =  1.0; // temp need cleaner init max
     }
+*/
   }
-
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class node_t>
@@ -3974,12 +3985,41 @@ struct RightLeftClosestFunctor {
     auto local_coordinates = coordinates;
     auto local_permutations = permutations;
 
-    part_t num_cuts = value_count / 2 - 2; // remove front end buffers - true count here
-
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
       int i = local_permutations(ii);
       const scalar_t & coord = local_coordinates(i);
+     
+/* 
+      const int buffer_offset = 2;
+      if(parts(i) % 2 == 1) {
+        // it's on the cut
+        auto my_cut = parts(i)/2;
+        scalar_t cut_coord = cut_coordinates(my_cut);
+        threadSum.ptr[my_cut*2+0+buffer_offset] = cut_coord;
+        threadSum.ptr[my_cut*2+1+buffer_offset] = cut_coord;
+      }
+      else {
+        auto my_part = parts(i)/2;
+        
+        // check left cut
+        auto cut_left = my_part;
+        scalar_t cut_coord_left = cut_coordinates(cut_left);
+        if(threadSum.ptr[cut_left*2+1+buffer_offset] > cut_coord_left) {
+          threadSum.ptr[cut_left*2+1+buffer_offset] = cut_coord_left;
+        }
+
+        // check right cut
+        auto cut_right = my_part + 1;
+        scalar_t cut_coord_right = cut_coordinates(cut_right);
+        if(threadSum.ptr[cut_right*2+0+buffer_offset] > cut_coord_right) {
+          threadSum.ptr[cut_right*2+0+buffer_offset] = cut_coord_right;
+        }
+      }
+*/
+
+      part_t num_cuts = value_count / 2 - 2; // remove front end buffers - true count here
+
       scalar_t * p1 = &threadSum.ptr[2];
       for(int cut = 0; cut < num_cuts; ++cut) {
         scalar_t cut_coord = cut_coordinates(cut);
@@ -4012,6 +4052,8 @@ struct RightLeftClosestFunctor {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
+    }
+    for(int n = 2; n < value_count - 2; n += 2) {
       if(src[n+1] < dst[n+1]) {
         dst[n+1] = src[n+1];
       }
@@ -4024,6 +4066,8 @@ struct RightLeftClosestFunctor {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
+    }
+    for(int n = 2; n < value_count - 2; n += 2) {
       if(src[n+1] < dst[n+1]) {
         dst[n+1] = src[n+1];
       }
@@ -4032,12 +4076,10 @@ struct RightLeftClosestFunctor {
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
     for(int n = 2; n < value_count - 2; n += 2) {
-      // TODO: Fix min max init
-      dst[n]   = -999999999.99; // temp need cleaner init min
-      dst[n+1] =  999999999.99; // temp need cleaner init max
+      dst[n]   = -9999999.99; // temp need cleaner init min
+      dst[n+1] =  9999999.99; // temp need cleaner init max
     }
   }
-
 };
 
 /*! \brief Function that calculates the weights of each part according to given part cut coordinates.
@@ -4180,6 +4222,7 @@ weights5.start();
                   kokkos_temp_current_cut_coords,
                   kokkos_part_xadj,
                   sEpsilon);
+
 /*
     DebugRightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
       rightLeftClosestFunctor_Debug(
@@ -4192,6 +4235,7 @@ weights5.start();
                   kokkos_part_xadj,
                   sEpsilon);
 */
+
 weights5.stop();
 
 weights6.start();
@@ -4201,10 +4245,13 @@ weights6.start();
     // parallel loop
     mj_scalar_t * left_max_right_min_values = new mj_scalar_t[(num_cuts+2)*2];
 
-functor2.start();
-    Kokkos::parallel_reduce(policy, rightLeftClosestFunctor, left_max_right_min_values);
-functor2.stop();
+//functor2.start();
+//    Kokkos::parallel_reduce(policy, rightLeftClosestFunctor_Debug, left_max_right_min_values);
+//functor2.stop();
 
+functor2.start();
+   Kokkos::parallel_reduce(policy, rightLeftClosestFunctor, left_max_right_min_values);
+functor2.stop();
 
     // Move it from global memory to device memory
     // TODO: Need to figure out how we can better manage this
