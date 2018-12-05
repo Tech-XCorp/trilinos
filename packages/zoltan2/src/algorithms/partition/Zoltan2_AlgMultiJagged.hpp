@@ -4529,7 +4529,7 @@ mj_create_new_partitions(
       local_kokkos_part_xadj(current_concurrent_work_part);
     mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
     int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_rank()) > 0) {
+    if((num_working_points % team_member.league_size()) > 0) {
       stride += 1; // make sure we have coverage for the final points
     }
 
@@ -4568,7 +4568,7 @@ mj_create_new_partitions(
       local_kokkos_part_xadj(current_concurrent_work_part);
     mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
     int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_rank()) > 0) {
+    if((num_working_points % team_member.league_size()) > 0) {
       stride += 1; // make sure we have coverage for the final points
     }
 
@@ -4703,7 +4703,7 @@ mj_create_new_partitions(
       local_kokkos_part_xadj(current_concurrent_work_part);
     mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
     int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_rank()) > 0) {
+    if((num_working_points % team_member.league_size()) > 0) {
       stride += 1; // make sure we have coverage for the final points
     }
 
