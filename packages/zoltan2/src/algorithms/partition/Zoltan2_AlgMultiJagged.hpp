@@ -146,6 +146,8 @@ static Clock clock_write_globals("          clock_write_globals", false);
 
 static Clock mj_1D_part_end("        mj_1D_part_end", false);
 
+static Clock mj_create_new_partitions_clock("           mj_create_new_partitions", false);
+
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
 #else
@@ -4404,6 +4406,9 @@ mj_create_new_partitions(
   Kokkos::View<mj_lno_t*, typename mj_node_t::device_type>
     local_kokkos_new_coordinate_permutations)
 {
+
+  mj_create_new_partitions_clock.start();
+
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
   mj_part_t num_cuts = num_parts - 1;
@@ -4465,6 +4470,7 @@ mj_create_new_partitions(
     local_kokkos_thread_point_counts(i) = 0;
   });
 
+/*
   mj_lno_t coordinate_begin_index;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
@@ -4508,13 +4514,24 @@ mj_create_new_partitions(
       stride += 1; // make sure we have coverage for the final points
     }
   }
+*/
 
   Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> record_total_on_cut(
     "track_on_cuts", 1);
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(num_teams, Kokkos::AUTO());
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(SET_MAX_TEAMS, Kokkos::AUTO());
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+
+    auto coordinate_begin_index =
+      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+    auto coordinate_end_index =
+      local_kokkos_part_xadj(current_concurrent_work_part);
+    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+    int stride = num_working_points / team_member.league_size();
+    if((num_working_points % team_member.league_rank()) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
 
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
@@ -4544,6 +4561,16 @@ mj_create_new_partitions(
     "track_on_cuts", total_on_cut);
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
+
+    auto coordinate_begin_index =
+      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+    auto coordinate_end_index =
+      local_kokkos_part_xadj(current_concurrent_work_part);
+    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+    int stride = num_working_points / team_member.league_size();
+    if((num_working_points % team_member.league_rank()) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
 
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
@@ -4670,6 +4697,16 @@ mj_create_new_partitions(
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
 
+    auto coordinate_begin_index =
+      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+    auto coordinate_end_index =
+      local_kokkos_part_xadj(current_concurrent_work_part);
+    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+    int stride = num_working_points / team_member.league_size();
+    if((num_working_points % team_member.league_rank()) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
+
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
     if(team_end_index > coordinate_end_index) {
@@ -4689,6 +4726,8 @@ mj_create_new_partitions(
         local_kokkos_new_coordinate_permutations(coordinate_begin_index + idx) = i;
     });
   });
+
+  mj_create_new_partitions_clock.stop();
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
@@ -6734,10 +6773,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     auto local_kokkos_coordinate_permutations = kokkos_coordinate_permutations;
     auto local_kokkos_assigned_part_ids = kokkos_assigned_part_ids;
 
-    // Will temporarily disable the for loop here - need to refactor
-    // output_part_boxes so it's a Kokkos View I expect. But would
-    // like to get a basic cuda build running first.
-    // TODO: Fix this
     if(local_mj_keep_part_boxes) {
       for(int i = 0; i < current_num_parts; ++i) {
         (*output_part_boxes)[i].setpId(i + output_part_begin_index);
@@ -6950,6 +6985,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, typename mj_node_t::device_type> &kokkos_result_mj_gnos_
 )
 {
+
+mj_create_new_partitions_clock.reset();
 
 mj_1D_part_while_loop.reset();
 mj_1D_part_init.reset();
@@ -7637,6 +7674,7 @@ mj_1D_part_end.print();
 
 new_part_chunks.print();
 loopC.print();
+mj_create_new_partitions_clock.print();
 
 clock_multi_jagged_part_finish.print();
 }
