@@ -4517,69 +4517,45 @@ mj_create_new_partitions(
     local_kokkos_thread_point_counts(i) = 0;
   });
 
-/*
-  mj_lno_t coordinate_begin_index;
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
-  }, coordinate_begin_index);
-  
-  mj_lno_t coordinate_end_index;
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_kokkos_part_xadj(current_concurrent_work_part);
-  }, coordinate_end_index);
-
-  int uniform_weights;
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, int & set_single) {
-    set_single = local_kokkos_mj_uniform_weights(0);
-  }, uniform_weights);
-
-  // total points to be processed by all teams
-  mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-
-  // determine a stride for each team
-  // TODO: How to best determine this and should we be concerned if teams
-  // get smaller coord counts than their warp sizes?
-  const int min_coords_per_team = 32; // abrbitrary ... TODO
-  int stride = min_coords_per_team;
-  if(stride > num_working_points) {
-    stride = num_working_points;
-  }
-
-  int num_teams = num_working_points / stride;
-  if((num_working_points % stride) > 0) {
-    ++num_teams; // guarantees no team has no work and the last team has equal or less work than all the others
-  }
-
-  const int max_teams = SET_MAX_TEAMS;
-  if(num_teams > max_teams) {
-    num_teams = max_teams;
-    stride = num_working_points / num_teams;
-    if((num_working_points % num_teams) > 0) {
-      stride += 1; // make sure we have coverage for the final points
-    }
-  }
-*/
-
   Kokkos::View<mj_lno_t *, typename mj_node_t::device_type> record_total_on_cut(
     "track_on_cuts", 1);
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(SET_MAX_TEAMS, Kokkos::AUTO());
+  mj_lno_t coordinate_begin_index;
+  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single =
+      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
+  }, coordinate_begin_index);
+
+  mj_lno_t coordinate_end_index;
+  Kokkos::parallel_reduce("Read coordinate_end_index", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = local_kokkos_part_xadj(current_concurrent_work_part);;
+  }, coordinate_end_index);
+
+  mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
+
+  // Found the loops below with atomics won't work properly if they run a team
+  // over an index range of 0. So if num_teams is more than points this code
+  // fails if we have a range such as (25, 25), or (999,25).
+  // So to correct I'll clamp the max teams - probably doesn't make sense to have
+  // teams run less than a warp anyways.
+  int num_teams = SET_MAX_TEAMS;
+  if(num_teams > num_working_points/32) { // TODO: need to check the system warp size - doesn't really matter
+    num_teams = num_working_points/32;    // since this is just releevant for low coordinate count cases
+  }
+  if(num_teams == 0) {
+    num_teams = 1;
+  }
+
+  int stride = num_working_points / num_teams;
+  if((num_working_points % num_teams) > 0) {
+    stride += 1; // make sure we have coverage for the final points
+  }
+
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(num_teams, Kokkos::AUTO());
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-    auto coordinate_begin_index =
-      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
-    auto coordinate_end_index =
-      local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-    int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_size()) > 0) {
-      stride += 1; // make sure we have coverage for the final points
-    }
-
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
     if(team_end_index > coordinate_end_index) {
@@ -4597,6 +4573,7 @@ mj_create_new_partitions(
     });
   });
 
+
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, int & set_single) {
@@ -4608,17 +4585,6 @@ mj_create_new_partitions(
     "track_on_cuts", total_on_cut);
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-    auto coordinate_begin_index =
-      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
-    auto coordinate_end_index =
-      local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-    int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_size()) > 0) {
-      stride += 1; // make sure we have coverage for the final points
-    }
-
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
     if(team_end_index > coordinate_end_index) {
@@ -4643,7 +4609,7 @@ mj_create_new_partitions(
       }
     });
   });
-
+ 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
     KOKKOS_LAMBDA (const int & dummy) {
@@ -4743,23 +4709,12 @@ mj_create_new_partitions(
   });
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-
-    auto coordinate_begin_index =
-      current_concurrent_work_part == 0 ? 0 : local_kokkos_part_xadj(current_concurrent_work_part - 1);
-    auto coordinate_end_index =
-      local_kokkos_part_xadj(current_concurrent_work_part);
-    mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-    int stride = num_working_points / team_member.league_size();
-    if((num_working_points % team_member.league_size()) > 0) {
-      stride += 1; // make sure we have coverage for the final points
-    }
-
     mj_lno_t team_begin_index = coordinate_begin_index + stride * team_member.league_rank();
     mj_lno_t team_end_index = team_begin_index + stride;
     if(team_end_index > coordinate_end_index) {
       team_end_index = coordinate_end_index; // the last team may have less work than the other teams
     }
-   
+
     // First collect the number of assignments in our block for each part
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(team_member, team_begin_index, team_end_index),
@@ -4773,6 +4728,7 @@ mj_create_new_partitions(
         local_kokkos_new_coordinate_permutations(coordinate_begin_index + idx) = i;
     });
   });
+
 
   mj_create_new_partitions_clock.stop();
 }
