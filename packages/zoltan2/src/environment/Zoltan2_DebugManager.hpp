@@ -93,9 +93,12 @@ class DebugManager
      * in the destructor.
      */
     DebugManager ( int rank, bool doPrinting, std::ofstream &debugOs, 
-      MessageOutputLevel debugLevel) : myPID_(rank), debugLevel_(debugLevel),
-        myOS_(static_cast<std::ostream *>(&debugOs)), fileOS_(&debugOs), 
-        iPrint_(doPrinting) {}
+      MessageOutputLevel debugLevel) :
+#ifndef Z2_OMIT_ALL_STATUS_MESSAGES
+      myPID_(rank), iPrint_(doPrinting),
+#endif
+      debugLevel_(debugLevel), myOS_(static_cast<std::ostream *>(&debugOs)),
+      fileOS_(&debugOs){}
 
     /*! \brief Constructor for output to an iostream.
      *   \param rank  the MPI rank of this process.
@@ -105,8 +108,11 @@ class DebugManager
      *                      that are below this level will be ignored.
      */
     DebugManager ( int rank, bool doPrinting, std::ostream &debugOs, 
-      MessageOutputLevel debugLevel) : myPID_(rank), debugLevel_(debugLevel),
-        myOS_(&debugOs), fileOS_(NULL), iPrint_(doPrinting) {}
+      MessageOutputLevel debugLevel) :
+#ifndef Z2_OMIT_ALL_STATUS_MESSAGES      
+      myPID_(rank), iPrint_(doPrinting),
+#endif
+      debugLevel_(debugLevel), myOS_(&debugOs), fileOS_(NULL) {}
 
     /*! \brief Destructor
      */
@@ -188,11 +194,14 @@ class DebugManager
 
     private:
 
+#ifndef Z2_OMIT_ALL_STATUS_MESSAGES
     int myPID_;
+    bool iPrint_;
+#endif
+
     MessageOutputLevel debugLevel_;
     std::ostream *myOS_;
     std::ofstream *fileOS_;
-    bool iPrint_;
 };
 
 } //namespace Zoltan2

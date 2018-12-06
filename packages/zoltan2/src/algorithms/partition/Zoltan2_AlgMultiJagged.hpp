@@ -187,38 +187,38 @@ namespace Teuchos{
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
  * to all reduce the all box boundaries.
 */
-
 template <typename Ordinal, typename T>
 class Zoltan2_BoxBoundaries  : public ValueTypeReductionOp<Ordinal,T>
 {
 private:
-    Ordinal size;
-    T _EPSILON;
+  Ordinal size;
+  T _EPSILON;
 
 public:
-    /*! \brief Default Constructor
-     */
-    Zoltan2_BoxBoundaries ():size(0), _EPSILON (std::numeric_limits<T>::epsilon()){}
+  /*! \brief Default Constructor
+   */
+  Zoltan2_BoxBoundaries (): size(0),
+    _EPSILON (std::numeric_limits<T>::epsilon()){}
 
-    /*! \brief Constructor
-     *   \param nsum  the count of how many sums will be computed at the
-     *             start of the list.
-     *   \param nmin  following the sums, this many minimums will be computed.
-     *   \param nmax  following the minimums, this many maximums will be computed.
-     */
-    Zoltan2_BoxBoundaries (Ordinal s_):
-        size(s_), _EPSILON (std::numeric_limits<T>::epsilon()){}
+  /*! \brief Constructor
+   *   \param nsum  the count of how many sums will be computed at the
+   *             start of the list.
+   *   \param nmin  following the sums, this many minimums will be computed.
+   *   \param nmax  following the minimums, this many maximums will be computed.
+   */
+  Zoltan2_BoxBoundaries (Ordinal s_):
+    size(s_), _EPSILON (std::numeric_limits<T>::epsilon()){}
 
-    /*! \brief Implement Teuchos::ValueTypeReductionOp interface
-     */
-    void reduce( const Ordinal count, const T inBuffer[], T inoutBuffer[]) const
-    {
-        for (Ordinal i=0; i < count; i++){
-            if (Z2_ABS(inBuffer[i]) >  _EPSILON){
-                inoutBuffer[i] = inBuffer[i];
-            }
-        }
+  /*! \brief Implement Teuchos::ValueTypeReductionOp interface
+   */
+  void reduce( const Ordinal count, const T inBuffer[], T inoutBuffer[]) const
+  {
+    for (Ordinal i=0; i < count; i++){
+      if (Z2_ABS(inBuffer[i]) >  _EPSILON){
+        inoutBuffer[i] = inBuffer[i];
+      }
     }
+  }
 };
 } // namespace Teuchos
 
@@ -617,143 +617,202 @@ private:
 #endif
 
     typedef typename mj_node_t::device_type device_t;
-
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_cut_coords;
-
     typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
     typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
-    RCP<const Environment> mj_env; // the environment object
-    RCP<const Comm<int> > mj_problemComm; // initial comm object
-    double imbalance_tolerance; // input imbalance tolerance.
+    
+    RCP<const Environment> mj_env;          // the environment object
+    RCP<const Comm<int> > mj_problemComm;   // initial comm object
+    RCP<Comm<int> > comm; // comm object than can be altered during execution
+    double imbalance_tolerance;             // input imbalance tolerance.
+    int recursion_depth; // number of steps that partitioning will be solved in.
+    int coord_dim;                          // coordinate dim
+    int num_weights_per_coord;              // # of weights per coord
+    size_t initial_num_loc_coords;          // initial num local coords.
+    global_size_t initial_num_glob_coords;  // initial num global coords.
+    mj_lno_t num_local_coords;              // number of local coords.
+    mj_gno_t num_global_coords;             // number of global coords.
+    mj_scalar_t sEpsilon;                   // epsilon for mj_scalar_t
+    
+    // can distribute points on same coordiante to different parts.
+    bool distribute_points_on_cut_lines;
+    
+    // how many parts we can calculate concurrently.
+    mj_part_t max_concurrent_part_calculation;
 
+    bool mj_run_as_rcb; // means recursion depth is adjusted to maximum value.
+    int mj_user_recursion_depth; // the recursion depth value provided by user.
+    bool mj_keep_part_boxes; // if the boxes need to be kept.
+
+    // whether to migrate=1, avoid migrate=2, or leave decision to MJ=0
+    int check_migrate_avoid_migration_option;
+
+    // when doing the migration, 0 will aim for perfect load-imbalance, 1 - will 
+    // aim for minimized number of messages with possibly bad load-imbalance
+    int migration_type;
+
+    // when MJ decides whether to migrate, the minimum imbalance for migration.
+    mj_scalar_t minimum_migration_imbalance;
+
+    mj_part_t total_num_cut ;           // how many cuts will be totally
+    mj_part_t total_num_part;           // how many parts will be totally
+
+    mj_part_t max_num_part_along_dim ;  // maximum part count along a dimension.
+    mj_part_t max_num_cut_along_dim;    // maximum cut count along a dimension.
+    
+    // maximum part+cut count along a dimension.
+    size_t max_num_total_part_along_dim;
+
+    mj_part_t total_dim_num_reduce_all;  // estimate on #reduceAlls can be done.
+    
+    // max no of parts that might occur during the partition before the last
+    // partitioning dimension.
+    mj_part_t last_dim_num_part;
+    
     // input part array specifying num part to divide along each dim.
     Kokkos::View<mj_part_t *, device_t> kokkos_part_no_array;
 
-    int recursion_depth; // number of steps that partitioning will be solved in.
-    int coord_dim; // coordinate dim
-    int num_weights_per_coord; // # of weights per coord
-    size_t initial_num_loc_coords; // initial num local coords.
-    global_size_t initial_num_glob_coords; // initial num global coords.
-    mj_lno_t num_local_coords; // number of local coords.
-    mj_gno_t num_global_coords; // number of global coords.
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+      kokkos_mj_coordinates; // two dimension coordinate array
+      
+    // two dimension weight array
+    Kokkos::View<mj_scalar_t **, device_t> kokkos_mj_weights;
+    
+    // if the target parts are uniform
+    Kokkos::View<bool *, device_t> kokkos_mj_uniform_parts;
 
-    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> kokkos_mj_coordinates; //two dimension coordinate array
-    Kokkos::View<mj_scalar_t **, device_t> kokkos_mj_weights; //two dimension weight array
-    Kokkos::View<bool *, device_t> kokkos_mj_uniform_parts; //if the target parts are uniform
-    Kokkos::View<mj_scalar_t **, device_t> kokkos_mj_part_sizes; //target part weight sizes.
-    Kokkos::View<bool *, device_t> kokkos_mj_uniform_weights; //if the coordinates have uniform weights
+    // target part weight sizes.
+    Kokkos::View<mj_scalar_t **, device_t> kokkos_mj_part_sizes; 
+    
+    // if the coordinates have uniform weights
+    Kokkos::View<bool *, device_t> kokkos_mj_uniform_weights; 
 
-    // TODO: Currently this could be eliminated?
-    ArrayView<const mj_gno_t> mj_gnos; //global ids of the coordinates, comes from the input
-    size_t num_global_parts; //the targeted number of parts
+    size_t num_global_parts; // the targeted number of parts
 
-    Kokkos::View<const mj_gno_t*, device_t>
-      kokkos_initial_mj_gnos; // initial global ids of the coordinates.
-    Kokkos::View<mj_gno_t*, device_t>
-      kokkos_current_mj_gnos; // current global ids of the coordinates, might change during migration.
-    Kokkos::View<int*, device_t> kokkos_owner_of_coordinate; //the actual processor owner of the coordinate, to track after migrations.
-    Kokkos::View<mj_lno_t*, device_t> kokkos_coordinate_permutations; //permutation of coordinates, for partitioning.
-    Kokkos::View<mj_lno_t*, device_t> kokkos_new_coordinate_permutations; //permutation work array.
-    Kokkos::View<mj_part_t*, device_t> kokkos_assigned_part_ids; //the part ids assigned to coordinates.
-    Kokkos::View<mj_lno_t *, device_t> kokkos_part_xadj; //beginning and end of each part.
-    Kokkos::View<mj_lno_t *, device_t> kokkos_new_part_xadj; // work array for beginning and end of each part.
+    // vector of all boxes for all parts, constructed if mj_keep_part_boxes true
+    RCP<mj_partBoxVector_t> kept_boxes;
 
-    //get mj specific parameters.
-    bool distribute_points_on_cut_lines; //if partitioning can distribute points on same coordiante to different parts.
-    mj_part_t max_concurrent_part_calculation; // how many parts we can calculate concurrently.
+    RCP<mj_partBox_t> global_box;
+    
+    int myRank;           // processor rank
+    int myActualRank;     // initial rank
 
-    bool mj_run_as_rcb; //if this is set, then recursion depth is adjusted to its maximum value.
-    int mj_user_recursion_depth; //the recursion depth value provided by user.
-    bool mj_keep_part_boxes; //if the boxes need to be kept.
+    bool divide_to_prime_first;
+    
+    // initial global ids of the coordinates.
+    Kokkos::View<const mj_gno_t*, device_t> kokkos_initial_mj_gnos;
+    
+    // current global ids of the coordinates, might change during migration.
+    Kokkos::View<mj_gno_t*, device_t> kokkos_current_mj_gnos;
 
-    int check_migrate_avoid_migration_option; //whether to migrate=1, avoid migrate=2, or leave decision to MJ=0
-    int migration_type; // when doing the migration, 0 will aim for perfect load-imbalance, 
-    			//1 - will aim for minimized number of messages with possibly bad load-imbalance
-    mj_scalar_t minimum_migration_imbalance; //when MJ decides whether to migrate, the minimum imbalance for migration.
-
-    mj_part_t total_num_cut ; //how many cuts will be totally
-    mj_part_t total_num_part;    //how many parts will be totally
-
-    mj_part_t max_num_part_along_dim ;         //maximum part count along a dimension.
-    mj_part_t max_num_cut_along_dim; //maximum cut count along a dimension.
-    size_t max_num_total_part_along_dim; //maximum part+cut count along a dimension.
-
-    mj_part_t total_dim_num_reduce_all;    //estimate on #reduceAlls can be done.
-    mj_part_t last_dim_num_part; //max no of parts that might occur
-                                //during the partition before the
-                                //last partitioning dimension.
-
-    RCP<Comm<int> > comm; //comm object than can be altered during execution
-    float fEpsilon; //epsilon for float
-    mj_scalar_t sEpsilon; //epsilon for mj_scalar_t
-
-    mj_scalar_t maxScalar_t; //max possible scalar
-    mj_scalar_t minScalar_t; //min scalar
+    // the actual processor owner of the coordinate, to track after migrations.
+    Kokkos::View<int*, device_t> kokkos_owner_of_coordinate;
+    
+    // permutation of coordinates, for partitioning.
+    Kokkos::View<mj_lno_t*, device_t> kokkos_coordinate_permutations;
+    
+    // permutation work array.
+    Kokkos::View<mj_lno_t*, device_t> kokkos_new_coordinate_permutations;
+    
+    // the part ids assigned to coordinates.
+    Kokkos::View<mj_part_t*, device_t> kokkos_assigned_part_ids;
+    
+    // beginning and end of each part.
+    Kokkos::View<mj_lno_t *, device_t> kokkos_part_xadj;
+    
+    // work array for beginning and end of each part.
+    Kokkos::View<mj_lno_t *, device_t> kokkos_new_part_xadj;
 
     Kokkos::View<mj_scalar_t *, device_t> kokkos_all_cut_coordinates;
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_process_cut_line_weight_to_put_left; //how much weight should a MPI put left side of the each cutline
-    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> kokkos_thread_cut_line_weight_to_put_left; //how much weight percentage should each thread in MPI put left side of the each outline
+    
+    // how much weight should a MPI put left side of the each cutline
+    Kokkos::View<mj_scalar_t *, device_t>
+      kokkos_process_cut_line_weight_to_put_left;
+      
+    // weight percentage each thread in MPI puts left side of the each outline
+    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_cut_line_weight_to_put_left;
 
     // work array to manipulate coordinate of cutlines in different iterations.
-    //necessary because previous cut line information is used for determining
-    //the next cutline information. therefore, cannot update the cut work array
-    //until all cutlines are determined.
+    // necessary because previous cut line information is used for determining
+    // the next cutline information. therefore, cannot update the cut work array
+    // until all cutlines are determined.
     Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_coordinates_work_array;
+    
+    // Used for swapping above kokkos_cut_coordinates_work_array
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_cut_coords;
 
-    //cumulative part weight array.
+    // cumulative part weight array.
     Kokkos::View<mj_scalar_t *, device_t> kokkos_target_part_weights;
 
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_coordinates ;  //upper bound coordinate of a cut line
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_coordinates ;  //lower bound coordinate of a cut line
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_weights ;  //lower bound weight of a cut line
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_weights ;  //upper bound weight of a cut line
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_process_local_min_max_coord_total_weight; //combined array to exchange the min and max coordinate, and total weight of part.
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_global_min_max_coord_total_weight;//global combined array with the results for min, max and total weight.
+    // upper bound coordinate of a cut line
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_coordinates;
+    
+    // lower bound coordinate of a cut line
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_coordinates;
 
-    //isDone is used to determine if a cutline is determined already.
-    //If a cut line is already determined, the next iterations will skip this cut line.
+    // lower bound weight of a cut line
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_weights;
+    
+    // upper bound weight of a cut line  
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_weights;
+
+    // combined array to exchange the min and max coordinate, and total
+    // weight of part.
+    Kokkos::View<mj_scalar_t *, device_t>
+      kokkos_process_local_min_max_coord_total_weight;
+    
+    // global combined array with the results for min, max and total weight.
+    Kokkos::View<mj_scalar_t *, device_t>
+      kokkos_global_min_max_coord_total_weight;
+
+    // isDone is used to determine if a cutline is determined already. If a cut
+    // line is already determined, the next iterations will skip this cut line.
     Kokkos::View<bool *, device_t> kokkos_is_cut_line_determined;
 
-    //my_incomplete_cut_count count holds the number of cutlines that have not been finalized for each part
-    //when concurrentPartCount>1, using this information, if my_incomplete_cut_count[x]==0, then no work is done for this part.
+    // my_incomplete_cut_count count holds the number of cutlines that have not
+    // been finalized for each part when concurrentPartCount>1, using this
+    // information, if my_incomplete_cut_count[x]==0, then no work is done
+    // for this part.
     Kokkos::View<mj_part_t *, device_t> kokkos_my_incomplete_cut_count;
 
-//local part weights of each thread.
-    Kokkos::View<double *, Kokkos::LayoutLeft, device_t> kokkos_thread_part_weights;
+    // local part weights of each thread.
+    Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_part_weights;
 
-    //the work manupulation array for partweights.
-    Kokkos::View<double *, Kokkos::LayoutLeft, device_t> kokkos_thread_part_weight_work;
+    // the work manupulation array for partweights.
+    Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_part_weight_work;
 
-    //thread_cut_left_closest_point to hold the closest coordinate to a cutline from left (for each thread).
-    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> kokkos_thread_cut_left_closest_point;
-    //thread_cut_right_closest_point to hold the closest coordinate to a cutline from right (for each thread)
-    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> kokkos_thread_cut_right_closest_point;
-    //to store how many points in each part a thread has.
-    Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t> kokkos_thread_point_counts;
+    // thread_cut_left_closest_point to hold the closest coordinate
+    // to a cutline from left (for each thread).
+    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_cut_left_closest_point;
+
+    // thread_cut_right_closest_point to hold the closest coordinate
+    // to a cutline from right (for each thread)
+    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_cut_right_closest_point;
+
+    // to store how many points in each part a thread has.
+    Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
+      kokkos_thread_point_counts;
 
     Kokkos::View<mj_scalar_t *, device_t> kokkos_process_rectilinear_cut_weight;
     Kokkos::View<mj_scalar_t *, device_t> kokkos_global_rectilinear_cut_weight;
 
-    //for faster communication, concatanation of
-    //totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
-    //leftClosest distances sized P-1, since P-1 cut lines
-    //rightClosest distances size P-1, since P-1 cut lines.
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_total_part_weight_left_right_closests;
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_global_total_part_weight_left_right_closests;
+    // for faster communication, concatanation of
+    // totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
+    // leftClosest distances sized P-1, since P-1 cut lines
+    // rightClosest distances size P-1, since P-1 cut lines.
+    Kokkos::View<mj_scalar_t *, device_t>
+      kokkos_total_part_weight_left_right_closests;
+    Kokkos::View<mj_scalar_t *, device_t>
+      kokkos_global_total_part_weight_left_right_closests;
 
-    RCP<mj_partBoxVector_t> kept_boxes;  // vector of all boxes for all parts;
-                                         // constructed only if
-                                         // mj_keep_part_boxes == true
-    RCP<mj_partBox_t> global_box;
-    int myRank, myActualRank; //processor rank, and initial rank
-
-    bool divide_to_prime_first;
-
-    /* \brief Either the mj array (part_no_array) or num_global_parts should be provided in
-     * the input. part_no_array takes
-     * precedence if both are provided.
-     * Depending on these parameters, total cut/part number,
-     * maximum part/cut number along a dimension, estimated number of reduceAlls,
+    /* \brief Either the mj array (part_no_array) or num_global_parts should be
+     * provided in the input. part_no_array takes precedence if both are
+     * provided. Depending on these parameters, total cut/part number, maximum
+     * part/cut number along a dimension, estimated number of reduceAlls,
      * and the number of parts before the last dimension is calculated.
      * */
     void set_part_specifications();
@@ -764,17 +823,18 @@ private:
      * \param root how many more recursion depth is left.
      */
     inline mj_part_t get_part_count(
-                mj_part_t num_total_future,
-                double root);
+      mj_part_t num_total_future,
+      double root);
 
-    /* \brief Allocates the all required memory for the mj partitioning algorithm.
+    /* \brief Allocates all required memory for the mj partitioning algorithm.
      *
      */
     void allocate_set_work_memory();
 
     /* \brief for part communication we keep track of the box boundaries.
-     * This is performed when either asked specifically, or when geometric mapping is performed afterwards.
-     * This function initializes a single box with all global min and max coordinates.
+     * This is performed when either asked specifically, or when geometric
+     * mapping is performed afterwards. This function initializes a single box
+     * with all global min and max coordinates.
      * \param initial_partitioning_boxes the input and output vector for boxes.
      */
     void init_part_boxes(RCP<mj_partBoxVector_t> & outPartBoxes);
@@ -782,35 +842,43 @@ private:
     /* \brief compute global bounding box:  min/max coords of global domain */
     void compute_global_box();
 
-    /* \brief Function returns how many parts that will be obtained after this dimension partitioning.
-     * It sets how many parts each current part will be partitioned into in this dimension to num_partitioning_in_current_dim vector,
-     * sets how many total future parts each obtained part will be partitioned into in next_future_num_parts_in_parts vector,
-     * If part boxes are kept, then sets initializes the output_part_boxes as its ancestor.
+    /* \brief Function returns how many parts that will be obtained after this
+     * dimension partitioning. It sets how many parts each current part will be
+     * partitioned into in this dimension to num_partitioning_in_current_dim
+     * vector, sets how many total future parts each obtained part will be
+     * partitioned into in next_future_num_parts_in_parts vector, If part boxes
+     * are kept, then sets initializes the output_part_boxes as its ancestor.
      *
-     *  \param num_partitioning_in_current_dim: output. How many parts each current part will be partitioned into.
-     *  \param future_num_part_in_parts: input, how many future parts each current part will be partitioned into.
-     *  \param next_future_num_parts_in_parts: output, how many future parts each obtained part will be partitioned into.
-     *  \param future_num_parts: output, max number of future parts that will be obtained from a single
+     *  \param num_partitioning_in_current_dim: output. How many parts each
+     *  current part will be partitioned into.
+     *  \param future_num_part_in_parts: input, how many future parts each
+     *  current part will be partitioned into.
+     *  \param next_future_num_parts_in_parts: output, how many future parts
+     *  each obtained part will be partitioned into.
+     *  \param future_num_parts: output, max number of future parts that will be
+     *  obtained from a single
      *  \param current_num_parts: input, how many parts are there currently.
      *  \param current_iteration: input, current dimension iteration number.
      *  \param input_part_boxes: input, if boxes are kept, current boxes.
-     *  \param output_part_boxes: output, if boxes are kept, the initial box boundaries for obtained parts.
+     *  \param output_part_boxes: output, if boxes are kept, the initial box
+     *  boundaries for obtained parts.
      */
     mj_part_t update_part_num_arrays(
-                std::vector<mj_part_t> &num_partitioning_in_current_dim, //assumes this vector is empty.
-                Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim, // TODO eventually eliminate above and just have this
-                std::vector<mj_part_t> *future_num_part_in_parts,
-                std::vector<mj_part_t> *next_future_num_parts_in_parts, //assumes this vector is empty.
-                mj_part_t &future_num_parts,
-                mj_part_t current_num_parts,
-                int current_iteration,
-                RCP<mj_partBoxVector_t> input_part_boxes,
-                RCP<mj_partBoxVector_t> output_part_boxes,
-                mj_part_t atomic_part_count);
+      std::vector<mj_part_t> &num_partitioning_in_current_dim,
+      Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
+      std::vector<mj_part_t> *future_num_part_in_parts,
+      std::vector<mj_part_t> *next_future_num_parts_in_parts,
+      mj_part_t &future_num_parts,
+      mj_part_t current_num_parts,
+      int current_iteration,
+      RCP<mj_partBoxVector_t> input_part_boxes,
+      RCP<mj_partBoxVector_t> output_part_boxes,
+      mj_part_t atomic_part_count);
 
-    /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
+    /*! \brief Function to determine the local minimum and maximum coordinate,
+     * and local total weight
      * in the given set of local points.
-     * TODO: Fix parameters
+     * TODO: Fix parameters doc
      */
     void mj_get_local_min_max_coord_totW(
       mj_part_t current_work_part,
@@ -818,7 +886,8 @@ private:
       Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords);
 
 
-    /*! \brief Function to determine the local minimum and maximum coordinate, and local total weight
+    /*! \brief Function to determine the local minimum and maximum coordinate,
+     * and local total weight
      * in the given set of local points.
      * TODO: Fix parameters
      */
@@ -828,364 +897,471 @@ private:
       int kk,
       Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords);
 
-    /*! \brief Function that reduces global minimum and maximum coordinates with global total weight from given local arrays.
-     * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
-     * \param local_min_max_total is the array holding local min and max coordinate values with local total weight.
-     * First current_concurrent_num_parts entries are minimums of the parts, next current_concurrent_num_parts entries are max, and then the total weights.
-     * \param global_min_max_total is the output array holding global min and global coordinate values with global total weight.
+    /*! \brief Function that reduces global minimum and maximum coordinates with
+     * global total weight from given local arrays.
+     * \param current_concurrent_num_parts is the number of parts whose cut
+     * lines will be calculated concurrently.
+     * \param local_min_max_total is the array holding local min and max
+     * coordinate values with local total weight.
+     * First current_concurrent_num_parts entries are minimums of the parts,
+     * next current_concurrent_num_parts entries are max and then total weights.
+     * \param global_min_max_total is the output array holding global min and
+     * global coordinate values with global total weight.
      * The structure is same as local_min_max_total.
      */
     void mj_get_global_min_max_coord_totW(
-        mj_part_t current_concurrent_num_parts,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_local_min_max_total,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_global_min_max_total);
+      mj_part_t current_concurrent_num_parts,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_local_min_max_total,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_global_min_max_total);
 
-    /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
+    /*! \brief Function that calculates the new coordinates for the cut lines.
+     * Function is called inside the parallel region.
      * \param min_coord minimum coordinate in the range.
      * \param max_coord maximum coordinate in the range.
      *
-     * \param num_cuts holds the number of cuts in the current partitioning dimension.
+     * \param num_cuts holds number of cuts in current partitioning dimension.
      * \param global_weight holds the global total weight in the current part.
      *
      * \param initial_cut_coords is the output array for the initial cut lines.
-     * \param target_part_weights is the output array holding the cumulative ratios of parts in current partitioning.
-     * For partitioning to 4 uniformly, target_part_weights will be (0.25 * globalTotalWeight, 0.5 *globalTotalWeight , 0.75 * globalTotalWeight, globalTotalWeight).
+     * \param target_part_weights is the output array holding the cumulative
+     * ratios of parts in current partitioning.
+     * For partitioning to 4 uniformly, target_part_weights will be
+     * (0.25 * globalTotalWeight, 0.5 *globalTotalWeight , 0.75 *
+     * globalTotalWeight, globalTotalWeight).
      *
-     * \param future_num_part_in_parts is the vector that holds how many more parts each part will be divided into more
+     * \param future_num_part_in_parts is the vector that holds how many more
+     * parts each part will be divided into more
      * for the parts at the beginning of this coordinate partitioning
-     * \param next_future_num_parts_in_parts is the vector that holds how many more parts each part will be divided into more
-     * for the parts that will be obtained at the end of this coordinate partitioning.
-     * \param concurrent_current_part is the index of the part in the future_num_part_in_parts vector.
-     * \param obtained_part_index holds the amount of shift in the next_future_num_parts_in_parts for the output parts.
+     * \param next_future_num_parts_in_parts is the vector that holds how many
+     * more parts each part will be divided into more for the parts that will be
+     * obtained at the end of this coordinate partitioning.
+     * \param concurrent_current_part is the index of the part in the
+     * future_num_part_in_parts vector.
+     * \param obtained_part_index holds the amount of shift in the
+     * next_future_num_parts_in_parts for the output parts.
      */
     void mj_get_initial_cut_coords_target_weights(
-        mj_scalar_t min_coord,
-        mj_scalar_t max_coord,
-        mj_part_t num_cuts/*p-1*/ ,
-        mj_scalar_t global_weight,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_initial_cut_coords,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
-        std::vector <mj_part_t> *future_num_part_in_parts, //the vecto
-        std::vector <mj_part_t> *next_future_num_parts_in_parts,
-        mj_part_t concurrent_current_part,
-        mj_part_t obtained_part_index);
+      mj_scalar_t min_coord,
+      mj_scalar_t max_coord,
+      mj_part_t num_cuts/*p-1*/ ,
+      mj_scalar_t global_weight,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_initial_cut_coords,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_target_part_weights,
+      std::vector <mj_part_t> *future_num_part_in_parts,
+      std::vector <mj_part_t> *next_future_num_parts_in_parts,
+      mj_part_t concurrent_current_part,
+      mj_part_t obtained_part_index);
 
-    /*! \brief Function that calculates the new coordinates for the cut lines. Function is called inside the parallel region.
+    /*! \brief Function that calculates the new coordinates for the cut lines.
+     * Function is called inside the parallel region.
      * \param max_coordinate maximum coordinate in the range.
      * \param min_coordinate minimum coordinate in the range.
      *
-     * \param concurrent_current_part_index is the index of the part in the inTotalCounts vector.
-     * \param coordinate_begin_index holds the beginning of the coordinates in current part.
+     * \param concurrent_current_part_index is the index of the part in the
+     * inTotalCounts vector.
+     * \param coordinate_begin_index holds the beginning of the coordinates
+     * in current part.
      * \param coordinate_end_index holds end of the coordinates in current part.
-     * \param mj_current_coordinate_permutations is the permutation array, holds the real indices of coordinates on mj_current_dim_coords array.
+     * \param mj_current_coordinate_permutations is the permutation array, holds
+     * the real indices of coordinates on mj_current_dim_coords array.
      * \param mj_current_dim_coords is the 1D array holding the coordinates.
      * \param mj_part_ids is the array holding the partIds of each coordinate.
-     * \param partition_count is the number of parts that the current part will be partitioned into.
+     * \param partition_count is the number of parts that the current part will
+     * be partitioned into.
      */
     void set_initial_coordinate_parts(
-        mj_scalar_t &max_coordinate,
-        mj_scalar_t &min_coordinate,
-        mj_part_t &concurrent_current_part_index,
-        mj_lno_t coordinate_begin_index,
-        mj_lno_t coordinate_end_index,
-        Kokkos::View<mj_lno_t *, device_t> kokkos_mj_current_coordinate_permutations,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_part_t *, device_t> kokkos_mj_part_ids,
-        mj_part_t &partition_count);
+      mj_scalar_t &max_coordinate,
+      mj_scalar_t &min_coordinate,
+      mj_part_t &concurrent_current_part_index,
+      mj_lno_t coordinate_begin_index,
+      mj_lno_t coordinate_end_index,
+      Kokkos::View<mj_lno_t *, device_t>
+        kokkos_mj_current_coordinate_permutations,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
+      Kokkos::View<mj_part_t *, device_t> kokkos_mj_part_ids,
+      mj_part_t &partition_count);
 
-    /*! \brief Function that is responsible from 1D partitioning of the given range of coordinates.
-     * \param mj_current_dim_coords is 1 dimensional array holding coordinate values.
+    /*! \brief Function that is responsible from 1D partitioning of the given
+     * range of coordinates.
+     * \param mj_current_dim_coords is 1 dimensional array holding coordinate
+     * values.
      * \param imbalanceTolerance is the maximum allowed imbalance ratio.
-     * \param current_work_part is the beginning index of concurrentPartCount parts.
-     * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
-     * \param current_cut_coordinates is the array holding the coordinates of the cut.
-     * \param total_incomplete_cut_count is the number of cut lines whose positions should be calculated.
-     * \param num_partitioning_in_current_dim is the vector that holds how many parts each part will be divided into.
+     * \param current_work_part is the beginning index of concurrentPartCount
+     * parts.
+     * \param current_concurrent_num_parts is the number of parts whose cut
+     * lines will be calculated concurrently.
+     * \param current_cut_coordinates is the array holding the coordinates of
+     * the cut.
+     * \param total_incomplete_cut_count is the number of cut lines whose
+     * positions should be calculated.
+     * \param num_partitioning_in_current_dim is the vector that holds how many
+     * parts each part will be divided into.
      *
      */
     void mj_1D_part(
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-        mj_scalar_t imbalanceTolerance,
-        mj_part_t current_work_part,
-        mj_part_t current_concurrent_num_parts,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
-        mj_part_t total_incomplete_cut_count,
-        std::vector <mj_part_t> &num_partitioning_in_current_dim,
-        Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
-        Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
-        Kokkos::View<size_t*, device_t> view_total_reduction_size);
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
+      mj_scalar_t imbalanceTolerance,
+      mj_part_t current_work_part,
+      mj_part_t current_concurrent_num_parts,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
+      mj_part_t total_incomplete_cut_count,
+      std::vector <mj_part_t> &num_partitioning_in_current_dim,
+      Kokkos::View<mj_part_t*, device_t> &
+        view_num_partitioning_in_current_dim,
+      Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
+      Kokkos::View<size_t*, device_t> view_total_reduction_size);
 
-    /*! \brief Function that calculates the weights of each part according to given part cut coordinates.
-     * Function is called inside the parallel region. Thread specific work arrays are provided
-     * as function parameter.
+    /*! \brief Function that calculates the weights of each part according to
+     * given part cut coordinates. Function is called inside the parallel
+     * region. Thread specific work arrays are provided as function parameter.
      *
-     * \param total_part_count is the sum of number of cutlines and number of parts. Simply it is 2*P - 1.
+     * \param total_part_count is the sum of number of cutlines and number of
+     * parts. Simply it is 2*P - 1.
      * \param num_cuts is the number of cut lines. P - 1.
      * \param max_coord is the maximum coordinate in the part.
      * \param min_coord is the min coordinate in the part.
-     * \param coordinate_begin_index is the index of the first coordinate in current part.
-     * \param coordinate_end_index is the index of the last coordinate in current part.
-     * \param mj_current_dim_coords is 1 dimensional array holding coordinate values.
+     * \param coordinate_begin_index is the index of the first coordinate in
+     * current part.
+     * \param coordinate_end_index is the index of the last coordinate in
+     * current part.
+     * \param mj_current_dim_coords is 1 dimensional array holding coordinate
+     * values.
      *
-     * \param temp_current_cut_coords is the array holding the coordinates of each cut line. Sized P - 1.
-     * \param current_cut_status is the boolean array to determine if the correct position for a cut line is found.
-     * \param my_current_part_weights is the array holding the part weights for the calling thread.
-     * \param my_current_left_closest is the array holding the coordinate of the closest points to the cut lines from left for the calling thread..
-     * \param my_current_right_closest is the array holding the coordinate of the closest points to the cut lines from right for the calling thread.
+     * \param temp_current_cut_coords is the array holding the coordinates of
+     * each cut line. Sized P - 1.
+     * \param current_cut_status is the boolean array to determine if the
+     * correct position for a cut line is found.
+     * \param my_current_part_weights is the array holding the part weights for
+     * the calling thread.
+     * \param my_current_left_closest is the array holding the coordinate of the
+     * closest points to the cut lines from left for the calling thread.
+     * \param my_current_right_closest is the array holding the coordinate of
+     * the closest points to the cut lines from right for the calling thread.
      * \param partIds is the array that holds the part ids of the coordinates
      */
     void mj_1D_part_get_thread_part_weights(
-        mj_part_t current_concurrent_num_parts,
-        mj_part_t kk,
-        mj_part_t current_work_part,
-        size_t total_part_count,
-        mj_part_t num_cuts,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords,
-        Kokkos::View<bool *, device_t> kokkos_current_cut_status,
-        Kokkos::View<double *, device_t> kokkos_my_current_part_weights,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest
-        );
-    /*! \brief Function that reduces the result of multiple threads
-     * for left and right closest points and part weights in a single mpi process.
+      mj_part_t current_concurrent_num_parts,
+      mj_part_t kk,
+      mj_part_t current_work_part,
+      size_t total_part_count,
+      mj_part_t num_cuts,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords,
+      Kokkos::View<bool *, device_t> kokkos_current_cut_status,
+      Kokkos::View<double *, device_t> kokkos_my_current_part_weights,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest);
+
+    /*! \brief Function that reduces the result of multiple threads for
+     * left and right closest points and part weights in a single mpi process.
      *
-     * \param num_partitioning_in_current_dim is the vector that holds the number of cut lines in current dimension for each part.
-     * \param current_work_part holds the index of the first part (important when concurrent parts are used.)
-     * \param current_concurrent_num_parts is the number of parts whose cut lines will be calculated concurrently.
+     * \param num_partitioning_in_current_dim is the vector that holds the
+     * number of cut lines in current dimension for each part.
+     * \param current_work_part holds the index of the first part (important
+     * when concurrent parts are used.)
+     * \param current_concurrent_num_parts is the number of parts whose cut
+     * lines will be calculated concurrently.
      */
 
     void mj_accumulate_thread_results(
-        Kokkos::View<mj_part_t*, device_t> num_partitioning_in_current_dim,
-        mj_part_t current_work_part,
-        mj_part_t current_concurrent_num_parts,
-        Kokkos::View<bool *, device_t> local_kokkos_is_cut_line_determined,
-        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> local_kokkos_thread_cut_left_closest_point,
-        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> local_kokkos_thread_cut_right_closest_point,
-        Kokkos::View<mj_scalar_t *, device_t> local_kokkos_total_part_weight_left_right_closests,
-        Kokkos::View<double *, Kokkos::LayoutLeft, device_t> local_kokkos_thread_part_weights
-        );
+      Kokkos::View<mj_part_t*, device_t> num_partitioning_in_current_dim,
+      mj_part_t current_work_part,
+      mj_part_t current_concurrent_num_parts,
+      Kokkos::View<bool *, device_t> local_kokkos_is_cut_line_determined,
+      Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+        local_kokkos_thread_cut_left_closest_point,
+      Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+        local_kokkos_thread_cut_right_closest_point,
+      Kokkos::View<mj_scalar_t *, device_t>
+        local_kokkos_total_part_weight_left_right_closests,
+      Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
+        local_kokkos_thread_part_weights);
 
     /*! \brief Function that calculates the new coordinates for the cut lines.
-     * Function is called inside the parallel region. Write the new cut coordinates
-     * to new_current_cut_coordinates, and determines if the final position of a cut is found.
+     * Function is called inside the parallel region. Write the new cut
+     * coordinates to new_current_cut_coordinates, and determines if the final
+     * position of a cut is found.
      *
-     * \param num_total_part is the sum of number of cutlines and number of parts. Simply it is 2*P - 1.
+     * \param num_total_part is the sum of number of cutlines and number of
+     * parts. Simply it is 2*P - 1.
      * \param num_cuts is the number of cut lines. P - 1.
-     * \param max_coordinate is the maximum coordinate in the current range of coordinates and in the current dimension.
-     * \param min_coordinate is the maximum coordinate in the current range of coordinates and in the current dimension.
-     * \param global_total_weight is the global total weight in the current range of coordinates.
+     * \param max_coordinate is the maximum coordinate in the current range of
+     * coordinates and in the current dimension.
+     * \param min_coordinate is the maximum coordinate in the current range of
+     * coordinates and in the current dimension.
+     * \param global_total_weight is the global total weight in the current
+     * range of coordinates.
      * \param used_imbalance_tolerance is the maximum allowed imbalance ratio.
      *
      *
-     * \param current_global_part_weights is the array holding the weight of parts. Assumes there are 2*P - 1 parts (cut lines are seperate parts).
-     * \param current_local_part_weights is the local totalweight of the processor.
-     * \param current_part_target_weights are the desired cumulative part ratios, sized P.
-     * \param current_cut_line_determined is the boolean array to determine if the correct position for a cut line is found.
+     * \param current_global_part_weights is the array holding the weight of
+     * parts. Assumes there are 2*P - 1 parts (cut lines are seperate parts).
+     * \param current_local_part_weights is local totalweight of the processor.
+     * \param current_part_target_weights desired cumulative part ratios, size P.
+     * \param current_cut_line_determined is the boolean array to determine if
+     * the correct position for a cut line is found.
      *
-     * \param current_cut_coordinates is the array holding the coordinates of each cut line. Sized P - 1.
-     * \param current_cut_upper_bounds is the array holding the upper bound coordinate for each cut line. Sized P - 1.
-     * \param current_cut_lower_bounds is the array holding the lower bound coordinate for each cut line. Sized P - 1.
-     * \param current_global_left_closest_points is the array holding the closest points to the cut lines from left.
-     * \param current_global_right_closest_points is the array holding the closest points to the cut lines from right.
-     * \param current_cut_lower_bound_weights is the array holding the weight of the parts at the left of lower bound coordinates.
-     * \param current_cut_upper_weights is the array holding the weight of the parts at the left of upper bound coordinates.
+     * \param current_cut_coordinates is the array holding the coordinates of
+     * each cut line. Sized P - 1.
+     * \param current_cut_upper_bounds is the array holding the upper bound
+     * coordinate for each cut line. Sized P - 1.
+     * \param current_cut_lower_bounds is the array holding the lower bound
+     * coordinate for each cut line. Sized P - 1.
+     * \param current_global_left_closest_points is the array holding the
+     * closest points to the cut lines from left.
+     * \param current_global_right_closest_points is the array holding the
+     * closest points to the cut lines from right.
+     * \param current_cut_lower_bound_weights is the array holding the weight
+     * of the parts at the left of lower bound coordinates.
+     * \param current_cut_upper_weights is the array holding the weight of the
+     * parts at the left of upper bound coordinates.
      * \param new_current_cut_coordinates is the work array, sized P - 1.
      *
-     * \param current_part_cut_line_weight_ratio holds how much weight of the coordinates on the cutline should be put on left side.
-     * \param rectilinear_cut_count is the count of cut lines whose balance can be achived via distributing the points in same coordinate to different parts.
-     * \param my_num_incomplete_cut is the number of cutlines whose position has not been determined yet. For K > 1 it is the count in a single part (whose cut lines are determined).
+     * \param current_part_cut_line_weight_ratio holds how much weight of the
+     * coordinates on the cutline should be put on left side.
+     * \param rectilinear_cut_count is the count of cut lines whose balance can
+     * be achived via distributing points in same coordinate to different parts.
+     * \param my_num_incomplete_cut is the number of cutlines whose position has
+     * not been determined yet. For K > 1 it is the count in a single part
+     * (whose cut lines are determined).
      */
     void mj_get_new_cut_coordinates(
-        mj_part_t current_concurrent_num_parts,
-        mj_part_t kk,
-        const size_t &num_total_part,
-        const mj_part_t &num_cuts,
-        const mj_scalar_t &used_imbalance_tolerance,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_global_part_weights,
-        Kokkos::View<const mj_scalar_t *, device_t> kokkos_current_local_part_weights,
-        Kokkos::View<const mj_scalar_t *, device_t> kokkos_current_part_target_weights,
-        Kokkos::View<bool *, device_t> kokkos_current_cut_line_determined,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_upper_bounds,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_lower_bounds,
-        Kokkos::View<mj_scalar_t *, device_t> current_global_left_closest_points,
-        Kokkos::View<mj_scalar_t *, device_t> current_global_right_closest_points,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_lower_bound_weights,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_upper_weights,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_new_current_cut_coordinates,
-        Kokkos::View<mj_scalar_t *, device_t> current_part_cut_line_weight_to_put_left,
-        Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count
-    );
+      mj_part_t current_concurrent_num_parts,
+      mj_part_t kk,
+      const size_t &num_total_part,
+      const mj_part_t &num_cuts,
+      const mj_scalar_t &used_imbalance_tolerance,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_global_part_weights,
+      Kokkos::View<const mj_scalar_t *, device_t>
+        kokkos_current_local_part_weights,
+      Kokkos::View<const mj_scalar_t *, device_t>
+        kokkos_current_part_target_weights,
+      Kokkos::View<bool *, device_t> kokkos_current_cut_line_determined,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_upper_bounds,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_lower_bounds,
+      Kokkos::View<mj_scalar_t *, device_t> current_global_left_closest_points,
+      Kokkos::View<mj_scalar_t *, device_t> current_global_right_closest_points,
+      Kokkos::View<mj_scalar_t *, device_t>
+        kokkos_current_cut_lower_bound_weights,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_upper_weights,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_new_current_cut_coordinates,
+      Kokkos::View<mj_scalar_t *, device_t> 
+      current_part_cut_line_weight_to_put_left,
+      Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count);
 
     /*! \brief
      * Function that calculates the next pivot position,
-     * according to given coordinates of upper bound and lower bound, the weights at upper and lower bounds, and the expected weight.
+     * according to given coordinates of upper bound and lower bound, the
+     * weights at upper and lower bounds, and the expected weight.
      * \param cut_upper_bound is the upper bound coordinate of the cut.
      * \param cut_lower_bound is the lower bound coordinate of the cut.
      * \param cut_upper_weight is the weights at the upper bound of the cut.
      * \param cut_lower_weight is the weights at the lower bound of the cut.
-     * \param expected_weight is the expected weight that should be placed on the left of the cut line.
+     * \param expected_weight is the expected weight that should be placed on
+     * the left of the cut line.
      */
     KOKKOS_INLINE_FUNCTION void mj_calculate_new_cut_position (
-        mj_scalar_t cut_upper_bound,
-        mj_scalar_t cut_lower_bound,
-        mj_scalar_t cut_upper_weight,
-        mj_scalar_t cut_lower_weight,
-        mj_scalar_t expected_weight,
-        mj_scalar_t &new_cut_position);
+      mj_scalar_t cut_upper_bound,
+      mj_scalar_t cut_lower_bound,
+      mj_scalar_t cut_upper_weight,
+      mj_scalar_t cut_lower_weight,
+      mj_scalar_t expected_weight,
+      mj_scalar_t &new_cut_position);
 
-    /*! \brief Function that determines the permutation indices of the coordinates.
+    /*! \brief Function that determines the permutation indices of coordinates.
      * \param num_parts is the number of parts.
-     * \param mj_current_dim_coords is 1 dimensional array holding the coordinate values.
-     * \param current_concurrent_cut_coordinate is 1 dimensional array holding the cut coordinates.
-     * \param coordinate_begin is the start index of the given partition on partitionedPointPermutations.
-     * \param coordinate_end is the end index of the given partition on partitionedPointPermutations.
-     * \param used_local_cut_line_weight_to_left holds how much weight of the coordinates on the cutline should be put on left side.
-     * \param used_thread_part_weight_work is the two dimensional array holding the weight of parts for each thread. Assumes there are 2*P - 1 parts (cut lines are seperate parts).
-     * \param out_part_xadj is the indices of coordinates calculated for the partition on next dimension.
+     * \param mj_current_dim_coords is 1 dimensional array holding the
+     * coordinate values.
+     * \param current_concurrent_cut_coordinate is 1 dimensional array holding
+     * the cut coordinates.
+     * \param coordinate_begin is the start index of the given partition on
+     * partitionedPointPermutations.
+     * \param coordinate_end is the end index of the given partition on
+     * partitionedPointPermutations.
+     * \param used_local_cut_line_weight_to_left holds how much weight of the
+     * coordinates on the cutline should be put on left side.
+     * \param used_thread_part_weight_work is the two dimensional array holding
+     * the weight of parts for each thread. Assumes there are 2*P - 1 parts
+     * (cut lines are seperate parts).
+     * \param out_part_xadj is the indices of coordinates calculated for the
+     * partition on next dimension.
      */
     void mj_create_new_partitions(
-        mj_part_t num_parts,
-        mj_part_t current_concurrent_work_part,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_current_concurrent_cut_coordinate,
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_used_local_cut_line_weight_to_left,
-        Kokkos::View<double *, Kokkos::LayoutLeft, device_t> used_thread_part_weight_work,
-        Kokkos::View<mj_lno_t *, device_t> kokkos_out_part_xadj,
-        Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t> local_kokkos_thread_point_counts,
-        bool local_distribute_points_on_cut_lines,
-        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t> local_kokkos_thread_cut_line_weight_to_put_left,
-        mj_scalar_t local_sEpsilon,
-        Kokkos::View<mj_lno_t*, device_t> local_kokkos_coordinate_permutations,
-        Kokkos::View<bool*, device_t> local_kokkos_mj_uniform_weights,
-        Kokkos::View<mj_scalar_t**, device_t> local_kokkos_mj_weights,
-        Kokkos::View<mj_part_t*, device_t> local_kokkos_assigned_part_ids,
-        Kokkos::View<mj_lno_t*, device_t> local_kokkos_new_coordinate_permutations
-    );
+      mj_part_t num_parts,
+      mj_part_t current_concurrent_work_part,
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
+      Kokkos::View<mj_scalar_t *, device_t>
+        kokkos_current_concurrent_cut_coordinate,
+      Kokkos::View<mj_scalar_t *, device_t>
+        kokkos_used_local_cut_line_weight_to_left,
+      Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
+        used_thread_part_weight_work,
+      Kokkos::View<mj_lno_t *, device_t> kokkos_out_part_xadj,
+      Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
+        local_kokkos_thread_point_counts,
+      bool local_distribute_points_on_cut_lines,
+      Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+        local_kokkos_thread_cut_line_weight_to_put_left,
+      mj_scalar_t local_sEpsilon,
+      Kokkos::View<mj_lno_t*, device_t> local_kokkos_coordinate_permutations,
+      Kokkos::View<bool*, device_t> local_kokkos_mj_uniform_weights,
+      Kokkos::View<mj_scalar_t**, device_t> local_kokkos_mj_weights,
+      Kokkos::View<mj_part_t*, device_t> local_kokkos_assigned_part_ids,
+      Kokkos::View<mj_lno_t*, device_t>
+        local_kokkos_new_coordinate_permutations);
 
     /*! \brief Function checks if should do migration or not.
      * It returns true to point that migration should be done when
      * -migration_reduce_all_population are higher than a predetermined value
-     * -num_coords_for_last_dim_part that left for the last dimension partitioning is less than a predetermined value
-     * -the imbalance of the processors on the parts are higher than given threshold.
+     * -num_coords_for_last_dim_part that left for the last dimension
+     * partitioning is less than a predetermined value - the imbalance of the
+     * processors on the parts are higher than given threshold.
 
      * \param input_num_parts is the number of parts when migration is called.
      * \param output_num_parts is the output number of parts after migration.
-     * \param next_future_num_parts_in_parts is the number of total future parts each
-     * part is partitioned into. This will be updated when migration is performed.
-     * \param output_part_begin_index is the number that will be used as beginning part number
-     * when final solution part numbers are assigned.
-     * \param migration_reduce_all_population is the estimated total number of reduceall operations
-     * multiplied with number of processors to be used for determining migration.
+     * \param next_future_num_parts_in_parts is the number of total future parts
+     * each part is partitioned into. Updated when migration is performed.
+     * \param output_part_begin_index is the number that will be used as
+     * beginning part number when final solution part numbers are assigned.
+     * \param migration_reduce_all_population is the estimated total number of
+     * reduceall operations multiplied with number of processors to be used for
+     * determining migration.
      *
-     * \param num_coords_for_last_dim_part is the estimated number of points in each part,
-     * when last dimension partitioning is performed.
-     * \param iteration is the string that gives information about the dimension for printing purposes.
-     * \param input_part_boxes is the array that holds the part boxes after the migration. (swapped)
-     * \param output_part_boxes is the array that holds the part boxes before the migration. (swapped)
+     * \param num_coords_for_last_dim_part is the estimated number of points in
+     * each part, when last dimension partitioning is performed.
+     * \param iteration is the string that gives information about the dimension
+     * for printing purposes.
+     * \param input_part_boxes is the array that holds the part boxes after the
+     * migration. (swapped)
+     * \param output_part_boxes is the array that holds the part boxes before
+     * the migration. (swapped)
      *
      */
     bool mj_perform_migration(
-        mj_part_t in_num_parts, //current umb parts
-        mj_part_t &out_num_parts, //output umb parts.
-        std::vector<mj_part_t> *next_future_num_parts_in_parts,
-        mj_part_t &output_part_begin_index,
-        size_t migration_reduce_all_population,
-        mj_lno_t num_coords_for_last_dim_part,
-        std::string iteration,
-        RCP<mj_partBoxVector_t> &input_part_boxes,
-        RCP<mj_partBoxVector_t> &output_part_boxes);
+      mj_part_t in_num_parts, //current umb parts
+      mj_part_t &out_num_parts, //output umb parts.
+      std::vector<mj_part_t> *next_future_num_parts_in_parts,
+      mj_part_t &output_part_begin_index,
+      size_t migration_reduce_all_population,
+      mj_lno_t num_coords_for_last_dim_part,
+      std::string iteration,
+      RCP<mj_partBoxVector_t> &input_part_boxes,
+      RCP<mj_partBoxVector_t> &output_part_boxes);
 
     /*! \brief Function fills up the num_points_in_all_processor_parts, so that
      * it has the number of coordinates in each processor of each part.
-     * to access how many points processor i has on part j, num_points_in_all_processor_parts[i * num_parts + j].
+     * to access how many points processor i has on part j,
+     * num_points_in_all_processor_parts[i * num_parts + j].
      *
-     * \param num_procs is the number of processor attending to migration operation.
-     * \param num_parts is the number of parts that exist in the current partitioning.
+     * \param num_procs is the number of processors for migration operation.
+     * \param num_parts is the number of parts in the current partitioning.
      * \param num_points_in_all_processor_parts is the output array that holds
      * the number of coordinates in each part in each processor.
      */
     void get_processor_num_points_in_parts(
-                mj_part_t num_procs,
-                mj_part_t num_parts,
-                mj_gno_t *&num_points_in_all_processor_parts);
+      mj_part_t num_procs,
+      mj_part_t num_parts,
+      mj_gno_t *&num_points_in_all_processor_parts);
 
     /*! \brief Function checks if should do migration or not.
      * It returns true to point that migration should be done when
      * -migration_reduce_all_population are higher than a predetermined value
-     * -num_coords_for_last_dim_part that left for the last dimension partitioning is less than a predetermined value
-     * -the imbalance of the processors on the parts are higher than given threshold.
-     * \param migration_reduce_all_population is the multiplication of the number of reduceall operations estimated and the number of processors.
-     * \param num_coords_for_last_dim_part is the estimated number of coordinates in a part per processor in the last dimension partitioning.
-     * \param num_procs is the number of processor attending to migration operation.
-     * \param num_parts is the number of parts that exist in the current partitioning.
+     * -num_coords_for_last_dim_part that left for the last dimension
+     * partitioning is less than a predetermined value - the imbalance of the
+     * processors on the parts are higher than given threshold.
+     * \param migration_reduce_all_population is the multiplication of the
+     * number of reduceall operations estimated and the number of processors.
+     * \param num_coords_for_last_dim_part is the estimated number of
+     * coordinates in a part per processor in the last dimension partitioning.
+     * \param num_procs is the number of processor attending to migration
+     * operation.
+     * \param num_parts is the number of parts that exist in the current
+     * partitioning.
      * \param num_points_in_all_processor_parts is the input array that holds
      * the number of coordinates in each part in each processor.
      */
     bool mj_check_to_migrate(
-                size_t migration_reduce_all_population,
-                mj_lno_t num_coords_for_last_dim_part,
-                mj_part_t num_procs,
-                mj_part_t num_parts,
-                mj_gno_t *num_points_in_all_processor_parts);
-
+      size_t migration_reduce_all_population,
+      mj_lno_t num_coords_for_last_dim_part,
+      mj_part_t num_procs,
+      mj_part_t num_parts,
+      mj_gno_t *num_points_in_all_processor_parts);
 
     /*! \brief Function fills up coordinate_destinations is the output array
-     * that holds which part each coordinate should be sent. In addition it calculates
-     * the shift amount (output_part_numbering_begin_index) to be done when
-     * final numberings of the parts are performed.
+     * that holds which part each coordinate should be sent. In addition it
+     * calculates the shift amount (output_part_numbering_begin_index) to be
+     * done when final numberings of the parts are performed.
      *
-     * \param num_points_in_all_processor_parts is the array holding the num points in each part in each proc.
-     * \param num_parts is the number of parts that exist in the current partitioning.
-     * \param num_procs is the number of processor attending to migration operation.
-
-     * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
-     * \param processor_ranks_for_subcomm is the ranks of the processors that will be in the subcommunicator with me.
-     * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
+     * \param num_points_in_all_processor_parts is the array holding the num
+     * points in each part in each proc.
+     * \param num_parts is the number of parts that exist in the current
+     * partitioning.
+     * \param num_procs is the number of processor attending to migration
+     * operation.
+     * \param send_count_to_each_proc array array storing the number of points
+     * to be sent to each part.
+     * \param processor_ranks_for_subcomm is the ranks of the processors that
+     * will be in the subcommunicator with me.
+     * \param next_future_num_parts_in_parts is the vector, how many more parts
+     * each part will be divided into in the future.
      * \param out_num_part is the number of parts assigned to the process.
-     * \param out_part_indices is the indices of the part to which the processor is assigned.
-     * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
-     * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
+     * \param out_part_indices is the indices of the part to which the processor
+     * is assigned.
+     * \param output_part_numbering_begin_index is how much the numbers should
+     * be shifted when numbering the result parts.
+     * \param coordinate_destinations is the output array that holds which part
+     * each coordinate should be sent.
      */
     void mj_migration_part_proc_assignment(
-                mj_gno_t * num_points_in_all_processor_parts,
-                mj_part_t num_parts,
-                mj_part_t num_procs,
-                mj_lno_t *send_count_to_each_proc,
-                std::vector<mj_part_t> &processor_ranks_for_subcomm,
-                std::vector<mj_part_t> *next_future_num_parts_in_parts,
-                mj_part_t &out_num_part,
-                std::vector<mj_part_t> &out_part_indices,
-                mj_part_t &output_part_numbering_begin_index,
-                int *coordinate_destinations);
+      mj_gno_t * num_points_in_all_processor_parts,
+      mj_part_t num_parts,
+      mj_part_t num_procs,
+      mj_lno_t *send_count_to_each_proc,
+      std::vector<mj_part_t> &processor_ranks_for_subcomm,
+      std::vector<mj_part_t> *next_future_num_parts_in_parts,
+      mj_part_t &out_num_part,
+      std::vector<mj_part_t> &out_part_indices,
+      mj_part_t &output_part_numbering_begin_index,
+      int *coordinate_destinations);
 
-    /*! \brief Function that assigned the processors to parts, when there are more processors then parts.
-     *  sets the destination of each coordinate in coordinate_destinations, also edits output_part_numbering_begin_index,
-     *  and out_part_index, and returns the processor_ranks_for_subcomm which represents the ranks of the processors
+    /*! \brief Function that assigned the processors to parts, when there are
+     * more processors then parts.
+     *  sets the destination of each coordinate in coordinate_destinations, also
+     * edits output_part_numbering_begin_index,
+     *  and out_part_index, and returns the processor_ranks_for_subcomm which
+     * represents the ranks of the processors
      *  that will be used for creating the subcommunicator.
      *
-     * \param num_points_in_all_processor_parts is the array holding the num points in each part in each proc.
-     * \param num_parts is the number of parts that exist in the current partitioning.
-     * \param num_procs is the number of processor attending to migration operation.
-
-     * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
-     * \param processor_ranks_for_subcomm is the ranks of the processors that will be in the subcommunicator with me.
-     * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
-     * \param out_part_index is the index of the part to which the processor is assigned.
-     * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
-     * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
+     * \param num_points_in_all_processor_parts is the array holding the num
+     * points in each part in each proc.
+     * \param num_parts is the number of parts that exist in the current
+     * partitioning.
+     * \param num_procs is the number of processor attending to migration
+     * operation.
+     * \param send_count_to_each_proc array array storing the number of points
+     * to be sent to each part.
+     * \param processor_ranks_for_subcomm is the ranks of the processors that
+     * will be in the subcommunicator with me.
+     * \param next_future_num_parts_in_parts is the vector, how many more parts
+     * each part will be divided into in the future.
+     * \param out_part_index is the index of the part to which the processor
+     * is assigned.
+     * \param output_part_numbering_begin_index is how much the numbers should
+     * be shifted when numbering the result parts.
+     * \param coordinate_destinations is the output array that holds which part
+     * each coordinate should be sent.
      */
     void mj_assign_proc_to_parts(
-                mj_gno_t * num_points_in_all_processor_parts,
-                mj_part_t num_parts,
-                mj_part_t num_procs,
-                mj_lno_t *send_count_to_each_proc,
-                std::vector<mj_part_t> &processor_ranks_for_subcomm,
-                std::vector<mj_part_t> *next_future_num_parts_in_parts,
-                mj_part_t &out_part_index,
-                mj_part_t &output_part_numbering_begin_index,
-                int *coordinate_destinations);
+      mj_gno_t * num_points_in_all_processor_parts,
+      mj_part_t num_parts,
+      mj_part_t num_procs,
+      mj_lno_t *send_count_to_each_proc,
+      std::vector<mj_part_t> &processor_ranks_for_subcomm,
+      std::vector<mj_part_t> *next_future_num_parts_in_parts,
+      mj_part_t &out_part_index,
+      mj_part_t &output_part_numbering_begin_index,
+      int *coordinate_destinations);
 
     /*! \brief Function fills up coordinate_destinations is the output array
      * that holds which part each coordinate should be sent.
@@ -2013,52 +2189,42 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 }
 
 /*! \brief Multi Jagged  coordinate partitioning algorithm default constructor.
- *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
+          typename mj_part_t, typename mj_node_t>
 AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-        mj_node_t>::AlgMJ():
-        mj_env(), mj_problemComm(), imbalance_tolerance(0),
-        recursion_depth(0), coord_dim(0),
-        num_weights_per_coord(0), initial_num_loc_coords(0),
-        initial_num_glob_coords(0),
-        num_local_coords(0), num_global_coords(0),
-        mj_gnos(), num_global_parts(1),
-        distribute_points_on_cut_lines(true), max_concurrent_part_calculation(1),
-        mj_run_as_rcb(false), mj_user_recursion_depth(0), mj_keep_part_boxes(false),
-        check_migrate_avoid_migration_option(0), migration_type(0), minimum_migration_imbalance(0.30),
-        total_num_cut(0), total_num_part(0), max_num_part_along_dim(0),
-        max_num_cut_along_dim(0), max_num_total_part_along_dim(0), total_dim_num_reduce_all(0),
-        last_dim_num_part(0), comm(), fEpsilon(0), sEpsilon(0), maxScalar_t(0), minScalar_t(0),
-        kept_boxes(),global_box(),
-        myRank(0), myActualRank(0), divide_to_prime_first(false)
-{
-    // purpose of this code is to validate node and UVM status for the tests
-    // TODO: Later can remove or make this debug code
-    std::cout << "Memory Space: " << mj_node_t::memory_space::name()
-      << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
-
-    this->fEpsilon = std::numeric_limits<float>::epsilon();
-    this->sEpsilon = std::numeric_limits<mj_scalar_t>::epsilon() * 100;
-
-    this->maxScalar_t = std::numeric_limits<mj_scalar_t>::max();
-    this->minScalar_t = -std::numeric_limits<mj_scalar_t>::max();
+  mj_node_t>::AlgMJ():
+  mj_env(), mj_problemComm(), comm(), imbalance_tolerance(0),
+  recursion_depth(0), coord_dim(0),
+  num_weights_per_coord(0), initial_num_loc_coords(0),
+  initial_num_glob_coords(0),
+  num_local_coords(0), num_global_coords(0),
+  sEpsilon(std::numeric_limits<mj_scalar_t>::epsilon() * 100),
+  distribute_points_on_cut_lines(true),
+  max_concurrent_part_calculation(1),
+  mj_run_as_rcb(false), mj_user_recursion_depth(0),
+  mj_keep_part_boxes(false),
+  check_migrate_avoid_migration_option(0), migration_type(0),
+  minimum_migration_imbalance(0.30),
+  total_num_cut(0), total_num_part(0), max_num_part_along_dim(0),
+  max_num_cut_along_dim(0),
+  max_num_total_part_along_dim(0),
+  total_dim_num_reduce_all(0),
+  last_dim_num_part(0),
+  num_global_parts(1), kept_boxes(), global_box(),
+  myRank(0), myActualRank(0), 
+  divide_to_prime_first(false) {
 }
-
 
 /*! \brief Function returns the part boxes stored
  * returns null if boxes are not stored, and prints warning mesage.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::mj_partBox_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::get_global_box() const
-{
+          typename mj_part_t, typename mj_node_t>
+RCP<typename AlgMJ
+  <mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,mj_node_t>::mj_partBox_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
+  get_global_box() const {
   return this->global_box;
 }
 
@@ -2066,26 +2232,24 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
  *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
+          typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::set_to_keep_part_boxes(){
+  mj_node_t>::set_to_keep_part_boxes() {
   this->mj_keep_part_boxes = true;
 }
 
 
-/* \brief Either the mj array (part_no_array) or num_global_parts should be provided in
- * the input. part_no_array takes
+/* \brief Either the mj array (part_no_array) or num_global_parts should be
+ * provided in the input. part_no_array takes
  * precedence if both are provided.
  * Depending on these parameters, total cut/part number,
  * maximum part/cut number along a dimension, estimated number of reduceAlls,
  * and the number of parts before the last dimension is calculated.
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::set_part_specifications(){
+          typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  set_part_specifications() {
 
         this->total_num_cut = 0; //how many cuts will be totally
         this->total_num_part = 1;    //how many parts will be totally
@@ -2211,7 +2375,7 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 {
         double fp = pow(num_total_future, root);
         mj_part_t ip = mj_part_t (fp);
-        if (fp - ip < this->fEpsilon * 100){
+        if (fp - ip < std::numeric_limits<float>::epsilon() * 100){
                 return ip;
         }
         else {
@@ -2693,8 +2857,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
   auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
-  auto local_maxScalar_t = this->maxScalar_t;
-  auto local_minScalar_t = this->minScalar_t;
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
@@ -2762,8 +2924,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_get_local_
     //set the min and max coordinates as reverse.
     if(coordinate_begin_index >= coordinate_end_index)
     {
-      my_thread_min_coord = local_maxScalar_t;
-      my_thread_max_coord = local_minScalar_t;
+      my_thread_min_coord = std::numeric_limits<mj_scalar_t>::max();
+      my_thread_max_coord = -std::numeric_limits<mj_scalar_t>::max();
       my_total_weight = 0;
     }
     else {
@@ -2826,8 +2988,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_taskmapper
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
   auto local_kokkos_process_local_min_max_coord_total_weight = this->kokkos_process_local_min_max_coord_total_weight;
-  auto local_maxScalar_t = this->maxScalar_t;
-  auto local_minScalar_t = this->minScalar_t;
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
@@ -2846,8 +3006,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::mj_taskmapper
     //set the min and max coordinates as reverse.
     if(coordinate_begin_index >= coordinate_end_index)
     {
-      my_thread_min_coord = local_maxScalar_t;
-      my_thread_max_coord = local_minScalar_t;
+      my_thread_min_coord = std::numeric_limits<mj_scalar_t>::max();
+      my_thread_max_coord = -std::numeric_limits<mj_scalar_t>::max();
       my_total_weight = 0;
     }
     else {
@@ -6995,7 +7155,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         Kokkos::View<mj_gno_t*, device_t> &kokkos_result_mj_gnos_
 )
 {
-
+  // purpose of this code is to validate node and UVM status for the tests
+  // TODO: Later can remove or make this debug code
+  std::cout << "Memory Space: " << mj_node_t::memory_space::name()
+    << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
+      
 mj_create_new_partitions_clock.reset();
 
 mj_1D_part_while_loop.reset();
