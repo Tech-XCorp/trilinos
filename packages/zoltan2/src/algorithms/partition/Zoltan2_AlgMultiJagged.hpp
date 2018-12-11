@@ -1911,7 +1911,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             Kokkos::parallel_reduce("Read single", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-              set_single = local_kokkos_process_local_min_max_coord_total_weight(
+              set_single =
+                local_kokkos_process_local_min_max_coord_total_weight(
                 kk + current_concurrent_num_parts);
             }, coord_dim_maxs[coord_traverse_ind]);
 
@@ -1919,7 +1920,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             // formatting: TODO
             Kokkos::parallel_reduce("Read single", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-              set_single = local_kokkos_process_local_min_max_coord_total_weight(
+              set_single =
+                local_kokkos_process_local_min_max_coord_total_weight(
                 kk + current_concurrent_num_parts) - 
                 local_kokkos_process_local_min_max_coord_total_weight(kk);
             }, coord_dimension_range_sorted[coord_traverse_ind].val);
@@ -1940,8 +1942,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           auto set_min = coord_dim_mins[coordInd];
           auto set_max = coord_dim_maxs[coordInd];
           Kokkos::parallel_for(
-            Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-            KOKKOS_LAMBDA (const int dummy) {
+            Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+              (0, 1), KOKKOS_LAMBDA (const int dummy) {
             local_kokkos_process_local_min_max_coord_total_weight(kk) = set_min;
             local_kokkos_process_local_min_max_coord_total_weight(
               kk+ current_concurrent_num_parts) = set_max;
@@ -3393,7 +3395,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
 /*! \brief Function that is responsible from 1D partitioning of the given range
  * of coordinates.
- * \param mj_current_dim_coords is 1 dimensional array holding coordinate values.
+ * \param mj_current_dim_coords is 1 dimensional array holding
+ * coordinate values.
  * \param imbalanceTolerance is the maximum allowed imbalance ratio.
  * \param current_work_part is the beginning index of concurrentPartCount parts.
  * \param current_concurrent_num_parts is the number of parts whose cut lines
@@ -4440,7 +4443,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   typename decltype(kokkos_my_current_left_closest)::HostMirror::HostMirror
     hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
   typename decltype(kokkos_my_current_right_closest)::HostMirror::HostMirror
-    hostRightArray = Kokkos::create_mirror_view(kokkos_my_current_right_closest);
+    hostRightArray =
+      Kokkos::create_mirror_view(kokkos_my_current_right_closest);
   for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
     // when reading shift right 1 due to the buffer at beginning and end
     hostLeftArray(cut)  = left_max_right_min_values[(cut+1)*2+0];
@@ -4857,7 +4861,8 @@ mj_create_new_partitions(
         // well, in order to take care of the imbalance.
         if(local_kokkos_thread_cut_line_weight_to_put_left(
             coordinate_assigned_part) < 0 && coordinate_assigned_part <
-            num_cuts - 1 && ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(
+            num_cuts - 1 &&
+            ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(
             coordinate_assigned_part+1) -
             kokkos_current_concurrent_cut_coordinate(
             coordinate_assigned_part)) < local_sEpsilon)
@@ -4868,7 +4873,8 @@ mj_create_new_partitions(
             coordinate_assigned_part);
         }
         ++local_kokkos_thread_point_counts(coordinate_assigned_part);
-        local_kokkos_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
+        local_kokkos_assigned_part_ids(coordinate_index) =
+          coordinate_assigned_part;
       }
       else {
         // if there is no more space on the left, put the coordinate to the
@@ -5454,72 +5460,72 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * to access how many points processor i has on part j,
  * num_points_in_all_processor_parts[i * num_parts + j].
  * \param num_procs is the number of processor attending to migration operation.
- * \param num_parts is the number of parts that exist in the current partitioning.
+ * \param num_parts is the number of parts that exist in current partitioning.
  * \param num_points_in_all_processor_parts is the output array that holds
  * the number of coordinates in each part in each processor.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::get_processor_num_points_in_parts(
-    mj_part_t num_procs,
-    mj_part_t num_parts,
-    mj_gno_t *&num_points_in_all_processor_parts){
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  get_processor_num_points_in_parts(
+  mj_part_t num_procs,
+  mj_part_t num_parts,
+  mj_gno_t *&num_points_in_all_processor_parts)
+{
+  // initially allocation_size is num_parts
+  size_t allocation_size = num_parts * (num_procs + 1);
 
-        //initially allocation_size is num_parts
-        size_t allocation_size = num_parts * (num_procs + 1);
+  // this will be output
+  // holds how many each processor has in each part.
+  // last portion is the sum of all processor points in each part.
 
-        //this will be output
-        //holds how many each processor has in each part.
-        //last portion is the sum of all processor points in each part.
+  // allocate memory for the local num coordinates in each part.
+  mj_gno_t *num_local_points_in_each_part_to_reduce_sum =
+    allocMemory<mj_gno_t>(allocation_size);
 
-        //allocate memory for the local num coordinates in each part.
-        mj_gno_t *num_local_points_in_each_part_to_reduce_sum = allocMemory<mj_gno_t>(allocation_size);
+  // this is the portion of the memory which will be used
+  // at the summation to obtain total number of processors' points in each part.
+  mj_gno_t *my_local_points_to_reduce_sum =
+    num_local_points_in_each_part_to_reduce_sum + num_procs * num_parts;
 
+  // this is the portion of the memory where each stores its local number.
+  // this information is needed by other processors.
+  mj_gno_t *my_local_point_counts_in_each_art =
+    num_local_points_in_each_part_to_reduce_sum + this->myRank * num_parts;
 
-        //this is the portion of the memory which will be used
-        //at the summation to obtain total number of processors' points in each part.
-        mj_gno_t *my_local_points_to_reduce_sum = num_local_points_in_each_part_to_reduce_sum + num_procs * num_parts;
-        //this is the portion of the memory where each stores its local number.
-        //this information is needed by other processors.
-        mj_gno_t *my_local_point_counts_in_each_art = num_local_points_in_each_part_to_reduce_sum + this->myRank * num_parts;
+  // initialize the array with 0's.
+  memset(num_local_points_in_each_part_to_reduce_sum, 0,
+    sizeof(mj_gno_t)*allocation_size);
 
-        //initialize the array with 0's.
-        memset(num_local_points_in_each_part_to_reduce_sum, 0, sizeof(mj_gno_t)*allocation_size);
+  //write the number of coordinates in each part.
+  for (mj_part_t i = 0; i < num_parts; ++i) {
+    mj_lno_t part_begin_index = 0;
+    if (i > 0) {
+      part_begin_index = this->kokkos_new_part_xadj(i - 1);
+    }
+    mj_lno_t part_end_index = this->kokkos_new_part_xadj(i);
+    my_local_points_to_reduce_sum[i] = part_end_index - part_begin_index;
+  }
 
-        //write the number of coordinates in each part.
-        for (mj_part_t i = 0; i < num_parts; ++i){
-                mj_lno_t part_begin_index = 0;
-                if (i > 0){
-                        part_begin_index = this->kokkos_new_part_xadj(i - 1);
-                }
+  // copy the local num parts to the last portion of array, so that this portion
+  // will represent the global num points in each part after the reduction.
+  memcpy (my_local_point_counts_in_each_art, my_local_points_to_reduce_sum,
+    sizeof(mj_gno_t) * (num_parts) );
 
-                mj_lno_t part_end_index = this->kokkos_new_part_xadj(i);
-                my_local_points_to_reduce_sum[i] = part_end_index - part_begin_index;
-        }
-
-        //copy the local num parts to the last portion of array,
-        //so that this portion will represent the global num points in each part after the reduction.
-        memcpy (my_local_point_counts_in_each_art,
-                        my_local_points_to_reduce_sum,
-                        sizeof(mj_gno_t) * (num_parts) );
-
-
-        //reduceAll operation.
-        //the portion that belongs to a processor with index p
-        //will start from myRank * num_parts.
-        //the global number of points will be held at the index
-        try{
-                reduceAll<int, mj_gno_t>(
-                                *(this->comm),
-                                Teuchos::REDUCE_SUM,
-                                allocation_size,
-                                num_local_points_in_each_part_to_reduce_sum,
-                                num_points_in_all_processor_parts);
-        }
-        Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
-        freeArray<mj_gno_t>(num_local_points_in_each_part_to_reduce_sum);
+  // reduceAll operation.
+  // the portion that belongs to a processor with index p
+  // will start from myRank * num_parts.
+  // the global number of points will be held at the index
+  try{
+    reduceAll<int, mj_gno_t>(
+      *(this->comm),
+      Teuchos::REDUCE_SUM,
+      allocation_size,
+      num_local_points_in_each_part_to_reduce_sum,
+      num_points_in_all_processor_parts);
+  }
+  Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
+  freeArray<mj_gno_t>(num_local_points_in_each_part_to_reduce_sum);
 }
 
 
@@ -5527,1574 +5533,1733 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 /*! \brief Function checks if should do migration or not.
  * It returns true to point that migration should be done when
  * -migration_reduce_all_population are higher than a predetermined value
- * -num_coords_for_last_dim_part that left for the last dimension partitioning is less than a predetermined value
- * -the imbalance of the processors on the parts are higher than given threshold.
- * \param migration_reduce_all_population is the multiplication of the number of reduceall operations estimated and the number of processors.
- * \param num_coords_for_last_dim_part is the estimated number of coordinates in a part per processor in the last dimension partitioning.
- * \param num_procs is the number of processor attending to migration operation.
- * \param num_parts is the number of parts that exist in the current partitioning.
+ * -num_coords_for_last_dim_part that left for the last dimension partitioning
+ * is less than a predetermined value - the imbalance of the processors on the
+ * parts are higher than given threshold.
+ * \param migration_reduce_all_population is the multiplication of the number of
+ * reduceall operations estimated and the number of processors.
+ * \param num_coords_for_last_dim_part is the estimated number of coordinates in
+ * a part per processor in the last dimension partitioning.
+ * \param num_procs is number of processors attending to migration operation.
+ * \param num_parts is number of parts that exist in the current partitioning.
  * \param num_points_in_all_processor_parts is the input array that holds
  * the number of coordinates in each part in each processor.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_check_to_migrate(
-    size_t migration_reduce_all_population,
-    mj_lno_t num_coords_for_last_dim_part,
-    mj_part_t num_procs,
-    mj_part_t num_parts,
-    mj_gno_t *num_points_in_all_processor_parts){
+  typename mj_part_t, typename mj_node_t>
+bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_check_to_migrate(
+  size_t migration_reduce_all_population,
+  mj_lno_t num_coords_for_last_dim_part,
+  mj_part_t num_procs,
+  mj_part_t num_parts,
+  mj_gno_t *num_points_in_all_processor_parts)
+{
+  // if reduce all count and population in the last dim is too high
+  if (migration_reduce_all_population > FUTURE_REDUCEALL_CUTOFF) {
+    return true;
+  }
 
-        //if reduce all count and population in the last dim is too high
-    if (migration_reduce_all_population > FUTURE_REDUCEALL_CUTOFF) return true;
-    //if the work in a part per processor in the last dim is too low.
-    if (num_coords_for_last_dim_part < MIN_WORK_LAST_DIM) return true;
+  // if the work in a part per processor in the last dim is too low.
+  if (num_coords_for_last_dim_part < MIN_WORK_LAST_DIM) {
+    return true;
+  }
+  
+  // if migration is to be checked and the imbalance is too high
+  if (this->check_migrate_avoid_migration_option == 0) {
+    double global_imbalance = 0;
+    // global shift to reach the sum of coordiante count in each part.
+    size_t global_shift = num_procs * num_parts;
 
-        //if migration is to be checked and the imbalance is too high
-    if (this->check_migrate_avoid_migration_option == 0){
-        double global_imbalance = 0;
-        //global shift to reach the sum of coordiante count in each part.
-        size_t global_shift = num_procs * num_parts;
+    for (mj_part_t ii = 0; ii < num_procs; ++ii) {
+      for (mj_part_t i = 0; i < num_parts; ++i) {
+       double ideal_num = num_points_in_all_processor_parts[global_shift + i]
+         / double(num_procs);
 
-        for (mj_part_t ii = 0; ii < num_procs; ++ii){
-                for (mj_part_t i = 0; i < num_parts; ++i){
-                        double ideal_num = num_points_in_all_processor_parts[global_shift + i]
-                                                                / double(num_procs);
+       global_imbalance += ZOLTAN2_ABS(ideal_num -
+         num_points_in_all_processor_parts[ii * num_parts + i]) /  (ideal_num);
+      }
+    }
+    global_imbalance /= num_parts;
+    global_imbalance /= num_procs;
 
-                        global_imbalance += ZOLTAN2_ABS(ideal_num -
-                                        num_points_in_all_processor_parts[ii * num_parts + i]) /  (ideal_num);
-                }
-        }
-        global_imbalance /= num_parts;
-        global_imbalance /= num_procs;
-
-                /*
-        if (this->myRank == 0) {
-                cout << "imbalance for next iteration:" << global_imbalance << endl;
-        }
-        */
-
-        if(global_imbalance <= this->minimum_migration_imbalance){
-                return false;
-        }
-        else {
-                return true;
-        }
+    if(global_imbalance <= this->minimum_migration_imbalance) {
+      return false;
     }
     else {
-        //if migration is forced
-        return true;
+      return true;
     }
+  }
+  else {
+    // if migration is forced
+    return true;
+  }
 }
-
 
 /*! \brief Function fills up coordinate_destinations is the output array
  * that holds which part each coordinate should be sent.
- *
- * \param num_parts is the number of parts that exist in the current partitioning.
- * \param part_assignment_proc_begin_indices ([i]) points to the first processor index that part i will be sent to.
- * \param processor_chains_in_parts the array that holds the linked list structure, started from part_assignment_proc_begin_indices ([i]).
- * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
+ * \param num_parts is the number of parts that exist in the current
+ * partitioning.
+ * \param part_assignment_proc_begin_indices ([i]) points to the first processor
+ * index that part i will be sent to.
+ * \param processor_chains_in_parts the array that holds the linked list
+ * structure, started from part_assignment_proc_begin_indices ([i]).
+ * \param send_count_to_each_proc array array storing the number of points to
+ * be sent to each part.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::assign_send_destinations(
-    mj_part_t num_parts,
-    mj_part_t *part_assignment_proc_begin_indices,
-    mj_part_t *processor_chains_in_parts,
-    mj_lno_t *send_count_to_each_proc,
-    int *coordinate_destinations){
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  assign_send_destinations(
+  mj_part_t num_parts,
+  mj_part_t *part_assignment_proc_begin_indices,
+  mj_part_t *processor_chains_in_parts,
+  mj_lno_t *send_count_to_each_proc,
+  int *coordinate_destinations) {
 
-    for (mj_part_t p = 0; p < num_parts; ++p){
-        mj_lno_t part_begin = 0;
-        if (p > 0) part_begin = this->kokkos_new_part_xadj(p - 1);
-        mj_lno_t part_end = this->kokkos_new_part_xadj(p);
-        //get the first part that current processor will send its part-p.
-        mj_part_t proc_to_sent = part_assignment_proc_begin_indices[p];
-        //initialize how many point I sent to this processor.
-        mj_lno_t num_total_send = 0;
-        for (mj_lno_t j=part_begin; j < part_end; j++){
-            mj_lno_t local_ind = this->kokkos_new_coordinate_permutations(j);
-            while (num_total_send >= send_count_to_each_proc[proc_to_sent]){
-                //then get the next processor to send the points in part p.
-                num_total_send = 0;
-                //assign new processor to part_assign_begin[p]
-                part_assignment_proc_begin_indices[p] = processor_chains_in_parts[proc_to_sent];
-                //remove the previous processor
-                processor_chains_in_parts[proc_to_sent] = -1;
-                //choose the next processor as the next one to send.
-                proc_to_sent = part_assignment_proc_begin_indices[p];
-            }
-            //write the gno index to corresponding position in sendBuf.
-            coordinate_destinations[local_ind] = proc_to_sent;
-            ++num_total_send;
-        }
+  for (mj_part_t p = 0; p < num_parts; ++p) {
+    mj_lno_t part_begin = 0;
+    if (p > 0) part_begin = this->kokkos_new_part_xadj(p - 1);
+    mj_lno_t part_end = this->kokkos_new_part_xadj(p);
+    // get the first part that current processor will send its part-p.
+    mj_part_t proc_to_sent = part_assignment_proc_begin_indices[p];
+    // initialize how many point I sent to this processor.
+    mj_lno_t num_total_send = 0;
+    for (mj_lno_t j=part_begin; j < part_end; j++) {
+      mj_lno_t local_ind = this->kokkos_new_coordinate_permutations(j);
+      while (num_total_send >= send_count_to_each_proc[proc_to_sent]) {
+        // then get the next processor to send the points in part p.
+        num_total_send = 0;
+        // assign new processor to part_assign_begin[p]
+        part_assignment_proc_begin_indices[p] =
+          processor_chains_in_parts[proc_to_sent];
+        // remove the previous processor
+        processor_chains_in_parts[proc_to_sent] = -1;
+        // choose the next processor as the next one to send.
+        proc_to_sent = part_assignment_proc_begin_indices[p];
+      }
+      // write the gno index to corresponding position in sendBuf.
+      coordinate_destinations[local_ind] = proc_to_sent;
+      ++num_total_send;
     }
+  }
 }
 
 /*! \brief Function fills up coordinate_destinations is the output array
  * that holds which part each coordinate should be sent.
- *
- * \param num_points_in_all_processor_parts is the array holding the num points in each part in each proc.
- * \param num_parts is the number of parts that exist in the current partitioning.
+ * \param num_points_in_all_processor_parts is the array holding the num points
+ * in each part in each proc.
+ * \param num_parts is the number of parts that exist in the
+ * current partitioning.
  * \param num_procs is the number of processor attending to migration operation.
-
- * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
- * \param processor_ranks_for_subcomm is the ranks of the processors that will be in the subcommunicator with me.
- * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
- * \param out_part_index is the index of the part to which the processor is assigned.
- * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
+ * \param send_count_to_each_proc array array storing the number of points to
+ * be sent to each part.
+ * \param processor_ranks_for_subcomm is the ranks of the processors that will
+ * be in the subcommunicator with me.
+ * \param next_future_num_parts_in_parts is the vector, how many more parts
+ * each part will be divided into in the future.
+ * \param out_part_index is the index of the part to which the processor
+ * is assigned.
+ * \param output_part_numbering_begin_index is how much the numbers should
+ * be shifted when numbering the result parts.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_assign_proc_to_parts(
-                mj_gno_t * num_points_in_all_processor_parts,
-                mj_part_t num_parts,
-                mj_part_t num_procs,
-                mj_lno_t *send_count_to_each_proc,
-                std::vector<mj_part_t> &processor_ranks_for_subcomm,
-                std::vector<mj_part_t> *next_future_num_parts_in_parts,
-                mj_part_t &out_part_index,
-                mj_part_t &output_part_numbering_begin_index,
-                int *coordinate_destinations){
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_assign_proc_to_parts(
+  mj_gno_t * num_points_in_all_processor_parts,
+  mj_part_t num_parts,
+  mj_part_t num_procs,
+  mj_lno_t *send_count_to_each_proc,
+  std::vector<mj_part_t> &processor_ranks_for_subcomm,
+  std::vector<mj_part_t> *next_future_num_parts_in_parts,
+  mj_part_t &out_part_index,
+  mj_part_t &output_part_numbering_begin_index,
+  int * coordinate_destinations) {
 
+  mj_gno_t *global_num_points_in_parts =
+    num_points_in_all_processor_parts + num_procs * num_parts;
+  mj_part_t *num_procs_assigned_to_each_part =
+    allocMemory<mj_part_t>(num_parts);
 
-    mj_gno_t *global_num_points_in_parts = num_points_in_all_processor_parts + num_procs * num_parts;
-    mj_part_t *num_procs_assigned_to_each_part = allocMemory<mj_part_t>(num_parts);
+  // boolean variable if the process finds its part to be assigned.
+  bool did_i_find_my_group = false;
 
-    //boolean variable if the process finds its part to be assigned.
-    bool did_i_find_my_group = false;
+  mj_part_t num_free_procs = num_procs;
+  mj_part_t minimum_num_procs_required_for_rest_of_parts = num_parts - 1;
 
-    mj_part_t num_free_procs = num_procs;
-    mj_part_t minimum_num_procs_required_for_rest_of_parts = num_parts - 1;
+  double max_imbalance_difference = 0;
+  mj_part_t max_differing_part = 0;
 
-    double max_imbalance_difference = 0;
-    mj_part_t max_differing_part = 0;
+  // find how many processor each part requires.
+  for (mj_part_t i=0; i < num_parts; i++) {
 
-    //find how many processor each part requires.
-    for (mj_part_t i=0; i < num_parts; i++){
+    // scalar portion of the required processors
+    double scalar_required_proc = num_procs *
+      (double (global_num_points_in_parts[i]) /
+      double (this->num_global_coords));
 
-        //scalar portion of the required processors
-        double scalar_required_proc = num_procs *
-                (double (global_num_points_in_parts[i]) / double (this->num_global_coords));
+    // round it to closest integer.
+    mj_part_t required_proc =
+      static_cast<mj_part_t> (0.5 + scalar_required_proc);
 
-        //round it to closest integer.
-        mj_part_t required_proc = static_cast<mj_part_t> (0.5 + scalar_required_proc);
+    // if assigning the required num procs, creates problems for the rest
+    // of the parts, then only assign {num_free_procs -
+    // (minimum_num_procs_required_for_rest_of_parts)} procs to this part.
+    if (num_free_procs -
+      required_proc < minimum_num_procs_required_for_rest_of_parts)  {
+        required_proc = num_free_procs -
+          (minimum_num_procs_required_for_rest_of_parts);
+      }
 
-        //if assigning the required num procs, creates problems for the rest of the parts.
-        //then only assign {num_free_procs - (minimum_num_procs_required_for_rest_of_parts)} procs to this part.
-        if (num_free_procs - required_proc < minimum_num_procs_required_for_rest_of_parts){
-            required_proc = num_free_procs - (minimum_num_procs_required_for_rest_of_parts);
-        }
+      // reduce the free processor count
+      num_free_procs -= required_proc;
 
-        //reduce the free processor count
-        num_free_procs -= required_proc;
-        //reduce the free minimum processor count required for the rest of the part by 1.
-        --minimum_num_procs_required_for_rest_of_parts;
+      // reduce the free minimum processor count required for the rest of the
+      // part by 1.
+      --minimum_num_procs_required_for_rest_of_parts;
 
-        //part (i) is assigned to (required_proc) processors.
-        num_procs_assigned_to_each_part[i] = required_proc;
+      // part (i) is assigned to (required_proc) processors.
+      num_procs_assigned_to_each_part[i] = required_proc;
 
-        //because of the roundings some processors might be left as unassigned.
-        //we want to assign those processors to the part with most imbalance.
-        //find the part with the maximum imbalance here.
-        double imbalance_wrt_ideal = (scalar_required_proc - required_proc) /  required_proc;
-        if (imbalance_wrt_ideal > max_imbalance_difference){
-            max_imbalance_difference = imbalance_wrt_ideal;
-            max_differing_part = i;
-        }
+      // because of the roundings some processors might be left as unassigned.
+      // we want to assign those processors to the part with most imbalance.
+      // find the part with the maximum imbalance here.
+      double imbalance_wrt_ideal =
+        (scalar_required_proc - required_proc) /  required_proc;
+      if (imbalance_wrt_ideal > max_imbalance_difference){
+        max_imbalance_difference = imbalance_wrt_ideal;
+        max_differing_part = i;
+      }
     }
 
-    //assign extra processors to the part with maximum imbalance than the ideal.
+    // assign extra processors to the part with maximum imbalance
+    // than the ideal.
     if (num_free_procs > 0){
-        num_procs_assigned_to_each_part[max_differing_part] +=  num_free_procs;
+      num_procs_assigned_to_each_part[max_differing_part] +=  num_free_procs;
     }
 
-    //now find what are the best processors with least migration for each part.
+    // now find what are the best processors with least migration for each part.
 
-    //part_assignment_proc_begin_indices ([i]) is the array that holds the beginning
-    //index of a processor that processor sends its data for part - i
-    mj_part_t *part_assignment_proc_begin_indices = allocMemory<mj_part_t>(num_parts);
-    //the next processor send is found in processor_chains_in_parts, in linked list manner.
+    // part_assignment_proc_begin_indices ([i]) is the array that holds the
+    // beginning index of a processor that processor sends its data for part - i
+    mj_part_t *part_assignment_proc_begin_indices =
+      allocMemory<mj_part_t>(num_parts);
+
+    // the next processor send is found in processor_chains_in_parts,
+    // in linked list manner.
     mj_part_t *processor_chains_in_parts = allocMemory<mj_part_t>(num_procs);
     mj_part_t *processor_part_assignments = allocMemory<mj_part_t>(num_procs);
 
-    //initialize the assignment of each processor.
-    //this has a linked list implementation.
-    //the beginning of processors assigned
-    //to each part is hold at  part_assignment_proc_begin_indices[part].
-    //then the next processor assigned to that part is located at
-    //proc_part_assignments[part_assign_begins[part]], this is a chain
-    //until the value of -1 is reached.
-    for (int i = 0; i < num_procs; ++i ){
-        processor_part_assignments[i] = -1;
-        processor_chains_in_parts[i] = -1;
+    // initialize the assignment of each processor.
+    // this has a linked list implementation.
+    // the beginning of processors assigned
+    // to each part is hold at  part_assignment_proc_begin_indices[part].
+    // then the next processor assigned to that part is located at
+    // proc_part_assignments[part_assign_begins[part]], this is a chain
+    // until the value of -1 is reached.
+    for (int i = 0; i < num_procs; ++i ) {
+      processor_part_assignments[i] = -1;
+      processor_chains_in_parts[i] = -1;
     }
-    for (int i = 0; i < num_parts; ++i ){
-        part_assignment_proc_begin_indices[i] = -1;
+    for (int i = 0; i < num_parts; ++i ) {
+      part_assignment_proc_begin_indices[i] = -1;
     }
 
+    // std::cout << "Before migration: mig type:" <<
+    //   this->migration_type << std::endl;
+    // Allocate memory for sorting data structure.
+    uSignedSortItem<mj_part_t, mj_gno_t, char> *
+      sort_item_num_part_points_in_procs =
+      allocMemory <uSignedSortItem<mj_part_t, mj_gno_t, char> > (num_procs);
 
-    //std::cout << "Before migration: mig type:" << this->migration_type << std::endl;
-    //Allocate memory for sorting data structure.
-    uSignedSortItem<mj_part_t, mj_gno_t, char> * sort_item_num_part_points_in_procs = allocMemory <uSignedSortItem<mj_part_t, mj_gno_t, char> > (num_procs);
-    for(mj_part_t i = 0; i < num_parts; ++i){
-        //the algorithm tries to minimize the cost of migration,
-        //by assigning the processors with highest number of coordinates on that part.
-        //here we might want to implement a maximum weighted bipartite matching algorithm.
-        for(mj_part_t ii = 0; ii < num_procs; ++ii){
-                sort_item_num_part_points_in_procs[ii].id = ii;
-                //if processor is not assigned yet.
-                //add its num points to the sort data structure.
-                if (processor_part_assignments[ii] == -1){
-                        sort_item_num_part_points_in_procs[ii].val = num_points_in_all_processor_parts[ii * num_parts + i];
-                        sort_item_num_part_points_in_procs[ii].signbit = 1; //indicate that the processor has positive weight.
-                }
-                else {
-                        //if processor is already assigned, insert -nLocal - 1 so that it won't be selected again.
-                        //would be same if we simply set it to -1,
-                        //but more information with no extra cost (which is used later) is provided.
-                        //sort_item_num_part_points_in_procs[ii].val = -num_points_in_all_processor_parts[ii * num_parts + i] - 1;
-
-                        //UPDATE: Since above gets warning when unsigned is used to represent, we added extra bit to as sign bit to the sort item.
-                        //It is 1 for positives, 0 for negatives.
-                        sort_item_num_part_points_in_procs[ii].val = num_points_in_all_processor_parts[ii * num_parts + i];
-                        sort_item_num_part_points_in_procs[ii].signbit = 0;
-                }
+    for(mj_part_t i = 0; i < num_parts; ++i) {
+      // the algorithm tries to minimize the cost of migration, by assigning the
+      // processors with highest number of coordinates on that part.
+      // here we might want to implement a maximum weighted bipartite matching
+      // algorithm.
+      for(mj_part_t ii = 0; ii < num_procs; ++ii) {
+        sort_item_num_part_points_in_procs[ii].id = ii;
+        // if processor is not assigned yet.
+        // add its num points to the sort data structure.
+        if (processor_part_assignments[ii] == -1) {
+          sort_item_num_part_points_in_procs[ii].val =
+            num_points_in_all_processor_parts[ii * num_parts + i];
+          // indicate that the processor has positive weight.
+          sort_item_num_part_points_in_procs[ii].signbit = 1;
         }
-        //sort the processors in the part.
-        uqSignsort<mj_part_t, mj_gno_t,char>(num_procs, sort_item_num_part_points_in_procs);
+        else {
+          // if processor is already assigned, insert -nLocal - 1 so that it
+          // won't be selected again.
+          // would be same if we simply set it to -1, but more information with
+          // no extra cost (which is used later) is provided.
+          // sort_item_num_part_points_in_procs[ii].val =
+          // -num_points_in_all_processor_parts[ii * num_parts + i] - 1;
 
-        /*
-        for(mj_part_t ii = 0; ii < num_procs; ++ii){
-          std::cout << "ii:" << ii << " " << sort_item_num_part_points_in_procs[ii].id <<
-              " " << sort_item_num_part_points_in_procs[ii].val <<
-              " " << int(sort_item_num_part_points_in_procs[ii].signbit) << std::endl;
+          // UPDATE: Since above gets warning when unsigned is used to
+          // represent, we added extra bit to as sign bit to the sort item.
+          // It is 1 for positives, 0 for negatives.
+          sort_item_num_part_points_in_procs[ii].val =
+            num_points_in_all_processor_parts[ii * num_parts + i];
+          sort_item_num_part_points_in_procs[ii].signbit = 0;
         }
-        */
+      }
 
-        mj_part_t required_proc_count =  num_procs_assigned_to_each_part[i];
-        mj_gno_t total_num_points_in_part = global_num_points_in_parts[i];
-        mj_gno_t ideal_num_points_in_a_proc =
-                Teuchos::as<mj_gno_t>(ceil (total_num_points_in_part / double (required_proc_count)));
+      // sort the processors in the part.
+      uqSignsort<mj_part_t, mj_gno_t,char>
+        (num_procs, sort_item_num_part_points_in_procs);
 
-        //starts sending to least heaviest part.
-        mj_part_t next_proc_to_send_index = num_procs - required_proc_count;
-        mj_part_t next_proc_to_send_id = sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
-        mj_lno_t space_left_in_sent_proc =  ideal_num_points_in_a_proc - sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
+      /*
+      for(mj_part_t ii = 0; ii < num_procs; ++ii){
+        std::cout << "ii:" << ii << " " <<
+          sort_item_num_part_points_in_procs[ii].id <<
+          " " << sort_item_num_part_points_in_procs[ii].val <<
+          " " << int(sort_item_num_part_points_in_procs[ii].signbit) <<
+          std::endl;
+      }
+      */
 
-        //find the processors that will be assigned to this part, which are the heaviest
-        //non assigned processors.
-        for(mj_part_t ii = num_procs - 1; ii >= num_procs - required_proc_count; --ii){
-            mj_part_t proc_id = sort_item_num_part_points_in_procs[ii].id;
-            //assign processor to part - i.
-            processor_part_assignments[proc_id] = i;
+      mj_part_t required_proc_count = num_procs_assigned_to_each_part[i];
+      mj_gno_t total_num_points_in_part = global_num_points_in_parts[i];
+      mj_gno_t ideal_num_points_in_a_proc = Teuchos::as<mj_gno_t>(
+        ceil(total_num_points_in_part / double (required_proc_count)));
+
+      // starts sending to least heaviest part.
+      mj_part_t next_proc_to_send_index = num_procs - required_proc_count;
+      mj_part_t next_proc_to_send_id =
+        sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
+      mj_lno_t space_left_in_sent_proc = ideal_num_points_in_a_proc -
+        sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
+
+      // find the processors that will be assigned to this part, which are the
+      // heaviest non assigned processors.
+      for(mj_part_t ii = num_procs - 1;
+        ii >= num_procs - required_proc_count; --ii) {
+        mj_part_t proc_id = sort_item_num_part_points_in_procs[ii].id;
+        // assign processor to part - i.
+        processor_part_assignments[proc_id] = i;
+      }
+
+      bool did_change_sign = false;
+      // if processor has a minus count, reverse it.
+      for(mj_part_t ii = 0; ii < num_procs; ++ii) {
+        // TODO:  THE LINE BELOW PRODUCES A WARNING IF gno_t IS UNSIGNED
+        // TODO:  SEE BUG 6194
+        if (sort_item_num_part_points_in_procs[ii].signbit == 0){
+          did_change_sign = true;
+          sort_item_num_part_points_in_procs[ii].signbit = 1;
         }
-
-        bool did_change_sign = false;
-        //if processor has a minus count, reverse it.
-        for(mj_part_t ii = 0; ii < num_procs; ++ii){
-            // TODO:  THE LINE BELOW PRODUCES A WARNING IF gno_t IS UNSIGNED
-            // TODO:  SEE BUG 6194
-            if (sort_item_num_part_points_in_procs[ii].signbit == 0){
-                did_change_sign = true;
-                sort_item_num_part_points_in_procs[ii].signbit = 1;
-            }
-            else {
-                break;
-            }
+        else {
+          break;
         }
-        if(did_change_sign){
-            //resort the processors in the part for the rest of the processors that is not assigned.
-            uqSignsort<mj_part_t, mj_gno_t>(num_procs - required_proc_count, sort_item_num_part_points_in_procs);
+      }
+    
+      if(did_change_sign) {
+        // resort the processors in the part for the rest of the processors that
+        // is not assigned.
+        uqSignsort<mj_part_t, mj_gno_t>(num_procs - required_proc_count,
+          sort_item_num_part_points_in_procs);
+      }
+
+      /*
+      for(mj_part_t ii = 0; ii < num_procs; ++ii){
+        std::cout << "after resort ii:" << ii << " " <<
+          sort_item_num_part_points_in_procs[ii].id <<
+          " " << sort_item_num_part_points_in_procs[ii].val <<
+          " " << int(sort_item_num_part_points_in_procs[ii].signbit ) <<
+          std::endl;
+      }
+      */
+
+      // check if this processors is one of the procs assigned to this part.
+      // if it is, then get the group.
+      if (!did_i_find_my_group) {
+        for(mj_part_t ii = num_procs - 1; ii >=
+          num_procs - required_proc_count; --ii) {
+
+        mj_part_t proc_id_to_assign = sort_item_num_part_points_in_procs[ii].id;
+
+        // add the proc to the group.
+        processor_ranks_for_subcomm.push_back(proc_id_to_assign);
+
+        if(proc_id_to_assign == this->myRank) {
+          // if the assigned process is me, then I find my group.
+          did_i_find_my_group = true;
+            
+          // set the beginning of part i to my rank.
+          part_assignment_proc_begin_indices[i] = this->myRank;
+          processor_chains_in_parts[this->myRank] = -1;
+
+          // set send count to myself to the number of points that I have
+          // in part i.
+          send_count_to_each_proc[this->myRank] =
+            sort_item_num_part_points_in_procs[ii].val;
+
+          // calculate the shift required for the
+          // output_part_numbering_begin_index
+          for (mj_part_t in = 0; in < i; ++in){
+            output_part_numbering_begin_index +=
+              (*next_future_num_parts_in_parts)[in];
+          }
+          out_part_index = i;
         }
-        /*
-        for(mj_part_t ii = 0; ii < num_procs; ++ii){
-          std::cout << "after resort ii:" << ii << " " << sort_item_num_part_points_in_procs[ii].id <<
-              " " << sort_item_num_part_points_in_procs[ii].val <<
-              " " << int(sort_item_num_part_points_in_procs[ii].signbit ) << std::endl;
-        }
-        */
+      }
 
-        //check if this processors is one of the procs assigned to this part.
-        //if it is, then get the group.
-        if (!did_i_find_my_group){
-            for(mj_part_t ii = num_procs - 1; ii >= num_procs - required_proc_count; --ii){
+      // if these was not my group,
+      // clear the subcomminicator processor array.
+      if (!did_i_find_my_group){
+        processor_ranks_for_subcomm.clear();
+      }
+    }
 
-                mj_part_t proc_id_to_assign = sort_item_num_part_points_in_procs[ii].id;
-                //add the proc to the group.
-                processor_ranks_for_subcomm.push_back(proc_id_to_assign);
+    // send points of the nonassigned coordinates to the assigned coordinates.
+    // starts from the heaviest nonassigned processor.
+    // TODO we might want to play with this part, that allows more
+    // computational imbalance but having better communication balance.
+    for(mj_part_t ii = num_procs - required_proc_count - 1; ii >= 0; --ii) {
+        mj_part_t nonassigned_proc_id =
+          sort_item_num_part_points_in_procs[ii].id;
+        mj_lno_t num_points_to_sent =
+          sort_item_num_part_points_in_procs[ii].val;
 
-                if(proc_id_to_assign == this->myRank){
-                        //if the assigned process is me, then I find my group.
-                    did_i_find_my_group = true;
-                    //set the beginning of part i to my rank.
-                    part_assignment_proc_begin_indices[i] = this->myRank;
-                    processor_chains_in_parts[this->myRank] = -1;
-
-                    //set send count to myself to the number of points that I have in part i.
-                    send_count_to_each_proc[this->myRank] = sort_item_num_part_points_in_procs[ii].val;
-
-                    //calculate the shift required for the output_part_numbering_begin_index
-                    for (mj_part_t in = 0; in < i; ++in){
-                        output_part_numbering_begin_index += (*next_future_num_parts_in_parts)[in];
-                    }
-                    out_part_index = i;
-                }
-            }
-            //if these was not my group,
-            //clear the subcomminicator processor array.
-            if (!did_i_find_my_group){
-                processor_ranks_for_subcomm.clear();
-            }
-        }
-
-        //send points of the nonassigned coordinates to the assigned coordinates.
-        //starts from the heaviest nonassigned processor.
-        //TODO we might want to play with this part, that allows more computational imbalance
-        //but having better communication balance.
-        for(mj_part_t ii = num_procs - required_proc_count - 1; ii >= 0; --ii){
-            mj_part_t nonassigned_proc_id = sort_item_num_part_points_in_procs[ii].id;
-            mj_lno_t num_points_to_sent = sort_item_num_part_points_in_procs[ii].val;
-
-            //we set number of points to -to_sent - 1 for the assigned processors.
-            //we reverse it here. This should not happen, as we have already reversed them above.
+      // we set number of points to -to_sent - 1 for the assigned processors.
+      // we reverse it here. This should not happen, as we have already
+      // reversed them above.
 #ifdef MJ_DEBUG
-            if (num_points_to_sent < 0) {
-                cout << "Migration - processor assignments - for part:" << i << "from proc:" << nonassigned_proc_id << " num_points_to_sent:" << num_points_to_sent << std::endl;
-                exit(1);
-            }
+      if (num_points_to_sent < 0) {
+        cout << "Migration - processor assignments - for part:" << i
+          << "from proc:" << nonassigned_proc_id << " num_points_to_sent:"
+          << num_points_to_sent << std::endl;
+        exit(1);
+      }
 #endif
 
-	    switch (migration_type){
+	    switch (migration_type) {
 	      case 0:
 	      {
-              //now sends the points to the assigned processors.
-              while (num_points_to_sent > 0){
-                //if the processor has enough space.
-                if (num_points_to_sent <= space_left_in_sent_proc){
-                        //reduce the space left in the processor.
-                        space_left_in_sent_proc -= num_points_to_sent;
-                        //if my rank is the one that is sending the coordinates.
-                    if (this->myRank == nonassigned_proc_id){
-                        //set my sent count to the sent processor.
-                        send_count_to_each_proc[next_proc_to_send_id] = num_points_to_sent;
-                        //save the processor in the list (processor_chains_in_parts and part_assignment_proc_begin_indices)
-                        //that the processor will send its point in part-i.
-                        mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
-                        part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
-                        processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
-                    }
-                    num_points_to_sent = 0;
-                }
-                else {
-                    //there might be no space left in the processor.
-                    if(space_left_in_sent_proc > 0){
-                        num_points_to_sent -= space_left_in_sent_proc;
-
-                        //send as the space left in the processor.
-                        if (this->myRank == nonassigned_proc_id){
-                                //send as much as the space in this case.
-                            send_count_to_each_proc[next_proc_to_send_id] = space_left_in_sent_proc;
-                            mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
-                            part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
-                            processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
-
-                        }
-                    }
-                    //change the sent part
-                    ++next_proc_to_send_index;
-
-#ifdef MJ_DEBUG
-                    if(next_part_to_send_index <  nprocs - required_proc_count ){
-                        cout << "Migration - processor assignments - for part:"
-                                        << i
-                                        <<  " next_part_to_send :" << next_part_to_send_index
-                                        << " nprocs:" << nprocs
-                                        << " required_proc_count:" << required_proc_count
-                                        << " Error: next_part_to_send_index <  nprocs - required_proc_count" << std::endl;
-                        exit(1)l
-
-                    }
-#endif
-                    //send the new id.
-                    next_proc_to_send_id =  sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
-                    //set the new space in the processor.
-                    space_left_in_sent_proc = ideal_num_points_in_a_proc - sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
-                }
-            } 
-	    }
-	    break;
-	    default:
-	    {
-		//to minimize messages, we want each processor to send its coordinates to only a single point.
-		//we do not respect imbalances here, we send all points to the next processor.
-		if (this->myRank == nonassigned_proc_id){
-                  //set my sent count to the sent processor.
-                  send_count_to_each_proc[next_proc_to_send_id] = num_points_to_sent;
-                  //save the processor in the list (processor_chains_in_parts and part_assignment_proc_begin_indices)
-                  //that the processor will send its point in part-i.
+          // now sends the points to the assigned processors.
+          while (num_points_to_sent > 0) {
+            // if the processor has enough space.
+            if (num_points_to_sent <= space_left_in_sent_proc) {
+                // reduce the space left in the processor.
+                space_left_in_sent_proc -= num_points_to_sent;
+                // if my rank is the one that is sending the coordinates.
+                if (this->myRank == nonassigned_proc_id){
+                  // set my sent count to the sent processor.
+                  send_count_to_each_proc[next_proc_to_send_id] =
+                    num_points_to_sent;
+                  // save the processor in the list (processor_chains_in_parts
+                  // and part_assignment_proc_begin_indices)
+                  // that the processor will send its point in part-i.
                   mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
                   part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
                   processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
                 }
                 num_points_to_sent = 0;
-                ++next_proc_to_send_index;
-		
-		//if we made it to the heaviest processor we round robin and go to beginning
-		if (next_proc_to_send_index == num_procs){
-       		  next_proc_to_send_index = num_procs - required_proc_count;
-		}
-                //send the new id.
-                next_proc_to_send_id =  sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
-                //set the new space in the processor.
-                space_left_in_sent_proc = ideal_num_points_in_a_proc - sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
-	    }	
-          }
-        }
-    }
-    
-    /*
-    for (int i = 0; i < num_procs;++i){
-      std::cout << "me:" << this->myRank << " to part:" << i << " sends:" <<  send_count_to_each_proc[i] << std::endl;
-    } 
-    */  
-
-
-    this->assign_send_destinations(
-                num_parts,
-            part_assignment_proc_begin_indices,
-            processor_chains_in_parts,
-            send_count_to_each_proc,
-            coordinate_destinations);
-
-    freeArray<mj_part_t>(part_assignment_proc_begin_indices);
-    freeArray<mj_part_t>(processor_chains_in_parts);
-    freeArray<mj_part_t>(processor_part_assignments);
-    freeArray<uSignedSortItem<mj_part_t, mj_gno_t, char> > (sort_item_num_part_points_in_procs);   
-    freeArray<mj_part_t > (num_procs_assigned_to_each_part);
-
-}
-
-
-/*! \brief Function fills up coordinate_destinations is the output array
- * that holds which part each coordinate should be sent. In addition it calculates
- * the shift amount (output_part_numbering_begin_index) to be done when
- * final numberings of the parts are performed.
- *
- * \param num_parts is the number of parts that exist in the current partitioning.
- * \param sort_item_part_to_proc_assignment is the sorted parts with respect to the assigned processors.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
- * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
- * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
- *
- */
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::assign_send_destinations2(
-    mj_part_t num_parts,
-    uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment, //input sorted wrt processors
-    int *coordinate_destinations,
-    mj_part_t &output_part_numbering_begin_index,
-    std::vector<mj_part_t> *next_future_num_parts_in_parts){
-
-    mj_part_t part_shift_amount = output_part_numbering_begin_index;
-    mj_part_t previous_processor = -1;
-    for(mj_part_t i = 0; i < num_parts; ++i){
-        mj_part_t p = sort_item_part_to_proc_assignment[i].id;
-        //assigned processors are sorted.
-        mj_lno_t part_begin_index = 0;
-
-        if (p > 0) part_begin_index = this->kokkos_new_part_xadj(p - 1);
-        mj_lno_t part_end_index = this->kokkos_new_part_xadj(p);
-
-        mj_part_t assigned_proc = sort_item_part_to_proc_assignment[i].val;
-        if (this->myRank == assigned_proc && previous_processor != assigned_proc){
-            output_part_numbering_begin_index =  part_shift_amount;
-        }
-        previous_processor = assigned_proc;
-        part_shift_amount += (*next_future_num_parts_in_parts)[p];
-
-        for (mj_lno_t j=part_begin_index; j < part_end_index; j++){
-            mj_lno_t localInd = this->kokkos_new_coordinate_permutations(j);
-            coordinate_destinations[localInd] = assigned_proc;
-        }
-    }
-}
-
-
-/*! \brief Function fills up coordinate_destinations is the output array
- * that holds which part each coordinate should be sent. In addition it calculates
- * the shift amount (output_part_numbering_begin_index) to be done when
- * final numberings of the parts are performed.
- *
- * \param num_points_in_all_processor_parts is the array holding the num points in each part in each proc.
- * \param num_parts is the number of parts that exist in the current partitioning.
- * \param num_procs is the number of processor attending to migration operation.
-
- * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
- * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
- * \param out_num_part is the number of parts assigned to the process.
- * \param out_part_indices is the indices of the part to which the processor is assigned.
- * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
- */
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_assign_parts_to_procs(
-    mj_gno_t * num_points_in_all_processor_parts,
-    mj_part_t num_parts,
-    mj_part_t num_procs,
-    mj_lno_t *send_count_to_each_proc, //output: sized nprocs, show the number of send point counts to each proc.
-    std::vector<mj_part_t> *next_future_num_parts_in_parts,//input how many more partitions the part will be partitioned into.
-    mj_part_t &out_num_part, //output, how many parts the processor will have. this is always 1 for this function.
-    std::vector<mj_part_t> &out_part_indices, //output: the part indices which the processor is assigned to.
-    mj_part_t &output_part_numbering_begin_index, //output: how much the part number should be shifted when setting the solution
-    int *coordinate_destinations){
-    out_num_part = 0;
-
-    mj_gno_t *global_num_points_in_parts = num_points_in_all_processor_parts + num_procs * num_parts;
-    out_part_indices.clear();
-
-    //to sort the parts that is assigned to the processors.
-    //id is the part number, sort value is the assigned processor id.
-    uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment  = allocMemory <uSortItem<mj_part_t, mj_part_t> >(num_parts);
-    uSortItem<mj_part_t, mj_gno_t> * sort_item_num_points_of_proc_in_part_i = allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_procs);
-
-
-    //calculate the optimal number of coordinates that should be assigned to each processor.
-    mj_lno_t work_each = mj_lno_t (this->num_global_coords / (double (num_procs)) + 0.5f);
-    //to hold the left space as the number of coordinates to the optimal number in each proc.
-    mj_lno_t *space_in_each_processor = allocMemory <mj_lno_t>(num_procs);
-    //initialize left space in each.
-    for (mj_part_t i = 0; i < num_procs; ++i){
-        space_in_each_processor[i] = work_each;
-    }
-
-    //we keep track of how many parts each processor is assigned to.
-    //because in some weird inputs, it might be possible that some
-    //processors is not assigned to any part. Using these variables,
-    //we force each processor to have at least one part.
-    mj_part_t *num_parts_proc_assigned = allocMemory <mj_part_t>(num_procs);
-    memset(num_parts_proc_assigned, 0, sizeof(mj_part_t) * num_procs);
-    int empty_proc_count = num_procs;
-
-    //to sort the parts with decreasing order of their coordiantes.
-    //id are the part numbers, sort value is the number of points in each.
-    uSortItem<mj_part_t, mj_gno_t> * sort_item_point_counts_in_parts  = allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_parts);
-
-    //initially we will sort the parts according to the number of coordinates they have.
-    //so that we will start assigning with the part that has the most number of coordinates.
-    for (mj_part_t i = 0; i < num_parts; ++i){
-        sort_item_point_counts_in_parts[i].id = i;
-        sort_item_point_counts_in_parts[i].val = global_num_points_in_parts[i];
-    }
-    //sort parts with increasing order of loads.
-    uqsort<mj_part_t, mj_gno_t>(num_parts, sort_item_point_counts_in_parts);
-
-
-    //assigning parts to the processors
-    //traverse the part win decreasing order of load.
-    //first assign the heaviest part.
-    for (mj_part_t j = 0; j < num_parts; ++j){
-        //sorted with increasing order, traverse inverse.
-        mj_part_t i = sort_item_point_counts_in_parts[num_parts - 1 - j].id;
-        //load of the part
-        mj_gno_t load = global_num_points_in_parts[i];
-
-        //assigned processors
-        mj_part_t assigned_proc = -1;
-        //if not fit best processor.
-        mj_part_t best_proc_to_assign = 0;
-
-
-        //sort processors with increasing number of points in this part.
-        for (mj_part_t ii = 0; ii < num_procs; ++ii){
-            sort_item_num_points_of_proc_in_part_i[ii].id = ii;
-
-            //if there are still enough parts to fill empty processors, than proceed normally.
-            //but if empty processor count is equal to the number of part, then
-            //we force to part assignments only to empty processors.
-            if (empty_proc_count < num_parts - j || num_parts_proc_assigned[ii] == 0){
-                //how many points processor ii has in part i?
-                sort_item_num_points_of_proc_in_part_i[ii].val =  num_points_in_all_processor_parts[ii * num_parts + i];
             }
             else {
-                sort_item_num_points_of_proc_in_part_i[ii].val  = -1;
+              // there might be no space left in the processor.
+              if(space_left_in_sent_proc > 0) {
+                num_points_to_sent -= space_left_in_sent_proc;
+
+                //send as the space left in the processor.
+                if (this->myRank == nonassigned_proc_id){
+                  // send as much as the space in this case.
+                  send_count_to_each_proc[next_proc_to_send_id] =
+                    space_left_in_sent_proc;
+                  mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
+                  part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
+                  processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
+                }
+              }
+              // change the sent part
+              ++next_proc_to_send_index;
+
+#ifdef MJ_DEBUG
+              if(next_part_to_send_index <  nprocs - required_proc_count ) {
+                  cout << "Migration - processor assignments - for part:"
+                    << i
+                    <<  " next_part_to_send :" << next_part_to_send_index
+                    << " nprocs:" << nprocs
+                    << " required_proc_count:" << required_proc_count
+                    << " Error: next_part_to_send_index <" <<
+                    << " nprocs - required_proc_count" << std::endl;
+                  exit(1);
+              }
+#endif
+              // send the new id.
+              next_proc_to_send_id =
+                sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
+              // set the new space in the processor.
+              space_left_in_sent_proc = ideal_num_points_in_a_proc -
+                sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
             }
-        }
-        uqsort<mj_part_t, mj_gno_t>(num_procs, sort_item_num_points_of_proc_in_part_i);
-
-        //traverse all processors with decreasing load.
-        for (mj_part_t iii = num_procs - 1; iii >= 0; --iii){
-            mj_part_t ii = sort_item_num_points_of_proc_in_part_i[iii].id;
-            mj_lno_t left_space = space_in_each_processor[ii] - load;
-            //if enought space, assign to this part.
-            if(left_space >= 0 ){
-                assigned_proc = ii;
-                break;
-            }
-            //if space is not enough, store the best candidate part.
-            if (space_in_each_processor[best_proc_to_assign] < space_in_each_processor[ii]){
-                best_proc_to_assign = ii;
-            }
-        }
-
-        //if none had enough space, then assign it to best part.
-        if (assigned_proc == -1){
-            assigned_proc = best_proc_to_assign;
-        }
-
-        if (num_parts_proc_assigned[assigned_proc]++ == 0){
-                --empty_proc_count;
-        }
-        space_in_each_processor[assigned_proc] -= load;
-        //to sort later, part-i is assigned to the proccessor - assignment.
-        sort_item_part_to_proc_assignment[j].id = i; //part i
-        sort_item_part_to_proc_assignment[j].val = assigned_proc; //assigned to processor - assignment.
-
-
-        //if assigned processor is me, increase the number.
-        if (assigned_proc == this->myRank){
-            out_num_part++;//assigned_part_count;
-            out_part_indices.push_back(i);
-        }
-        //increase the send to that processor by the number of points in that part.
-        //as everyone send their coordiantes in this part to the processor assigned to this part.
-        send_count_to_each_proc[assigned_proc] += num_points_in_all_processor_parts[this->myRank * num_parts + i];
+          } 
+	      }
+	      break;
+	      default:
+	      {
+          // to minimize messages, we want each processor to send its
+          // coordinates to only a single point.
+          // we do not respect imbalances here, we send all points to the
+          // next processor.
+		      if (this->myRank == nonassigned_proc_id) {
+            // set my sent count to the sent processor.
+            send_count_to_each_proc[next_proc_to_send_id] = num_points_to_sent;
+            // save the processor in the list (processor_chains_in_parts and
+            // part_assignment_proc_begin_indices)
+            // that the processor will send its point in part-i.
+            mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
+            part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
+            processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
+          }
+          num_points_to_sent = 0;
+          ++next_proc_to_send_index;
+		
+		      // if we made it to the heaviest processor we round robin and
+          // go to beginning
+		      if (next_proc_to_send_index == num_procs) {
+       		  next_proc_to_send_index = num_procs - required_proc_count;
+		      }
+          // send the new id.
+          next_proc_to_send_id = 
+            sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
+          // set the new space in the processor.
+          space_left_in_sent_proc = ideal_num_points_in_a_proc -
+            sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
+	      }	
+      }
     }
-    freeArray<mj_part_t>(num_parts_proc_assigned);
-    freeArray< uSortItem<mj_part_t, mj_gno_t> > (sort_item_num_points_of_proc_in_part_i);
-    freeArray<uSortItem<mj_part_t, mj_gno_t> >(sort_item_point_counts_in_parts);
-    freeArray<mj_lno_t >(space_in_each_processor);
+  }
+  
+  /*
+  for (int i = 0; i < num_procs;++i){
+    std::cout << "me:" << this->myRank << " to part:" << i << " sends:" << 
+      send_count_to_each_proc[i] << std::endl;
+  } 
+  */  
 
+  this->assign_send_destinations(
+    num_parts,
+    part_assignment_proc_begin_indices,
+    processor_chains_in_parts,
+    send_count_to_each_proc,
+    coordinate_destinations);
 
-    //sort assignments with respect to the assigned processors.
-    uqsort<mj_part_t, mj_part_t>(num_parts, sort_item_part_to_proc_assignment);
-    //fill sendBuf.
+  freeArray<mj_part_t>(part_assignment_proc_begin_indices);
+  freeArray<mj_part_t>(processor_chains_in_parts);
+  freeArray<mj_part_t>(processor_part_assignments);
+  freeArray<uSignedSortItem<mj_part_t, mj_gno_t, char> >
+    (sort_item_num_part_points_in_procs);   
+  freeArray<mj_part_t > (num_procs_assigned_to_each_part);
+}
 
+/*! \brief Function fills up coordinate_destinations is the output array
+ * that holds which part each coordinate should be sent. In addition
+ * it calculates the shift amount (output_part_numbering_begin_index) to be
+ * done when final numberings of the parts are performed.
+ * \param num_parts is the number of parts that exist in the
+ * current partitioning.
+ * \param sort_item_part_to_proc_assignment is the sorted parts with respect
+ * to the assigned processors.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
+ * \param output_part_numbering_begin_index is how much the numbers should be
+ * shifted when numbering the result parts.
+ * \param next_future_num_parts_in_parts is the vector, how many more parts
+ * each part will be divided into in the future.
+ */
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  assign_send_destinations2(
+  mj_part_t num_parts,
+  uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment,
+  int *coordinate_destinations,
+  mj_part_t &output_part_numbering_begin_index,
+  std::vector<mj_part_t> *next_future_num_parts_in_parts)
+{
+  mj_part_t part_shift_amount = output_part_numbering_begin_index;
+  mj_part_t previous_processor = -1;
+  for(mj_part_t i = 0; i < num_parts; ++i){
+    mj_part_t p = sort_item_part_to_proc_assignment[i].id;
 
-    this->assign_send_destinations2(
-            num_parts,
-            sort_item_part_to_proc_assignment,
-            coordinate_destinations,
-            output_part_numbering_begin_index,
-            next_future_num_parts_in_parts);
+    // assigned processors are sorted.
+    mj_lno_t part_begin_index = 0;
 
-    freeArray<uSortItem<mj_part_t, mj_part_t> >(sort_item_part_to_proc_assignment);
+    if (p > 0) {
+      part_begin_index = this->kokkos_new_part_xadj(p - 1);
+    }
+
+    mj_lno_t part_end_index = this->kokkos_new_part_xadj(p);
+
+    mj_part_t assigned_proc = sort_item_part_to_proc_assignment[i].val;
+    if (this->myRank == assigned_proc && previous_processor != assigned_proc) {
+        output_part_numbering_begin_index =  part_shift_amount;
+    }
+    previous_processor = assigned_proc;
+    part_shift_amount += (*next_future_num_parts_in_parts)[p];
+
+    for (mj_lno_t j= part_begin_index; j < part_end_index; j++){
+      mj_lno_t localInd = this->kokkos_new_coordinate_permutations(j);
+      coordinate_destinations[localInd] = assigned_proc;
+    }
+  }
 }
 
 
 /*! \brief Function fills up coordinate_destinations is the output array
- * that holds which part each coordinate should be sent. In addition it calculates
- * the shift amount (output_part_numbering_begin_index) to be done when
- * final numberings of the parts are performed.
- *
- * \param num_points_in_all_processor_parts is the array holding the num points in each part in each proc.
- * \param num_parts is the number of parts that exist in the current partitioning.
+ * that holds which part each coordinate should be sent. In addition it
+ * calculates the shift amount (output_part_numbering_begin_index) to be done
+ * when final numberings of the parts are performed.
+ * \param num_points_in_all_processor_parts is the array holding the num points
+ * in each part in each proc.
+ * \param num_parts is the number of parts that exist in the
+ * current partitioning.
  * \param num_procs is the number of processor attending to migration operation.
-
- * \param send_count_to_each_proc array array storing the number of points to be sent to each part.
- * \param processor_ranks_for_subcomm is the ranks of the processors that will be in the subcommunicator with me.
- * \param next_future_num_parts_in_parts is the vector, how many more parts each part will be divided into in the future.
+ * \param send_count_to_each_proc array array storing the number of points to
+ * be sent to each part.
+ * \param next_future_num_parts_in_parts is the vector, how many more parts
+ * each part will be divided into in the future.
  * \param out_num_part is the number of parts assigned to the process.
- * \param out_part_indices is the indices of the part to which the processor is assigned.
- * \param output_part_numbering_begin_index is how much the numbers should be shifted when numbering the result parts.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
+ * \param out_part_indices is the indices of the part to which the processor
+ * is assigned.
+ * \param output_part_numbering_begin_index is how much the numbers should be
+ * shifted when numbering the result parts.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_migration_part_proc_assignment(
-    mj_gno_t * num_points_in_all_processor_parts,
-    mj_part_t num_parts,
-    mj_part_t num_procs,
-    mj_lno_t *send_count_to_each_proc,
-    std::vector<mj_part_t> &processor_ranks_for_subcomm,
-    std::vector<mj_part_t> *next_future_num_parts_in_parts,
-    mj_part_t &out_num_part,
-    std::vector<mj_part_t> &out_part_indices,
-    mj_part_t &output_part_numbering_begin_index,
-    int *coordinate_destinations){
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_assign_parts_to_procs(
+  mj_gno_t * num_points_in_all_processor_parts,
+  mj_part_t num_parts,
+  mj_part_t num_procs,
+  mj_lno_t *send_count_to_each_proc,
+  std::vector<mj_part_t> *next_future_num_parts_in_parts,
+  mj_part_t &out_num_part,
+  std::vector<mj_part_t> &out_part_indices,
+  mj_part_t &output_part_numbering_begin_index,
+  int *coordinate_destinations) {
+  out_num_part = 0;
+
+  mj_gno_t *global_num_points_in_parts =
+    num_points_in_all_processor_parts + num_procs * num_parts;
+  out_part_indices.clear();
+
+  // to sort the parts that is assigned to the processors.
+  // id is the part number, sort value is the assigned processor id.
+  uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment  =
+    allocMemory <uSortItem<mj_part_t, mj_part_t> >(num_parts);
+  uSortItem<mj_part_t, mj_gno_t> * sort_item_num_points_of_proc_in_part_i =
+    allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_procs);
+
+  // calculate the optimal number of coordinates that should be assigned
+  // to each processor.
+  mj_lno_t work_each =
+    mj_lno_t (this->num_global_coords / (double (num_procs)) + 0.5f);
+
+  // to hold the left space as the number of coordinates to the optimal
+  // number in each proc.
+  mj_lno_t *space_in_each_processor = allocMemory <mj_lno_t>(num_procs);
+
+  // initialize left space in each.
+  for (mj_part_t i = 0; i < num_procs; ++i) {
+    space_in_each_processor[i] = work_each;
+  }
+
+  // we keep track of how many parts each processor is assigned to.
+  // because in some weird inputs, it might be possible that some
+  // processors is not assigned to any part. Using these variables,
+  // we force each processor to have at least one part.
+  mj_part_t *num_parts_proc_assigned = allocMemory <mj_part_t>(num_procs);
+  memset(num_parts_proc_assigned, 0, sizeof(mj_part_t) * num_procs);
+  int empty_proc_count = num_procs;
+
+  // to sort the parts with decreasing order of their coordiantes.
+  // id are the part numbers, sort value is the number of points in each.
+  uSortItem<mj_part_t, mj_gno_t> * sort_item_point_counts_in_parts =
+    allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_parts);
+
+  // initially we will sort the parts according to the number of coordinates
+  // they have, so that we will start assigning with the part that has the most
+  // number of coordinates.
+  for (mj_part_t i = 0; i < num_parts; ++i) {
+    sort_item_point_counts_in_parts[i].id = i;
+    sort_item_point_counts_in_parts[i].val = global_num_points_in_parts[i];
+  }
+
+  // sort parts with increasing order of loads.
+  uqsort<mj_part_t, mj_gno_t>(num_parts, sort_item_point_counts_in_parts);
+
+  // assigning parts to the processors
+  // traverse the part win decreasing order of load.
+  // first assign the heaviest part.
+  for (mj_part_t j = 0; j < num_parts; ++j) {
+    // sorted with increasing order, traverse inverse.
+    mj_part_t i = sort_item_point_counts_in_parts[num_parts - 1 - j].id;
+      
+    // load of the part
+    mj_gno_t load = global_num_points_in_parts[i];
+
+    // assigned processors
+    mj_part_t assigned_proc = -1;
+      
+    // if not fit best processor.
+    mj_part_t best_proc_to_assign = 0;
+
+    // sort processors with increasing number of points in this part.
+    for (mj_part_t ii = 0; ii < num_procs; ++ii) {
+      sort_item_num_points_of_proc_in_part_i[ii].id = ii;
+
+      // if there are still enough parts to fill empty processors, than proceed
+      // normally, but if empty processor count is equal to the number of part,
+      // then we force to part assignments only to empty processors.
+      if (empty_proc_count < num_parts - j ||
+        num_parts_proc_assigned[ii] == 0) {
+        // how many points processor ii has in part i?
+        sort_item_num_points_of_proc_in_part_i[ii].val =
+          num_points_in_all_processor_parts[ii * num_parts + i];
+      }
+      else {
+        sort_item_num_points_of_proc_in_part_i[ii].val = -1;
+      }
+    }
+
+    uqsort<mj_part_t, mj_gno_t>(num_procs,
+      sort_item_num_points_of_proc_in_part_i);
+
+    // traverse all processors with decreasing load.
+    for (mj_part_t iii = num_procs - 1; iii >= 0; --iii) {
+      mj_part_t ii = sort_item_num_points_of_proc_in_part_i[iii].id;
+      mj_lno_t left_space = space_in_each_processor[ii] - load;
+      //if enought space, assign to this part.
+      if(left_space >= 0 ) {
+        assigned_proc = ii;
+        break;
+      }
+      //if space is not enough, store the best candidate part.
+      if (space_in_each_processor[best_proc_to_assign] <
+        space_in_each_processor[ii]) {
+        best_proc_to_assign = ii;
+      }
+    }
+
+    // if none had enough space, then assign it to best part.
+    if (assigned_proc == -1) {
+      assigned_proc = best_proc_to_assign;
+    }
+
+    if (num_parts_proc_assigned[assigned_proc]++ == 0) {
+      --empty_proc_count;
+    }
+
+    space_in_each_processor[assigned_proc] -= load;
+    //to sort later, part-i is assigned to the proccessor - assignment.
+    sort_item_part_to_proc_assignment[j].id = i; //part i
+    
+    // assigned to processor - assignment.
+    sort_item_part_to_proc_assignment[j].val = assigned_proc;
+
+    // if assigned processor is me, increase the number.
+    if (assigned_proc == this->myRank) {
+        out_num_part++;//assigned_part_count;
+        out_part_indices.push_back(i);
+    }
+
+    // increase the send to that processor by the number of points in that
+    // part, as everyone send their coordiantes in this part to the
+    // processor assigned to this part.
+    send_count_to_each_proc[assigned_proc] +=
+      num_points_in_all_processor_parts[this->myRank * num_parts + i];
+  }
+
+  freeArray<mj_part_t>(num_parts_proc_assigned);
+  freeArray< uSortItem<mj_part_t, mj_gno_t> >
+    (sort_item_num_points_of_proc_in_part_i);
+  freeArray<uSortItem<mj_part_t, mj_gno_t> >(sort_item_point_counts_in_parts);
+  freeArray<mj_lno_t >(space_in_each_processor);
+
+  // sort assignments with respect to the assigned processors.
+  uqsort<mj_part_t, mj_part_t>(num_parts, sort_item_part_to_proc_assignment);
+
+  // fill sendBuf.
+  this->assign_send_destinations2(
+    num_parts,
+    sort_item_part_to_proc_assignment,
+    coordinate_destinations,
+    output_part_numbering_begin_index,
+    next_future_num_parts_in_parts);
+
+  freeArray<uSortItem<mj_part_t, mj_part_t> >
+    (sort_item_part_to_proc_assignment);
+}
 
 
+/*! \brief Function fills up coordinate_destinations is the output array
+ * that holds which part each coordinate should be sent. In addition it
+ * calculates the shift amount (output_part_numbering_begin_index) to be done
+ * when final numberings of the parts are performed.
+ * \param num_points_in_all_processor_parts is the array holding the num points
+ * in each part in each proc.
+ * \param num_parts is the number of parts that exist in the current
+ * partitioning.
+ * \param num_procs is the number of processor attending to migration operation.
+ * \param send_count_to_each_proc array array storing the number of points to
+ * be sent to each part.
+ * \param processor_ranks_for_subcomm is the ranks of the processors that will
+ * be in the subcommunicator with me.
+ * \param next_future_num_parts_in_parts is the vector, how many more parts
+ * each part will be divided into in the future.
+ * \param out_num_part is the number of parts assigned to the process.
+ * \param out_part_indices is the indices of the part to which the processor
+ * is assigned.
+ * \param output_part_numbering_begin_index is how much the numbers should be
+ * shifted when numbering the result parts.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
+ */
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_migration_part_proc_assignment(
+  mj_gno_t * num_points_in_all_processor_parts,
+  mj_part_t num_parts,
+  mj_part_t num_procs,
+  mj_lno_t *send_count_to_each_proc,
+  std::vector<mj_part_t> &processor_ranks_for_subcomm,
+  std::vector<mj_part_t> *next_future_num_parts_in_parts,
+  mj_part_t &out_num_part,
+  std::vector<mj_part_t> &out_part_indices,
+  mj_part_t &output_part_numbering_begin_index,
+  int *coordinate_destinations)
+{
+  processor_ranks_for_subcomm.clear();
+  // if (this->num_local_coords > 0)
+  if (num_procs > num_parts) {
+    // if there are more processors than the number of current part
+    // then processors share the existing parts.
+    // at the end each processor will have a single part,
+    // but a part will be shared by a group of processors.
+    mj_part_t out_part_index = 0;
+    this->mj_assign_proc_to_parts(
+      num_points_in_all_processor_parts,
+      num_parts,
+      num_procs,
+      send_count_to_each_proc,
+      processor_ranks_for_subcomm,
+      next_future_num_parts_in_parts,
+      out_part_index,
+      output_part_numbering_begin_index,
+      coordinate_destinations
+    );
 
-        processor_ranks_for_subcomm.clear();
-        // if (this->num_local_coords > 0)
-        if (num_procs > num_parts){
-                //if there are more processors than the number of current part
-                //then processors share the existing parts.
-                //at the end each processor will have a single part,
-                //but a part will be shared by a group of processors.
-                mj_part_t out_part_index = 0;
-                this->mj_assign_proc_to_parts(
-                                num_points_in_all_processor_parts,
-                                num_parts,
-                                num_procs,
-                                send_count_to_each_proc,
-                                processor_ranks_for_subcomm,
-                                next_future_num_parts_in_parts,
-                                out_part_index,
-                                output_part_numbering_begin_index,
-                                coordinate_destinations
-                );
+    out_num_part = 1;
+    out_part_indices.clear();
+    out_part_indices.push_back(out_part_index);
+  }
+  else {
+    // there are more parts than the processors.
+    // therefore a processor will be assigned multiple parts,
+    // the subcommunicators will only have a single processor.
+    processor_ranks_for_subcomm.push_back(this->myRank);
 
-                out_num_part = 1;
-                out_part_indices.clear();
-                out_part_indices.push_back(out_part_index);
-        }
-        else {
-
-                //there are more parts than the processors.
-                //therefore a processor will be assigned multiple parts,
-                //the subcommunicators will only have a single processor.
-                processor_ranks_for_subcomm.push_back(this->myRank);
-
-                //since there are more parts then procs,
-                //assign multiple parts to processors.
-                this->mj_assign_parts_to_procs(
-                                num_points_in_all_processor_parts,
-                                num_parts,
-                                num_procs,
-                                send_count_to_each_proc,
-                                next_future_num_parts_in_parts,
-                                out_num_part,
-                                out_part_indices,
-                                output_part_numbering_begin_index,
-                                coordinate_destinations);
-        }
+    // since there are more parts then procs,
+    // assign multiple parts to processors.
+    this->mj_assign_parts_to_procs(
+      num_points_in_all_processor_parts,
+      num_parts,
+      num_procs,
+      send_count_to_each_proc,
+      next_future_num_parts_in_parts,
+      out_num_part,
+      out_part_indices,
+      output_part_numbering_begin_index,
+      coordinate_destinations);
+  }
 }
 
 /*! \brief Function fills up coordinate_destinations is the output array
- * that holds which part each coordinate should be sent. In addition it calculates
- * the shift amount (output_part_numbering_begin_index) to be done when
- * final numberings of the parts are performed.
- *
- *
+ * that holds which part each coordinate should be sent. In addition it
+ * calculates the shift amount (output_part_numbering_begin_index) to be done
+ * when final numberings of the parts are performed.
  * \param num_procs is the number of processor attending to migration operation.
- * \param num_new_local_points is the output to represent the new number of local points.
+ * \param num_new_local_points is the output to represent the new number of
+ * local points.
  * \param iteration is the string for the current iteration.
- * \param coordinate_destinations is the output array that holds which part each coordinate should be sent.
- * \param num_parts is the number of parts that exist in the current partitioning.
+ * \param coordinate_destinations is the output array that holds which part
+ * each coordinate should be sent.
+ * \param num_parts is the number of parts that exist in the current
+ * partitioning.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_migrate_coords(
-    mj_part_t num_procs,
-    mj_lno_t &num_new_local_points,
-    std::string iteration,
-    int *coordinate_destinations,
-    mj_part_t num_parts)
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_migrate_coords(
+  mj_part_t num_procs,
+  mj_lno_t &num_new_local_points,
+  std::string iteration,
+  int *coordinate_destinations,
+  mj_part_t num_parts)
 {
 #ifdef ENABLE_ZOLTAN_MIGRATION
-    if (sizeof(mj_lno_t) <= sizeof(int)) {
+  if (sizeof(mj_lno_t) <= sizeof(int)) {
+    // Cannot use Zoltan_Comm with local ordinals larger than ints.
+    // In Zoltan_Comm_Create, the cast int(this->num_local_coords)
+    // may overflow.
+    ZOLTAN_COMM_OBJ *plan = NULL;
+    MPI_Comm mpi_comm = Teuchos::getRawMpiComm(*(this->comm));
+    int num_incoming_gnos = 0;
+    int message_tag = 7859;
 
-        // Cannot use Zoltan_Comm with local ordinals larger than ints.
-        // In Zoltan_Comm_Create, the cast int(this->num_local_coords)
-        // may overflow.
-
-        ZOLTAN_COMM_OBJ *plan = NULL;
-        MPI_Comm mpi_comm = Teuchos::getRawMpiComm(*(this->comm));
-        int num_incoming_gnos = 0;
-        int message_tag = 7859;
-
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Migration Z1PlanCreating-" + iteration);
-        int ierr = Zoltan_Comm_Create(
-                        &plan,
-                        int(this->num_local_coords),
-                        coordinate_destinations,
-                        mpi_comm,
-                        message_tag,
-                        &num_incoming_gnos);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Migration Z1PlanCreating-" + iteration);
-
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Migration Z1Migration-" + iteration);
-        mj_gno_t *incoming_gnos = allocMemory< mj_gno_t>(num_incoming_gnos);
-
-        //migrate gnos.
-        message_tag++;
-        ierr = Zoltan_Comm_Do(
-                        plan,
-                        message_tag,
-                        (char *) this->current_mj_gnos,
-                        sizeof(mj_gno_t),
-                        (char *) incoming_gnos);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-
-        freeArray<mj_gno_t>(this->current_mj_gnos);
-        this->current_mj_gnos = incoming_gnos;
-
-
-        //migrate coordinates
-        throw std::logic_error("Did not refactor zoltan code yet for kokkos.");
-        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //for (int i = 0; i < this->coord_dim; ++i){
-        //        message_tag++;
-        //        mj_scalar_t *coord = this->mj_coordinates[i];
-        //        this->mj_coordinates[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-        //        ierr = Zoltan_Comm_Do(
-        //                        plan,
-        //                        message_tag,
-        //                        (char *) coord,
-        //                        sizeof(mj_scalar_t),
-        //                        (char *) this->mj_coordinates[i]);
-        //        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        //        freeArray<mj_scalar_t>(coord);
-        //}
-
-        //migrate weights.
-        for (int i = 0; i < this->num_weights_per_coord; ++i){
-                message_tag++;
-                mj_scalar_t *weight = this->mj_weights[i];
-
-                this->mj_weights[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-                ierr = Zoltan_Comm_Do(
-                                plan,
-                                message_tag,
-                                (char *) weight,
-                                sizeof(mj_scalar_t),
-                                (char *) this->mj_weights[i]);
-                Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-                freeArray<mj_scalar_t>(weight);
-        }
-
-
-        //migrate owners.
-        throw std::logic_error("migrate owners not implemented for kokkos yet.");
-        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //int *coord_own = allocMemory<int>(num_incoming_gnos);
-        //message_tag++;
-        //ierr = Zoltan_Comm_Do(
-        //                plan,
-        //                message_tag,
-        //                (char *) this->owner_of_coordinate,
-        //                sizeof(int), (char *) coord_own);
-        //Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        //freeArray<int>(this->owner_of_coordinate);
-        //this->owner_of_coordinate = coord_own;
-
-        //if num procs is less than num parts,
-        //we need the part assigment arrays as well, since
-        //there will be multiple parts in processor.
-        throw std::logic_error("migrate part ids not implemented for kokkos yet.");
-        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //mj_part_t *new_parts = allocMemory<mj_part_t>(num_incoming_gnos);
-        //if(num_procs < num_parts){
-        //        message_tag++;
-        //        ierr = Zoltan_Comm_Do(
-        //                        plan,
-        //                        message_tag,
-        //                        (char *) this->assigned_part_ids,
-        //                        sizeof(mj_part_t),
-        //                        (char *) new_parts);
-        //        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        //}
-        //freeArray<mj_part_t>(this->assigned_part_ids);
-        //this->assigned_part_ids = new_parts;
-
-        ierr = Zoltan_Comm_Destroy(&plan);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        num_new_local_points = num_incoming_gnos;
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Migration Z1Migration-" + iteration);
-    }
-
-    else
-
-#endif  // ENABLE_ZOLTAN_MIGRATION
-    {
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Migration DistributorPlanCreating-" + iteration);
-        Tpetra::Distributor distributor(this->comm);
-        ArrayView<const mj_part_t> destinations( coordinate_destinations, this->num_local_coords);
-        mj_lno_t num_incoming_gnos = distributor.createFromSends(destinations);
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Migration DistributorPlanCreating-" + iteration);
-
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Migration DistributorMigration-" + iteration);
-        {
-                //migrate gnos.
-                ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
-                ArrayView<mj_gno_t> sent_gnos(this->kokkos_current_mj_gnos.data(), this->num_local_coords);
-                distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-                this->kokkos_current_mj_gnos =
-                  Kokkos::View<mj_gno_t*, device_t>("gids", num_incoming_gnos);
-                memcpy(
-                                this->kokkos_current_mj_gnos.data(),
-                                received_gnos.getRawPtr(),
-                                num_incoming_gnos * sizeof(mj_gno_t));
-        }
-        //migrate coordinates
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> temp_coordinates(
-         "kokkos_mj_coordinates", num_incoming_gnos, this->coord_dim);
-        for (int i = 0; i < this->coord_dim; ++i){
-                Kokkos::View<mj_scalar_t *, device_t> sent_subview_kokkos_mj_coordinates =
-                  Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, i);
-                ArrayView<mj_scalar_t> sent_coord(sent_subview_kokkos_mj_coordinates.data(), this->num_local_coords);
-                ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
-                distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
-                Kokkos::View<mj_scalar_t *, device_t> subview_kokkos_mj_coordinates =
-                  Kokkos::subview(temp_coordinates, Kokkos::ALL, i);
-                memcpy(
-                                subview_kokkos_mj_coordinates.data(),
-                                received_coord.getRawPtr(),
-                                num_incoming_gnos * sizeof(mj_scalar_t));
-        }
-        this->kokkos_mj_coordinates = temp_coordinates;
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Migration Z1PlanCreating-" + iteration);
+    int ierr = Zoltan_Comm_Create(
+      &plan,
+      int(this->num_local_coords),
+      coordinate_destinations,
+      mpi_comm,
+      message_tag,
+      &num_incoming_gnos);
         
-        //migrate weights.
-        Kokkos::View<mj_scalar_t**, device_t> temp_weights(
-         "kokkos_mj_weights", num_incoming_gnos, this->num_weights_per_coord);
-        for (int i = 0; i < this->num_weights_per_coord; ++i){
-                // TODO: How to optimize this better to use layouts properly
-                // I think we can flip the weight layout and then use subviews
-                // but need to determine if this will cause problems elsewhere
-                ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
-                for(int n = 0; n < this->num_local_coords; ++n) {
-                  sent_weight[n] = this->kokkos_mj_weights(n,i);
-                }
-                ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
-                distributor.doPostsAndWaits<mj_scalar_t>(sent_weight(), 1, received_weight());
-                for(int n = 0; n < num_incoming_gnos; ++n) {
-                  temp_weights(n,i) = received_weight[n];
-                }
-        }
-        this->kokkos_mj_weights = temp_weights;
+    Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "MultiJagged - Migration Z1PlanCreating-" + iteration);
 
-        {
-                ArrayView<int> sent_owners(this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
-                ArrayRCP<int> received_owners(num_incoming_gnos);
-                distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
-                this->kokkos_owner_of_coordinate =
-                  Kokkos::View<int *, device_t>
-                   ("owner_of_coordinate", num_incoming_gnos);
-                memcpy(
-                                                this->kokkos_owner_of_coordinate.data(),
-                                                received_owners.getRawPtr(),
-                                                num_incoming_gnos * sizeof(int));
-        }
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Migration Z1Migration-" + iteration);
+      mj_gno_t *incoming_gnos = allocMemory< mj_gno_t>(num_incoming_gnos);
 
-        //if num procs is less than num parts,
-        //we need the part assigment arrays as well, since
-        //there will be multiple parts in processor.
-        if(num_procs < num_parts){
-                ArrayView<mj_part_t> sent_partids(this->kokkos_assigned_part_ids.data(), this->num_local_coords);
-                ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
-                distributor.doPostsAndWaits<mj_part_t>(sent_partids, 1, received_partids());
-                this->kokkos_assigned_part_ids =
-                  Kokkos::View<mj_part_t *, device_t>
-                   ("kokkos_assigned_part_ids", num_incoming_gnos);
-                memcpy(
-                                this->kokkos_assigned_part_ids.data(),
-                                received_partids.getRawPtr(),
-                                num_incoming_gnos * sizeof(mj_part_t));
-        }
-        else {
-                this->kokkos_assigned_part_ids =
-                  Kokkos::View<mj_part_t *, device_t>
-                   ("kokkos_assigned_part_ids", num_incoming_gnos);
-        }
+    // migrate gnos.
+    message_tag++;
+    ierr = Zoltan_Comm_Do(
+      plan,
+      message_tag,
+      (char *) this->current_mj_gnos,
+      sizeof(mj_gno_t),
+      (char *) incoming_gnos);
 
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Migration DistributorMigration-" + iteration);
-        num_new_local_points = num_incoming_gnos;
+    Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+
+    freeArray<mj_gno_t>(this->current_mj_gnos);
+    this->current_mj_gnos = incoming_gnos;
+
+    //migrate coordinates
+    throw std::logic_error("Did not refactor zoltan code yet for kokkos.");
+
+    // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+    /*
+    for (int i = 0; i < this->coord_dim; ++i){
+      message_tag++;
+      mj_scalar_t *coord = this->mj_coordinates[i];
+      this->mj_coordinates[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
+      ierr = Zoltan_Comm_Do(
+        plan,
+        message_tag,
+        (char *) coord,
+        sizeof(mj_scalar_t),
+        (char *) this->mj_coordinates[i]);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      freeArray<mj_scalar_t>(coord);
     }
+    */
+
+    // migrate weights.
+    for (int i = 0; i < this->num_weights_per_coord; ++i) {
+      message_tag++;
+      mj_scalar_t *weight = this->mj_weights[i];
+
+      this->mj_weights[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
+      ierr = Zoltan_Comm_Do(
+        plan,
+        message_tag,
+        (char *) weight,
+        sizeof(mj_scalar_t),
+        (char *) this->mj_weights[i]);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      freeArray<mj_scalar_t>(weight);
+    }
+
+    // migrate owners.
+    throw std::logic_error("migrate owners not implemented for kokkos yet.");
+
+    // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+    /*
+    int *coord_own = allocMemory<int>(num_incoming_gnos);
+    message_tag++;
+    ierr = Zoltan_Comm_Do(
+      plan,
+      message_tag,
+      (char *) this->owner_of_coordinate,
+      sizeof(int), (char *) coord_own);
+    Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+    freeArray<int>(this->owner_of_coordinate);
+    this->owner_of_coordinate = coord_own;
+    */
+
+    // if num procs is less than num parts,
+    // we need the part assigment arrays as well, since
+    // there will be multiple parts in processor.
+    throw std::logic_error("migrate part ids not implemented for kokkos yet.");
+    
+    // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+    /*
+    mj_part_t *new_parts = allocMemory<mj_part_t>(num_incoming_gnos);
+    if(num_procs < num_parts) {
+      message_tag++;
+      ierr = Zoltan_Comm_Do(
+        plan,
+        message_tag,
+        (char *) this->assigned_part_ids,
+        sizeof(mj_part_t),
+        (char *) new_parts);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+    }
+    freeArray<mj_part_t>(this->assigned_part_ids);
+    this->assigned_part_ids = new_parts;
+    */
+
+    ierr = Zoltan_Comm_Destroy(&plan);
+    Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+    num_new_local_points = num_incoming_gnos;
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "MultiJagged - Migration Z1Migration-" + iteration);
+  }
+  else
+#endif  // ENABLE_ZOLTAN_MIGRATION
+  {
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Migration DistributorPlanCreating-" + iteration);
+
+    Tpetra::Distributor distributor(this->comm);
+    ArrayView<const mj_part_t> destinations( coordinate_destinations,
+      this->num_local_coords);
+    mj_lno_t num_incoming_gnos = distributor.createFromSends(destinations);
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "MultiJagged - Migration DistributorPlanCreating-" + iteration);
+
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Migration DistributorMigration-" + iteration);
+
+    {
+      // migrate gnos.
+      ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
+      ArrayView<mj_gno_t> sent_gnos(
+        this->kokkos_current_mj_gnos.data(), this->num_local_coords);
+      distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+      this->kokkos_current_mj_gnos =
+        Kokkos::View<mj_gno_t*, device_t>("gids", num_incoming_gnos);
+      memcpy(this->kokkos_current_mj_gnos.data(),
+        received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
+    }
+
+    // migrate coordinates
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
+      temp_coordinates("kokkos_mj_coordinates", num_incoming_gnos,
+      this->coord_dim);
+
+    for (int i = 0; i < this->coord_dim; ++i) {
+      Kokkos::View<mj_scalar_t *, device_t> sent_subview_kokkos_mj_coordinates
+        = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, i);
+      ArrayView<mj_scalar_t> sent_coord(
+        sent_subview_kokkos_mj_coordinates.data(), this->num_local_coords);
+      ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
+      distributor.doPostsAndWaits<mj_scalar_t>(
+        sent_coord, 1, received_coord());
+      Kokkos::View<mj_scalar_t *, device_t> subview_kokkos_mj_coordinates =
+        Kokkos::subview(temp_coordinates, Kokkos::ALL, i);
+      memcpy(subview_kokkos_mj_coordinates.data(),
+        received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
+    }
+
+    this->kokkos_mj_coordinates = temp_coordinates;
+        
+    // migrate weights.
+    Kokkos::View<mj_scalar_t**, device_t> temp_weights(
+     "kokkos_mj_weights", num_incoming_gnos, this->num_weights_per_coord);
+
+    for (int i = 0; i < this->num_weights_per_coord; ++i) {
+      // TODO: How to optimize this better to use layouts properly
+      // I think we can flip the weight layout and then use subviews
+      // but need to determine if this will cause problems elsewhere
+      ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
+      for(int n = 0; n < this->num_local_coords; ++n) {
+        sent_weight[n] = this->kokkos_mj_weights(n,i);
+      }
+      ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
+      distributor.doPostsAndWaits<mj_scalar_t>(
+        sent_weight(), 1, received_weight());
+      for(int n = 0; n < num_incoming_gnos; ++n) {
+        temp_weights(n,i) = received_weight[n];
+      }
+    }
+  
+    this->kokkos_mj_weights = temp_weights;
+
+    {
+      ArrayView<int> sent_owners(
+        this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
+      ArrayRCP<int> received_owners(num_incoming_gnos);
+      distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
+      this->kokkos_owner_of_coordinate = Kokkos::View<int *, device_t>
+        ("owner_of_coordinate", num_incoming_gnos);
+      memcpy(this->kokkos_owner_of_coordinate.data(),
+        received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
+    }
+
+    // if num procs is less than num parts,
+    // we need the part assigment arrays as well, since
+    // there will be multiple parts in processor.
+    if(num_procs < num_parts) {
+      ArrayView<mj_part_t> sent_partids(
+        this->kokkos_assigned_part_ids.data(), this->num_local_coords);
+      ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
+      distributor.doPostsAndWaits<mj_part_t>(
+        sent_partids, 1, received_partids());
+      this->kokkos_assigned_part_ids =
+        Kokkos::View<mj_part_t *, device_t>
+         ("kokkos_assigned_part_ids", num_incoming_gnos);
+      memcpy(
+        this->kokkos_assigned_part_ids.data(),
+        received_partids.getRawPtr(),
+        num_incoming_gnos * sizeof(mj_part_t));
+    }
+    else {
+      this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t *, device_t>
+        ("kokkos_assigned_part_ids", num_incoming_gnos);
+    }
+
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "MultiJagged - Migration DistributorMigration-" + iteration);
+
+    num_new_local_points = num_incoming_gnos;
+  }
 }
 
 /*! \brief Function creates the new subcomminicator for the processors
  * given in processor_ranks_for_subcomm.
- *
  * \param processor_ranks_for_subcomm is the vector that has the ranks of
  * the processors that will be in the same group.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm){
-    mj_part_t group_size = processor_ranks_for_subcomm.size();
-    mj_part_t *ids = allocMemory<mj_part_t>(group_size);
-    for(mj_part_t i = 0; i < group_size; ++i) {
-        ids[i] = processor_ranks_for_subcomm[i];
-    }
-    ArrayView<const mj_part_t> idView(ids, group_size);
-    this->comm = this->comm->createSubcommunicator(idView);
-    freeArray<mj_part_t>(ids);
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm)
+{
+  mj_part_t group_size = processor_ranks_for_subcomm.size();
+  mj_part_t *ids = allocMemory<mj_part_t>(group_size);
+  for(mj_part_t i = 0; i < group_size; ++i) {
+    ids[i] = processor_ranks_for_subcomm[i];
+  }
+  ArrayView<const mj_part_t> idView(ids, group_size);
+  this->comm = this->comm->createSubcommunicator(idView);
+  freeArray<mj_part_t>(ids);
 }
 
-
 /*! \brief Function writes the new permutation arrays after the migration.
- *
- * \param output_num_parts is the number of parts that is assigned to the processor.
+ * \param output_num_parts is the number of parts that is assigned to
+ * the processor.
  * \param num_parts is the number of parts right before migration.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::fill_permutation_array(
-    mj_part_t output_num_parts,
-    mj_part_t num_parts){
-        //if there is single output part, then simply fill the permutation array.
-    if (output_num_parts == 1){
-        for(mj_lno_t i = 0; i < this->num_local_coords; ++i){
-            this->kokkos_new_coordinate_permutations(i) = i;
-        }
-        this->kokkos_new_part_xadj(0) = this->num_local_coords;
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  fill_permutation_array(
+  mj_part_t output_num_parts,
+  mj_part_t num_parts)
+{
+  // if there is single output part, then simply fill the permutation array.
+  if (output_num_parts == 1) {
+    for(mj_lno_t i = 0; i < this->num_local_coords; ++i) {
+      this->kokkos_new_coordinate_permutations(i) = i;
     }
-    else {
+    this->kokkos_new_part_xadj(0) = this->num_local_coords;
+  }
+  else {
+    // otherwise we need to count how many points are there in each part.
+    // we allocate here as num_parts, because the sent partids are up to
+    // num_parts, although there are outout_num_parts different part.
+    mj_lno_t *num_points_in_parts = allocMemory<mj_lno_t>(num_parts);
 
-        //otherwise we need to count how many points are there in each part.
-        //we allocate here as num_parts, because the sent partids are up to num_parts,
-        //although there are outout_num_parts different part.
-        mj_lno_t *num_points_in_parts = allocMemory<mj_lno_t>(num_parts);
-        //part shift holds the which part number an old part number corresponds to.
-        mj_part_t *part_shifts = allocMemory<mj_part_t>(num_parts);
+    // part shift holds the which part number an old part number corresponds to.
+    mj_part_t *part_shifts = allocMemory<mj_part_t>(num_parts);
 
-        memset(num_points_in_parts, 0, sizeof(mj_lno_t) * num_parts);
+    memset(num_points_in_parts, 0, sizeof(mj_lno_t) * num_parts);
 
-        for(mj_lno_t i = 0; i < this->num_local_coords; ++i){
-            mj_part_t ii = this->kokkos_assigned_part_ids(i);
-            ++num_points_in_parts[ii];
-        }
-
-        //write the end points of the parts.
-        mj_part_t p = 0;
-        mj_lno_t prev_index = 0;
-        for(mj_part_t i = 0; i < num_parts; ++i){
-            if(num_points_in_parts[i] > 0)  {
-                this->kokkos_new_part_xadj(p) =  prev_index + num_points_in_parts[i];
-                prev_index += num_points_in_parts[i];
-                part_shifts[i] = p++;
-            }
-        }
-
-        //for the rest of the parts write the end index as end point.
-        mj_part_t assigned_num_parts = p - 1;
-        for (;p < num_parts; ++p){
-            this->kokkos_new_part_xadj(p) =  this->kokkos_new_part_xadj(assigned_num_parts);
-        }
-        for(mj_part_t i = 0; i < output_num_parts; ++i){
-            num_points_in_parts[i] = this->kokkos_new_part_xadj(i);
-        }
-
-        //write the permutation array here.
-        //get the part of the coordinate i, shift it to obtain the new part number.
-        //assign it to the end of the new part numbers pointer.
-        for(mj_lno_t i = this->num_local_coords - 1; i >= 0; --i){
-            mj_part_t part = part_shifts[mj_part_t(this->kokkos_assigned_part_ids(i))];
-            this->kokkos_new_coordinate_permutations(--num_points_in_parts[part]) = i;
-        }
-
-        freeArray<mj_lno_t>(num_points_in_parts);
-        freeArray<mj_part_t>(part_shifts);
+    for(mj_lno_t i = 0; i < this->num_local_coords; ++i) {
+      mj_part_t ii = this->kokkos_assigned_part_ids(i);
+      ++num_points_in_parts[ii];
     }
+
+    // write the end points of the parts.
+    mj_part_t p = 0;
+    mj_lno_t prev_index = 0;
+    for(mj_part_t i = 0; i < num_parts; ++i){
+      if(num_points_in_parts[i] > 0) {
+        this->kokkos_new_part_xadj(p) =  prev_index + num_points_in_parts[i];
+        prev_index += num_points_in_parts[i];
+        part_shifts[i] = p++;
+      }
+    }
+
+    // for the rest of the parts write the end index as end point.
+    mj_part_t assigned_num_parts = p - 1;
+    for (;p < num_parts; ++p) {
+      this->kokkos_new_part_xadj(p) =
+        this->kokkos_new_part_xadj(assigned_num_parts);
+    }
+    for(mj_part_t i = 0; i < output_num_parts; ++i) {
+      num_points_in_parts[i] = this->kokkos_new_part_xadj(i);
+    }
+
+    // write the permutation array here.
+    // get the part of the coordinate i, shift it to obtain the new part number.
+    // assign it to the end of the new part numbers pointer.
+    for(mj_lno_t i = this->num_local_coords - 1; i >= 0; --i) {
+      mj_part_t part =
+        part_shifts[mj_part_t(this->kokkos_assigned_part_ids(i))];
+      this->kokkos_new_coordinate_permutations(--num_points_in_parts[part]) = i;
+    }
+
+    freeArray<mj_lno_t>(num_points_in_parts);
+    freeArray<mj_part_t>(part_shifts);
+  }
 }
-
 
 /*! \brief Function checks if should do migration or not.
  * It returns true to point that migration should be done when
  * -migration_reduce_all_population are higher than a predetermined value
- * -num_coords_for_last_dim_part that left for the last dimension partitioning is less than a predetermined value
- * -the imbalance of the processors on the parts are higher than given threshold.
-
+ * -num_coords_for_last_dim_part that left for the last dimension partitioning
+ * is less than a predetermined value - the imbalance of the processors on the
+ * parts are higher than given threshold.
  * \param input_num_parts is the number of parts when migration is called.
  * \param output_num_parts is the output number of parts after migration.
- * \param next_future_num_parts_in_parts is the number of total future parts each
- * part is partitioned into. This will be updated when migration is performed.
- * \param output_part_begin_index is the number that will be used as beginning part number
- * when final solution part numbers are assigned.
- * \param migration_reduce_all_population is the estimated total number of reduceall operations
- * multiplied with number of processors to be used for determining migration.
- *
- * \param num_coords_for_last_dim_part is the estimated number of points in each part,
- * when last dimension partitioning is performed.
- * \param iteration is the string that gives information about the dimension for printing purposes.
- * \param input_part_boxes is the array that holds the part boxes after the migration. (swapped)
- * \param output_part_boxes is the array that holds the part boxes before the migration. (swapped)
- *
+ * \param next_future_num_parts_in_parts is the number of total future parts
+ * each part is partitioned into. This will be updated for migration.
+ * \param output_part_begin_index is the number that will be used as beginning
+ * part number when final solution part numbers are assigned.
+ * \param migration_reduce_all_population is the estimated total number of
+ * reduceall operations multiplied with number of processors to be used for
+ * determining migration.
+ * \param num_coords_for_last_dim_part is the estimated number of points in each
+ * part, when last dimension partitioning is performed.
+ * \param iteration is the string that gives information about the dimension
+ * for printing purposes.
+ * \param input_part_boxes is the array that holds the part boxes after
+ * the migration. (swapped)
+ * \param output_part_boxes is the array that holds the part boxes before
+ * the migration. (swapped)
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::mj_perform_migration(
-    mj_part_t input_num_parts, //current umb parts
-    mj_part_t &output_num_parts, //output umb parts.
-    std::vector<mj_part_t> *next_future_num_parts_in_parts,
-    mj_part_t &output_part_begin_index,
-    size_t migration_reduce_all_population,
-    mj_lno_t num_coords_for_last_dim_part,
-    std::string iteration,
-    RCP<mj_partBoxVector_t> &input_part_boxes,
-    RCP<mj_partBoxVector_t> &output_part_boxes
-)
+  typename mj_part_t, typename mj_node_t>
+bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  mj_perform_migration(
+  mj_part_t input_num_parts,
+  mj_part_t &output_num_parts,
+  std::vector<mj_part_t> *next_future_num_parts_in_parts,
+  mj_part_t &output_part_begin_index,
+  size_t migration_reduce_all_population,
+  mj_lno_t num_coords_for_last_dim_part,
+  std::string iteration,
+  RCP<mj_partBoxVector_t> &input_part_boxes,
+  RCP<mj_partBoxVector_t> &output_part_boxes)
 {
-        mj_part_t num_procs = this->comm->getSize();
-        this->myRank = this->comm->getRank();
+  mj_part_t num_procs = this->comm->getSize();
+  this->myRank = this->comm->getRank();
 
+  // this array holds how many points each processor has in each part.
+  // to access how many points processor i has on part j,
+  // num_points_in_all_processor_parts[i * num_parts + j]
+  mj_gno_t *num_points_in_all_processor_parts =
+    allocMemory<mj_gno_t>(input_num_parts * (num_procs + 1));
 
-        //this array holds how many points each processor has in each part.
-        //to access how many points processor i has on part j,
-        //num_points_in_all_processor_parts[i * num_parts + j]
-        mj_gno_t *num_points_in_all_processor_parts = allocMemory<mj_gno_t>(input_num_parts * (num_procs + 1));
+  // get the number of coordinates in each part in each processor.
+  this->get_processor_num_points_in_parts(
+    num_procs,
+    input_num_parts,
+    num_points_in_all_processor_parts);
 
-        //get the number of coordinates in each part in each processor.
-        this->get_processor_num_points_in_parts(
-                        num_procs,
-                        input_num_parts,
-                        num_points_in_all_processor_parts);
-        //check if migration will be performed or not.
-        if (!this->mj_check_to_migrate(
-                        migration_reduce_all_population,
-                        num_coords_for_last_dim_part,
-                        num_procs,
-                        input_num_parts,
-                        num_points_in_all_processor_parts)){
-                freeArray<mj_gno_t>(num_points_in_all_processor_parts);
-                return false;
-        }
+  // check if migration will be performed or not.
+  if (!this->mj_check_to_migrate(
+    migration_reduce_all_population,
+    num_coords_for_last_dim_part,
+    num_procs,
+    input_num_parts,
+    num_points_in_all_processor_parts)) {
+    freeArray<mj_gno_t>(num_points_in_all_processor_parts);
+    return false;
+  }
 
+  mj_lno_t *send_count_to_each_proc = NULL;
+  int *coordinate_destinations = allocMemory<int>(this->num_local_coords);
+  send_count_to_each_proc = allocMemory<mj_lno_t>(num_procs);
+  
+  for (int i = 0; i < num_procs; ++i) {
+    send_count_to_each_proc[i] = 0;
+  }
 
-        mj_lno_t *send_count_to_each_proc = NULL;
-        int *coordinate_destinations = allocMemory<int>(this->num_local_coords);
-        send_count_to_each_proc = allocMemory<mj_lno_t>(num_procs);
-        for (int i = 0; i < num_procs; ++i) send_count_to_each_proc[i] = 0;
+  std::vector<mj_part_t> processor_ranks_for_subcomm;
+  std::vector<mj_part_t> out_part_indices;
 
-        std::vector<mj_part_t> processor_ranks_for_subcomm;
-        std::vector<mj_part_t> out_part_indices;
+  // determine which processors are assigned to which parts
+  this->mj_migration_part_proc_assignment(
+    num_points_in_all_processor_parts,
+    input_num_parts,
+    num_procs,
+    send_count_to_each_proc,
+    processor_ranks_for_subcomm,
+    next_future_num_parts_in_parts,
+    output_num_parts,
+    out_part_indices,
+    output_part_begin_index,
+    coordinate_destinations);
 
-        //determine which processors are assigned to which parts
-        this->mj_migration_part_proc_assignment(
-                        num_points_in_all_processor_parts,
-                        input_num_parts,
-                        num_procs,
-                        send_count_to_each_proc,
-                        processor_ranks_for_subcomm,
-                        next_future_num_parts_in_parts,
-                        output_num_parts,
-                        out_part_indices,
-                        output_part_begin_index,
-                        coordinate_destinations);
+  freeArray<mj_lno_t>(send_count_to_each_proc);
+  std::vector <mj_part_t> tmpv;
 
-        freeArray<mj_lno_t>(send_count_to_each_proc);
-        std::vector <mj_part_t> tmpv;
+  std::sort (out_part_indices.begin(), out_part_indices.end());
+  mj_part_t outP = out_part_indices.size();
 
-        std::sort (out_part_indices.begin(), out_part_indices.end());
-        mj_part_t outP = out_part_indices.size();
+  mj_gno_t new_global_num_points = 0;
+  mj_gno_t *global_num_points_in_parts =
+    num_points_in_all_processor_parts + num_procs * input_num_parts;
 
-        mj_gno_t new_global_num_points = 0;
-        mj_gno_t *global_num_points_in_parts = num_points_in_all_processor_parts + num_procs * input_num_parts;
+  if (this->mj_keep_part_boxes) {
+    input_part_boxes->clear();
+  }
 
-        if (this->mj_keep_part_boxes){
-                input_part_boxes->clear();
-        }
+  // now we calculate the new values for next_future_num_parts_in_parts.
+  // same for the part boxes.
+  for (mj_part_t i = 0; i < outP; ++i) {
+    mj_part_t ind = out_part_indices[i];
+    new_global_num_points += global_num_points_in_parts[ind];
+    tmpv.push_back((*next_future_num_parts_in_parts)[ind]);
+    if (this->mj_keep_part_boxes){
+      input_part_boxes->push_back((*output_part_boxes)[ind]);
+    }
+  }
 
-        //now we calculate the new values for next_future_num_parts_in_parts.
-        //same for the part boxes.
-        for (mj_part_t i = 0; i < outP; ++i){
-                mj_part_t ind = out_part_indices[i];
-                new_global_num_points += global_num_points_in_parts[ind];
-                tmpv.push_back((*next_future_num_parts_in_parts)[ind]);
-                if (this->mj_keep_part_boxes){
-                        input_part_boxes->push_back((*output_part_boxes)[ind]);
-                }
-        }
+  // swap the input and output part boxes.
+  if (this->mj_keep_part_boxes) {
+    RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
+    input_part_boxes = output_part_boxes;
+    output_part_boxes = tmpPartBoxes;
+  }
+  next_future_num_parts_in_parts->clear();
+  for (mj_part_t i = 0; i < outP; ++i) {
+    mj_part_t p = tmpv[i];
+    next_future_num_parts_in_parts->push_back(p);
+  }
 
-        //swap the input and output part boxes.
-        if (this->mj_keep_part_boxes){
-                RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
-                input_part_boxes = output_part_boxes;
-                output_part_boxes = tmpPartBoxes;
-        }
-        next_future_num_parts_in_parts->clear();
-        for (mj_part_t i = 0; i < outP; ++i){
-                mj_part_t p = tmpv[i];
-                next_future_num_parts_in_parts->push_back(p);
-        }
+  freeArray<mj_gno_t>(num_points_in_all_processor_parts);
 
-        freeArray<mj_gno_t>(num_points_in_all_processor_parts);
+  mj_lno_t num_new_local_points = 0;
 
-        mj_lno_t num_new_local_points = 0;
+  //perform the actual migration operation here.
+  this->mj_migrate_coords(
+    num_procs,
+    num_new_local_points,
+    iteration,
+    coordinate_destinations,
+    input_num_parts);
 
-        //perform the actual migration operation here.
-        this->mj_migrate_coords(
-                        num_procs,
-                        num_new_local_points,
-                        iteration,
-                        coordinate_destinations,
-                        input_num_parts);
+  freeArray<int>(coordinate_destinations);
 
+  if(this->num_local_coords != num_new_local_points){
+    this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
+      ("kokkos_new_coordinate_permutations", num_new_local_points);
+    this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
+      ("kokkos_coordinate_permutations", num_new_local_points);
+  }
 
-        freeArray<int>(coordinate_destinations);
+  this->num_local_coords = num_new_local_points;
+  this->num_global_coords = new_global_num_points;
 
-        if(this->num_local_coords != num_new_local_points){
-                this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>("kokkos_new_coordinate_permutations", num_new_local_points);
-                this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>("kokkos_coordinate_permutations", num_new_local_points);
-        }
-        this->num_local_coords = num_new_local_points;
-        this->num_global_coords = new_global_num_points;
+  // create subcommunicator.
+  this->create_sub_communicator(processor_ranks_for_subcomm);
+  processor_ranks_for_subcomm.clear();
 
-        //create subcommunicator.
-        this->create_sub_communicator(processor_ranks_for_subcomm);
-        processor_ranks_for_subcomm.clear();
-
-        //fill the new permutation arrays.
-        this->fill_permutation_array(
-                        output_num_parts,
-                        input_num_parts);
-        return true;
+  // fill the new permutation arrays.
+  this->fill_permutation_array(output_num_parts, input_num_parts);
+  return true;
 }
 
 
-/*! \brief Function creates consistent chunks for task partitioning. Used only in the case of
- * sequential task partitioning, where consistent handle of the points on the cuts are required.
- *
+/*! \brief Function creates consistent chunks for task partitioning. Used only
+ * in the case of sequential task partitioning, where consistent handle of the
+ * points on the cuts are required.
  * \param num_parts is the number of parts.
- * \param mj_current_dim_coords is 1 dimensional array holding the coordinate values.
- * \param current_concurrent_cut_coordinate is 1 dimensional array holding the cut coordinates.
- * \param coordinate_begin is the start index of the given partition on partitionedPointPermutations.
- * \param coordinate_end is the end index of the given partition on partitionedPointPermutations.
- * \param used_local_cut_line_weight_to_left holds how much weight of the coordinates on the cutline should be put on left side.
- *
- * \param out_part_xadj is the indices of begginning and end of the parts in the output partition.
+ * \param mj_current_dim_coords is 1 dimensional array holding the
+ * coordinate values.
+ * \param current_concurrent_cut_coordinate is 1 dimensional array holding
+ * the cut coordinates.
+ * \param coordinate_begin is the start index of the given partition on
+ * partitionedPointPermutations.
+ * \param coordinate_end is the end index of the given partition on
+ * partitionedPointPermutations.
+ * \param used_local_cut_line_weight_to_left holds how much weight of the
+ * coordinates on the cutline should be put on left side.
+ * \param out_part_xadj is the indices of begginning and end of the parts in
+ * the output partition.
  * \param coordInd is the index according to which the partitioning is done.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::create_consistent_chunks(
-    mj_part_t num_parts,
-    Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_current_concurrent_cut_coordinate,
-    mj_lno_t coordinate_begin,
-    mj_lno_t coordinate_end,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_used_local_cut_line_weight_to_left,
-    Kokkos::View<mj_lno_t *, device_t> kokkos_out_part_xadj,
-    int coordInd, bool longest_dim_part, uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted){
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  create_consistent_chunks(
+  mj_part_t num_parts,
+  Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
+  Kokkos::View<mj_scalar_t *, device_t>
+    kokkos_current_concurrent_cut_coordinate,
+  mj_lno_t coordinate_begin,
+  mj_lno_t coordinate_end,
+  Kokkos::View<mj_scalar_t *, device_t>
+    kokkos_used_local_cut_line_weight_to_left,
+  Kokkos::View<mj_lno_t *, device_t> kokkos_out_part_xadj,
+  int coordInd,
+  bool longest_dim_part,
+  uSignedSortItem<int, mj_scalar_t, char> * p_coord_dimension_range_sorted)
+{
+  // mj_lno_t numCoordsInPart =  coordinateEnd - coordinateBegin;
+  mj_part_t no_cuts = num_parts - 1;
 
-        //mj_lno_t numCoordsInPart =  coordinateEnd - coordinateBegin;
-        mj_part_t no_cuts = num_parts - 1;
-
-        //now if the rectilinear partitioning is allowed we decide how
-        //much weight each thread should put to left and right.
-        if (this->distribute_points_on_cut_lines){
-                for (mj_part_t i = 0; i < no_cuts; ++i){
-                        //the left to be put on the left of the cut.
-                        mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
-                        //cout << "i:" << i << " left_weight:" << left_weight << endl;
-
-                                if(left_weight > this->sEpsilon){
-                                        //the weight of thread ii on cut.
-                                        mj_scalar_t thread_ii_weight_on_cut = this->kokkos_thread_part_weight_work(i * 2 + 1) - this->kokkos_thread_part_weight_work(i * 2);
-                                        if(thread_ii_weight_on_cut < left_weight){
-                                                this->kokkos_thread_cut_line_weight_to_put_left(i) = thread_ii_weight_on_cut;
-                                        }
-                                        else {
-                                                this->kokkos_thread_cut_line_weight_to_put_left(i) = left_weight;
-                                        }
-                                        left_weight -= thread_ii_weight_on_cut;
-                                }
-                                else {
-                                        this->kokkos_thread_cut_line_weight_to_put_left(i) = 0;
-                                }
-                }
-
-                if(no_cuts > 0){
-                        //this is a special case. If cutlines share the same coordinate, their weights are equal.
-                        //we need to adjust the ratio for that.
-                        for (mj_part_t i = no_cuts - 1; i > 0 ; --i){
-                                if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) - kokkos_current_concurrent_cut_coordinate(i-1)) < this->sEpsilon){
-                                        this->kokkos_thread_cut_line_weight_to_put_left(i) -= this->kokkos_thread_cut_line_weight_to_put_left(i - 1);
-                                }
-                                this->kokkos_thread_cut_line_weight_to_put_left(i) = int ((this->kokkos_thread_cut_line_weight_to_put_left(i) + LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) / mj_scalar_t(SIGNIFICANCE_MUL);
-
-                        }
-                }
+  // now if the rectilinear partitioning is allowed we decide how
+  // much weight each thread should put to left and right.
+  if (this->distribute_points_on_cut_lines) {
+    for (mj_part_t i = 0; i < no_cuts; ++i) {
+      // the left to be put on the left of the cut.
+      mj_scalar_t left_weight = kokkos_used_local_cut_line_weight_to_left(i);
+      // cout << "i:" << i << " left_weight:" << left_weight << endl;
+      if(left_weight > this->sEpsilon) {
+        // the weight of thread ii on cut.
+        mj_scalar_t thread_ii_weight_on_cut =
+          this->kokkos_thread_part_weight_work(i * 2 + 1) -
+          this->kokkos_thread_part_weight_work(i * 2);
+        if(thread_ii_weight_on_cut < left_weight) {
+          this->kokkos_thread_cut_line_weight_to_put_left(i) =
+            thread_ii_weight_on_cut;
         }
-
-        for(mj_part_t ii = 0; ii < num_parts; ++ii){
-                this->kokkos_thread_point_counts(ii) = 0;
+        else {
+          this->kokkos_thread_cut_line_weight_to_put_left(i) = left_weight;
         }
+        left_weight -= thread_ii_weight_on_cut;
+      }
+      else {
+        this->kokkos_thread_cut_line_weight_to_put_left(i) = 0;
+      }
+    }
 
-        //for this specific case we dont want to distribute the points along the cut position
-        //randomly, as we need a specific ordering of them. Instead,
-        //we put the coordinates into a sort item, where we sort those
-        //using the coordinates of points on other dimensions and the index.
-
-
-        //some of the cuts might share the same position.
-        //in this case, if cut i and cut j share the same position
-        //cut_map[i] = cut_map[j] = sort item index.
-        mj_part_t *cut_map = allocMemory<mj_part_t> (no_cuts);
-
-
-        typedef uMultiSortItem<mj_lno_t, int, mj_scalar_t> multiSItem;
-        typedef std::vector< multiSItem > multiSVector;
-        typedef std::vector<multiSVector> multiS2Vector;
-
-        //to keep track of the memory allocated.
-        std::vector<mj_scalar_t *>allocated_memory;
-
-        //vector for which the coordinates will be sorted.
-        multiS2Vector sort_vector_points_on_cut;
-
-        //the number of cuts that have different coordinates.
-        mj_part_t different_cut_count = 1;
-        cut_map[0] = 0;
-
-        //now we insert 1 sort vector for all cuts on the different
-        //positins.if multiple cuts are on the same position, they share sort vectors.
-        multiSVector tmpMultiSVector;
-        sort_vector_points_on_cut.push_back(tmpMultiSVector);
-
-        for (mj_part_t i = 1; i < no_cuts ; ++i){
-                //if cuts share the same cut coordinates
-                //set the cutmap accordingly.
-                if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) - kokkos_current_concurrent_cut_coordinate(i-1)) < this->sEpsilon){
-                        cut_map[i] = cut_map[i-1];
-                }
-                else {
-                        cut_map[i] = different_cut_count++;
-                        multiSVector tmp2MultiSVector;
-                        sort_vector_points_on_cut.push_back(tmp2MultiSVector);
-                }
+    if(no_cuts > 0) {
+      // this is a special case. If cutlines share the same coordinate,
+      // their weights are equal.
+      // we need to adjust the ratio for that.
+      for (mj_part_t i = no_cuts - 1; i > 0 ; --i) {
+        if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
+          kokkos_current_concurrent_cut_coordinate(i-1)) < this->sEpsilon) {
+          this->kokkos_thread_cut_line_weight_to_put_left(i) -=
+            this->kokkos_thread_cut_line_weight_to_put_left(i - 1);
         }
+        this->kokkos_thread_cut_line_weight_to_put_left(i) =
+          int ((this->kokkos_thread_cut_line_weight_to_put_left(i) +
+          LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
+          mj_scalar_t(SIGNIFICANCE_MUL);
+      }
+    }
+  }
 
+  for(mj_part_t ii = 0; ii < num_parts; ++ii) {
+    this->kokkos_thread_point_counts(ii) = 0;
+  }
 
-        //now the actual part assigment.
-        for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii){
-                mj_lno_t i = this->kokkos_coordinate_permutations(ii);
-                mj_part_t pp = this->kokkos_assigned_part_ids(i);
-                mj_part_t p = pp / 2;
-                //if the coordinate is on a cut.
-                if(pp % 2 == 1 ){
-                        mj_scalar_t *vals = allocMemory<mj_scalar_t>(this->coord_dim -1);
-                        allocated_memory.push_back(vals);
+  // for this specific case we dont want to distribute the points along the
+  // cut position randomly, as we need a specific ordering of them. Instead,
+  // we put the coordinates into a sort item, where we sort those
+  // using the coordinates of points on other dimensions and the index.
 
-                        //we insert the coordinates to the sort item here.
-                        int val_ind = 0;
+  // some of the cuts might share the same position.
+  // in this case, if cut i and cut j share the same position
+  // cut_map[i] = cut_map[j] = sort item index.
+  mj_part_t *cut_map = allocMemory<mj_part_t> (no_cuts);
 
-                        if (longest_dim_part){
-                          //std::cout << std::endl << std::endl;
-                          for(int dim = this->coord_dim - 2; dim >= 0; --dim){
-                            //uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted
-                            int next_largest_coord_dim = p_coord_dimension_range_sorted[dim].id;
-                            //std::cout << "next_largest_coord_dim: " << next_largest_coord_dim << " ";
-                            // Note refactor in progress
-                            vals[val_ind++] = this->kokkos_mj_coordinates(i,next_largest_coord_dim);
-                          }
-                        }
-                        else {
-                          for(int dim = coordInd + 1; dim < this->coord_dim; ++dim){
-                            vals[val_ind++] = this->kokkos_mj_coordinates(i,dim);
-                          }
-                          for(int dim = 0; dim < coordInd; ++dim){
-                            vals[val_ind++] = this->kokkos_mj_coordinates(i,dim);
-                          }
-                        }
-                        multiSItem tempSortItem(i, this->coord_dim -1, vals);
-                        //inser the point to the sort vector pointed by the cut_map[p].
-                        mj_part_t cmap = cut_map[p];
-                        sort_vector_points_on_cut[cmap].push_back(tempSortItem);
-                }
-                else {
-                        //if it is not on the cut, simple sorting.
-                        ++this->kokkos_thread_point_counts(p);
-                            this->kokkos_assigned_part_ids(i) = p;
-                }
+  typedef uMultiSortItem<mj_lno_t, int, mj_scalar_t> multiSItem;
+  typedef std::vector< multiSItem > multiSVector;
+  typedef std::vector<multiSVector> multiS2Vector;
+
+  // to keep track of the memory allocated.
+  std::vector<mj_scalar_t *>allocated_memory;
+
+  // vector for which the coordinates will be sorted.
+  multiS2Vector sort_vector_points_on_cut;
+
+  // the number of cuts that have different coordinates.
+  mj_part_t different_cut_count = 1;
+  cut_map[0] = 0;
+
+  // now we insert 1 sort vector for all cuts on the different
+  // positins.if multiple cuts are on the same position,
+  // they share sort vectors.
+  multiSVector tmpMultiSVector;
+  sort_vector_points_on_cut.push_back(tmpMultiSVector);
+
+  for (mj_part_t i = 1; i < no_cuts ; ++i){
+    // if cuts share the same cut coordinates
+    // set the cutmap accordingly.
+    if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
+      kokkos_current_concurrent_cut_coordinate(i-1)) < this->sEpsilon) {
+      cut_map[i] = cut_map[i-1];
+    }
+    else {
+      cut_map[i] = different_cut_count++;
+      multiSVector tmp2MultiSVector;
+      sort_vector_points_on_cut.push_back(tmp2MultiSVector);
+    }
+  }
+
+  // now the actual part assigment.
+  for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
+    mj_lno_t i = this->kokkos_coordinate_permutations(ii);
+    mj_part_t pp = this->kokkos_assigned_part_ids(i);
+    mj_part_t p = pp / 2;
+    // if the coordinate is on a cut.
+    if(pp % 2 == 1 ) {
+      mj_scalar_t *vals = allocMemory<mj_scalar_t>(this->coord_dim -1);
+      allocated_memory.push_back(vals);
+
+      // we insert the coordinates to the sort item here.
+      int val_ind = 0;
+
+      if (longest_dim_part) {
+        // std::cout << std::endl << std::endl;
+        for(int dim = this->coord_dim - 2; dim >= 0; --dim){
+          // uSignedSortItem<int, mj_scalar_t, char>
+          //   *p_coord_dimension_range_sorted
+          int next_largest_coord_dim = p_coord_dimension_range_sorted[dim].id;
+          // std::cout << "next_largest_coord_dim: " <<
+          //   next_largest_coord_dim << " ";
+          // Note refactor in progress
+          vals[val_ind++] =
+            this->kokkos_mj_coordinates(i,next_largest_coord_dim);
         }
-
-        //sort all the sort vectors.
-        for (mj_part_t i = 0; i < different_cut_count; ++i){
-                std::sort (sort_vector_points_on_cut[i].begin(), sort_vector_points_on_cut[i].end());
+      }
+      else {
+        for(int dim = coordInd + 1; dim < this->coord_dim; ++dim){
+          vals[val_ind++] = this->kokkos_mj_coordinates(i,dim);
         }
-
-        mj_part_t previous_cut_map = cut_map[0];
-
-        //this is how much previous part owns the weight of the current part.
-        //when target part weight is 1.6, and the part on the left is given 2,
-        //the left has an extra 0.4, while the right has missing 0.4 from the previous cut.
-        //this parameter is used to balance this issues.
-        //in the above example weight_stolen_from_previous_part will be 0.4.
-        //if the left part target is 2.2 but it is given 2,
-        //then weight_stolen_from_previous_part will be -0.2.
-        mj_scalar_t weight_stolen_from_previous_part = 0;
-        for (mj_part_t p = 0; p < no_cuts; ++p){
-
-                mj_part_t mapped_cut = cut_map[p];
-
-                //if previous cut map is done, and it does not have the same index,
-                //then assign all points left on that cut to its right.
-                if (previous_cut_map != mapped_cut){
-                        mj_lno_t sort_vector_end = (mj_lno_t)sort_vector_points_on_cut[previous_cut_map].size() - 1;
-                        for (; sort_vector_end >= 0; --sort_vector_end){
-                                multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
-                                mj_lno_t i = t.index;
-                                ++this->kokkos_thread_point_counts(p);
-                                this->kokkos_assigned_part_ids(i) = p;
-                        }
-                        sort_vector_points_on_cut[previous_cut_map].clear();
-                }
-
-                //TODO: MD: I dont remember why I have it reverse order here.
-                mj_lno_t sort_vector_end = (mj_lno_t)sort_vector_points_on_cut[mapped_cut].size() - 1;
-                //mj_lno_t sort_vector_begin= 0;
-                //mj_lno_t sort_vector_size = (mj_lno_t)sort_vector_points_on_cut[mapped_cut].size();
-
-                //TODO commented for reverse order
-                for (; sort_vector_end >= 0; --sort_vector_end){
-                //for (; sort_vector_begin < sort_vector_size; ++sort_vector_begin){
-                        //TODO COMMENTED FOR REVERSE ORDER
-                        multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_end];
-                        //multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_begin];
-                        mj_lno_t i = t.index;
-                        mj_scalar_t w = this->kokkos_mj_uniform_weights(0)? 1:this->kokkos_mj_weights(i,0);
-                        //part p has enough space for point i, then put it to point i.
-                        if(     this->kokkos_thread_cut_line_weight_to_put_left(p) + weight_stolen_from_previous_part> this->sEpsilon &&
-                                this->kokkos_thread_cut_line_weight_to_put_left(p) + weight_stolen_from_previous_part - ZOLTAN2_ABS(this->kokkos_thread_cut_line_weight_to_put_left(p) + weight_stolen_from_previous_part - w)
-                                        > this->sEpsilon){
-
-                                this->kokkos_thread_cut_line_weight_to_put_left(p) -= w;
-
-
-                                sort_vector_points_on_cut[mapped_cut].pop_back();
-
-                                ++this->kokkos_thread_point_counts(p);
-                                this->kokkos_assigned_part_ids(i) = p;
-                                //if putting this weight to left overweights the left cut, then
-                                //increase the space for the next cut using weight_stolen_from_previous_part.
-                                if(p < no_cuts - 1 && this->kokkos_thread_cut_line_weight_to_put_left(p) < this->sEpsilon){
-                                        if(mapped_cut == cut_map[p + 1] ){
-                                                //if the cut before the cut indexed at p was also at the same position
-                                                //special case, as we handle the weight differently here.
-                                                if (previous_cut_map != mapped_cut){
-                                                        weight_stolen_from_previous_part = this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                                }
-                                                else {
-                                                        //if the cut before the cut indexed at p was also at the same position
-                                                        //we assign extra weights cumulatively in this case.
-                                                        weight_stolen_from_previous_part += this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                                }
-                                        }
-                                        else{
-                                                weight_stolen_from_previous_part = -this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                        }
-                                        //end assignment for part p
-                                        break;
-                                }
-                        } else {
-                                //if part p does not have enough space for this point
-                                //and if there is another cut sharing the same positon,
-                                //again increase the space for the next
-                                if(p < no_cuts - 1 && mapped_cut == cut_map[p + 1]){
-                                        if (previous_cut_map != mapped_cut){
-                                                weight_stolen_from_previous_part = this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                        }
-                                        else {
-                                                weight_stolen_from_previous_part += this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                        }
-                                }
-                                else{
-                                        weight_stolen_from_previous_part = -this->kokkos_thread_cut_line_weight_to_put_left(p);
-                                }
-                                //end assignment for part p
-                                break;
-                        }
-                }
-                previous_cut_map = mapped_cut;
+        for(int dim = 0; dim < coordInd; ++dim){
+          vals[val_ind++] = this->kokkos_mj_coordinates(i,dim);
         }
+      }
 
-        //TODO commented for reverse order
-        //put everything left on the last cut to the last part.
-        mj_lno_t sort_vector_end = (mj_lno_t)sort_vector_points_on_cut[previous_cut_map].size() - 1;
+      multiSItem tempSortItem(i, this->coord_dim -1, vals);
+      //inser the point to the sort vector pointed by the cut_map[p].
+      mj_part_t cmap = cut_map[p];
+      sort_vector_points_on_cut[cmap].push_back(tempSortItem);
+    }
+    else {
+      //if it is not on the cut, simple sorting.
+      ++this->kokkos_thread_point_counts(p);
+      this->kokkos_assigned_part_ids(i) = p;
+    }
+  }
 
-        //mj_lno_t sort_vector_begin= 0;
-        //mj_lno_t sort_vector_size = (mj_lno_t)sort_vector_points_on_cut[previous_cut_map].size();
-        //TODO commented for reverse order
-        for (; sort_vector_end >= 0; --sort_vector_end){
-        //for (; sort_vector_begin < sort_vector_size; ++sort_vector_begin){
-                //TODO commented for reverse order
-                multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
-                //multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_begin];
-                mj_lno_t i = t.index;
-                ++this->kokkos_thread_point_counts(no_cuts);
-                this->kokkos_assigned_part_ids(i) = no_cuts;
+  // sort all the sort vectors.
+  for (mj_part_t i = 0; i < different_cut_count; ++i){
+    std::sort (sort_vector_points_on_cut[i].begin(),
+      sort_vector_points_on_cut[i].end());
+  }
+
+  mj_part_t previous_cut_map = cut_map[0];
+
+  // this is how much previous part owns the weight of the current part.
+  // when target part weight is 1.6, and the part on the left is given 2,
+  // the left has an extra 0.4, while the right has missing 0.4 from the
+  // previous cut.
+  // This parameter is used to balance this issues.
+  // in the above example weight_stolen_from_previous_part will be 0.4.
+  // if the left part target is 2.2 but it is given 2,
+  // then weight_stolen_from_previous_part will be -0.2.
+  mj_scalar_t weight_stolen_from_previous_part = 0;
+  for (mj_part_t p = 0; p < no_cuts; ++p) {
+    mj_part_t mapped_cut = cut_map[p];
+
+    // if previous cut map is done, and it does not have the same index,
+    // then assign all points left on that cut to its right.
+    if (previous_cut_map != mapped_cut) {
+      mj_lno_t sort_vector_end = (mj_lno_t)
+        sort_vector_points_on_cut[previous_cut_map].size() - 1;
+      for (; sort_vector_end >= 0; --sort_vector_end) {
+        multiSItem t =
+          sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
+        mj_lno_t i = t.index;
+        ++this->kokkos_thread_point_counts(p);
+        this->kokkos_assigned_part_ids(i) = p;
+      }
+      sort_vector_points_on_cut[previous_cut_map].clear();
+    }
+
+    // TODO: MD: I dont remember why I have it reverse order here.
+    mj_lno_t sort_vector_end = (mj_lno_t)
+      sort_vector_points_on_cut[mapped_cut].size() - 1;
+    // mj_lno_t sort_vector_begin= 0;
+    // mj_lno_t sort_vector_size =
+    //   (mj_lno_t)sort_vector_points_on_cut[mapped_cut].size();
+
+    // TODO commented for reverse order
+    for (; sort_vector_end >= 0; --sort_vector_end){
+      // for (; sort_vector_begin < sort_vector_size; ++sort_vector_begin){
+      // TODO COMMENTED FOR REVERSE ORDER
+      multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_end];
+      //multiSItem t = sort_vector_points_on_cut[mapped_cut][sort_vector_begin];
+      mj_lno_t i = t.index;
+      mj_scalar_t w = this->kokkos_mj_uniform_weights(0) ? 1 :
+        this->kokkos_mj_weights(i,0);
+      // part p has enough space for point i, then put it to point i.
+      if(this->kokkos_thread_cut_line_weight_to_put_left(p) +
+        weight_stolen_from_previous_part> this->sEpsilon &&
+        this->kokkos_thread_cut_line_weight_to_put_left(p) +
+        weight_stolen_from_previous_part -
+        ZOLTAN2_ABS(this->kokkos_thread_cut_line_weight_to_put_left(p) +
+        weight_stolen_from_previous_part - w)> this->sEpsilon)
+      {
+        this->kokkos_thread_cut_line_weight_to_put_left(p) -= w;
+
+        sort_vector_points_on_cut[mapped_cut].pop_back();
+
+        ++this->kokkos_thread_point_counts(p);
+        this->kokkos_assigned_part_ids(i) = p;
+        // if putting this weight to left overweights the left cut, then
+        // increase the space for the next cut using
+        // weight_stolen_from_previous_part.
+        if(p < no_cuts - 1 &&
+          this->kokkos_thread_cut_line_weight_to_put_left(p) < this->sEpsilon) {
+            if(mapped_cut == cut_map[p + 1] ) {
+              // if the cut before the cut indexed at p was also at the same
+              // position special case, as we handle the weight differently here.
+              if (previous_cut_map != mapped_cut){
+                weight_stolen_from_previous_part =
+                  this->kokkos_thread_cut_line_weight_to_put_left(p);
+              }
+              else {
+                // if the cut before the cut indexed at p was also at the same
+                // position we assign extra weights cumulatively in this case.
+                weight_stolen_from_previous_part +=
+                  this->kokkos_thread_cut_line_weight_to_put_left(p);
+              }
+            }
+            else{
+              weight_stolen_from_previous_part =
+                -this->kokkos_thread_cut_line_weight_to_put_left(p);
+            }
+            // end assignment for part p
+            break;
         }
-        sort_vector_points_on_cut[previous_cut_map].clear();
-        freeArray<mj_part_t> (cut_map);
-
-        //free the memory allocated for vertex sort items .
-        mj_lno_t vSize = (mj_lno_t) allocated_memory.size();
-        for(mj_lno_t i = 0; i < vSize; ++i){
-                freeArray<mj_scalar_t> (allocated_memory[i]);
+      } else {
+        // if part p does not have enough space for this point
+        // and if there is another cut sharing the same positon,
+        // again increase the space for the next
+        if(p < no_cuts - 1 && mapped_cut == cut_map[p + 1]){
+          if (previous_cut_map != mapped_cut){
+            weight_stolen_from_previous_part =
+              this->kokkos_thread_cut_line_weight_to_put_left(p);
+          }
+          else {
+            weight_stolen_from_previous_part +=
+              this->kokkos_thread_cut_line_weight_to_put_left(p);
+          }
         }
-
-        //creation of part_xadj as in usual case.
-        for(mj_part_t j = 0; j < num_parts; ++j){
-                // TODO: Fnish cleaning this up - refactored out threads but now need to simplify this logic
-                mj_lno_t num_points_in_part_j_upto_thread_i = 0;
-                mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j);
-                this->kokkos_thread_point_counts(j) = num_points_in_part_j_upto_thread_i;
-                num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
-                kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;// + prev2; //+ coordinateBegin;
+        else{
+          weight_stolen_from_previous_part =
+            -this->kokkos_thread_cut_line_weight_to_put_left(p);
         }
+        // end assignment for part p
+        break;
+      }
+    }
+    previous_cut_map = mapped_cut;
+  }
 
-        //perform prefix sum for num_points in parts.
-        for(mj_part_t j = 1; j < num_parts; ++j){
-                kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
-        }
+  // TODO commented for reverse order
+  // put everything left on the last cut to the last part.
+  mj_lno_t sort_vector_end = (mj_lno_t)sort_vector_points_on_cut[
+    previous_cut_map].size() - 1;
 
+  // mj_lno_t sort_vector_begin= 0;
+  // mj_lno_t sort_vector_size = (mj_lno_t)
+  //   sort_vector_points_on_cut[previous_cut_map].size();
+  // TODO commented for reverse order
+  for (; sort_vector_end >= 0; --sort_vector_end) {
+    // TODO commented for reverse order
+    multiSItem t = sort_vector_points_on_cut[previous_cut_map][sort_vector_end];
+    // multiSItem t =
+    //   sort_vector_points_on_cut[previous_cut_map][sort_vector_begin];
+    mj_lno_t i = t.index;
+    ++this->kokkos_thread_point_counts(no_cuts);
+    this->kokkos_assigned_part_ids(i) = no_cuts;
+  }
 
-        //shift the num points in threads thread to obtain the
-        //beginning index of each thread's private space.
-        for(mj_part_t j = 1; j < num_parts; ++j){
-                this->kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
-        }
+  sort_vector_points_on_cut[previous_cut_map].clear();
+  freeArray<mj_part_t> (cut_map);
 
-        //now thread gets the coordinate and writes the index of coordinate to the permutation array
-        //using the part index we calculated.
-        for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii){
-                mj_lno_t i = this->kokkos_coordinate_permutations(ii);
-                mj_part_t p =  this->kokkos_assigned_part_ids(i);
-                this->kokkos_new_coordinate_permutations(coordinate_begin +
-                                                  this->kokkos_thread_point_counts(p)++) = i;
-        }
+  //free the memory allocated for vertex sort items .
+  mj_lno_t vSize = (mj_lno_t) allocated_memory.size();
+  for(mj_lno_t i = 0; i < vSize; ++i){
+    freeArray<mj_scalar_t> (allocated_memory[i]);
+  }
+
+  // creation of part_xadj as in usual case.
+  for(mj_part_t j = 0; j < num_parts; ++j) {
+    // TODO: Fnish cleaning this up - refactored out threads but now need to
+    // simplify this logic
+    mj_lno_t num_points_in_part_j_upto_thread_i = 0;
+    mj_lno_t thread_num_points_in_part_j = this->kokkos_thread_point_counts(j);
+    this->kokkos_thread_point_counts(j) = num_points_in_part_j_upto_thread_i;
+    num_points_in_part_j_upto_thread_i += thread_num_points_in_part_j;
+    kokkos_out_part_xadj(j) = num_points_in_part_j_upto_thread_i;
+  }
+
+  // perform prefix sum for num_points in parts.
+  for(mj_part_t j = 1; j < num_parts; ++j) {
+    kokkos_out_part_xadj(j) += kokkos_out_part_xadj(j - 1);
+  }
+
+  // shift the num points in threads thread to obtain the
+  // beginning index of each thread's private space.
+  for(mj_part_t j = 1; j < num_parts; ++j) {
+    this->kokkos_thread_point_counts(j) += kokkos_out_part_xadj(j - 1);
+  }
+
+  // now thread gets the coordinate and writes the index of coordinate to
+  // the permutation array using the part index we calculated.
+  for (mj_lno_t ii = coordinate_begin; ii < coordinate_end; ++ii) {
+    mj_lno_t i = this->kokkos_coordinate_permutations(ii);
+    mj_part_t p =  this->kokkos_assigned_part_ids(i);
+    this->kokkos_new_coordinate_permutations(coordinate_begin +
+      this->kokkos_thread_point_counts(p)++) = i;
+  }
 }
 
-
-
-/*! \brief Function sends the found partids to the owner of the coordinates,
- * if the data is ever migrated. otherwise, it seets the part numbers and returns.
+/*! \brief Function sends the found partids to the owner of the coordinates, if
+ * the data is ever migrated. otherwise, it seets the part numbers and returns.
  * \param current_num_parts is the number of parts in the process.
- * \param output_part_begin_index is the number that will be used as beginning part number
+ * \param output_part_begin_index is the number that will be used as beginning
+ * part number
  * \param output_part_boxes is the array that holds the part boxes
  * \param is_data_ever_migrated is the boolean value which is true
  * if the data is ever migrated during the partitioning.
- *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::set_final_parts(
-                mj_part_t current_num_parts,
-                mj_part_t output_part_begin_index,
-                RCP<mj_partBoxVector_t> &output_part_boxes,
-                bool is_data_ever_migrated)
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  set_final_parts(
+  mj_part_t current_num_parts,
+  mj_part_t output_part_begin_index,
+  RCP<mj_partBoxVector_t> &output_part_boxes,
+  bool is_data_ever_migrated)
 {
     this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Part_Assignment");
 
@@ -7109,11 +7274,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       }
     }
 
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(current_num_parts, Kokkos::AUTO());
-    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::member_type member_type;
+    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
+      current_num_parts, Kokkos::AUTO());
+    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
+      member_type member_type;
     Kokkos::parallel_for(policy, KOKKOS_LAMBDA(member_type team_member) {
       int i = team_member.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, (i != 0) ? local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
+      Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, (i != 0) ?
+        local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
         [=] (int & ii) {
         mj_lno_t k = local_kokkos_coordinate_permutations(ii);
         local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
@@ -7122,1128 +7290,1351 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
-        //freeArray<mj_gno_t>(this->current_mj_gnos);
-        //if(this->num_local_coords > 0){
-        //    gnoList = arcpFromArrayView(this->mj_gnos);
-        //}
+      //freeArray<mj_gno_t>(this->current_mj_gnos);
+      //if(this->num_local_coords > 0){
+      //    gnoList = arcpFromArrayView(this->mj_gnos);
+      //}
     }
     else {
 #ifdef ENABLE_ZOLTAN_MIGRATION
-      if (sizeof(mj_lno_t) <=  sizeof(int)) {
+    if (sizeof(mj_lno_t) <=  sizeof(int)) {
 
-        // Cannot use Zoltan_Comm with local ordinals larger than ints.
-        // In Zoltan_Comm_Create, the cast int(this->num_local_coords)
-        // may overflow.
+      // Cannot use Zoltan_Comm with local ordinals larger than ints.
+      // In Zoltan_Comm_Create, the cast int(this->num_local_coords)
+      // may overflow.
 
-        //if data is migrated, then send part numbers to the original owners.
-        ZOLTAN_COMM_OBJ *plan = NULL;
-        MPI_Comm mpi_comm = Teuchos::getRawMpiComm(*(this->mj_problemComm));
+      // if data is migrated, then send part numbers to the original owners.
+      ZOLTAN_COMM_OBJ *plan = NULL;
+      MPI_Comm mpi_comm = Teuchos::getRawMpiComm(*(this->mj_problemComm));
 
-        int incoming = 0;
-        int message_tag = 7856;
+      int incoming = 0;
+      int message_tag = 7856;
 
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final Z1PlanCreating");
-        int ierr = Zoltan_Comm_Create( &plan, int(this->num_local_coords),
-                        this->owner_of_coordinate, mpi_comm, message_tag,
-                        &incoming);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final Z1PlanCreating" );
+      this->mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - Final Z1PlanCreating");
+      int ierr = Zoltan_Comm_Create( &plan, int(this->num_local_coords),
+                      this->owner_of_coordinate, mpi_comm, message_tag,
+                      &incoming);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      this->mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - Final Z1PlanCreating" );
 
-        mj_gno_t *incoming_gnos = allocMemory< mj_gno_t>(incoming);
+      mj_gno_t *incoming_gnos = allocMemory< mj_gno_t>(incoming);
 
-        message_tag++;
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final Z1PlanComm");
-        ierr = Zoltan_Comm_Do( plan, message_tag, (char *) this->current_mj_gnos,
-                        sizeof(mj_gno_t), (char *) incoming_gnos);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      message_tag++;
+      this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final Z1PlanComm");
+      ierr = Zoltan_Comm_Do( plan, message_tag, (char *) this->current_mj_gnos,
+                      sizeof(mj_gno_t), (char *) incoming_gnos);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
 
-        freeArray<mj_gno_t>(this->current_mj_gnos);
-        this->current_mj_gnos = incoming_gnos;
+      freeArray<mj_gno_t>(this->current_mj_gnos);
+      this->current_mj_gnos = incoming_gnos;
 
-        Kokkos::View<mj_part_t*, device_t>
-          kokkos_incoming_partIds(incoming);
-        message_tag++;
-        ierr = Zoltan_Comm_Do( plan, message_tag, (char *) this->kokkos_assigned_part_ids.data(),
-                        sizeof(mj_part_t), (char *) kokkos_incoming_partIds.data());
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-        this->kokkos_assigned_part_ids = kokkos_incoming_partIds;
+      Kokkos::View<mj_part_t*, device_t>
+        kokkos_incoming_partIds(incoming);
+      message_tag++;
+      ierr = Zoltan_Comm_Do( plan, message_tag,
+        (char *) this->kokkos_assigned_part_ids.data(),
+        sizeof(mj_part_t), (char *) kokkos_incoming_partIds.data());
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      this->kokkos_assigned_part_ids = kokkos_incoming_partIds;
 
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final Z1PlanComm");
-        ierr = Zoltan_Comm_Destroy(&plan);
-        Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
+      this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final Z1PlanComm");
+      ierr = Zoltan_Comm_Destroy(&plan);
+      Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
 
-        this->num_local_coords = incoming;
-        //gnoList = arcp(this->current_mj_gnos, 0, this->num_local_coords, true);
-      }
-      else
-
+      this->num_local_coords = incoming;
+      //gnoList = arcp(this->current_mj_gnos, 0, this->num_local_coords, true);
+    }
+    else
 #endif  // !ENABLE_ZOLTAN_MIGRATION
+    {
+      throw std::logic_error("This code not refactored yet - not expected "
+        "to work - needs to be on device.");
 
-      {
-        throw std::logic_error("This code not refactored yet - not expected to work - needs to be on device.");
+      //if data is migrated, then send part numbers to the original owners.
+      this->mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - Final DistributorPlanCreating");
+      Tpetra::Distributor distributor(this->mj_problemComm);
+      ArrayView<const mj_part_t> owners_of_coords(
+        this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
 
-        //if data is migrated, then send part numbers to the original owners.
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating");
-        Tpetra::Distributor distributor(this->mj_problemComm);
-        ArrayView<const mj_part_t> owners_of_coords(this->kokkos_owner_of_coordinate.data(), this->num_local_coords);
+      mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
+      this->mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - Final DistributorPlanCreating" );
+      this->mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - Final DistributorPlanComm");
+      //migrate gnos to actual owners.
+      ArrayRCP<mj_gno_t> received_gnos(incoming);
 
-        mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final DistributorPlanCreating" );
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
-        //migrate gnos to actual owners.
-        ArrayRCP<mj_gno_t> received_gnos(incoming);
+      ArrayView<mj_gno_t> sent_gnos(this->kokkos_current_mj_gnos.data(),
+        this->num_local_coords);
+      distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+      this->kokkos_current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>
+        ("kokkos_current_mj_gnos", incoming);
+      memcpy( this->kokkos_current_mj_gnos.data(),
+        received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
 
-        ArrayView<mj_gno_t> sent_gnos(this->kokkos_current_mj_gnos.data(), this->num_local_coords);
-        distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-        this->kokkos_current_mj_gnos =
-          Kokkos::View<mj_gno_t*, device_t>
-          ("kokkos_current_mj_gnos", incoming);
-        memcpy( this->kokkos_current_mj_gnos.data(),
-                received_gnos.getRawPtr(),
-                incoming * sizeof(mj_gno_t));
+      // migrate part ids to actual owners.
+      ArrayView<mj_part_t> sent_partids(this->kokkos_assigned_part_ids.data(),
+        this->num_local_coords);
+      ArrayRCP<mj_part_t> received_partids(incoming);
+      distributor.doPostsAndWaits<mj_part_t>(
+        sent_partids, 1, received_partids());
+      this->kokkos_assigned_part_ids =
+        Kokkos::View<mj_part_t*, device_t>
+        ("kokkos_assigned_part_ids", incoming);
+      memcpy( this->kokkos_assigned_part_ids.data(),
+        received_partids.getRawPtr(), incoming * sizeof(mj_part_t));
 
-                //migrate part ids to actual owners.
-        ArrayView<mj_part_t> sent_partids(this->kokkos_assigned_part_ids.data(), this->num_local_coords);
-        ArrayRCP<mj_part_t> received_partids(incoming);
-        distributor.doPostsAndWaits<mj_part_t>(sent_partids, 1, received_partids());
-        this->kokkos_assigned_part_ids =
-          Kokkos::View<mj_part_t*, device_t>
-          ("kokkos_assigned_part_ids", incoming);
-        memcpy( this->kokkos_assigned_part_ids.data(),
-                received_partids.getRawPtr(),
-                incoming * sizeof(mj_part_t));
-
-        this->num_local_coords = incoming;
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Final DistributorPlanComm");
-      }
+      this->num_local_coords = incoming;
+      this->mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - Final DistributorPlanComm");
     }
+  }
 
-    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Part_Assignment");
+  this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Part_Assignment");
 
-    this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Solution_Part_Assignment");
+  this->mj_env->timerStart(MACRO_TIMERS,
+    "MultiJagged - Solution_Part_Assignment");
 
-    //ArrayRCP<mj_part_t> partId;
-    //partId = arcp(this->assigned_part_ids, 0, this->num_local_coords, true);
+  // ArrayRCP<mj_part_t> partId;
+  // partId = arcp(this->assigned_part_ids, 0, this->num_local_coords, true);
 
-    if (this->mj_keep_part_boxes){
-        this->kept_boxes = compute_global_box_boundaries(output_part_boxes);
+  if (this->mj_keep_part_boxes){
+    this->kept_boxes = compute_global_box_boundaries(output_part_boxes);
+  }
 
-    }
+  this->mj_env->timerStop(MACRO_TIMERS,
+    "MultiJagged - Solution_Part_Assignment");
+}
 
-    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Solution_Part_Assignment");
+/*!\brief Multi Jagged  coordinate partitioning algorithm.
+ * \param distribute_points_on_cut_lines_ :  if partitioning can distribute
+ * points on same coordinate to different parts.
+ * \param max_concurrent_part_calculation_ : how many parts we can calculate
+ * concurrently.
+ * \param check_migrate_avoid_migration_option_ : whether to migrate=1,
+ * avoid migrate=2, or leave decision to MJ=0
+ * \param minimum_migration_imbalance_  : when MJ decides whether to migrate,
+ * the minimum imbalance for migration.
+ * \param migration_type : whether to migrate for perfect load imbalance (0) or
+ * less messages.
+ */
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  set_partitioning_parameters(
+  bool distribute_points_on_cut_lines_,
+  int max_concurrent_part_calculation_,
+  int check_migrate_avoid_migration_option_,
+  mj_scalar_t minimum_migration_imbalance_,
+  int migration_type_)
+{
+  this->distribute_points_on_cut_lines = distribute_points_on_cut_lines_;
+  this->max_concurrent_part_calculation = max_concurrent_part_calculation_;
+  this->check_migrate_avoid_migration_option =
+    check_migrate_avoid_migration_option_;
+  this->minimum_migration_imbalance = minimum_migration_imbalance_;
+  this->migration_type = migration_type_;
 }
 
 /*! \brief Multi Jagged  coordinate partitioning algorithm.
- *
- *  \param distribute_points_on_cut_lines_ :  if partitioning can distribute points on same coordinate to different parts.
- *  \param max_concurrent_part_calculation_ : how many parts we can calculate concurrently.
- *  \param check_migrate_avoid_migration_option_ : whether to migrate=1, avoid migrate=2, or leave decision to MJ=0
- *  \param minimum_migration_imbalance_  : when MJ decides whether to migrate, the minimum imbalance for migration.
- *  \param migration_type : whether to migrate for perfect load imbalance (0) or less messages.
+ * \param env   library configuration and problem parameters
+ * \param problemComm the communicator for the problem
+ * \param imbalance_tolerance : the input provided imbalance tolerance.
+ * \param num_global_parts: number of target global parts.
+ * \param part_no_array: part no array, if provided this will be used for
+ * partitioning.
+ * \param recursion_depth: if part no array is provided, it is the length of
+ * part no array, if part no is not provided than it is the number of steps that
+ * algorithm will divide into num_global_parts parts.
+ * \param coord_dim: coordinate dimension
+ * \param num_local_coords: number of local coordinates
+ * \param num_global_coords: number of global coordinates
+ * \param initial_mj_gnos: the list of initial global id's
+ * \param mj_coordinates: the two dimensional coordinate array.
+ * \param num_weights_per_coord: number of weights per coordinate
+ * \param mj_uniform_weights: if weight index [i] has uniform weight or not.
+ * \param mj_weights: the two dimensional array for weights
+ * \param mj_uniform_parts: if the target partitioning aims uniform parts
+ * \param mj_part_sizes: if the target partitioning does not aim uniform parts,
+ * then weight of each part.
+ * \param result_assigned_part_ids: Output - 1D pointer, should be provided as
+ * null. Memory is given in the function. the result partids corresponding to
+ * the coordinates given in result_mj_gnos.
+ * \param result_mj_gnos: Output - 1D pointer, should be provided as null.
+ * Memory is given in the function. the result coordinate global id's
+ * corresponding to the part_ids array.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::set_partitioning_parameters(
-                bool distribute_points_on_cut_lines_,
-                int max_concurrent_part_calculation_,
-                int check_migrate_avoid_migration_option_,
-                mj_scalar_t minimum_migration_imbalance_,
-		int migration_type_ ){
-        this->distribute_points_on_cut_lines = distribute_points_on_cut_lines_;
-        this->max_concurrent_part_calculation = max_concurrent_part_calculation_;
-        this->check_migrate_avoid_migration_option = check_migrate_avoid_migration_option_;
-        this->minimum_migration_imbalance = minimum_migration_imbalance_;
-	this->migration_type = migration_type_;
-
-}
-
-
-
-
-/*! \brief Multi Jagged  coordinate partitioning algorithm.
- *
- *  \param env   library configuration and problem parameters
- *  \param problemComm the communicator for the problem
- *  \param imbalance_tolerance : the input provided imbalance tolerance.
- *  \param num_global_parts: number of target global parts.
- *  \param part_no_array: part no array, if provided this will be used for partitioning.
- *  \param recursion_depth: if part no array is provided, it is the length of part no array,
- *                                              if part no is not provided than it is the number of steps that algorithm will divide into num_global_parts parts.
- *
- *  \param coord_dim: coordinate dimension
- *  \param num_local_coords: number of local coordinates
- *  \param num_global_coords: number of global coordinates
- *  \param initial_mj_gnos: the list of initial global id's
- *  \param mj_coordinates: the two dimensional coordinate array.
- *
- *  \param num_weights_per_coord: number of weights per coordinate
- *  \param mj_uniform_weights: if weight index [i] has uniform weight or not.
- *  \param mj_weights: the two dimensional array for weights
- *  \param mj_uniform_parts: if the target partitioning aims uniform parts
- *  \param mj_part_sizes: if the target partitioning does not aim uniform parts, then weight of each part.
- *
- *  \param result_assigned_part_ids: Output - 1D pointer, should be provided as null. Memory is given in the function.
- *                      the result partids corresponding to the coordinates given in result_mj_gnos.
- *  \param result_mj_gnos: Output - 1D pointer, should be provided as null. Memory is given in the function.
- *                      the result coordinate global id's corresponding to the part_ids array.
- *
- */
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-          mj_node_t>::multi_jagged_part(
-        const RCP<const Environment> &env,
-        RCP<const Comm<int> > &problemComm,
-        double imbalance_tolerance_,
-        size_t num_global_parts_,
-        Kokkos::View<mj_part_t*, device_t> kokkos_part_no_array_,
-        int recursion_depth_,
-        int coord_dim_,
-        mj_lno_t num_local_coords_,
-        mj_gno_t num_global_coords_,
-        Kokkos::View<const mj_gno_t*, device_t> kokkos_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> kokkos_mj_coordinates_,
-        int num_weights_per_coord_,
-        Kokkos::View<bool*, device_t> kokkos_mj_uniform_weights_,
-        Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_weights_,
-        Kokkos::View<bool*, device_t> kokkos_mj_uniform_parts_,
-        Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_part_sizes_,
-        Kokkos::View<mj_part_t *, device_t> &kokkos_result_assigned_part_ids_,
-        Kokkos::View<mj_gno_t*, device_t> &kokkos_result_mj_gnos_
-)
+  typename mj_part_t, typename mj_node_t>
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+  multi_jagged_part(
+  const RCP<const Environment> &env,
+  RCP<const Comm<int> > &problemComm,
+  double imbalance_tolerance_,
+  size_t num_global_parts_,
+  Kokkos::View<mj_part_t*, device_t> kokkos_part_no_array_,
+  int recursion_depth_,
+  int coord_dim_,
+  mj_lno_t num_local_coords_,
+  mj_gno_t num_global_coords_,
+  Kokkos::View<const mj_gno_t*, device_t> kokkos_initial_mj_gnos_,
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
+    kokkos_mj_coordinates_,
+  int num_weights_per_coord_,
+  Kokkos::View<bool*, device_t> kokkos_mj_uniform_weights_,
+  Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_weights_,
+  Kokkos::View<bool*, device_t> kokkos_mj_uniform_parts_,
+  Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_part_sizes_,
+  Kokkos::View<mj_part_t *, device_t> &kokkos_result_assigned_part_ids_,
+  Kokkos::View<mj_gno_t*, device_t> &kokkos_result_mj_gnos_)
 {
   // purpose of this code is to validate node and UVM status for the tests
   // TODO: Later can remove or make this debug code
   std::cout << "Memory Space: " << mj_node_t::memory_space::name()
     << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
       
-mj_create_new_partitions_clock.reset();
+  mj_create_new_partitions_clock.reset();
 
-mj_1D_part_while_loop.reset();
-mj_1D_part_init.reset();
-mj_1D_part_init2.reset();
-mj_1D_part_get_weights_init.reset();
-mj_1D_part_get_weights_setup.reset();
-mj_1D_part_get_weights.reset();
+  mj_1D_part_while_loop.reset();
+  mj_1D_part_init.reset();
+  mj_1D_part_init2.reset();
+  mj_1D_part_get_weights_init.reset();
+  mj_1D_part_get_weights_setup.reset();
+  mj_1D_part_get_weights.reset();
 
-weights1.reset();
-weights2.reset();
-weights3.reset();
-functor1.reset();
-weights4.reset();
-weights5.reset();
-weights6.reset();
-functor2.reset();
+  weights1.reset();
+  weights2.reset();
+  weights3.reset();
+  functor1.reset();
+  weights4.reset();
+  weights5.reset();
+  weights6.reset();
+  functor2.reset();
 
-clock_mj_accumulate_thread_results.reset();
+  clock_mj_accumulate_thread_results.reset();
 
-clock_mj_get_new_cut_coordinates_init.reset();
-clock_mj_get_new_cut_coordinates.reset();
-clock_mj_get_new_cut_coordinates_end.reset();
+  clock_mj_get_new_cut_coordinates_init.reset();
+  clock_mj_get_new_cut_coordinates.reset();
+  clock_mj_get_new_cut_coordinates_end.reset();
 
-clock_write_globals.reset();
+  clock_write_globals.reset();
 
-mj_1D_part_end.reset();
+  mj_1D_part_end.reset();
 
-Clock clock_multi_jagged_part("multi_jagged_part", true);
-Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
-Clock clock_multi_jagged_part_init_begin("    multi_jagged_part init begin", true);
+  Clock clock_multi_jagged_part("multi_jagged_part", true);
+  Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
+  Clock clock_multi_jagged_part_init_begin(
+    "    multi_jagged_part init begin", true);
+
 #ifdef print_debug
-    if(comm->getRank() == 0){
-        std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
-
-        std::cout << "size of lno:" << sizeof(mj_lno_t) << std::endl;
-        std::cout << "size of mj_scalar_t:" << sizeof(mj_scalar_t) << std::endl;
-    }
+  if(comm->getRank() == 0) {
+    std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
+    std::cout << "size of lno:" << sizeof(mj_lno_t) << std::endl;
+    std::cout << "size of mj_scalar_t:" << sizeof(mj_scalar_t) << std::endl;
+  }
 #endif
-    this->mj_env = env;
-    this->mj_problemComm = problemComm;
-    this->myActualRank = this->myRank = this->mj_problemComm->getRank();
-    this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
-    this->mj_env->debug(3, "In MultiJagged Jagged");
-    {
-        this->imbalance_tolerance = imbalance_tolerance_;
-        this->num_global_parts = num_global_parts_;
-        this->kokkos_part_no_array = kokkos_part_no_array_;
-        this->recursion_depth = recursion_depth_;
-        this->coord_dim = coord_dim_;
-        this->num_local_coords = num_local_coords_;
-        this->num_global_coords = num_global_coords_;
-        this->kokkos_mj_coordinates = kokkos_mj_coordinates_; //will copy the memory to this->mj_coordinates.
-        this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_; // see note below ... was original copying? seems cannot be...
-        this->num_weights_per_coord = num_weights_per_coord_;
-        this->kokkos_mj_uniform_weights = kokkos_mj_uniform_weights_;
-        this->kokkos_mj_weights = kokkos_mj_weights_; //will copy the memory to this->mj_weights
-        this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
-        this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
+
+  this->mj_env = env;
+  this->mj_problemComm = problemComm;
+  this->myActualRank = this->myRank = this->mj_problemComm->getRank();
+  this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
+  this->mj_env->debug(3, "In MultiJagged Jagged");
+  this->imbalance_tolerance = imbalance_tolerance_;
+  this->num_global_parts = num_global_parts_;
+  this->kokkos_part_no_array = kokkos_part_no_array_;
+  this->recursion_depth = recursion_depth_;
+  this->coord_dim = coord_dim_;
+  this->num_local_coords = num_local_coords_;
+  this->num_global_coords = num_global_coords_;
+  this->kokkos_mj_coordinates = kokkos_mj_coordinates_;
+  this->kokkos_initial_mj_gnos = kokkos_initial_mj_gnos_;
+  this->num_weights_per_coord = num_weights_per_coord_;
+  this->kokkos_mj_uniform_weights = kokkos_mj_uniform_weights_;
+  this->kokkos_mj_weights = kokkos_mj_weights_;
+  this->kokkos_mj_uniform_parts = kokkos_mj_uniform_parts_;
+  this->kokkos_mj_part_sizes = kokkos_mj_part_sizes_;
+
+  clock_multi_jagged_part_init_begin.stop();
+
+  // this->set_input_data();
+
+  Clock clock_set_part_specifications(
+    "    clock_set_part_specifications", true);
+  this->set_part_specifications();
+  clock_set_part_specifications.stop();
+
+  Clock clock_allocate_set_work_memory(
+    "    clock_allocate_set_work_memory", true);
+  this->allocate_set_work_memory();
+  clock_allocate_set_work_memory.stop();
+
+  // We duplicate the comm as we create subcommunicators during migration.
+  // We keep the problemComm as it is, while comm changes after each migration.
+  this->comm = this->mj_problemComm->duplicate();
+
+  // initially there is a single partition
+  mj_part_t current_num_parts = 1;
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates =
+    this->kokkos_all_cut_coordinates;
+  this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
+  mj_part_t output_part_begin_index = 0;
+  mj_part_t future_num_parts = this->total_num_part;
+  bool is_data_ever_migrated = false;
+  std::vector<mj_part_t> *future_num_part_in_parts =
+    new std::vector<mj_part_t> ();
+  std::vector<mj_part_t> *next_future_num_parts_in_parts =
+    new std::vector<mj_part_t> ();
+  next_future_num_parts_in_parts->push_back(this->num_global_parts);
+  RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
+  RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
+  compute_global_box();
+  if(this->mj_keep_part_boxes){
+    this->init_part_boxes(output_part_boxes);
+  }
+    
+  auto local_kokkos_part_xadj = this->kokkos_part_xadj;
+
+  // Need a device counter - how best to allocate?
+  // Putting this allocation in the loops is very costly so moved out here.
+  Kokkos::View<mj_part_t*, device_t>
+    view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
+  Kokkos::View<size_t*, device_t>
+    view_total_reduction_size("view_total_reduction_size", 1);
+
+  clock_multi_jagged_part_init.stop();
+  Clock clock_multi_jagged_part_loop("  multi_jagged_part loop", true);
+
+  Clock loopA("    loop A", false);
+  Clock loopB("    loop B", false);
+
+  Clock loopB_1("      loop B 1", false);
+  Clock loopB_2("      loop B 2", false);
+
+  Clock clock_mj_get_initial_cut_coords_target_weights(
+    "      mj_get_initial_cut_coords_target_weights", false);
+  Clock clock_set_initial_coordinate_parts(
+    "      set_initial_coordinate_parts", false);
+  Clock loopB_2_A("      loopB_2_A", false);
+  Clock loopB_2_B("      loopB_2_B", false);
+
+  Clock clock_mj_1D_part("      mj_1D_part", false);
+
+  Clock new_part_chunks("      new part chunks", false);
+
+  Clock loopC("    loop C", false);
+
+  for (int i = 0; i < this->recursion_depth; ++i) {
+
+    loopA.start();
+
+    // convert i to string to be used for debugging purposes.
+    std::string istring = Teuchos::toString<int>(i);
+
+    // partitioning array. size will be as the number of current partitions
+    // and this holds how many parts that each part will be in the current
+    // dimension partitioning.
+    std::vector <mj_part_t> num_partitioning_in_current_dim;
+    
+    // TODO: Eliminate above duplication - just have view form
+    Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim; 
+
+    // number of parts that will be obtained at the end of this partitioning.
+    // future_num_part_in_parts is as the size of current number of parts.
+    // holds how many more parts each should be divided in the further
+    // iterations. this will be used to calculate
+    // num_partitioning_in_current_dim, as the number of parts that the part
+    // will be partitioned in the current dimension partitioning.
+
+    // next_future_num_parts_in_parts will be as the size of outnumParts,
+    // and this will hold how many more parts that each output part
+    // should be divided. this array will also be used to determine the weight
+    // ratios of the parts. swap the arrays to use iteratively.
+    std::vector<mj_part_t> *tmpPartVect= future_num_part_in_parts;
+    future_num_part_in_parts = next_future_num_parts_in_parts;
+    next_future_num_parts_in_parts = tmpPartVect;
+
+    // clear next_future_num_parts_in_parts array as
+    // getPartitionArrays expects it to be empty.
+    // it also expects num_partitioning_in_current_dim to be empty as well.
+    next_future_num_parts_in_parts->clear();
+    if(this->mj_keep_part_boxes) {
+      RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
+      input_part_boxes = output_part_boxes;
+      output_part_boxes = tmpPartBoxes;
+      output_part_boxes->clear();
     }
-clock_multi_jagged_part_init_begin.stop();
 
-    //this->set_input_data();
-Clock clock_set_part_specifications("    clock_set_part_specifications", true);
-    this->set_part_specifications();
-clock_set_part_specifications.stop();
-Clock clock_allocate_set_work_memory("    clock_allocate_set_work_memory", true);
-    this->allocate_set_work_memory();
-clock_allocate_set_work_memory.stop();
+    // returns the total no. of output parts for this dimension partitioning.
+    mj_part_t output_part_count_in_dimension =
+      this->update_part_num_arrays(
+        num_partitioning_in_current_dim,
+        view_num_partitioning_in_current_dim,
+        future_num_part_in_parts,
+        next_future_num_parts_in_parts,
+        future_num_parts,
+        current_num_parts,
+        i,
+        input_part_boxes,
+        output_part_boxes, 1);
+  
+    // if the number of obtained parts equal to current number of parts,
+    // skip this dimension. For example, this happens when 1 is given in the
+    // input part array is given. P=4,5,1,2
+    if(output_part_count_in_dimension == current_num_parts) {
+      //still need to swap the input output arrays.
+      tmpPartVect= future_num_part_in_parts;
+      future_num_part_in_parts = next_future_num_parts_in_parts;
+      next_future_num_parts_in_parts = tmpPartVect;
 
-
-    //We duplicate the comm as we create subcommunicators during migration.
-    //We keep the problemComm as it is, while comm changes after each migration.
-    this->comm = this->mj_problemComm->duplicate();
-    //initially there is a single partition
-    mj_part_t current_num_parts = 1;
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
-    this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
-    mj_part_t output_part_begin_index = 0;
-    mj_part_t future_num_parts = this->total_num_part;
-    bool is_data_ever_migrated = false;
-    std::vector<mj_part_t> *future_num_part_in_parts = new std::vector<mj_part_t> ();
-    std::vector<mj_part_t> *next_future_num_parts_in_parts = new std::vector<mj_part_t> ();
-    next_future_num_parts_in_parts->push_back(this->num_global_parts);
-    RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
-    RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
-    compute_global_box();
-    if(this->mj_keep_part_boxes){
-        this->init_part_boxes(output_part_boxes);
+      if(this->mj_keep_part_boxes) {
+        RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
+        input_part_boxes = output_part_boxes;
+        output_part_boxes = tmpPartBoxes;
+      }
+      loopA.stop();
+      continue;
     }
-    auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
-    // Need a device counter - how best to allocate?
-    // Putting this allocation in the loops is very costly so moved out here.
-    Kokkos::View<mj_part_t*, device_t> view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
-    Kokkos::View<size_t*, device_t> view_total_reduction_size("view_total_reduction_size", 1);
+    // get the coordinate axis along which the partitioning will be done.
+    int coordInd = i % this->coord_dim;
 
-clock_multi_jagged_part_init.stop();
-Clock clock_multi_jagged_part_loop("  multi_jagged_part loop", true);
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords =
+      Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 
-Clock loopA("    loop A", false);
-Clock loopB("    loop B", false);
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Problem_Partitioning_" + istring);
 
-Clock loopB_1("      loop B 1", false);
-Clock loopB_2("      loop B 2", false);
+    // alloc Memory to point the indices
+    // of the parts in the permutation array.
+    this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
+      "new part xadj", output_part_count_in_dimension);
+ 
+    // the index where in the new_part_xadj will be written.
+    mj_part_t output_part_index = 0;
 
-Clock clock_mj_get_initial_cut_coords_target_weights("      mj_get_initial_cut_coords_target_weights", false);
-Clock clock_set_initial_coordinate_parts("      set_initial_coordinate_parts", false);
-Clock loopB_2_A("      loopB_2_A", false);
-Clock loopB_2_B("      loopB_2_B", false);
+    // whatever is written to output_part_index will be added with
+    // output_coordinate_end_index so that the points will be shifted.
+    mj_part_t output_coordinate_end_index = 0;
 
-Clock clock_mj_1D_part("      mj_1D_part", false);
+    mj_part_t current_work_part = 0;
+    mj_part_t current_concurrent_num_parts =
+      std::min(current_num_parts - current_work_part,
+      this->max_concurrent_part_calculation);
 
-Clock new_part_chunks("      new part chunks", false);
+    mj_part_t obtained_part_index = 0;
 
-Clock loopC("    loop C", false);
+    loopA.stop();
+    loopB.start();
 
-    for (int i = 0; i < this->recursion_depth; ++i){
+    // run for all available parts.
+    for(; current_work_part < current_num_parts;
+      current_work_part += current_concurrent_num_parts) {
+      current_concurrent_num_parts =
+        std::min(current_num_parts - current_work_part,
+        this->max_concurrent_part_calculation);
 
-loopA.start();
-
-        //convert i to string to be used for debugging purposes.
-        std::string istring = Teuchos::toString<int>(i);
-        //partitioning array. size will be as the number of current partitions and this
-        //holds how many parts that each part will be in the current dimension partitioning.
-        std::vector <mj_part_t> num_partitioning_in_current_dim;
-        Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim; // TODO: Eliminate above
-
-        //number of parts that will be obtained at the end of this partitioning.
-        //future_num_part_in_parts is as the size of current number of parts.
-        //holds how many more parts each should be divided in the further
-        //iterations. this will be used to calculate num_partitioning_in_current_dim,
-        //as the number of parts that the part will be partitioned
-        //in the current dimension partitioning.
-
-        //next_future_num_parts_in_parts will be as the size of outnumParts,
-        //and this will hold how many more parts that each output part
-        //should be divided. this array will also be used to determine the weight ratios
-        //of the parts.
-        //swap the arrays to use iteratively..
-        std::vector<mj_part_t> *tmpPartVect= future_num_part_in_parts;
-        future_num_part_in_parts = next_future_num_parts_in_parts;
-        next_future_num_parts_in_parts = tmpPartVect;
-        //clear next_future_num_parts_in_parts array as
-        //getPartitionArrays expects it to be empty.
-        //it also expects num_partitioning_in_current_dim to be empty as well.
-        next_future_num_parts_in_parts->clear();
-        if(this->mj_keep_part_boxes){
-            RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
-            input_part_boxes = output_part_boxes;
-            output_part_boxes = tmpPartBoxes;
-            output_part_boxes->clear();
+      // TODO: This loop could be a kernel but I think it will usually exit
+      // right away so probably not worth it. Could also be read from activity
+      // of mj_get_local_min_max_coord_totW below but may not be worth the
+      // device to host transfer - later if this section becomes device code we
+      // can optimize this a bit.
+      bool bDoingWork = false;
+      for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+        if(num_partitioning_in_current_dim[current_work_part + kk] != 1) {
+          bDoingWork = true;
+          break;
         }
+      }
 
-        //returns the total no. of output parts for this dimension partitioning.
-        mj_part_t output_part_count_in_dimension =
-                        this->update_part_num_arrays(
-                                        num_partitioning_in_current_dim,
-                                        view_num_partitioning_in_current_dim,
-                                        future_num_part_in_parts,
-                                        next_future_num_parts_in_parts,
-                                        future_num_parts,
-                                        current_num_parts,
-                                        i,
-                                        input_part_boxes,
-                                        output_part_boxes, 1);
-        //if the number of obtained parts equal to current number of parts,
-        //skip this dimension. For example, this happens when 1 is given in the input
-        //part array is given. P=4,5,1,2
-        if(output_part_count_in_dimension == current_num_parts) {
-            //still need to swap the input output arrays.
-            tmpPartVect= future_num_part_in_parts;
-            future_num_part_in_parts = next_future_num_parts_in_parts;
-            next_future_num_parts_in_parts = tmpPartVect;
+      this->mj_get_local_min_max_coord_totW(
+        current_work_part,
+        current_concurrent_num_parts,
+        kokkos_mj_current_dim_coords);
 
-            if(this->mj_keep_part_boxes){
-                RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
-                input_part_boxes = output_part_boxes;
-                output_part_boxes = tmpPartBoxes;
-            }
-loopA.stop();
+      // 1D partitioning
+      if (bDoingWork) {
+        // obtain global Min max of the part.
+        this->mj_get_global_min_max_coord_totW(
+          current_concurrent_num_parts,
+          this->kokkos_process_local_min_max_coord_total_weight,
+          this->kokkos_global_min_max_coord_total_weight);
+
+        // represents the total number of cutlines
+        // whose coordinate should be determined.
+        mj_part_t total_incomplete_cut_count = 0;
+
+        // Compute weight ratios for parts & cuts:
+        // e.g., 0.25  0.25  0.5    0.5  0.75 0.75  1
+        // part0  cut0  part1 cut1 part2 cut2 part3
+        mj_part_t concurrent_part_cut_shift = 0;
+        mj_part_t concurrent_part_part_shift = 0;
+
+        for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+          loopB_1.start();
+
+          // same as above - temporary measure to pull these values to host
+          // I want to avoid making a parallel loop here for now so I get
+          // internal loops running. Then revisit this. TODO: clean it up
+          mj_scalar_t min_coordinate;
+          auto local_kokkos_global_min_max_coord_total_weight =
+            this->kokkos_global_min_max_coord_total_weight;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+            set_single = local_kokkos_global_min_max_coord_total_weight(kk);
+          }, min_coordinate);
+
+          mj_scalar_t max_coordinate;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+            set_single = local_kokkos_global_min_max_coord_total_weight(
+              kk + current_concurrent_num_parts);
+          }, max_coordinate);
+
+          mj_scalar_t global_total_weight;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+            set_single = local_kokkos_global_min_max_coord_total_weight(
+              kk + 2*current_concurrent_num_parts);
+          }, global_total_weight);
+
+          mj_part_t concurrent_current_part_index = current_work_part + kk;
+          mj_part_t partition_count =
+            num_partitioning_in_current_dim[concurrent_current_part_index];
+
+          Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
+            Kokkos::subview(kokkos_current_cut_coordinates,
+              std::pair<mj_lno_t, mj_lno_t>(
+                concurrent_part_cut_shift,
+                kokkos_current_cut_coordinates.size()));
+          Kokkos::View<mj_scalar_t *, device_t>
+            kokkos_current_target_part_weights =
+            Kokkos::subview(kokkos_target_part_weights,
+              std::pair<mj_lno_t, mj_lno_t>(
+                concurrent_part_part_shift,
+                kokkos_target_part_weights.size()));
+      
+          // shift the usedCutCoordinate array as noCuts.
+          concurrent_part_cut_shift += partition_count - 1;
+          // shift the partRatio array as noParts.
+          concurrent_part_part_shift += partition_count;
+
+          loopB_1.stop();
+          loopB_2.start();
+
+          // calculate only if part is not empty,
+          // and part will be further partitioned.
+          if(partition_count > 1 && min_coordinate <= max_coordinate) {
+
+            // increase num_cuts_do_be_determined by the number of cuts of the
+            // current part's cut line number.
+            total_incomplete_cut_count += partition_count - 1;
+            //set the number of cut lines that should be determined
+            //for this part.
+            // TODO: eventually this is already in a parallel loop or we
+            // clean this up, write to device
+            auto local_kokkos_my_incomplete_cut_count =
+              this->kokkos_my_incomplete_cut_count;
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+                (0, 1), KOKKOS_LAMBDA (const int dummy) {
+                local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
+            });
+                   
+            // get the target weights of the parts.
+            clock_mj_get_initial_cut_coords_target_weights.start();
+            this->mj_get_initial_cut_coords_target_weights(
+              min_coordinate,
+              max_coordinate,
+              partition_count - 1,
+              global_total_weight,
+              kokkos_usedCutCoordinate,
+              kokkos_current_target_part_weights,
+              future_num_part_in_parts,
+              next_future_num_parts_in_parts,
+              concurrent_current_part_index,
+              obtained_part_index);
+
+            clock_mj_get_initial_cut_coords_target_weights.stop();
+            loopB_2_A.start();
+
+            // TODO: refactor clean up
+            mj_lno_t coordinate_end_index;
+            Kokkos::parallel_reduce("Read single", 1,
+              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+              set_single =
+                local_kokkos_part_xadj(concurrent_current_part_index);
+            }, coordinate_end_index);
+
+            // TODO: refactor clean up
+            mj_lno_t coordinate_begin_index;
+            Kokkos::parallel_reduce("Read single", 1,
+              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+              set_single = concurrent_current_part_index==0 ? 0 :
+                local_kokkos_part_xadj(concurrent_current_part_index -1);
+            }, coordinate_begin_index);
+
+            // get the initial estimated part assignments of the
+            // coordinates.
+            this->mj_env->timerStart(MACRO_TIMERS,
+              "MultiJagged - Problem_Partitioning_" + istring +
+              " set_initial_coordinate_parts()");
+
+            loopB_2_A.stop();
+            clock_set_initial_coordinate_parts.start();
+            
+            this->set_initial_coordinate_parts(
+              max_coordinate,
+              min_coordinate,
+              concurrent_current_part_index,
+              coordinate_begin_index, coordinate_end_index,
+              this->kokkos_coordinate_permutations,
+              kokkos_mj_current_dim_coords,
+              this->kokkos_assigned_part_ids,
+              partition_count);
+              this->mj_env->timerStop(MACRO_TIMERS,
+                "MultiJagged - Problem_Partitioning_" + istring +
+                " set_initial_coordinate_parts()");
+
+            clock_set_initial_coordinate_parts.stop();
+          }
+          else {
+            loopB_2_B.start();
+            // e.g., if have fewer coordinates than parts, don't need to do
+            // next dim.
+            auto local_kokkos_my_incomplete_cut_count =
+              this->kokkos_my_incomplete_cut_count;
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+                (0, 1), KOKKOS_LAMBDA (const int dummy) {
+                local_kokkos_my_incomplete_cut_count(kk) = 0;
+            });
+            loopB_2_B.stop();
+          }
+            
+          obtained_part_index += partition_count;
+        }
+    
+        // used imbalance, it is always 0, as it is difficult to
+        // estimate a range.
+        mj_scalar_t used_imbalance = 0;
+        // Determine cut lines for all concurrent parts parts here.
+        this->mj_env->timerStart(MACRO_TIMERS,
+          "MultiJagged - Problem_Partitioning mj_1D_part()");
+
+        loopB_2.stop();
+        clock_mj_1D_part.start();
+
+        this->mj_1D_part(
+          kokkos_mj_current_dim_coords,
+          used_imbalance,
+          current_work_part,
+          current_concurrent_num_parts,
+          kokkos_current_cut_coordinates,
+          total_incomplete_cut_count,
+          num_partitioning_in_current_dim,
+          view_num_partitioning_in_current_dim,
+          view_rectilinear_cut_count,
+          view_total_reduction_size);
+        
+        this->mj_env->timerStop(MACRO_TIMERS,
+          "MultiJagged - Problem_Partitioning mj_1D_part()");
+
+        clock_mj_1D_part.stop();
+      }
+
+      new_part_chunks.start();
+            
+      // create new part chunks
+      {
+        mj_part_t output_array_shift = 0;
+        mj_part_t cut_shift = 0;
+        size_t tlr_shift = 0;
+        size_t partweight_array_shift = 0;
+        for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+
+          mj_part_t current_concurrent_work_part = current_work_part + kk;
+
+          // TODO: num_partitioning_in_current_dim to vector onto device
+          mj_part_t num_parts =
+            num_partitioning_in_current_dim[current_concurrent_work_part];
+
+          // if the part is empty, skip the part.
+
+          // TODO: Clean up later - for now pull some values to host and keep
+          // the algorithm serial host at this point
+          int coordinateA_bigger_than_coordinateB = false;
+          auto local_kokkos_global_min_max_coord_total_weight =
+            this->kokkos_global_min_max_coord_total_weight;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, int & set_single) {
+            set_single = local_kokkos_global_min_max_coord_total_weight(kk) >
+              (local_kokkos_global_min_max_coord_total_weight(
+                kk + current_concurrent_num_parts));
+          }, coordinateA_bigger_than_coordinateB);
+
+          if((num_parts != 1) && coordinateA_bigger_than_coordinateB) {
+            // we still need to write the begin and end point of the empty part.
+            // simply set it zero, the array indices will be shifted later
+            auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+                (0, num_parts), KOKKOS_LAMBDA (const int jj) {
+                local_kokkos_new_part_xadj(
+                  output_part_index + output_array_shift + jj) = 0;
+            });
+
+            cut_shift += num_parts - 1;
+            tlr_shift += (4 *(num_parts - 1) + 1);
+            output_array_shift += num_parts;
+            partweight_array_shift += (2 * (num_parts - 1) + 1);
             continue;
-        }
+          }
 
-        //get the coordinate axis along which the partitioning will be done.
-        int coordInd = i % this->coord_dim;
+          Kokkos::View<mj_scalar_t *, device_t>
+            kokkos_current_concurrent_cut_coordinate =
+            Kokkos::subview(kokkos_current_cut_coordinates,
+              std::pair<mj_lno_t, mj_lno_t>(
+                cut_shift,
+                kokkos_current_cut_coordinates.size()));
+          Kokkos::View<mj_scalar_t *, device_t>
+            kokkos_used_local_cut_line_weight_to_left =
+            Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
+              std::pair<mj_lno_t, mj_lno_t>(
+                cut_shift,
+                kokkos_process_cut_line_weight_to_put_left.size()));
 
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords = Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
+          this->kokkos_thread_part_weight_work =
+            Kokkos::subview(
+              this->kokkos_thread_part_weights,
+              std::pair<mj_lno_t, mj_lno_t>(
+                partweight_array_shift,
+                this->kokkos_thread_part_weights.extent(0)));
 
-        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
-        //alloc Memory to point the indices
-        //of the parts in the permutation array.
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("new part xadj", output_part_count_in_dimension);
-        //the index where in the new_part_xadj will be written.
-        mj_part_t output_part_index = 0;
-        //whatever is written to output_part_index will be added with putput_coordinate_end_index
-        //so that the points will be shifted.
-        mj_part_t output_coordinate_end_index = 0;
-
-        mj_part_t current_work_part = 0;
-        mj_part_t current_concurrent_num_parts =
-                        std::min(current_num_parts - current_work_part, this->max_concurrent_part_calculation);
-
-        mj_part_t obtained_part_index = 0;
-        //run for all available parts.
-
-loopA.stop();
-loopB.start();
-
-        for (; current_work_part < current_num_parts;
-                 current_work_part += current_concurrent_num_parts){
-            current_concurrent_num_parts = std::min(current_num_parts - current_work_part,
-                                 this->max_concurrent_part_calculation);
-
-            // TODO: This loop could be a kernel but I think it will usually exit right away so probably not worth it
-            // Could also be read from activity of mj_get_local_min_max_coord_totW below but may not be worth the
-            // device to host transfer - later if this section becomes device code we can optimize this a bit.
-            bool bDoingWork = false;
-            for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-              if(num_partitioning_in_current_dim[current_work_part + kk] != 1) {
-                bDoingWork = true;
-                break;
+          if(num_parts > 1) {
+            if(this->mj_keep_part_boxes) {
+              // if part boxes are to be stored update the boundaries.
+              for (mj_part_t j = 0; j < num_parts - 1; ++j) {
+                // TODO: need to refactor output_part_boxes to a View form
+                // Then refactor this loop to a parallel_for so all on device
+                mj_scalar_t temp_get_val;
+                Kokkos::parallel_reduce("Read single", 1,
+                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
+                  set_single = kokkos_current_concurrent_cut_coordinate(j);
+                }, temp_get_val);
+                (*output_part_boxes)
+                  [output_array_shift + output_part_index + j].
+                  updateMinMax(temp_get_val, 1 /*update max*/, coordInd);
+                (*output_part_boxes)
+                  [output_array_shift + output_part_index + j + 1].
+                  updateMinMax(temp_get_val, 0 /*update max*/, coordInd);
               }
             }
+          
+            // Rewrite the indices based on the computed cuts.
+            this->mj_create_new_partitions(
+              num_parts,
+              current_concurrent_work_part,
+              kokkos_mj_current_dim_coords,
+              kokkos_current_concurrent_cut_coordinate,
+              kokkos_used_local_cut_line_weight_to_left,
+              this->kokkos_thread_part_weight_work,
+              Kokkos::subview(this->kokkos_new_part_xadj,
+                std::pair<mj_lno_t, mj_lno_t>(
+                  output_part_index + output_array_shift,
+                  this->kokkos_new_part_xadj.size())),  
+              this->kokkos_thread_point_counts,
+              this->distribute_points_on_cut_lines,
+              this->kokkos_thread_cut_line_weight_to_put_left,
+              this->sEpsilon,
+              this->kokkos_coordinate_permutations,
+              this->kokkos_mj_uniform_weights,
+              this->kokkos_mj_weights,
+              this->kokkos_assigned_part_ids,
+              this->kokkos_new_coordinate_permutations);
+          }
+          else {
+            // This should all get simplified into device code
+            mj_lno_t coordinate_end;
+            Kokkos::parallel_reduce("Read single", 1,
+              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+              set_single =
+                local_kokkos_part_xadj[current_concurrent_work_part];;
+            }, coordinate_end);
 
-            this->mj_get_local_min_max_coord_totW(
-              current_work_part,
-              current_concurrent_num_parts,
-              kokkos_mj_current_dim_coords);
+            mj_lno_t coordinate_begin;
+            Kokkos::parallel_reduce("Read single", 1,
+              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+              set_single = current_concurrent_work_part==0 ? 0 :
+                local_kokkos_part_xadj(current_concurrent_work_part -1);
+            }, coordinate_begin);
 
-            //1D partitioning
-            if (bDoingWork){
-                //obtain global Min max of the part.
-                this->mj_get_global_min_max_coord_totW(
-                                current_concurrent_num_parts,
-                                this->kokkos_process_local_min_max_coord_total_weight,
-                                this->kokkos_global_min_max_coord_total_weight);
+            // if this part is partitioned into 1 then just copy
+            // the old values.
+            mj_lno_t part_size = coordinate_end - coordinate_begin;
 
-                //represents the total number of cutlines
-                //whose coordinate should be determined.
-                mj_part_t total_incomplete_cut_count = 0;
+            // TODO: how to best set 1 value...
+            auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;                        
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+              (0, 1), KOKKOS_LAMBDA (const int dummy) {
+              local_kokkos_new_part_xadj(
+                output_part_index + output_array_shift) = part_size;
+            });
 
-                //Compute weight ratios for parts & cuts:
-                //e.g., 0.25  0.25  0.5    0.5  0.75 0.75  1
-                //part0  cut0  part1 cut1 part2 cut2 part3
-                mj_part_t concurrent_part_cut_shift = 0;
-                mj_part_t concurrent_part_part_shift = 0;
-                for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
-loopB_1.start();
-                    // same as above - temporary measure to pull these values to host
-                    // I want to avoid making a parallel loop here for now so I get internal loops running
-                    // Then revisit this. TODO: clean it up
-                    mj_scalar_t min_coordinate;
-                    auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk);
-                    }, min_coordinate);
-
-                    mj_scalar_t max_coordinate;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts);
-                    }, max_coordinate);
-
-                    mj_scalar_t global_total_weight;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk + 2*current_concurrent_num_parts);
-                    }, global_total_weight);
-
-                    mj_part_t concurrent_current_part_index = current_work_part + kk;
-                    mj_part_t partition_count = num_partitioning_in_current_dim[concurrent_current_part_index];
-
-                    Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
-                      Kokkos::subview(kokkos_current_cut_coordinates,
-                        std::pair<mj_lno_t, mj_lno_t>(
-                          concurrent_part_cut_shift,
-                          kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *, device_t> kokkos_current_target_part_weights =
-                      Kokkos::subview(kokkos_target_part_weights,
-                        std::pair<mj_lno_t, mj_lno_t>(
-                          concurrent_part_part_shift,
-                          kokkos_target_part_weights.size()));
-                    //shift the usedCutCoordinate array as noCuts.
-                    concurrent_part_cut_shift += partition_count - 1;
-                    //shift the partRatio array as noParts.
-                    concurrent_part_part_shift += partition_count;
-loopB_1.stop();
-loopB_2.start();
-                    //calculate only if part is not empty,
-                    //and part will be further partitioned.
-                    if(partition_count > 1 && min_coordinate <= max_coordinate){
-
-                        //increase num_cuts_do_be_determined by the number of cuts of the current
-                        //part's cut line number.
-                        total_incomplete_cut_count += partition_count - 1;
-                        //set the number of cut lines that should be determined
-                        //for this part.
-                        // TODO: eventually this is already in a parallel loop or we clean this up
-                        // write to device
-                        auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
-                        Kokkos::parallel_for(
-                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-                          KOKKOS_LAMBDA (const int dummy) {
-                            local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
-                        });
-                        //get the target weights of the parts.
-clock_mj_get_initial_cut_coords_target_weights.start();
-                        this->mj_get_initial_cut_coords_target_weights(
-                                        min_coordinate,
-                                        max_coordinate,
-                                        partition_count - 1,
-                                        global_total_weight,
-                                        kokkos_usedCutCoordinate,
-                                        kokkos_current_target_part_weights,
-                                        future_num_part_in_parts,
-                                        next_future_num_parts_in_parts,
-                                        concurrent_current_part_index,
-                                        obtained_part_index);
-clock_mj_get_initial_cut_coords_target_weights.stop();
-loopB_2_A.start();
-                        // TODO: refactor clean up
-                        mj_lno_t coordinate_end_index;
-                        Kokkos::parallel_reduce("Read single", 1,
-                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                          set_single = local_kokkos_part_xadj(concurrent_current_part_index);
-                        }, coordinate_end_index);
-
-                        // TODO: refactor clean up
-                        mj_lno_t coordinate_begin_index;
-                        Kokkos::parallel_reduce("Read single", 1,
-                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                          set_single = concurrent_current_part_index==0 ? 0: local_kokkos_part_xadj(concurrent_current_part_index -1);
-                        }, coordinate_begin_index);
-                        //get the initial estimated part assignments of the
-                        //coordinates.
-                        this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
-loopB_2_A.stop();
-clock_set_initial_coordinate_parts.start();
-                        this->set_initial_coordinate_parts(
-                            max_coordinate,
-                            min_coordinate,
-                            concurrent_current_part_index,
-                            coordinate_begin_index, coordinate_end_index,
-                            this->kokkos_coordinate_permutations,
-                            kokkos_mj_current_dim_coords,
-                            this->kokkos_assigned_part_ids,
-                            partition_count);
-                            this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring + " set_initial_coordinate_parts()");
-clock_set_initial_coordinate_parts.stop();
-                    }
-                    else {
-loopB_2_B.start();
-                        // e.g., if have fewer coordinates than parts, don't need to do next dim.
-                        auto local_kokkos_my_incomplete_cut_count = this->kokkos_my_incomplete_cut_count;
-                        Kokkos::parallel_for(
-                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-                          KOKKOS_LAMBDA (const int dummy) {
-                            local_kokkos_my_incomplete_cut_count(kk) = 0;
-                        });
-loopB_2_B.stop();
-                    }
-                    obtained_part_index += partition_count;
-                }
-                //used imbalance, it is always 0, as it is difficult to
-                //estimate a range.
-                mj_scalar_t used_imbalance = 0;
-                // Determine cut lines for all concurrent parts parts here.
-                this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-loopB_2.stop();
-clock_mj_1D_part.start();
-                this->mj_1D_part(
-                    kokkos_mj_current_dim_coords,
-                    used_imbalance,
-                    current_work_part,
-                    current_concurrent_num_parts,
-                    kokkos_current_cut_coordinates,
-                    total_incomplete_cut_count,
-                    num_partitioning_in_current_dim,
-                    view_num_partitioning_in_current_dim,
-                    view_rectilinear_cut_count,
-                    view_total_reduction_size);
-                this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning mj_1D_part()");
-clock_mj_1D_part.stop();
-            }
-new_part_chunks.start();
-            //create new part chunks
-            {
-                mj_part_t output_array_shift = 0;
-                mj_part_t cut_shift = 0;
-                size_t tlr_shift = 0;
-                size_t partweight_array_shift = 0;
-                for(int kk = 0; kk < current_concurrent_num_parts; ++kk){
-
-                    mj_part_t current_concurrent_work_part = current_work_part + kk;
-
-                    // TODO: num_partitioning_in_current_dim to vector onto device
-                    mj_part_t num_parts = num_partitioning_in_current_dim[current_concurrent_work_part];
-
-                    //if the part is empty, skip the part.
-
-                    // TODO: Clean up later - for now pull some values to host and keep the algorithm serial host at this point
-                    int coordinateA_bigger_than_coordinateB = false;
-                    auto local_kokkos_global_min_max_coord_total_weight = this->kokkos_global_min_max_coord_total_weight;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, int & set_single) {
-                      set_single = local_kokkos_global_min_max_coord_total_weight(kk) > (local_kokkos_global_min_max_coord_total_weight(kk + current_concurrent_num_parts));
-                    }, coordinateA_bigger_than_coordinateB);
-                    if((num_parts != 1) && coordinateA_bigger_than_coordinateB) {
-                        //we still need to write the begin and end point of the
-                        //empty part. simply set it zero, the array indices will be shifted later
-                        auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
-                        Kokkos::parallel_for(
-                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_parts),
-                          KOKKOS_LAMBDA (const int jj) {
-                            local_kokkos_new_part_xadj(output_part_index + output_array_shift + jj) = 0;
-                        });
-
-                        cut_shift += num_parts - 1;
-                        tlr_shift += (4 *(num_parts - 1) + 1);
-                        output_array_shift += num_parts;
-                        partweight_array_shift += (2 * (num_parts - 1) + 1);
-                        continue;
-                    }
-
-                    Kokkos::View<mj_scalar_t *, device_t> kokkos_current_concurrent_cut_coordinate =
-                      Kokkos::subview(kokkos_current_cut_coordinates,
-                        std::pair<mj_lno_t, mj_lno_t>(
-                          cut_shift,
-                          kokkos_current_cut_coordinates.size()));
-                    Kokkos::View<mj_scalar_t *, device_t> kokkos_used_local_cut_line_weight_to_left =
-                      Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
-                        std::pair<mj_lno_t, mj_lno_t>(
-                          cut_shift,
-                          kokkos_process_cut_line_weight_to_put_left.size()));
-                    //mj_scalar_t *used_tlr_array =  this->total_part_weight_left_right_closests + tlr_shift;
-                    this->kokkos_thread_part_weight_work =
-                      Kokkos::subview(
-                        this->kokkos_thread_part_weights,
-                        std::pair<mj_lno_t, mj_lno_t>(
-                          partweight_array_shift,
-                          this->kokkos_thread_part_weights.extent(0)));
-
-                    if(num_parts > 1){
-                        if(this->mj_keep_part_boxes){
-                                //if part boxes are to be stored update the boundaries.
-                            for (mj_part_t j = 0; j < num_parts - 1; ++j){
-                                // TODO: need to refactor output_part_boxes to a View form
-                                // Then refactor this loop to a parallel_for so it's all on device
-                                mj_scalar_t temp_get_val;
-                                Kokkos::parallel_reduce("Read single", 1,
-                                  KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
-                                  set_single = kokkos_current_concurrent_cut_coordinate(j);
-                                }, temp_get_val);
-   
-                                (*output_part_boxes)[output_array_shift + output_part_index + j].
-                                   updateMinMax(temp_get_val, 1 /*update max*/, coordInd);
-                                (*output_part_boxes)[output_array_shift + output_part_index + j + 1].
-                                   updateMinMax(temp_get_val, 0 /*update max*/, coordInd);
-                            }
-                        }
-                        // Rewrite the indices based on the computed cuts.
-                        this->mj_create_new_partitions(
-                            num_parts,
-                            current_concurrent_work_part,
-                            kokkos_mj_current_dim_coords,
-                            kokkos_current_concurrent_cut_coordinate,
-                            kokkos_used_local_cut_line_weight_to_left,
-                            this->kokkos_thread_part_weight_work,
-                            Kokkos::subview(this->kokkos_new_part_xadj,
-                              std::pair<mj_lno_t, mj_lno_t>(
-                                output_part_index + output_array_shift,
-                                this->kokkos_new_part_xadj.size())),  
-                            this->kokkos_thread_point_counts,
-                            this->distribute_points_on_cut_lines,
-                            this->kokkos_thread_cut_line_weight_to_put_left,
-                            this->sEpsilon,
-                            this->kokkos_coordinate_permutations,
-                            this->kokkos_mj_uniform_weights,
-                            this->kokkos_mj_weights,
-                            this->kokkos_assigned_part_ids,
-                            this->kokkos_new_coordinate_permutations
-                            );
-                    }
-                    else {
-                        // This should all get simplified into device code
-                        mj_lno_t coordinate_end;
-                        Kokkos::parallel_reduce("Read single", 1,
-                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                          set_single = local_kokkos_part_xadj[current_concurrent_work_part];;
-                        }, coordinate_end);
-
-                        mj_lno_t coordinate_begin;
-                        Kokkos::parallel_reduce("Read single", 1,
-                          KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-                          set_single = current_concurrent_work_part==0 ? 0: local_kokkos_part_xadj(
-                                                                current_concurrent_work_part -1);;
-                        }, coordinate_begin);
-
-                        //if this part is partitioned into 1 then just copy
-                        //the old values.
-                        mj_lno_t part_size = coordinate_end - coordinate_begin;
-
-                        // TODO: how to best set 1 value...
-                        auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;                        
-                        Kokkos::parallel_for(
-                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-                          KOKKOS_LAMBDA (const int dummy) {
-                          local_kokkos_new_part_xadj(output_part_index + output_array_shift) = part_size;
-                        });
-
-                        auto local_kokkos_new_coordinate_permutations = this->kokkos_new_coordinate_permutations;
-                        auto local_kokkos_coordinate_permutations = this->kokkos_coordinate_permutations;
-                        Kokkos::parallel_for(
-                          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, part_size),
-                          KOKKOS_LAMBDA (const int n) {
-                          local_kokkos_new_coordinate_permutations(n+coordinate_begin) =
-                            local_kokkos_coordinate_permutations(n+coordinate_begin);
-                        });
-                    }
-                    cut_shift += num_parts - 1;
-                    output_array_shift += num_parts;
-                    partweight_array_shift += (2 * (num_parts - 1) + 1);
-                }
-                //shift cut coordinates so that all cut coordinates are stored.
-                //no shift now because we dont keep the cuts.
-                //current_cut_coordinates += cut_shift;
-                //mj_create_new_partitions from coordinates partitioned the parts and
-                //write the indices as if there were a single part.
-                //now we need to shift the beginning indices.
-                for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk){
-                    mj_part_t num_parts = num_partitioning_in_current_dim[ current_work_part + kk];
-                    auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
-                    Kokkos::parallel_for(
-                      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, num_parts),
-                      KOKKOS_LAMBDA (const int ii) {
-                      local_kokkos_new_part_xadj(output_part_index+ii) += output_coordinate_end_index;
-                    });
-                    //increase the previous count by current end.
-
-                    mj_part_t temp_get;
-                    Kokkos::parallel_reduce("Read single", 1,
-                      KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-                      set_single = local_kokkos_new_part_xadj(output_part_index + num_parts - 1);
-                    }, temp_get);
-                    output_coordinate_end_index = temp_get;
-                    //increase the current out.
-                    output_part_index += num_parts ;
-                }
-            }
-new_part_chunks.stop();
+            auto local_kokkos_new_coordinate_permutations =
+              this->kokkos_new_coordinate_permutations;
+            auto local_kokkos_coordinate_permutations =
+              this->kokkos_coordinate_permutations;
+            Kokkos::parallel_for(
+              Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+                (0, part_size), KOKKOS_LAMBDA (const int n) {
+              local_kokkos_new_coordinate_permutations(n+coordinate_begin) =
+                local_kokkos_coordinate_permutations(n+coordinate_begin);
+            });
+          }
+          cut_shift += num_parts - 1;
+          output_array_shift += num_parts;
+          partweight_array_shift += (2 * (num_parts - 1) + 1);
         }
 
-loopB.stop();
-loopC.start();
-
-        // end of this partitioning dimension
-        int current_world_size = this->comm->getSize();
-        long migration_reduce_all_population = this->total_dim_num_reduce_all * current_world_size;
-        bool is_migrated_in_current_dimension = false;
-
-        //we migrate if there are more partitionings to be done after this step
-        //and if the migration is not forced to be avoided.
-        //and the operation is not sequential.
-        if (future_num_parts > 1 &&
-            this->check_migrate_avoid_migration_option >= 0 &&
-            current_world_size > 1){
-
-                this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Migration-" + istring);
-                mj_part_t num_parts = output_part_count_in_dimension;
-                if ( this->mj_perform_migration(
-                                                num_parts,
-                                                current_num_parts, //output
-                                                next_future_num_parts_in_parts, //output
-                                                output_part_begin_index,
-                                                migration_reduce_all_population,
-                                                this->num_local_coords / (future_num_parts * current_num_parts),
-                                                istring,
-                                                input_part_boxes, output_part_boxes) ) {
-                        is_migrated_in_current_dimension = true;
-                        is_data_ever_migrated = true;
-                        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Migration-" +
-                                        istring);
-                        //since data is migrated, we reduce the number of reduceAll operations for the last part.
-                        this->total_dim_num_reduce_all /= num_parts;
-                }
-                else {
-                        is_migrated_in_current_dimension = false;
-                        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Migration-" + istring);
-                }
+        // shift cut coordinates so that all cut coordinates are stored.
+        // no shift now because we dont keep the cuts.
+        // current_cut_coordinates += cut_shift;
+        // mj_create_new_partitions from coordinates partitioned the parts
+        // and write the indices as if there were a single part.
+        // now we need to shift the beginning indices.
+        for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
+          mj_part_t num_parts =
+            num_partitioning_in_current_dim[ current_work_part + kk];
+          auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
+          Kokkos::parallel_for(
+            Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+            (0, num_parts), KOKKOS_LAMBDA (const int ii) {
+            local_kokkos_new_part_xadj(output_part_index+ii) +=
+              output_coordinate_end_index;
+          });
+    
+          // increase the previous count by current end.
+          mj_part_t temp_get;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+            set_single =
+              local_kokkos_new_part_xadj(output_part_index + num_parts - 1);
+          }, temp_get);
+          output_coordinate_end_index = temp_get;
+          //increase the current out.
+          output_part_index += num_parts;
         }
-
-        //swap the coordinate permutations for the next dimension.
-        Kokkos::View<mj_lno_t*, device_t> tmp = this->kokkos_coordinate_permutations;
-        this->kokkos_coordinate_permutations = this->kokkos_new_coordinate_permutations;
-        this->kokkos_new_coordinate_permutations = tmp;
-        if(!is_migrated_in_current_dimension){
-            this->total_dim_num_reduce_all -= current_num_parts;
-            current_num_parts = output_part_count_in_dimension;
       }
-      {
-
-        this->kokkos_part_xadj = this->kokkos_new_part_xadj;
-        local_kokkos_part_xadj = this->kokkos_new_part_xadj;
-
-        this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
-        this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning_" + istring);
-      }
-loopC.stop();
+      new_part_chunks.stop();
     }
 
-clock_multi_jagged_part_loop.stop();
-Clock clock_multi_jagged_part_finish("  multi_jagged_part finish", true);
+    loopB.stop();
+    loopC.start();
 
-    // Partitioning is done
-    delete future_num_part_in_parts;
-    delete next_future_num_parts_in_parts;
-    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
-    /////////////////////////////End of the partitioning////////////////////////
+    // end of this partitioning dimension
+    int current_world_size = this->comm->getSize();
+    long migration_reduce_all_population =
+      this->total_dim_num_reduce_all * current_world_size;
+    bool is_migrated_in_current_dimension = false;
 
-    //get the final parts of each initial coordinate
-    //the results will be written to
-    //this->assigned_part_ids for gnos given in this->current_mj_gnos
-    this->set_final_parts(
-                current_num_parts,
-                output_part_begin_index,
-                output_part_boxes,
-                is_data_ever_migrated);
+    // we migrate if there are more partitionings to be done after this step
+    // and if the migration is not forced to be avoided.
+    // and the operation is not sequential.
+    if (future_num_parts > 1 &&
+      this->check_migrate_avoid_migration_option >= 0 &&
+      current_world_size > 1) {
+      this->mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - Problem_Migration-" + istring);
+      mj_part_t num_parts = output_part_count_in_dimension;
 
-    kokkos_result_assigned_part_ids_ = this->kokkos_assigned_part_ids;
-    kokkos_result_mj_gnos_ = this->kokkos_current_mj_gnos;
-    this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
-    this->mj_env->debug(3, "Out of MultiJagged");
+      if (this->mj_perform_migration(
+        num_parts,
+        current_num_parts, //output
+        next_future_num_parts_in_parts, //output
+        output_part_begin_index,
+        migration_reduce_all_population,
+        this->num_local_coords / (future_num_parts * current_num_parts),
+        istring,
+        input_part_boxes, output_part_boxes) )
+      {
+        is_migrated_in_current_dimension = true;
+        is_data_ever_migrated = true;
+        this->mj_env->timerStop(MACRO_TIMERS, 
+          "MultiJagged - Problem_Migration-" + istring);
+        // since data is migrated, we reduce the number of reduceAll
+        // operations for the last part.
+        this->total_dim_num_reduce_all /= num_parts;
+      }
+      else {
+        is_migrated_in_current_dimension = false;
+        this->mj_env->timerStop(MACRO_TIMERS,
+          "MultiJagged - Problem_Migration-" + istring);
+      }
+    }
 
-clock_multi_jagged_part_finish.stop();
+    // swap the coordinate permutations for the next dimension.
+    Kokkos::View<mj_lno_t*, device_t> tmp =
+      this->kokkos_coordinate_permutations;
+    this->kokkos_coordinate_permutations =
+      this->kokkos_new_coordinate_permutations;
+    this->kokkos_new_coordinate_permutations = tmp;
+    if(!is_migrated_in_current_dimension) {
+      this->total_dim_num_reduce_all -= current_num_parts;
+      current_num_parts = output_part_count_in_dimension;
+    }
 
-clock_multi_jagged_part.stop();
+    {
+      this->kokkos_part_xadj = this->kokkos_new_part_xadj;
+      local_kokkos_part_xadj = this->kokkos_new_part_xadj;
 
+      this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
+      this->mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - Problem_Partitioning_" + istring);
+    }
+    loopC.stop();
+  }
 
-clock_multi_jagged_part.print();
-clock_multi_jagged_part_init.print();
-clock_multi_jagged_part_init_begin.print();
-clock_set_part_specifications.print();
-clock_allocate_set_work_memory.print();
+  clock_multi_jagged_part_loop.stop();
+  Clock clock_multi_jagged_part_finish("  multi_jagged_part finish", true);
 
-clock_multi_jagged_part_loop.print();
-loopA.print();
-loopB.print();
-loopB_1.print();
-loopB_2.print();
+  // Partitioning is done
+  delete future_num_part_in_parts;
+  delete next_future_num_parts_in_parts;
+  this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
+  /////////////////////////////End of the partitioning////////////////////////
 
-clock_mj_get_initial_cut_coords_target_weights.print();
-clock_set_initial_coordinate_parts.print();
-loopB_2_A.print();
-loopB_2_B.print();
+  //get the final parts of each initial coordinate
+  //the results will be written to
+  //this->assigned_part_ids for gnos given in this->current_mj_gnos
+  this->set_final_parts(
+    current_num_parts,
+    output_part_begin_index,
+    output_part_boxes,
+    is_data_ever_migrated);
 
-clock_mj_1D_part.print();
+  kokkos_result_assigned_part_ids_ = this->kokkos_assigned_part_ids;
+  kokkos_result_mj_gnos_ = this->kokkos_current_mj_gnos;
+  this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
+  this->mj_env->debug(3, "Out of MultiJagged");
 
-mj_1D_part_init.print();
-mj_1D_part_init2.print();
-mj_1D_part_while_loop.print();
-mj_1D_part_get_weights_init.print();
-mj_1D_part_get_weights_setup.print();
-mj_1D_part_get_weights.print();
+  clock_multi_jagged_part_finish.stop();
 
-weights1.print();
-weights2.print();
-weights3.print();
-functor1.print();
-weights4.print();
-weights5.print();
-weights6.print();
-functor2.print();
+  clock_multi_jagged_part.stop();
 
-clock_mj_accumulate_thread_results.print();
+  clock_multi_jagged_part.print();
+  clock_multi_jagged_part_init.print();
+  clock_multi_jagged_part_init_begin.print();
+  clock_set_part_specifications.print();
+  clock_allocate_set_work_memory.print();
 
-clock_write_globals.print();
+  clock_multi_jagged_part_loop.print();
+  loopA.print();
+  loopB.print();
+  loopB_1.print();
+  loopB_2.print();
 
-clock_mj_get_new_cut_coordinates_init.print();
-clock_mj_get_new_cut_coordinates.print();
-clock_mj_get_new_cut_coordinates_end.print();
+  clock_mj_get_initial_cut_coords_target_weights.print();
+  clock_set_initial_coordinate_parts.print();
+  loopB_2_A.print();
+  loopB_2_B.print();
 
-mj_1D_part_end.print();
+  clock_mj_1D_part.print();
 
-new_part_chunks.print();
-loopC.print();
-mj_create_new_partitions_clock.print();
+  mj_1D_part_init.print();
+  mj_1D_part_init2.print();
+  mj_1D_part_while_loop.print();
+  mj_1D_part_get_weights_init.print();
+  mj_1D_part_get_weights_setup.print();
+  mj_1D_part_get_weights.print();
 
-clock_multi_jagged_part_finish.print();
+  weights1.print();
+  weights2.print();
+  weights3.print();
+  functor1.print();
+  weights4.print();
+  weights5.print();
+  weights6.print();
+  functor2.print();
+
+  clock_mj_accumulate_thread_results.print();
+
+  clock_write_globals.print();
+
+  clock_mj_get_new_cut_coordinates_init.print();
+  clock_mj_get_new_cut_coordinates.print();
+  clock_mj_get_new_cut_coordinates_end.print();
+
+  mj_1D_part_end.print();
+
+  new_part_chunks.print();
+  loopC.print();
+  mj_create_new_partitions_clock.print();
+
+  clock_multi_jagged_part_finish.print();
 }
 
 
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+  typename mj_part_t, typename mj_node_t>
+RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
+  mj_partBoxVector_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
+  get_kept_boxes() const
+{
+  if (this->mj_keep_part_boxes) {
+    return this->kept_boxes;
+  }
+  else {
+    throw std::logic_error("Error: part boxes are not stored.");
+  }
+}
+
+template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
+  typename mj_part_t, typename mj_node_t>
+RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
+  mj_partBoxVector_t>
+AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
+  compute_global_box_boundaries(RCP<mj_partBoxVector_t> &localPartBoxes) const
+{
+  mj_part_t ntasks = this->num_global_parts;
+  int dim = (*localPartBoxes)[0].getDim();
+  mj_scalar_t *localPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
+
+  memset(localPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
+
+  mj_scalar_t *globalPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
+  memset(globalPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
+
+  mj_scalar_t *localPartMins = localPartBoundaries;
+  mj_scalar_t *localPartMaxs = localPartBoundaries + ntasks * dim;
+
+  mj_scalar_t *globalPartMins = globalPartBoundaries;
+  mj_scalar_t *globalPartMaxs = globalPartBoundaries + ntasks * dim;
+
+  mj_part_t boxCount = localPartBoxes->size();
+  for (mj_part_t i = 0; i < boxCount; ++i){
+    mj_part_t pId = (*localPartBoxes)[i].getpId();
+
+    // cout << "me:" << comm->getRank() << " has:" << pId << endl;
+
+    mj_scalar_t *lmins = (*localPartBoxes)[i].getlmins();
+    mj_scalar_t *lmaxs = (*localPartBoxes)[i].getlmaxs();
+
+    for (int j = 0; j < dim; ++j){
+      localPartMins[dim * pId + j] = lmins[j];
+      localPartMaxs[dim * pId + j] = lmaxs[j];
+      
+      /*
+      std::cout << "me:" << comm->getRank()  <<
+              " dim * pId + j:"<< dim * pId + j <<
+              " localMin:" << localPartMins[dim * pId + j] <<
+              " localMax:" << localPartMaxs[dim * pId + j] << std::endl;
+      */
+    }
+  }
+
+  Teuchos::Zoltan2_BoxBoundaries<int, mj_scalar_t> reductionOp(ntasks * 2 *dim);
+
+  reduceAll<int, mj_scalar_t>(*mj_problemComm, reductionOp,
+    ntasks * 2 *dim, localPartBoundaries, globalPartBoundaries);
+
+  RCP<mj_partBoxVector_t> pB(new mj_partBoxVector_t(),true);
+  for (mj_part_t i = 0; i < ntasks; ++i) {
+    Zoltan2::coordinateModelPartBox <mj_scalar_t, mj_part_t> tpb(
+      i, dim, globalPartMins + dim * i, globalPartMaxs + dim * i);
+
+    /*
+    for (int j = 0; j < dim; ++j){
+        std::cout << "me:" << comm->getRank()  <<
+                " dim * pId + j:"<< dim * i + j <<
+                " globalMin:" << globalPartMins[dim * i + j] <<
+                " globalMax:" << globalPartMaxs[dim * i + j] << std::endl;
+    }
+    */
+    
+    pB->push_back(tpb);
+  }
+  delete []localPartBoundaries;
+  delete []globalPartBoundaries;
+  //RCP <mj_partBoxVector_t> tmpRCPBox(pB, true);
+  return pB;
+}
+
 /*! \brief Multi Jagged coordinate partitioning algorithm.
- *
  */
 template <typename Adapter>
 class Zoltan2_AlgMJ : public Algorithm<Adapter>
 {
-public: // TODO: Changed all to public for cuda refactoring - need to to work up design
+
+// TODO: Changed all to public for cuda refactoring - need to to work on design
+public:
 
 #ifndef DOXYGEN_SHOULD_SKIP_THIS
-    typedef CoordinateModel<typename Adapter::base_adapter_t> coordinateModel_t;
-    typedef typename Adapter::scalar_t mj_scalar_t;
-    typedef typename Adapter::gno_t mj_gno_t;
-    typedef typename Adapter::lno_t mj_lno_t;
-    typedef typename Adapter::part_t mj_part_t;
-    typedef typename Adapter::node_t mj_node_t;
-    typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
-    typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
-    typedef typename mj_node_t::device_type device_t;
+  typedef CoordinateModel<typename Adapter::base_adapter_t> coordinateModel_t;
+  typedef typename Adapter::scalar_t mj_scalar_t;
+  typedef typename Adapter::gno_t mj_gno_t;
+  typedef typename Adapter::lno_t mj_lno_t;
+  typedef typename Adapter::part_t mj_part_t;
+  typedef typename Adapter::node_t mj_node_t;
+  typedef coordinateModelPartBox<mj_scalar_t, mj_part_t> mj_partBox_t;
+  typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
+  typedef typename mj_node_t::device_type device_t;
 #endif
 
-   AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
-       mj_node_t> mj_partitioner;
+   AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t> mj_partitioner;
 
-    RCP<const Environment> mj_env; //the environment object
-    RCP<const Comm<int> > mj_problemComm; //initial comm object
-    RCP<const coordinateModel_t> mj_coords; //coordinate adapter
+  RCP<const Environment> mj_env; // the environment object
+  RCP<const Comm<int> > mj_problemComm; // initial comm object
+  RCP<const coordinateModel_t> mj_coords; // coordinate adapter
 
-    //PARAMETERS
-    double imbalance_tolerance; //input imbalance tolerance.
-    size_t num_global_parts; //the targeted number of parts
+  // PARAMETERS
+  double imbalance_tolerance; // input imbalance tolerance.
+  size_t num_global_parts; // the targeted number of parts
 
-    Kokkos::View<mj_part_t*, device_t> kokkos_part_no_array; //input part array specifying num part to divide along each dim.
+  // input part array specifying num part to divide along each dim.
+  Kokkos::View<mj_part_t*, device_t> kokkos_part_no_array;
 
-    int recursion_depth; //the number of steps that partitioning will be solved in.
+  // the number of steps that partitioning will be solved in.
+  int recursion_depth;
 
-    int coord_dim; // coordinate dimension.
-    mj_lno_t num_local_coords; //number of local coords.
-    mj_gno_t num_global_coords; //number of global coords.
+  int coord_dim; // coordinate dimension.
+  mj_lno_t num_local_coords; //number of local coords.
+  mj_gno_t num_global_coords; //number of global coords.
 
-    Kokkos::View<const mj_gno_t*, device_t> kokkos_initial_mj_gnos; //initial global ids of the coordinates.
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> kokkos_mj_coordinates; //two dimension coordinate array.
+  // initial global ids of the coordinates.
+  Kokkos::View<const mj_gno_t*, device_t> kokkos_initial_mj_gnos;
+  
+  // two dimension coordinate array.
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
+    kokkos_mj_coordinates;
 
-    int num_weights_per_coord; // number of weights per coordinate
+  int num_weights_per_coord; // number of weights per coordinate
 
-    Kokkos::View<bool*, device_t> kokkos_mj_uniform_weights; //if the target parts are uniform.
-    Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_weights; //two dimensional weight array.
-    Kokkos::View<bool*, device_t> kokkos_mj_uniform_parts; //if the target parts are uniform
-    Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_part_sizes; //target part weight sizes.
+  // if the target parts are uniform.
+  Kokkos::View<bool*, device_t> kokkos_mj_uniform_weights;
+  
+  // two dimensional weight array.
+  Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_weights;
+  
+  // if the target parts are uniform
+  Kokkos::View<bool*, device_t> kokkos_mj_uniform_parts;
+  
+  // target part weight sizes.
+  Kokkos::View<mj_scalar_t**, device_t> kokkos_mj_part_sizes;
 
-    bool distribute_points_on_cut_lines; //if partitioning can distribute points on same coordiante to different parts.
-    mj_part_t max_concurrent_part_calculation; // how many parts we can calculate concurrently.
-    int check_migrate_avoid_migration_option; //whether to migrate=1, avoid migrate=2, or leave decision to MJ=0
-    int migration_type; // when doing the migration, 0 will aim for perfect load-imbalance, 
- 			//1 for minimized messages
-    mj_scalar_t minimum_migration_imbalance; //when MJ decides whether to migrate, the minimum imbalance for migration.
-    bool mj_keep_part_boxes; //if the boxes need to be kept.
+  // if partitioning can distribute points on same coordiante to
+  // different parts.
+  bool distribute_points_on_cut_lines;
+  
+  // how many parts we can calculate concurrently.
+  mj_part_t max_concurrent_part_calculation;
+  
+  // whether to migrate=1, avoid migrate=2, or leave decision to MJ=0
+  int check_migrate_avoid_migration_option;
+  
+  // when doing the migration, 0 will aim for perfect load-imbalance, 
+  int migration_type;
 
-    bool mj_run_as_rcb; //if this is set, then recursion depth is adjusted to its maximum value.
-    int mj_premigration_option;
-    int min_coord_per_rank_for_premigration;
-
-    ArrayRCP<mj_part_t> comXAdj_; //communication graph xadj
-    ArrayRCP<mj_part_t> comAdj_; //communication graph adj.
-
-    void set_up_partitioning_data(
-      const RCP<PartitioningSolution<Adapter> >&solution);
-
-    void set_input_parameters(const Teuchos::ParameterList &p);
-
-    RCP<mj_partBoxVector_t> getGlobalBoxBoundaries() const;
+  // 1 for minimized messages
     
-    bool mj_premigrate_to_subset(int used_num_ranks, int migration_selection_option,
-        RCP<const Environment> mj_env_,
-        RCP<const Comm<int> > mj_problemComm_,
-        int coord_dim_,
-        mj_lno_t num_local_coords_,
-        mj_gno_t num_global_coords_,  size_t num_global_parts_,
-        Kokkos::View<const mj_gno_t*, device_t> &kokkos_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &kokkos_mj_coordinates_,
-        int num_weights_per_coord_,
-        Kokkos::View<mj_scalar_t**, device_t> &kokkos_mj_weights_,
-        //results
-        RCP<const Comm<int> > &result_problemComm_,
-        mj_lno_t & result_num_local_coords_,
-        Kokkos::View<mj_gno_t*, device_t> &kokkos_result_initial_mj_gnos_,
-        Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &kokkos_result_mj_coordinates_,
-        Kokkos::View<mj_scalar_t**, device_t> &kokkos_result_mj_weights_,
-        int * &result_actual_owner_rank_);
+  // when MJ decides whether to migrate, the minimum imbalance for migration.
+  mj_scalar_t minimum_migration_imbalance;
+  bool mj_keep_part_boxes; //if the boxes need to be kept.
+
+  // if this is set, then recursion depth is adjusted to its maximum value.
+  bool mj_run_as_rcb;
+  int mj_premigration_option;
+  int min_coord_per_rank_for_premigration;
+
+  // communication graph xadj
+  ArrayRCP<mj_part_t> comXAdj_;
+  
+  // communication graph adj.
+  ArrayRCP<mj_part_t> comAdj_;
+
+  void set_up_partitioning_data(
+    const RCP<PartitioningSolution<Adapter> >&solution);
+
+  void set_input_parameters(const Teuchos::ParameterList &p);
+
+  RCP<mj_partBoxVector_t> getGlobalBoxBoundaries() const;
+    
+  bool mj_premigrate_to_subset(
+    int used_num_ranks,
+    int migration_selection_option,
+    RCP<const Environment> mj_env_,
+    RCP<const Comm<int> > mj_problemComm_,
+    int coord_dim_,
+    mj_lno_t num_local_coords_,
+    mj_gno_t num_global_coords_,  size_t num_global_parts_,
+    Kokkos::View<const mj_gno_t*, device_t> &kokkos_initial_mj_gnos_,
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
+      kokkos_mj_coordinates_,
+    int num_weights_per_coord_,
+    Kokkos::View<mj_scalar_t**, device_t> &kokkos_mj_weights_,
+    //results
+    RCP<const Comm<int> > &result_problemComm_,
+    mj_lno_t & result_num_local_coords_,
+    Kokkos::View<mj_gno_t*, device_t> &kokkos_result_initial_mj_gnos_,
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
+      kokkos_result_mj_coordinates_,
+    Kokkos::View<mj_scalar_t**, device_t> &kokkos_result_mj_weights_,
+    int * &result_actual_owner_rank_);
 
 public:
 
+  Zoltan2_AlgMJ(const RCP<const Environment> &env,
+    RCP<const Comm<int> > &problemComm,
+    const RCP<const coordinateModel_t> &coords) :
+      mj_partitioner(),
+      mj_env(env),
+      mj_problemComm(problemComm),
+      mj_coords(coords),
+      imbalance_tolerance(0),
+      num_global_parts(1),
+      recursion_depth(0),
+      coord_dim(0),
+      num_local_coords(0),
+      num_global_coords(0),
+      num_weights_per_coord(0),
+      distribute_points_on_cut_lines(true),
+      max_concurrent_part_calculation(1),
+      check_migrate_avoid_migration_option(0),
+      migration_type(0),
+      minimum_migration_imbalance(0.30),
+      mj_keep_part_boxes(false),
+      mj_run_as_rcb(false),
+      mj_premigration_option(0),
+      min_coord_per_rank_for_premigration(32000),
+      comXAdj_(),
+      comAdj_()
+  {
+  }
 
-    Zoltan2_AlgMJ(const RCP<const Environment> &env,
-                  RCP<const Comm<int> > &problemComm,
-                  const RCP<const coordinateModel_t> &coords) :
-                        mj_partitioner(), mj_env(env),
-                        mj_problemComm(problemComm),
-                        mj_coords(coords),
-                        imbalance_tolerance(0),
-                        num_global_parts(1),
-                        recursion_depth(0),
-                        coord_dim(0),num_local_coords(0), num_global_coords(0),
-                        num_weights_per_coord(0),
-                        distribute_points_on_cut_lines(true),
-                        max_concurrent_part_calculation(1),
-                        check_migrate_avoid_migration_option(0), migration_type(0),
-                        minimum_migration_imbalance(0.30),
-                        mj_keep_part_boxes(false), mj_run_as_rcb(false),mj_premigration_option(0), min_coord_per_rank_for_premigration(32000),
-                        comXAdj_(), comAdj_()
-    {}
-    ~Zoltan2_AlgMJ(){
-    }
+  ~Zoltan2_AlgMJ()
+  {
+  }
 
-    /*! \brief Set up validators specific to this algorithm
-     */
-    static void getValidParameters(ParameterList & pl)
-    {
-      const bool bUnsorted = true; // this clarifies the flag is for unsrorted
-      RCP<Zoltan2::IntegerRangeListValidator<int>> mj_parts_Validator =
-      Teuchos::rcp( new Zoltan2::IntegerRangeListValidator<int>(bUnsorted) );
-      pl.set("mj_parts", "0", "list of parts for multiJagged partitioning "
-        "algorithm. As many as the dimension count.", mj_parts_Validator);
+  /*! \brief Set up validators specific to this algorithm
+   */
+  static void getValidParameters(ParameterList & pl)
+  {
+    const bool bUnsorted = true; // this clarifies the flag is for unsrorted
+    RCP<Zoltan2::IntegerRangeListValidator<int>> mj_parts_Validator =
+    Teuchos::rcp( new Zoltan2::IntegerRangeListValidator<int>(bUnsorted) );
+    pl.set("mj_parts", "0", "list of parts for multiJagged partitioning "
+      "algorithm. As many as the dimension count.", mj_parts_Validator);
 
-      pl.set("mj_concurrent_part_count", 1, "The number of parts whose cut "
-        "coordinates will be calculated concurently.", Environment::getAnyIntValidator());
+    pl.set("mj_concurrent_part_count", 1, "The number of parts whose cut "
+      "coordinates will be calculated concurently.",
+      Environment::getAnyIntValidator());
 
-      pl.set("mj_minimum_migration_imbalance", 1.1,
-        "mj_minimum_migration_imbalance, the minimum imbalance of the "
-        "processors to avoid migration",
-        Environment::getAnyDoubleValidator());
+    pl.set("mj_minimum_migration_imbalance", 1.1,
+      "mj_minimum_migration_imbalance, the minimum imbalance of the "
+      "processors to avoid migration",
+      Environment::getAnyDoubleValidator());
 
-      RCP<Teuchos::EnhancedNumberValidator<int>> mj_migration_option_validator =
-        Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 2) );
-      pl.set("mj_migration_option", 1, "Migration option, 0 for decision "
-        "depending on the imbalance, 1 for forcing migration, 2 for "
-        "avoiding migration", mj_migration_option_validator);
+    RCP<Teuchos::EnhancedNumberValidator<int>> mj_migration_option_validator =
+      Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 2) );
+    pl.set("mj_migration_option", 1, "Migration option, 0 for decision "
+      "depending on the imbalance, 1 for forcing migration, 2 for "
+      "avoiding migration", mj_migration_option_validator);
 
-            
+    RCP<Teuchos::EnhancedNumberValidator<int>> mj_migration_type_validator =
+      Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 1) );
+      pl.set("mj_migration_type", 0,
+      "Migration type, 0 for migration to minimize the imbalance "
+      "1 for migration to minimize messages exchanged the migration.",
+      mj_migration_option_validator);
 
- 
-      RCP<Teuchos::EnhancedNumberValidator<int>> mj_migration_type_validator =
-        Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 1) );
-      pl.set("mj_migration_type", 0, "Migration type, 0 for migration to minimize the imbalance "
-        "1 for migration to minimize messages exchanged the migration." ,
-	mj_migration_option_validator);
+    // bool parameter
+    pl.set("mj_keep_part_boxes", false, "Keep the part boundaries of the "
+      "geometric partitioning.", Environment::getBoolValidator());
 
-      // bool parameter
-      pl.set("mj_keep_part_boxes", false, "Keep the part boundaries of the "
-        "geometric partitioning.", Environment::getBoolValidator());
+    // bool parameter
+    pl.set("mj_enable_rcb", false, "Use MJ as RCB.",
+      Environment::getBoolValidator());
 
-      // bool parameter
-      pl.set("mj_enable_rcb", false, "Use MJ as RCB.",
-        Environment::getBoolValidator());
+    pl.set("mj_recursion_depth", -1, "Recursion depth for MJ: Must be "
+      "greater than 0.", Environment::getAnyIntValidator());
 
-      pl.set("mj_recursion_depth", -1, "Recursion depth for MJ: Must be "
-        "greater than 0.", Environment::getAnyIntValidator());
+    RCP<Teuchos::EnhancedNumberValidator<int>>
+      mj_premigration_option_validator =
+      Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 1024) );
 
-      RCP<Teuchos::EnhancedNumberValidator<int>> mj_premigration_option_validator =
-        Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(0, 1024) );
+    pl.set("mj_premigration_option", 0,
+      "Whether to do premigration or not. 0 for no migration "
+      "x > 0 for migration to consecutive processors, "
+      "the subset will be 0,x,2x,3x,...subset ranks."
+      , mj_premigration_option_validator);
 
-      pl.set("mj_premigration_option", 0, "Whether to do premigration or not. 0 for no migration "
-        "x > 0 for migration to consecutive processors, the subset will be 0,x,2x,3x,...subset ranks."
-        , mj_premigration_option_validator);
+    pl.set("mj_premigration_coordinate_count", 32000, "How many coordinate to "
+      "assign each rank in multijagged after premigration"
+      , Environment::getAnyIntValidator());
+  }
 
-      pl.set("mj_premigration_coordinate_count", 32000, "How many coordinate to assign each rank in multijagged after premigration"
-        , Environment::getAnyIntValidator());
+  /*! \brief Multi Jagged  coordinate partitioning algorithm.
+   *
+   *  \param solution  a PartitioningSolution, on input it
+   *      contains part information, on return it also contains
+   *      the solution and quality metrics.
+   */
+  void partition(const RCP<PartitioningSolution<Adapter> > &solution);
 
-    }
+  mj_partBoxVector_t &getPartBoxesView() const
+  {
+    RCP<mj_partBoxVector_t> pBoxes = this->getGlobalBoxBoundaries();
+    return *pBoxes;
+  }
 
-    /*! \brief Multi Jagged  coordinate partitioning algorithm.
-     *
-     *  \param solution  a PartitioningSolution, on input it
-     *      contains part information, on return it also contains
-     *      the solution and quality metrics.
-     */
-    void partition(const RCP<PartitioningSolution<Adapter> > &solution);
+  mj_part_t pointAssign(int dim, mj_scalar_t *point) const;
 
-    mj_partBoxVector_t &getPartBoxesView() const
-    {
-      RCP<mj_partBoxVector_t> pBoxes = this->getGlobalBoxBoundaries();
-      return *pBoxes;
-    }
+  void boxAssign(int dim, mj_scalar_t *lower, mj_scalar_t *upper,
+    size_t &nPartsFound, mj_part_t **partsFound) const;
 
-    mj_part_t pointAssign(int dim, mj_scalar_t *point) const;
-
-    void boxAssign(int dim, mj_scalar_t *lower, mj_scalar_t *upper,
-                   size_t &nPartsFound, mj_part_t **partsFound) const;
-
-
-    /*! \brief returns communication graph resulting from MJ partitioning.
-     */
-    void getCommunicationGraph(
-                         const PartitioningSolution<Adapter> *solution,
-                         ArrayRCP<mj_part_t> &comXAdj,
-                         ArrayRCP<mj_part_t> &comAdj);
+  /*! \brief returns communication graph resulting from MJ partitioning.
+   */
+  void getCommunicationGraph(
+    const PartitioningSolution<Adapter> *solution,
+    ArrayRCP<mj_part_t> &comXAdj,
+    ArrayRCP<mj_part_t> &comAdj);
 };
 
-
-
-
 template <typename Adapter>
-bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks, 
-				 int migration_selection_option,
-				 RCP<const Environment> mj_env_,
-                                 RCP<const Comm<int> > mj_problemComm_,
-                                 int coord_dim_,
-                                 mj_lno_t num_local_coords_,
-                                 mj_gno_t num_global_coords_, size_t num_global_parts_,
-                                 Kokkos::View<const mj_gno_t*, device_t> &kokkos_initial_mj_gnos_,
-                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &kokkos_mj_coordinates_,
-                                 int num_weights_per_coord_,
-                                 Kokkos::View<mj_scalar_t**, device_t> &kokkos_mj_weights_,
-                                 //results
-                                 RCP<const Comm<int> > &result_problemComm_,
-                                 mj_lno_t &result_num_local_coords_,
-                                 Kokkos::View<mj_gno_t*, device_t> &kokkos_result_initial_mj_gnos_,
-                                 Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &kokkos_result_mj_coordinates_,
-                                 Kokkos::View<mj_scalar_t**, device_t> &kokkos_result_mj_weights_,
-
-                                 int * &result_actual_owner_rank_){
-  mj_env_->timerStart(MACRO_TIMERS, "MultiJagged - PreMigration DistributorPlanCreating");
-
+bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
+  int used_num_ranks, 
+  int migration_selection_option,
+  RCP<const Environment> mj_env_,
+  RCP<const Comm<int> > mj_problemComm_,
+  int coord_dim_,
+  mj_lno_t num_local_coords_,
+  mj_gno_t num_global_coords_, size_t num_global_parts_,
+  Kokkos::View<const mj_gno_t*, device_t> &kokkos_initial_mj_gnos_,
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
+    kokkos_mj_coordinates_,
+  int num_weights_per_coord_,
+  Kokkos::View<mj_scalar_t**, device_t> &kokkos_mj_weights_,
+  //results
+  RCP<const Comm<int> > &result_problemComm_,
+  mj_lno_t &result_num_local_coords_,
+  Kokkos::View<mj_gno_t*, device_t> &kokkos_result_initial_mj_gnos_,
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
+    kokkos_result_mj_coordinates_,
+  Kokkos::View<mj_scalar_t**, device_t> &kokkos_result_mj_weights_,
+  int * &result_actual_owner_rank_)
+{
+  mj_env_->timerStart(MACRO_TIMERS,
+    "MultiJagged - PreMigration DistributorPlanCreating");
   
   int myRank = mj_problemComm_->getRank();
   int worldSize = mj_problemComm_->getSize();
   
   mj_part_t groupsize = worldSize / used_num_ranks;
 
-  //std::cout << "used_num_ranks:" << used_num_ranks << " groupsize:" << groupsize << std::endl;
-  
   std::vector<mj_part_t> group_begins(used_num_ranks + 1, 0);
 
   mj_part_t i_am_sending_to = 0;
@@ -8253,232 +8644,257 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset( int used_num_ranks,
     group_begins[i+ 1]  = group_begins[i] + groupsize;
     if (worldSize % used_num_ranks > i) group_begins[i+ 1] += 1;
     if (i == used_num_ranks) group_begins[i+ 1] = worldSize;
-    if (myRank >= group_begins[i] && myRank < group_begins[i + 1]) i_am_sending_to = group_begins[i];
-    if (myRank == group_begins[i])  am_i_a_reciever= true;
+    if (myRank >= group_begins[i] && myRank < group_begins[i + 1]) {
+      i_am_sending_to = group_begins[i];
+    }
+    if (myRank == group_begins[i]) {
+      am_i_a_reciever = true;
+    }
   }
   
   ArrayView<const mj_part_t> idView(&(group_begins[0]), used_num_ranks );
   result_problemComm_ = mj_problemComm_->createSubcommunicator(idView);
 
-   
   Tpetra::Distributor distributor(mj_problemComm_);
 
-  std::vector<mj_part_t> coordinate_destinations(num_local_coords_, i_am_sending_to);
-  ArrayView<const mj_part_t> destinations( &(coordinate_destinations[0]), num_local_coords_);
+  std::vector<mj_part_t>
+    coordinate_destinations(num_local_coords_, i_am_sending_to);
+
+  ArrayView<const mj_part_t>
+    destinations(&(coordinate_destinations[0]), num_local_coords_);
   mj_lno_t num_incoming_gnos = distributor.createFromSends(destinations);
   result_num_local_coords_ = num_incoming_gnos;
-  mj_env_->timerStop(MACRO_TIMERS, "MultiJagged - PreMigration DistributorPlanCreating");
+  mj_env_->timerStop(MACRO_TIMERS,
+    "MultiJagged - PreMigration DistributorPlanCreating");
 
-  mj_env_->timerStart(MACRO_TIMERS, "MultiJagged - PreMigration DistributorMigration");
+  mj_env_->timerStart(MACRO_TIMERS,
+    "MultiJagged - PreMigration DistributorMigration");
    
-  //migrate gnos.
+  /*
+  // migrate gnos.
   {
     ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
 
-//    throw std::logic_error("Restore doPostsAndWaits");
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  //  ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_, num_local_coords_);
-  //  distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+    ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_, num_local_coords_);
+    distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
 
-//    throw std::logic_error("distributor not implemented for coords! refactor in progress.");
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-    /* started - not tested yet
-    kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *, device_t>("gids", num_incoming_gnos);
-    for(int n = 0; n < num_incoming_gnos; ++n) {
-      kokkos_result_initial_mj_gnos_(n) = received_gnos[n]; // TODO - fix to a single call
-    }
-    */
-  //  result_initial_mj_gnos_ = allocMemory<mj_gno_t>(num_incoming_gnos);
-  //  memcpy(
-	//  result_initial_mj_gnos_,
-	//  received_gnos.getRawPtr(),
-	//  num_incoming_gnos * sizeof(mj_gno_t));
-
+    // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+    // started - not tested yet
+    // kokkos_result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *, device_t>(
+    //  "gids", num_incoming_gnos);
+    //for(int n = 0; n < num_incoming_gnos; ++n) {
+    //  kokkos_result_initial_mj_gnos_(n) = received_gnos[n];
+    //}
+    
+    result_initial_mj_gnos_ = allocMemory<mj_gno_t>(num_incoming_gnos);
+    memcpy(
+	  result_initial_mj_gnos_,
+	  received_gnos.getRawPtr(),
+	  num_incoming_gnos * sizeof(mj_gno_t));
   }
+  */
 
   //migrate coordinates
-  kokkos_result_mj_coordinates_ = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>("coords", num_local_coords_);
-//  throw std::logic_error("distributor not implemented for coords! refactor in progress.");
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  //result_mj_coordinates_ = allocMemory<mj_scalar_t *>(coord_dim_);
-  //for (int i = 0; i < coord_dim_; ++i){
-  //  ArrayView<const mj_scalar_t> sent_coord(mj_coordinates_[i], num_local_coords_);
-  //  ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
-  //  distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
-  //  result_mj_coordinates_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-  //  memcpy(
-	//  result_mj_coordinates_[i],
-	//  received_coord.getRawPtr(),
-	//  num_incoming_gnos * sizeof(mj_scalar_t));
-  //}
+  kokkos_result_mj_coordinates_ = Kokkos::View<mj_scalar_t **,
+    Kokkos::LayoutLeft, device_t>("coords", num_local_coords_);
 
-  //migrate weights.
-//  throw std::logic_error("distributor not implemented for weights! refactor in progress.");
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  //result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
-  //for (int i = 0; i < num_weights_per_coord_; ++i){
-  //  ArrayView<const mj_scalar_t> sent_weight(mj_weights_[i], num_local_coords_);
-  //  ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
-  //  distributor.doPostsAndWaits<mj_scalar_t>(sent_weight, 1, received_weight());
-  //  result_mj_weights_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-  //  memcpy(
-	//  result_mj_weights_[i],
-	//  received_weight.getRawPtr(),
-	//  num_incoming_gnos * sizeof(mj_scalar_t));
-  //}
+  /*
+  result_mj_coordinates_ = allocMemory<mj_scalar_t *>(coord_dim_);
+  for (int i = 0; i < coord_dim_; ++i){
+    ArrayView<const mj_scalar_t>
+      sent_coord(mj_coordinates_[i], num_local_coords_);
+    ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
+    distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
+    result_mj_coordinates_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
+    memcpy(
+	    result_mj_coordinates_[i],
+	    received_coord.getRawPtr(),
+	    num_incoming_gnos * sizeof(mj_scalar_t));
+  }
+  */
 
-  //migrate the owners of the coordinates
-//  throw std::logic_error("distributor not implemented for owners! refactor in progress.");
+  // migrate weights.
   // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  //{ 
-  //  std::vector<int> owner_of_coordinate(num_local_coords_, myRank);
-  //  ArrayView<int> sent_owners(&(owner_of_coordinate[0]), num_local_coords_);
-  //  ArrayRCP<int> received_owners(num_incoming_gnos);
-  //  distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
-  //  result_actual_owner_rank_ = allocMemory<int>(num_incoming_gnos);
-  //  memcpy(
-	//  result_actual_owner_rank_,
-	//  received_owners.getRawPtr(),
-	//  num_incoming_gnos * sizeof(int));
-  //}
+  /*
+  result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
+  for (int i = 0; i < num_weights_per_coord_; ++i){
+    ArrayView<const mj_scalar_t> sent_weight(mj_weights_[i], num_local_coords_);
+    ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
+    distributor.doPostsAndWaits<mj_scalar_t>(sent_weight, 1, received_weight());
+    result_mj_weights_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
+    memcpy(
+	  result_mj_weights_[i],
+	  received_weight.getRawPtr(),
+	  num_incoming_gnos * sizeof(mj_scalar_t));
+  }
+  */
 
-  mj_env_->timerStop(MACRO_TIMERS, "MultiJagged - PreMigration DistributorMigration");
+  // migrate the owners of the coordinates
+  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
+  /*
+  { 
+    std::vector<int> owner_of_coordinate(num_local_coords_, myRank);
+    ArrayView<int> sent_owners(&(owner_of_coordinate[0]), num_local_coords_);
+    ArrayRCP<int> received_owners(num_incoming_gnos);
+    distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
+    result_actual_owner_rank_ = allocMemory<int>(num_incoming_gnos);
+    memcpy(
+	    result_actual_owner_rank_,
+	    received_owners.getRawPtr(),
+	    num_incoming_gnos * sizeof(int));
+  }
+  */
+
+  mj_env_->timerStop(MACRO_TIMERS,
+    "MultiJagged - PreMigration DistributorMigration");
   return am_i_a_reciever;
 }
 
 /*! \brief Multi Jagged  coordinate partitioning algorithm.
- *
- *  \param env   library configuration and problem parameters
- *  \param problemComm the communicator for the problem
- *  \param coords    a CoordinateModel with user data
- *  \param solution  a PartitioningSolution, on input it
- *      contains part information, on return it also contains
- *      the solution and quality metrics.
+ * \param env   library configuration and problem parameters
+ * \param problemComm the communicator for the problem
+ * \param coords    a CoordinateModel with user data
+ * \param solution  a PartitioningSolution, on input it contains part
+ * information, on return it also contains the solution and quality metrics.
  */
 template <typename Adapter>
 void Zoltan2_AlgMJ<Adapter>::partition(
-  const RCP<PartitioningSolution<Adapter> > &solution
-)
+  const RCP<PartitioningSolution<Adapter> > &solution)
 {
-    this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
-{
+  this->mj_env->timerStart(MACRO_TIMERS, "partition() - all");
+
+  {
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - setup");
 
     this->set_up_partitioning_data(solution);
 
     this->set_input_parameters(this->mj_env->getParameters());
-    if (this->mj_keep_part_boxes){
+    if (this->mj_keep_part_boxes) {
         this->mj_partitioner.set_to_keep_part_boxes();
     }
 
     this->mj_partitioner.set_partitioning_parameters(
-                this->distribute_points_on_cut_lines,
-                this->max_concurrent_part_calculation,
-                this->check_migrate_avoid_migration_option,
-                this->minimum_migration_imbalance, this->migration_type);
+      this->distribute_points_on_cut_lines,
+      this->max_concurrent_part_calculation,
+      this->check_migrate_avoid_migration_option,
+      this->minimum_migration_imbalance, this->migration_type);
 
-
-   RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
-   mj_lno_t result_num_local_coords = this->num_local_coords;
+    RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
+    mj_lno_t result_num_local_coords = this->num_local_coords;
     Kokkos::View<mj_gno_t*, device_t> kokkos_result_initial_mj_gnos;
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> kokkos_result_mj_coordinates = this->kokkos_mj_coordinates;
-   Kokkos::View<mj_scalar_t**, device_t> kokkos_result_mj_weights = this->kokkos_mj_weights;
-   int *result_actual_owner_rank = NULL;
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
+      kokkos_result_mj_coordinates = this->kokkos_mj_coordinates;
+    Kokkos::View<mj_scalar_t**, device_t> kokkos_result_mj_weights =
+      this->kokkos_mj_weights;
+    int *result_actual_owner_rank = NULL;
 
-   Kokkos::View<const mj_gno_t*, device_t> kokkos_result_initial_mj_gnos_ = this->kokkos_initial_mj_gnos;
+    Kokkos::View<const mj_gno_t*, device_t> kokkos_result_initial_mj_gnos_ =
+      this->kokkos_initial_mj_gnos;
 
-   //TODO: MD 08/2017: Further discussion is required.
-   //MueLu calls MJ when it has very few coordinates per processors, such as 10. 
-   //For example, it begins with 1K processor with 1K coordinate in each. 
-   //Then with coarsening this reduces to 10 coordinate per procesor.
-   //It calls MJ to repartition these to 10 coordinates.
-   //MJ runs with 1K processor, 10 coordinate in each, and partitions to 10 parts. 
-   //As expected strong scaling is problem here, because computation is almost 0, and
-   //communication cost of MJ linearly increases. 
-   //Premigration option gathers the coordinates to 10 parts before MJ starts
-   //therefore MJ will run with a smalller subset of the problem. 
-   //Below, I am migrating the coordinates if mj_premigration_option is set,
-   //and the result parts are less than the current part count, and the average number of 
-   //local coordinates is less than some threshold.
-   //For example, premigration may not help if 1000 processors are partitioning data to 10,
-   //but each of them already have 1M coordinate. In that case, we premigration would not help.
-   int current_world_size = this->mj_problemComm->getSize();
-   mj_lno_t threshold_num_local_coords = this->min_coord_per_rank_for_premigration;
-   bool is_pre_migrated = false;
-   bool am_i_in_subset = true;
-   if ( mj_premigration_option > 0 &&
-       size_t (current_world_size) > this->num_global_parts &&
-       this->num_global_coords < mj_gno_t (current_world_size * threshold_num_local_coords)){
-     if (this->mj_keep_part_boxes){
-       throw std::logic_error("Multijagged: mj_keep_part_boxes and mj_premigration_option are not supported together yet.");
+    // TODO: MD 08/2017: Further discussion is required.
+    // MueLu calls MJ when it has very few coordinates per processors,
+    // such as 10. For example, it begins with 1K processor with 1K coordinate
+    // in each. Then with coarsening this reduces to 10 coordinate per procesor.
+    // It calls MJ to repartition these to 10 coordinates.
+    // MJ runs with 1K processor, 10 coordinate in each, and partitions to
+    // 10 parts.  As expected strong scaling is problem here, because
+    // computation is almost 0, and communication cost of MJ linearly increases. 
+    // Premigration option gathers the coordinates to 10 parts before MJ starts
+    // therefore MJ will run with a smalller subset of the problem. 
+    // Below, I am migrating the coordinates if mj_premigration_option is set,
+    // and the result parts are less than the current part count, and the
+    // average number of local coordinates is less than some threshold.
+    // For example, premigration may not help if 1000 processors are
+    // partitioning data to 10, but each of them already have 1M coordinate.
+    // In that case, we premigration would not help.
+    int current_world_size = this->mj_problemComm->getSize();
+    mj_lno_t threshold_num_local_coords =
+      this->min_coord_per_rank_for_premigration;
+    bool is_pre_migrated = false;
+    bool am_i_in_subset = true;
+    if (mj_premigration_option > 0 &&
+        size_t (current_world_size) > this->num_global_parts &&
+        this->num_global_coords < mj_gno_t (
+        current_world_size * threshold_num_local_coords))
+    {
+      if (this->mj_keep_part_boxes) {
+        throw std::logic_error("Multijagged: mj_keep_part_boxes and "
+          "mj_premigration_option are not supported together yet.");
+      }
+
+      is_pre_migrated =true;
+      int migration_selection_option = mj_premigration_option;
+      if(migration_selection_option * this->num_global_parts >
+        (size_t) (current_world_size)) {
+        migration_selection_option =
+          current_world_size / this->num_global_parts;
+      }
+
+      int used_num_ranks = int (this->num_global_coords /
+        float (threshold_num_local_coords) + 0.5);
+
+      if (used_num_ranks == 0) {
+        used_num_ranks = 1;
+      }
+  
+      am_i_in_subset = this->mj_premigrate_to_subset(
+      used_num_ranks,
+        migration_selection_option,
+        this->mj_env,
+        this->mj_problemComm,
+        this->coord_dim,
+        this->num_local_coords,
+        this->num_global_coords,
+        this->num_global_parts,
+        this->kokkos_initial_mj_gnos,
+        this->kokkos_mj_coordinates,
+        this->num_weights_per_coord,
+        this->kokkos_mj_weights,
+        //results
+        result_problemComm,
+        result_num_local_coords,
+        kokkos_result_initial_mj_gnos,
+        kokkos_result_mj_coordinates,
+        kokkos_result_mj_weights,
+        result_actual_owner_rank);
+
+       kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
      }
-     is_pre_migrated =true;
-     int migration_selection_option = mj_premigration_option;
-     if(migration_selection_option * this->num_global_parts > (size_t) (current_world_size)){
-       migration_selection_option = current_world_size / this->num_global_parts;
-     }
 
-     int used_num_ranks = int (this->num_global_coords / float (threshold_num_local_coords) + 0.5);
-     if (used_num_ranks == 0) used_num_ranks = 1;
-     am_i_in_subset = this->mj_premigrate_to_subset(
-   	 used_num_ranks,
-         migration_selection_option,
-         this->mj_env,
-         this->mj_problemComm,
-         this->coord_dim,
-         this->num_local_coords,
-         this->num_global_coords,
-         this->num_global_parts,
-         this->kokkos_initial_mj_gnos,
-         this->kokkos_mj_coordinates,
-         this->num_weights_per_coord,
-         this->kokkos_mj_weights,
-         //results
-         result_problemComm,
-         result_num_local_coords,
-         kokkos_result_initial_mj_gnos,
-         kokkos_result_mj_coordinates,
-         kokkos_result_mj_weights,
-         result_actual_owner_rank);
-
-      kokkos_result_initial_mj_gnos_ = kokkos_result_initial_mj_gnos;
-   }
-
-  Kokkos::View<mj_part_t *, device_t> kokkos_result_assigned_part_ids;
-  Kokkos::View<mj_gno_t*, device_t> kokkos_result_mj_gnos;
+    Kokkos::View<mj_part_t *, device_t> kokkos_result_assigned_part_ids;
+    Kokkos::View<mj_gno_t*, device_t> kokkos_result_mj_gnos;
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - setup");
-
-    this->mj_env->timerStart(MACRO_TIMERS, "partition() - call multi_jagged_part()");
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "partition() - call multi_jagged_part()");
 
     if (am_i_in_subset){
-
       this->mj_partitioner.multi_jagged_part(
-          this->mj_env,
-          result_problemComm, //this->mj_problemComm,
-          this->imbalance_tolerance,
-          this->num_global_parts,
-          this->kokkos_part_no_array,
-          this->recursion_depth,
-          this->coord_dim,
-          result_num_local_coords, //this->num_local_coords,
-          this->num_global_coords,
-          kokkos_result_initial_mj_gnos_,
-          kokkos_result_mj_coordinates,
-          this->num_weights_per_coord,
-          this->kokkos_mj_uniform_weights,
-          kokkos_result_mj_weights,
-          this->kokkos_mj_uniform_parts,
-          this->kokkos_mj_part_sizes,
-          kokkos_result_assigned_part_ids,
-          kokkos_result_mj_gnos
+        this->mj_env,
+        result_problemComm, //this->mj_problemComm,
+        this->imbalance_tolerance,
+        this->num_global_parts,
+        this->kokkos_part_no_array,
+        this->recursion_depth,
+        this->coord_dim,
+        result_num_local_coords, //this->num_local_coords,
+        this->num_global_coords,
+        kokkos_result_initial_mj_gnos_,
+        kokkos_result_mj_coordinates,
+        this->num_weights_per_coord,
+        this->kokkos_mj_uniform_weights,
+        kokkos_result_mj_weights,
+        this->kokkos_mj_uniform_parts,
+        this->kokkos_mj_part_sizes,
+        kokkos_result_assigned_part_ids,
+        kokkos_result_mj_gnos
       );
     }
 
-    this->mj_env->timerStop(MACRO_TIMERS, "partition() - call multi_jagged_part()");
-
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "partition() - call multi_jagged_part()");
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
-
 
     // Reorder results so that they match the order of the input
 #if defined(__cplusplus) && __cplusplus >= 201103L
@@ -8489,12 +8905,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
       host_kokkos_result_initial_mj_gnos_ =
       Kokkos::create_mirror_view(kokkos_result_initial_mj_gnos_);
-    Kokkos::deep_copy(host_kokkos_result_initial_mj_gnos_, kokkos_result_initial_mj_gnos_);
+    Kokkos::deep_copy(host_kokkos_result_initial_mj_gnos_,
+      kokkos_result_initial_mj_gnos_);
 
     typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
       host_kokkos_result_assigned_part_ids =
       Kokkos::create_mirror_view(kokkos_result_assigned_part_ids);
-    Kokkos::deep_copy(host_kokkos_result_assigned_part_ids, kokkos_result_assigned_part_ids);
+    Kokkos::deep_copy(host_kokkos_result_assigned_part_ids,
+      kokkos_result_assigned_part_ids);
 
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_kokkos_result_initial_mj_gnos_(i)] = i;
@@ -8524,31 +8942,39 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
     if (is_pre_migrated){
-      this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - PostMigration DistributorPlanCreating");
+      this->mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - PostMigration DistributorPlanCreating");
       Tpetra::Distributor distributor(this->mj_problemComm);
 
-      ArrayView<const mj_part_t> actual_owner_destinations( result_actual_owner_rank , result_num_local_coords);
-      mj_lno_t num_incoming_gnos = distributor.createFromSends(actual_owner_destinations);
+      ArrayView<const mj_part_t> actual_owner_destinations(
+        result_actual_owner_rank , result_num_local_coords);
+      mj_lno_t num_incoming_gnos = distributor.createFromSends(
+        actual_owner_destinations);
       if (num_incoming_gnos != this->num_local_coords){
-        throw std::logic_error("Zoltan2 - Multijagged Post Migration - num incoming is not equal to num local coords");
+        throw std::logic_error("Zoltan2 - Multijagged Post Migration - "
+          "num incoming is not equal to num local coords");
       }
 
-      mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorPlanCreating");
-      mj_env->timerStart(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
+      mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - PostMigration DistributorPlanCreating");
+      mj_env->timerStart(MACRO_TIMERS,
+        "MultiJagged - PostMigration DistributorMigration");
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
         //  ArrayView<const mj_gno_t> sent_gnos(result_num_local_coords);
         throw std::logic_error("Restore distributor!");
         // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_, result_num_local_coords);
+        //ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_,
+        // result_num_local_coords);
         //distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
       {
         throw std::logic_error("Restore distributor!");
         // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
         //ArrayView<mj_part_t> sent_partnos(partId());
-        //distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1, received_partids());
+        //distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1,
+        // received_partids());
       }
       partId = arcp(new mj_part_t[this->num_local_coords],
                       0, this->num_local_coords, true);
@@ -8590,18 +9016,15 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 #endif // C++11 is enabled
       }
       {
-
         freeArray<int> (result_actual_owner_rank);
       }
-      mj_env->timerStop(MACRO_TIMERS, "MultiJagged - PostMigration DistributorMigration");
-
+      mj_env->timerStop(MACRO_TIMERS,
+        "MultiJagged - PostMigration DistributorMigration");
     }
-
     solution->setParts(partId);
-
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
-}
-    this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
+  }
+  this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
@@ -8611,247 +9034,270 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   const RCP<PartitioningSolution<Adapter> > &solution
 )
 {
-        this->coord_dim = this->mj_coords->getCoordinateDim();
-        this->num_weights_per_coord = this->mj_coords->getNumWeightsPerCoordinate();
-        this->num_local_coords = this->mj_coords->getLocalNumCoordinates();
-        this->num_global_coords = this->mj_coords->getGlobalNumCoordinates();
-        int criteria_dim = (this->num_weights_per_coord ? this->num_weights_per_coord : 1);
-        // From the Solution we get part information.
-        // If the part sizes for a given criteria are not uniform,
-        // then they are values that sum to 1.0.
-        this->num_global_parts = solution->getTargetGlobalNumberOfParts();
-        //allocate only two dimensional pointer.
-        //raw pointer addresess will be obtained from multivector.
-        this->kokkos_mj_uniform_parts = Kokkos::View<bool *, device_t>("uniform parts", criteria_dim);
-        this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **, device_t>("part sizes", criteria_dim);
-        this->kokkos_mj_uniform_weights = Kokkos::View<bool *, device_t>("uniform weights", criteria_dim);
-        Kokkos::View<const mj_gno_t *, device_t> kokkos_gnos;
-        Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> kokkos_xyz;
-        Kokkos::View<mj_scalar_t **, device_t> kokkos_wgts;
-        this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
-        //obtain global ids.
-      this->kokkos_initial_mj_gnos = kokkos_gnos;
-        //extract coordinates from multivector.
-        this->kokkos_mj_coordinates = kokkos_xyz;
-        //if no weights are provided set uniform weight.
-        auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
-        if (this->num_weights_per_coord == 0){
-		// originally we did the following:
-                // this->kokkos_mj_uniform_weights(0) = true;
-                // But I want this to work for UVM off - normally we'd be in a parallel_for
-                // but for a single iteration is there a better way? I just do the parallel_for for now
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1), // intentional 1 element loop
-                  KOKKOS_LAMBDA (const int i) {
-                    local_kokkos_mj_uniform_weights(i) = true;
-                  }
-                );
-                Kokkos::resize(this->kokkos_mj_weights, 0);
-        }
-        else{
-                this->kokkos_mj_weights = kokkos_wgts;
+  this->coord_dim = this->mj_coords->getCoordinateDim();
+  this->num_weights_per_coord = this->mj_coords->getNumWeightsPerCoordinate();
+  this->num_local_coords = this->mj_coords->getLocalNumCoordinates();
+  this->num_global_coords = this->mj_coords->getGlobalNumCoordinates();
+  int criteria_dim = (this->num_weights_per_coord ?
+    this->num_weights_per_coord : 1);
+  // From the Solution we get part information.
+  // If the part sizes for a given criteria are not uniform,
+  // then they are values that sum to 1.0.
+  this->num_global_parts = solution->getTargetGlobalNumberOfParts();
+  // allocate only two dimensional pointer.
+  // raw pointer addresess will be obtained from multivector.
+  this->kokkos_mj_uniform_parts = Kokkos::View<bool *, device_t>(
+    "uniform parts", criteria_dim);
+  this->kokkos_mj_part_sizes = Kokkos::View<mj_scalar_t **, device_t>(
+    "part sizes", criteria_dim);
+  this->kokkos_mj_uniform_weights = Kokkos::View<bool *, device_t>(
+    "uniform weights", criteria_dim);
+  Kokkos::View<const mj_gno_t *, device_t> kokkos_gnos;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> kokkos_xyz;
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_wgts;
+  this->mj_coords->getCoordinatesKokkos(kokkos_gnos, kokkos_xyz, kokkos_wgts);
+  // obtain global ids.
+  this->kokkos_initial_mj_gnos = kokkos_gnos;
+  // extract coordinates from multivector.
+  this->kokkos_mj_coordinates = kokkos_xyz;
+  // if no weights are provided set uniform weight.
+  auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
+  if (this->num_weights_per_coord == 0) {
+    // originally we did the following:
+    // this->kokkos_mj_uniform_weights(0) = true;
+    // But I want this to work for UVM off - normally we'd be in a parallel_for
+    // but for a single iteration is there a better way? I just do the
+    // parallel_for for now
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA (const int i) {
+        local_kokkos_mj_uniform_weights(i) = true;
+      }
+    );
+    Kokkos::resize(this->kokkos_mj_weights, 0);
+  }
+  else{
+    this->kokkos_mj_weights = kokkos_wgts;
 
-                // Originally in serial - need to allocate properly for UVM
-                // for(int wdim = 0; wdim < this->num_weights_per_coord; ++wdim) {
-                Kokkos::parallel_for(
-                  Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_weights_per_coord),
-                  KOKKOS_LAMBDA (const int wdim) {
-                    local_kokkos_mj_uniform_weights(wdim) = false;
-                });
-        }
+    // Originally in serial - need to allocate properly for UVM
+    // for(int wdim = 0; wdim < this->num_weights_per_coord; ++wdim) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, this->num_weights_per_coord), KOKKOS_LAMBDA (const int wdim) {
+        local_kokkos_mj_uniform_weights(wdim) = false;
+    });
+  }
 
-        // Here we need solution->criteriaHasUniformPartSizes on device
-        // Create a host view and fill it, then copy to device
-        // TODO: This got created during the refactor but needs to be cleaned up so it doesn't happen in the first place. 
-        typedef Kokkos::View<bool *> view_vector_t;
-        view_vector_t device_hasUniformPartSizes("device criteriaHasUniformPartSizes", criteria_dim);
-        typename decltype(device_hasUniformPartSizes)::HostMirror::HostMirror host_hasUniformPartSizes =
-          Kokkos::create_mirror_view(device_hasUniformPartSizes);
-        for(int wdim = 0; wdim < criteria_dim; ++wdim) {
-          host_hasUniformPartSizes(wdim) = solution->criteriaHasUniformPartSizes(wdim);
-        }
-        Kokkos::deep_copy(device_hasUniformPartSizes, host_hasUniformPartSizes);
+  // Here we need solution->criteriaHasUniformPartSizes on device
+  // Create a host view and fill it, then copy to device
+  // TODO: This got created during the refactor but needs to be cleaned up so
+  // it doesn't happen in the first place. 
+  typedef Kokkos::View<bool *> view_vector_t;
+  view_vector_t device_hasUniformPartSizes(
+    "device criteriaHasUniformPartSizes", criteria_dim);
+  typename decltype(device_hasUniformPartSizes)::HostMirror::HostMirror
+    host_hasUniformPartSizes =
+    Kokkos::create_mirror_view(device_hasUniformPartSizes);
+  for(int wdim = 0; wdim < criteria_dim; ++wdim) {
+    host_hasUniformPartSizes(wdim) =
+      solution->criteriaHasUniformPartSizes(wdim);
+  }
+  Kokkos::deep_copy(device_hasUniformPartSizes, host_hasUniformPartSizes);
 
-        // now we are ready to initialize kokkos_mj_uniform_parts safely on device for UVM off
-        // TODO: we could probably refactor this a bit and just copy the view ptr but I want to keep the error checking.
-        // Also when we refactor above we may end up with a form similar to this.
-        // For now keep the full loop to preserve the original code pattern
-        auto local_kokkos_mj_uniform_parts = kokkos_mj_uniform_parts;
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, criteria_dim),
-            KOKKOS_LAMBDA (const int wdim) {
-            if(device_hasUniformPartSizes(wdim)) {
-              local_kokkos_mj_uniform_parts(wdim) = true;
-            }
-            else {
-              printf("Error: MJ does not support non uniform target part weights\n");
-              // TODO: Resolve error handling for device
-              // exit(1);
-            }
-        });
+  // now we are ready to initialize kokkos_mj_uniform_parts safely on device for
+  // UVM off
+  // TODO: we could probably refactor this a bit and just copy the view ptr but
+  // I want to keep the error checking.
+  // Also when we refactor above we may end up with a form similar to this.
+  // For now keep the full loop to preserve the original code pattern
+  auto local_kokkos_mj_uniform_parts = kokkos_mj_uniform_parts;
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, criteria_dim), KOKKOS_LAMBDA (const int wdim) {
+      if(device_hasUniformPartSizes(wdim)) {
+        local_kokkos_mj_uniform_parts(wdim) = true;
+      }
+      else {
+        printf("Error: MJ does not support non uniform target part weights\n");
+        // TODO: Resolve error handling for device
+        // exit(1);
+      }
+  });
 }
 
 /* \brief Sets the partitioning parameters for multijagged algorithm.
  * \param pl: is the parameter list provided to zoltan2 call
  * */
 template <typename Adapter>
-void Zoltan2_AlgMJ<Adapter>::set_input_parameters(const Teuchos::ParameterList &pl){
-        const Teuchos::ParameterEntry *pe = pl.getEntryPtr("imbalance_tolerance");
-        if (pe){
-                double tol;
-                tol = pe->getValue(&tol);
-                this->imbalance_tolerance = tol - 1.0;
-        }
+void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
+  const Teuchos::ParameterList &pl)
+{
+  const Teuchos::ParameterEntry *pe = pl.getEntryPtr("imbalance_tolerance");
+  if (pe) {
+    double tol;
+    tol = pe->getValue(&tol);
+    this->imbalance_tolerance = tol - 1.0;
+  }
 
-        // TODO: May be a more relaxed tolerance is needed. RCB uses 10%
-        if (this->imbalance_tolerance <= 0)
-                this->imbalance_tolerance= 10e-4;
-        //if an input partitioning array is provided.
-        Kokkos::resize(this->kokkos_part_no_array, 0);
+  // TODO: May be a more relaxed tolerance is needed. RCB uses 10%
+  if (this->imbalance_tolerance <= 0) {
+    this->imbalance_tolerance= 10e-4;
+  }
 
-        //the length of the input partitioning array.
-        this->recursion_depth = 0;
+  // if an input partitioning array is provided.
+  Kokkos::resize(this->kokkos_part_no_array, 0);
 
-        if (pl.getPtr<Array <mj_part_t> >("mj_parts")){
-                auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
-                int mj_parts_size = static_cast<int>(mj_parts.size());
+  // the length of the input partitioning array.
+  this->recursion_depth = 0;
 
-                // build the view we'll have data on and copy values from host
-                this->kokkos_part_no_array = Kokkos::View<mj_part_t*, device_t>(
-                  "kokkos_part_no_array", mj_parts_size);
-                typename decltype (this->kokkos_part_no_array)::HostMirror 
-                  host_kokkos_part_no_array = Kokkos::create_mirror_view(this->kokkos_part_no_array);
-                for(int i = 0; i < mj_parts_size; ++i) {
-                  host_kokkos_part_no_array(i) = mj_parts.getRawPtr()[i];
-                }
-                Kokkos::deep_copy(this->kokkos_part_no_array, host_kokkos_part_no_array);
+  if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
+    auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
+    int mj_parts_size = static_cast<int>(mj_parts.size());
 
-                this->recursion_depth = mj_parts_size - 1;
-                this->mj_env->debug(2, "mj_parts provided by user");
-        }
+    // build the view we'll have data on and copy values from host
+    this->kokkos_part_no_array = Kokkos::View<mj_part_t*, device_t>(
+      "kokkos_part_no_array", mj_parts_size);
+    typename decltype (this->kokkos_part_no_array)::HostMirror 
+      host_kokkos_part_no_array = Kokkos::create_mirror_view(
+        this->kokkos_part_no_array);
+    for(int i = 0; i < mj_parts_size; ++i) {
+      host_kokkos_part_no_array(i) = mj_parts.getRawPtr()[i];
+    }
+    Kokkos::deep_copy(this->kokkos_part_no_array, host_kokkos_part_no_array);
 
-        //get mj specific parameters.
-        this->distribute_points_on_cut_lines = true;
-        this->max_concurrent_part_calculation = 1;
+    this->recursion_depth = mj_parts_size - 1;
+    this->mj_env->debug(2, "mj_parts provided by user");
+  }
 
-        this->mj_run_as_rcb = false;
-        this->mj_premigration_option = 0;
+  // get mj specific parameters.
+  this->distribute_points_on_cut_lines = true;
+  this->max_concurrent_part_calculation = 1;
+
+  this->mj_run_as_rcb = false;
+  this->mj_premigration_option = 0;
 	this->min_coord_per_rank_for_premigration = 32000;
 
-        int mj_user_recursion_depth = -1;
-        this->mj_keep_part_boxes = false;
-        this->check_migrate_avoid_migration_option = 0;
-        this->migration_type = 0;
+  int mj_user_recursion_depth = -1;
+  this->mj_keep_part_boxes = false;
+  this->check_migrate_avoid_migration_option = 0;
+  this->migration_type = 0;
 	this->minimum_migration_imbalance = 0.35;
 
-        pe = pl.getEntryPtr("mj_minimum_migration_imbalance");
-        if (pe){
-                double imb;
-                imb = pe->getValue(&imb);
-                this->minimum_migration_imbalance = imb - 1.0;
-        }
+  pe = pl.getEntryPtr("mj_minimum_migration_imbalance");
+  if (pe) {
+    double imb;
+    imb = pe->getValue(&imb);
+    this->minimum_migration_imbalance = imb - 1.0;
+  }
 
-        pe = pl.getEntryPtr("mj_migration_option");
-        if (pe){
-                this->check_migrate_avoid_migration_option = pe->getValue(&this->check_migrate_avoid_migration_option);
-        }else {
-                this->check_migrate_avoid_migration_option = 0;
-        }
-        if (this->check_migrate_avoid_migration_option > 1) this->check_migrate_avoid_migration_option = -1;
+  pe = pl.getEntryPtr("mj_migration_option");
+  if (pe) {
+    this->check_migrate_avoid_migration_option =
+      pe->getValue(&this->check_migrate_avoid_migration_option);
+  } else {
+    this->check_migrate_avoid_migration_option = 0;
+  }
+  if (this->check_migrate_avoid_migration_option > 1) {
+    this->check_migrate_avoid_migration_option = -1;
+  }
 
 	///
-        pe = pl.getEntryPtr("mj_migration_type");
-        if (pe){
-                this->migration_type = pe->getValue(&this->migration_type);
-        }else {
-                this->migration_type = 0;
-        }
+  pe = pl.getEntryPtr("mj_migration_type");
+  if (pe) {
+    this->migration_type = pe->getValue(&this->migration_type);
+  } else {
+    this->migration_type = 0;
+  }
+
 	//std::cout << " this->migration_type:" <<  this->migration_type << std::endl;
 	///
 
-        pe = pl.getEntryPtr("mj_concurrent_part_count");
-        if (pe){
-                this->max_concurrent_part_calculation = pe->getValue(&this->max_concurrent_part_calculation);
-        }else {
-                this->max_concurrent_part_calculation = 1; // Set to 1 if not provided.
-        }
+  pe = pl.getEntryPtr("mj_concurrent_part_count");
+  if (pe) {
+    this->max_concurrent_part_calculation =
+      pe->getValue(&this->max_concurrent_part_calculation);
+  } else {
+    this->max_concurrent_part_calculation = 1; // Set to 1 if not provided.
+  }
 
-        pe = pl.getEntryPtr("mj_keep_part_boxes");
-        if (pe){
-                this->mj_keep_part_boxes = pe->getValue(&this->mj_keep_part_boxes);
-        }else {
-                this->mj_keep_part_boxes = false; // Set to invalid value
-        }
+  pe = pl.getEntryPtr("mj_keep_part_boxes");
+  if (pe) {
+    this->mj_keep_part_boxes = pe->getValue(&this->mj_keep_part_boxes);
+  } else {
+    this->mj_keep_part_boxes = false; // Set to invalid value
+  }
 
+  // For now, need keep_part_boxes to do pointAssign and boxAssign.
+  // pe = pl.getEntryPtr("keep_cuts");
+  // if (pe){
+  //      int tmp = pe->getValue(&tmp);
+  //      if (tmp) this->mj_keep_part_boxes = true;
+  // }
 
-        // For now, need keep_part_boxes to do pointAssign and boxAssign.
-        // pe = pl.getEntryPtr("keep_cuts");
-        // if (pe){
-        //      int tmp = pe->getValue(&tmp);
-        //      if (tmp) this->mj_keep_part_boxes = true;
-        // }
+  //need to keep part boxes if mapping type is geometric.
+  if (this->mj_keep_part_boxes == false) {
+    pe = pl.getEntryPtr("mapping_type");
+    if (pe) {
+      int mapping_type = -1;
+      mapping_type = pe->getValue(&mapping_type);
+      if (mapping_type == 0) {
+        mj_keep_part_boxes  = true;
+      }
+    }
+  }
 
-        //need to keep part boxes if mapping type is geometric.
-        if (this->mj_keep_part_boxes == false){
-                pe = pl.getEntryPtr("mapping_type");
-                if (pe){
-                        int mapping_type = -1;
-                        mapping_type = pe->getValue(&mapping_type);
-                        if (mapping_type == 0){
-                                mj_keep_part_boxes  = true;
-                        }
-                }
-        }
+  // need to keep part boxes if mapping type is geometric.
+  pe = pl.getEntryPtr("mj_enable_rcb");
+  if (pe) {
+    this->mj_run_as_rcb = pe->getValue(&this->mj_run_as_rcb);
+  } else {
+    this->mj_run_as_rcb = false; // Set to invalid value
+  }
 
-        //need to keep part boxes if mapping type is geometric.
-        pe = pl.getEntryPtr("mj_enable_rcb");
-        if (pe){
-                this->mj_run_as_rcb = pe->getValue(&this->mj_run_as_rcb);
-        }else {
-                this->mj_run_as_rcb = false; // Set to invalid value
-        }
+  pe = pl.getEntryPtr("mj_premigration_option");
+  if (pe){
+    mj_premigration_option = pe->getValue(&mj_premigration_option);
+  } else {
+     mj_premigration_option = 0;
+  }
 
-        pe = pl.getEntryPtr("mj_premigration_option");
-        if (pe){
-		mj_premigration_option = pe->getValue(&mj_premigration_option);
-        }else {
-		mj_premigration_option = 0;
-        }
+  pe = pl.getEntryPtr("mj_premigration_coordinate_count");
+  if (pe) {
+    min_coord_per_rank_for_premigration = pe->getValue(&mj_premigration_option);
+  } else {
+    min_coord_per_rank_for_premigration = 32000;
+  }
 
-        pe = pl.getEntryPtr("mj_premigration_coordinate_count");
-        if (pe){
-        	min_coord_per_rank_for_premigration = pe->getValue(&mj_premigration_option);
-        }else {
-                min_coord_per_rank_for_premigration = 32000;
-        }
+  pe = pl.getEntryPtr("mj_recursion_depth");
+  if (pe) {
+    mj_user_recursion_depth = pe->getValue(&mj_user_recursion_depth);
+  } else {
+    mj_user_recursion_depth = -1; // Set to invalid value
+  }
 
-        pe = pl.getEntryPtr("mj_recursion_depth");
-        if (pe){
-                mj_user_recursion_depth = pe->getValue(&mj_user_recursion_depth);
-        }else {
-                mj_user_recursion_depth = -1; // Set to invalid value
-        }
+  bool val = false;
+  pe = pl.getEntryPtr("rectilinear");
+  if (pe) {
+    val = pe->getValue(&val);
+  }
+  if (val) {
+    this->distribute_points_on_cut_lines = false;
+  } else {
+    this->distribute_points_on_cut_lines = true;
+  }
 
-        bool val = false;
-        pe = pl.getEntryPtr("rectilinear");
-        if (pe) val = pe->getValue(&val);
-        if (val){
-                this->distribute_points_on_cut_lines = false;
-        } else {
-                this->distribute_points_on_cut_lines = true;
-        }
-
-        if (this->mj_run_as_rcb){
-                mj_user_recursion_depth = (int)(ceil(log ((this->num_global_parts)) / log (2.0)));
-        }
-        if (this->recursion_depth < 1){
-                if (mj_user_recursion_depth > 0){
-                        this->recursion_depth = mj_user_recursion_depth;
-                }
-                else {
-                        this->recursion_depth = this->coord_dim;
-                }
-        }
+  if (this->mj_run_as_rcb){
+    mj_user_recursion_depth =
+      (int)(ceil(log ((this->num_global_parts)) / log (2.0)));
+  }
+  if (this->recursion_depth < 1){
+    if (mj_user_recursion_depth > 0){
+      this->recursion_depth = mj_user_recursion_depth;
+    }
+    else {
+      this->recursion_depth = this->coord_dim;
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -8893,7 +9339,7 @@ void Zoltan2_AlgMJ<Adapter>::boxAssign(
           if ((*partBoxes)[i].boxesOverlap(dim, lower, upper)) {
             nPartsFound++;
             partlist.push_back((*partBoxes)[i].getpId());
-/*
+            /*
             std::cout << "Given box (";
             for (int j = 0; j < dim; j++)
               std::cout << lower[j] << " ";
@@ -8908,7 +9354,7 @@ void Zoltan2_AlgMJ<Adapter>::boxAssign(
             for (int j = 0; j < dim; j++)
               std::cout << (*partBoxes)[i].getlmaxs()[j] << " ";
             std::cout << ")" << std::endl;
-*/
+            */
           }
         }
         Z2_FORWARD_EXCEPTIONS;
@@ -8925,7 +9371,6 @@ void Zoltan2_AlgMJ<Adapter>::boxAssign(
       // cuts.  With the RCB cuts, the concept of a part extending to
       // infinity was natural.  With the boxes, it is much more difficult.
       // TODO:  For now, return information indicating NO OVERLAP.
-
     }
   }
   else {
@@ -8939,7 +9384,6 @@ typename Adapter::part_t Zoltan2_AlgMJ<Adapter>::pointAssign(
   int dim,
   typename Adapter::scalar_t *point) const
 {
-
   // TODO:  Implement with cuts rather than boxes to reduce algorithmic
   // TODO:  complexity.  Or at least do a search through the boxes, using
   // TODO:  p x q x r x ... if possible.
@@ -8966,11 +9410,11 @@ typename Adapter::part_t Zoltan2_AlgMJ<Adapter>::pointAssign(
         try {
           if ((*partBoxes)[i].pointInBox(dim, point)) {
             foundPart = (*partBoxes)[i].getpId();
-//            std::cout << "Point (";
-//            for (int j = 0; j < dim; j++) std::cout << point[j] << " ";
-//            std::cout << ") found in box " << i << " part " << foundPart
-//                      << std::endl;
-//            (*partBoxes)[i].print();
+            // std::cout << "Point (";
+            // for (int j = 0; j < dim; j++) std::cout << point[j] << " ";
+            //   std::cout << ") found in box " << i << " part " << foundPart
+            //     << std::endl;
+            // (*partBoxes)[i].print();
             break;
           }
         }
@@ -9036,7 +9480,6 @@ void Zoltan2_AlgMJ<Adapter>::getCommunicationGraph(
   comXAdj = comXAdj_;
 }
 
-
 template <typename Adapter>
 RCP<typename Zoltan2_AlgMJ<Adapter>::mj_partBoxVector_t>
 Zoltan2_AlgMJ<Adapter>::getGlobalBoxBoundaries() const
@@ -9044,94 +9487,6 @@ Zoltan2_AlgMJ<Adapter>::getGlobalBoxBoundaries() const
   return this->mj_partitioner.get_kept_boxes();
 }
 
-
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::get_kept_boxes() const
-{
-  if (this->mj_keep_part_boxes)
-    return this->kept_boxes;
-  else
-    throw std::logic_error("Error: part boxes are not stored.");
-}
-
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t,
-          typename mj_node_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
-          mj_node_t>::compute_global_box_boundaries(
-  RCP<mj_partBoxVector_t> &localPartBoxes
-) const
-{
-  mj_part_t ntasks = this->num_global_parts;
-  int dim = (*localPartBoxes)[0].getDim();
-  mj_scalar_t *localPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
-
-  memset(localPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
-
-  mj_scalar_t *globalPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
-  memset(globalPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
-
-  mj_scalar_t *localPartMins = localPartBoundaries;
-  mj_scalar_t *localPartMaxs = localPartBoundaries + ntasks * dim;
-
-  mj_scalar_t *globalPartMins = globalPartBoundaries;
-  mj_scalar_t *globalPartMaxs = globalPartBoundaries + ntasks * dim;
-
-  mj_part_t boxCount = localPartBoxes->size();
-  for (mj_part_t i = 0; i < boxCount; ++i){
-    mj_part_t pId = (*localPartBoxes)[i].getpId();
-      //cout << "me:" << comm->getRank() << " has:" << pId << endl;
-
-    mj_scalar_t *lmins = (*localPartBoxes)[i].getlmins();
-    mj_scalar_t *lmaxs = (*localPartBoxes)[i].getlmaxs();
-
-    for (int j = 0; j < dim; ++j){
-      localPartMins[dim * pId + j] = lmins[j];
-      localPartMaxs[dim * pId + j] = lmaxs[j];
-      
-      /*
-      std::cout << "me:" << comm->getRank()  <<
-              " dim * pId + j:"<< dim * pId + j <<
-              " localMin:" << localPartMins[dim * pId + j] <<
-              " localMax:" << localPartMaxs[dim * pId + j] << std::endl;
-      */
-      
-    }
-  }
-
-  Teuchos::Zoltan2_BoxBoundaries<int, mj_scalar_t> reductionOp(ntasks * 2 *dim);
-
-  reduceAll<int, mj_scalar_t>(*mj_problemComm, reductionOp,
-            ntasks * 2 *dim, localPartBoundaries, globalPartBoundaries);
-  RCP<mj_partBoxVector_t> pB(new mj_partBoxVector_t(),true);
-  for (mj_part_t i = 0; i < ntasks; ++i){
-    Zoltan2::coordinateModelPartBox <mj_scalar_t, mj_part_t> tpb(i, dim,
-                                               globalPartMins + dim * i,
-                                               globalPartMaxs + dim * i);
-
-    /*
-    for (int j = 0; j < dim; ++j){
-        std::cout << "me:" << comm->getRank()  <<
-                " dim * pId + j:"<< dim * i + j <<
-                " globalMin:" << globalPartMins[dim * i + j] <<
-                " globalMax:" << globalPartMaxs[dim * i + j] << std::endl;
-    }
-    */
-    
-    pB->push_back(tpb);
-  }
-  delete []localPartBoundaries;
-  delete []globalPartBoundaries;
-  //RCP <mj_partBoxVector_t> tmpRCPBox(pB, true);
-  return pB;
-}
 } // namespace Zoltan2
 
 #endif
