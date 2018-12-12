@@ -4055,11 +4055,13 @@ struct ArrayMinMaxReducer {
   typedef ArrayType<scalar_t> value_type;
   value_type * value;
   size_t value_count;
+  scalar_t max_scalar;
 
   KOKKOS_INLINE_FUNCTION ArrayMinMaxReducer(
     value_type &val,
-    const size_t & count) :
-    value(&val), value_count(count)
+    const size_t & count,
+    scalar_t mj_max_scalar) :
+    value(&val), value_count(count), max_scalar(mj_max_scalar)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -4093,40 +4095,9 @@ struct ArrayMinMaxReducer {
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
     for(int n = 2; n < value_count - 2; n += 2) {
-      dst.ptr[n]   = -std::numeric_limits<scalar_t>::max();
-      dst.ptr[n+1] =  std::numeric_limits<scalar_t>::max();
+      dst.ptr[n]   = -max_scalar;
+      dst.ptr[n+1] =  max_scalar;
     }
-  }
-};
-
-template<class policy_t, class scalar_t, class part_t>
-struct ArrayMinMaxReducer_Debug {
-
-  typedef ArrayMinMaxReducer_Debug reducer;
-  typedef ArrayType<scalar_t> value_type;
-  value_type * value;
-  size_t value_count;
-
-  KOKKOS_INLINE_FUNCTION ArrayMinMaxReducer_Debug(
-    value_type &val,
-    const size_t & count) :
-    value(&val), value_count(count)
-  {}
-
-  KOKKOS_INLINE_FUNCTION
-  value_type& reference() const {
-    return *value;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void join(value_type& dst, const value_type& src)  const {
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void join (volatile value_type& dst, const volatile value_type& src) const {
-  }
-
-  KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
   }
 };
 
@@ -4137,6 +4108,7 @@ struct RightLeftClosestFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
+  scalar_t max_scalar;
   part_t concurrent_current_part;
   int value_count;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
@@ -4146,7 +4118,9 @@ struct RightLeftClosestFunctor {
   Kokkos::View<index_t *, typename node_t::device_type> part_xadj;
   scalar_t sEpsilon;
 
+
   RightLeftClosestFunctor(
+    scalar_t mj_max_scalar,
     part_t mj_concurrent_current_part,
     const int & num_cuts,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
@@ -4155,6 +4129,7 @@ struct RightLeftClosestFunctor {
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
     Kokkos::View<index_t *, typename node_t::device_type> mj_part_xadj,
     scalar_t mj_sEpsilon) :
+    max_scalar(mj_max_scalar),
     concurrent_current_part(mj_concurrent_current_part),
     value_count(num_cuts*2),
     permutations(mj_permutations),
@@ -4198,7 +4173,7 @@ struct RightLeftClosestFunctor {
 
     // create reducer which handles the ArrayType class
     ArrayMinMaxReducer<policy_t, scalar_t, part_t> arrayMinMaxReducer(
-      array, value_count);
+      array, value_count, max_scalar);
     // call the reduce
 
     auto local_coordinates = coordinates;
@@ -4268,8 +4243,8 @@ struct RightLeftClosestFunctor {
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
     for(int n = 2; n < value_count - 2; n += 2) {
-      dst[n]   = -std::numeric_limits<scalar_t>::max();
-      dst[n+1] =  std::numeric_limits<scalar_t>::max();
+      dst[n]   = -max_scalar;
+      dst[n+1] =  max_scalar;
     }
   }
 };
@@ -4414,6 +4389,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t,
     mj_lno_t, mj_node_t> rightLeftClosestFunctor(
+    std::numeric_limits<mj_scalar_t>::max(),
     current_work_part + working_kk,
     num_cuts+2, // buffer beginning and end to skip if checks
     kokkos_coordinate_permutations,
