@@ -67,8 +67,8 @@
 // TODO: This is a temporary setting to be removed and calculated based on
 // conditions of the system and the algorithm.
 #define SET_NUM_TEAMS_ReduceWeightsFunctor 60
-
 #define SET_NUM_TEAMS_RightLeftClosestFunctor 30 // tuned to my local machine - needs work
+#define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
 
 #define SET_MAX_TEAMS 200 // to do - optimize
 
@@ -149,6 +149,18 @@ static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cu
 static Clock clock_write_globals("          clock_write_globals", false);
 static Clock mj_1D_part_end("        mj_1D_part_end", false);
 static Clock mj_create_new_partitions_clock("           mj_create_new_partitions", false);
+static Clock mj_create_new_partitions_clock1("             mj_create_new_partitions1", false);
+static Clock mj_create_new_partitions_clock2("             mj_create_new_partitions2", false);
+static Clock mj_create_new_partitions_clock3("             mj_create_new_partitions3", false);
+static Clock mj_create_new_partitions_clock4("             mj_create_new_partitions4", false);
+static Clock mj_create_new_partitions_clock5("             mj_create_new_partitions5", false);
+static Clock mj_create_new_partitions_clock6("             mj_create_new_partitions6", false);
+static Clock mj_create_new_partitions_clock7("             mj_create_new_partitions7", false);
+static Clock mj_create_new_partitions_clock8("             mj_create_new_partitions8", false);
+static Clock mj_create_new_partitions_clock9("             mj_create_new_partitions9", false);
+static Clock mj_create_new_partitions_clock10("             mj_create_new_partitions10", false);
+static Clock mj_create_new_partitions_clock11("             mj_create_new_partitions11", false);
+static Clock mj_create_new_partitions_clock12("             mj_create_new_partitions12", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -4680,6 +4692,8 @@ mj_create_new_partitions(
 
   mj_create_new_partitions_clock.start();
 
+  mj_create_new_partitions_clock1.start();
+
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
   mj_part_t num_cuts = num_parts - 1;
@@ -4712,29 +4726,36 @@ mj_create_new_partitions(
     });
   }
 
+  mj_create_new_partitions_clock1.stop();
+
+  mj_create_new_partitions_clock2.start();
+
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
-  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
 
   if(num_cuts > 0) {
-    // this is a special case. If cutlines share the same coordinate,
-    // their weights are equal. We need to adjust the ratio for that.
-    for (mj_part_t i = num_cuts - 1; i > 0 ; --i) {
-      if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
-        kokkos_current_concurrent_cut_coordinate(i -1)) < local_sEpsilon) {
-          local_kokkos_thread_cut_line_weight_to_put_left(i) -=
-            local_kokkos_thread_cut_line_weight_to_put_left(i - 1);
+
+    Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+      // this is a special case. If cutlines share the same coordinate,
+      // their weights are equal. We need to adjust the ratio for that.
+      for (mj_part_t i = num_cuts - 1; i > 0 ; --i) {
+        if(ZOLTAN2_ABS(kokkos_current_concurrent_cut_coordinate(i) -
+          kokkos_current_concurrent_cut_coordinate(i -1)) < local_sEpsilon) {
+            local_kokkos_thread_cut_line_weight_to_put_left(i) -=
+              local_kokkos_thread_cut_line_weight_to_put_left(i - 1);
+        }
+        local_kokkos_thread_cut_line_weight_to_put_left(i) =
+          int ((local_kokkos_thread_cut_line_weight_to_put_left(i) +
+          LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
+          mj_scalar_t(SIGNIFICANCE_MUL);
       }
-      local_kokkos_thread_cut_line_weight_to_put_left(i) =
-        int ((local_kokkos_thread_cut_line_weight_to_put_left(i) +
-        LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
-        mj_scalar_t(SIGNIFICANCE_MUL);
-    }
+    });
   }
 
-  });
+  mj_create_new_partitions_clock2.stop();
+  mj_create_new_partitions_clock3.start();
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
@@ -4744,6 +4765,9 @@ mj_create_new_partitions(
 
   Kokkos::View<mj_lno_t *, device_t> record_total_on_cut(
     "track_on_cuts", 1);
+
+  mj_create_new_partitions_clock3.stop();
+  mj_create_new_partitions_clock4.start();
 
   mj_lno_t coordinate_begin_index;
   Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
@@ -4759,6 +4783,10 @@ mj_create_new_partitions(
     set_single = local_kokkos_part_xadj(current_concurrent_work_part);;
   }, coordinate_end_index);
 
+
+  mj_create_new_partitions_clock4.stop();
+  mj_create_new_partitions_clock5.start();
+
   mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
 
   // Found the loops below with atomics won't work properly if they run a team
@@ -4766,7 +4794,7 @@ mj_create_new_partitions(
   // fails if we have a range such as (25, 25), or (999,25).
   // So to correct I'll clamp the max teams - probably doesn't make sense to
   // have teams run less than a warp anyways.
-  int num_teams = SET_MAX_TEAMS;
+  int num_teams = SET_NUM_TEAMS_mj_create_new_partitions_clock;
   // TODO: need to check the system warp size - doesn't really matter
   // since this is just relevant for low coordinate count cases
   if(num_teams > num_working_points/32) {
@@ -4780,6 +4808,9 @@ mj_create_new_partitions(
   if((num_working_points % num_teams) > 0) {
     stride += 1; // make sure we have coverage for the final points
   }
+
+  mj_create_new_partitions_clock5.stop();
+  mj_create_new_partitions_clock6.start();
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
     policy(num_teams, Kokkos::AUTO());
@@ -4804,6 +4835,9 @@ mj_create_new_partitions(
     });
   });
 
+  mj_create_new_partitions_clock6.stop();
+  mj_create_new_partitions_clock7.start();
+
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, int & set_single) {
@@ -4811,8 +4845,14 @@ mj_create_new_partitions(
     record_total_on_cut(0) = 0;
   }, total_on_cut);
 
+  mj_create_new_partitions_clock7.stop();
+  mj_create_new_partitions_clock8.start();
+
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
     "track_on_cuts", total_on_cut);
+
+  mj_create_new_partitions_clock8.stop();
+  mj_create_new_partitions_clock9.start();
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
     mj_lno_t team_begin_index =
@@ -4845,6 +4885,9 @@ mj_create_new_partitions(
       }
     });
   });
+
+  mj_create_new_partitions_clock9.stop();
+  mj_create_new_partitions_clock10.start();
  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
@@ -4938,10 +4981,13 @@ mj_create_new_partitions(
         }
         local_kokkos_thread_point_counts(coordinate_assigned_part) += 1;
         local_kokkos_assigned_part_ids(coordinate_index) =
-        coordinate_assigned_part;
+          coordinate_assigned_part;
       }
     }
   });
+
+  mj_create_new_partitions_clock10.stop();
+  mj_create_new_partitions_clock11.start();
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
@@ -4954,6 +5000,9 @@ mj_create_new_partitions(
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     local_kokkos_thread_point_counts(j) = 0;
   });
+
+  mj_create_new_partitions_clock11.stop();
+  mj_create_new_partitions_clock12.start();
 
   // TODO: How do we efficiently parallelize this form? 
   // Copy first?
@@ -4988,6 +5037,8 @@ mj_create_new_partitions(
           coordinate_begin_index + idx) = i;
     });
   });
+
+ mj_create_new_partitions_clock12.stop();
 
   mj_create_new_partitions_clock.stop();
 }
@@ -7508,6 +7559,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
       
   mj_create_new_partitions_clock.reset();
+  mj_create_new_partitions_clock1.reset();
+  mj_create_new_partitions_clock2.reset();
+  mj_create_new_partitions_clock3.reset();
+  mj_create_new_partitions_clock4.reset();
+  mj_create_new_partitions_clock5.reset();
+  mj_create_new_partitions_clock6.reset();
+  mj_create_new_partitions_clock7.reset();
+  mj_create_new_partitions_clock8.reset();
+  mj_create_new_partitions_clock9.reset();
+  mj_create_new_partitions_clock10.reset();
+  mj_create_new_partitions_clock11.reset();
+  mj_create_new_partitions_clock12.reset();
 
   mj_1D_part_while_loop.reset();
   mj_1D_part_init.reset();
@@ -7634,8 +7697,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock clock_mj_1D_part("      mj_1D_part", false);
 
   Clock new_part_chunks("      new part chunks", false);
-
-  Clock loopC("    loop C", false);
 
   for (int i = 0; i < this->recursion_depth; ++i) {
 
@@ -8144,7 +8205,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
 
     loopB.stop();
-    loopC.start();
 
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
@@ -8206,7 +8266,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Problem_Partitioning_" + istring);
     }
-    loopC.stop();
   }
 
   clock_multi_jagged_part_loop.stop();
@@ -8282,8 +8341,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_1D_part_end.print();
 
   new_part_chunks.print();
-  loopC.print();
   mj_create_new_partitions_clock.print();
+  mj_create_new_partitions_clock1.print();
+  mj_create_new_partitions_clock2.print();
+  mj_create_new_partitions_clock3.print();
+  mj_create_new_partitions_clock4.print();
+  mj_create_new_partitions_clock5.print();
+  mj_create_new_partitions_clock6.print();
+  mj_create_new_partitions_clock7.print();
+  mj_create_new_partitions_clock8.print();
+  mj_create_new_partitions_clock9.print();
+  mj_create_new_partitions_clock10.print();
+  mj_create_new_partitions_clock11.print();
+  mj_create_new_partitions_clock12.print();
 
   clock_multi_jagged_part_finish.print();
 }
