@@ -66,7 +66,11 @@
 
 // TODO: This is a temporary setting to be removed and calculated based on
 // conditions of the system and the algorithm.
-#define SET_MAX_TEAMS 100
+#define SET_NUM_TEAMS_ReduceWeightsFunctor 60
+
+#define SET_NUM_TEAMS_RightLeftClosestFunctor 30 // tuned to my local machine - needs work
+
+#define SET_MAX_TEAMS 200 // to do - optimize
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -112,6 +116,7 @@ class Clock {
       }
     }
     void print() {
+    //  printf("%.2f\n", (float)(time() * 1000.0));
       printf("--------------------------------------------------------- %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
     }
   private:
@@ -4118,7 +4123,6 @@ struct RightLeftClosestFunctor {
   Kokkos::View<index_t *, typename node_t::device_type> part_xadj;
   scalar_t sEpsilon;
 
-
   RightLeftClosestFunctor(
     scalar_t mj_max_scalar,
     part_t mj_concurrent_current_part,
@@ -4174,15 +4178,45 @@ struct RightLeftClosestFunctor {
     // create reducer which handles the ArrayType class
     ArrayMinMaxReducer<policy_t, scalar_t, part_t> arrayMinMaxReducer(
       array, value_count, max_scalar);
-    // call the reduce
 
+    // call the reduce
     auto local_coordinates = coordinates;
     auto local_permutations = permutations;
+    auto local_cut_coordinates = cut_coordinates;
 
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+
       int i = local_permutations(ii);
       const scalar_t & coord = local_coordinates(i);
+  
+// Prototyping strategy for just reading the single part
+// instead of checking all - though would need to handle
+// empty parts so min/max is updated. However this doesn't
+// seem to help speed at all.
+/*
+      part_t my_part = parts(i);
+      part_t ref = my_part / 2;
+      if(my_part % 2 == 1) {
+        // coord is on cut so set cut min/max to be right on cut
+        scalar_t cut_coord = local_cut_coordinates(i);
+        threadSum.ptr[2+ref*2] = cut_coord;
+        threadSum.ptr[2+ref*2+1] = cut_coord;
+      }
+      else {
+        // coord is in part ref
+        part_t lower_cut = ref - 1;
+        part_t upper_cut = ref;
+        scalar_t & lower_max = threadSum.ptr[2+lower_cut*2+1];
+        scalar_t & upper_min = threadSum.ptr[2+upper_cut*2];
+        if(coord < lower_max) {
+          lower_max = coord;
+        }
+        if(coord > upper_min) {
+          upper_min = coord;
+        }
+      }
+*/
 
       // remove front end buffers - true count here
       part_t num_cuts = value_count / 2 - 2;
@@ -4330,13 +4364,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   weights2.stop();
   weights3.start();
 
-  auto policy = policy_t(SET_MAX_TEAMS, Kokkos::AUTO);
+  auto policy_ReduceWeightsFunctor =
+    policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
 
   mj_scalar_t * part_weights = new mj_scalar_t[weight_array_size];
 
   functor1.start();
 
-  Kokkos::parallel_reduce(policy, teamFunctor, part_weights);
+  Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
+    teamFunctor, part_weights);
 
   functor1.stop();
 
@@ -4354,14 +4390,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   weights3.stop();
   weights4.start();
 
-  // Finalize the loop - TODO: optimize
-  // Putting this inside above loop surrounded by barriers and executing
-  // only for league 0 team 0 did not work .... but not sure why yet.
-  // Seems it should be the same result.
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::
     execution_space>::member_type member_type;
-  Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
     // prefix sum computation.
     // we need prefix sum for each part to determine cut positions.
     for (size_t i = 1; i < total_part_count; ++i){
@@ -4408,9 +4440,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_scalar_t * left_max_right_min_values = new mj_scalar_t[(num_cuts+2)*2];
 
   functor2.start();
-  
-  Kokkos::parallel_reduce(policy, rightLeftClosestFunctor,
-    left_max_right_min_values);
+
+  auto policy_RightLeftClosestFunctor =
+    policy_t(SET_NUM_TEAMS_RightLeftClosestFunctor, Kokkos::AUTO);
+ 
+  Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
+    rightLeftClosestFunctor, left_max_right_min_values);
     
   functor2.stop();
 
@@ -4465,8 +4500,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy2(1, 1);
-  Kokkos::parallel_for (policy2, KOKKOS_LAMBDA(member_type team_member) {
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
+  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
 
     // needs barrier here, as it requires all threads to finish
     // mj_1D_part_get_thread_part_weights using parallel region here reduces the
