@@ -333,7 +333,12 @@ private:
       for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
         host_temp_values(n) = idList_[n];
       }
+    
+    
+// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
+Clock clock_host_to_device_ids("copy ids host to device", true);
       Kokkos::deep_copy(this->kokkos_ids_, host_temp_values);
+clock_host_to_device_ids.stop(true);
 
       // make coordinates
       int stride = 1;
@@ -364,35 +369,11 @@ private:
         }
       }
       
+// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
+Clock clock_host_to_device_entries("copy entries host to device", true);
       Kokkos::deep_copy(this->kokkos_entries_, host_kokkos_entries);
-      
-/*
-      for (int v=0; v < numEntriesPerID_; v++) {
-        size_t length;
-        const scalar_t * entriesPtr;
-        entries_[v].getStridedList(length, entriesPtr, stride);
+clock_host_to_device_entries.stop(true);
 
-        Kokkos::View<scalar_t *>
-          device_coord_temp_values("temp device values", numIds_);
-        typename decltype(device_coord_temp_values)::HostMirror
-          host_coord_temp_values =
-            Kokkos::create_mirror_view(device_coord_temp_values);
-        for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
-          host_coord_temp_values(n) = entriesPtr[n*stride];
-        }
-        Kokkos::deep_copy(device_coord_temp_values, host_coord_temp_values);
-
-        // now fill this->kokkos_entries on device
-        // TODO: Above deep_copy eventually should be straight to the
-        // this->kokkos_entries_
-        auto local_kokkos_entries = this->kokkos_entries_;
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int>
-          (0, numIds_), KOKKOS_LAMBDA (int n) {
-            local_kokkos_entries(n,v) = device_coord_temp_values(n);
-        });
-      }
-*/
     }
 
     // weights
@@ -427,7 +408,12 @@ private:
           host_weight_temp_values(fill_index++,idx) = weightsPtr[n];
         }
       }
+
+// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
+Clock clock_host_to_device_weights("copy weights host to device", true);
       Kokkos::deep_copy(this->kokkos_weights_, host_weight_temp_values);
+clock_host_to_device_weights.stop(true);
+
     }
   }
 };
