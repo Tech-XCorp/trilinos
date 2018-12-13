@@ -3129,6 +3129,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
+  mj_scalar_t max_scalar = std::numeric_limits<mj_scalar_t>::max();
+
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy1 (1, 1);
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
@@ -3147,8 +3149,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     //set the min and max coordinates as reverse.
     if(coordinate_begin_index >= coordinate_end_index)
     {
-      my_thread_min_coord = std::numeric_limits<mj_scalar_t>::max();
-      my_thread_max_coord = -std::numeric_limits<mj_scalar_t>::max();
+      my_thread_min_coord = max_scalar;
+      my_thread_max_coord = -max_scalar;
       my_total_weight = 0;
     }
     else {
@@ -5125,7 +5127,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   auto local_kokkos_global_min_max_coord_total_weight =
     kokkos_global_min_max_coord_total_weight;
 
+  
   // TODO: Work on this pattern to optimize it
+  // Note for a 22 part system I tried removing the outer loop
+  // and doing each sub loop as a simple parallel_for over num_cuts.
+  // But that was about twice as slow (10ms) as the current form (5ms)
+  // so I think the overhead of laucnhing the new global parallel kernels
+  // is costly. This form is just running one team so effectively using
+  // a single warp to process the cuts. I expect with a lot of parts this
+  // might need changing.
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
     policy2(1, Kokkos::AUTO());
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
