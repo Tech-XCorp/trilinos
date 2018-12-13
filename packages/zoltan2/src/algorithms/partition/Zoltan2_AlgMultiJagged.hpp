@@ -8993,17 +8993,22 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     localGidToLid.reserve(result_num_local_coords);
 
     // copy to host
+    
+Clock clock_copy_gnos("copy gnos to host", true);
     typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
       host_kokkos_result_initial_mj_gnos_ =
       Kokkos::create_mirror_view(kokkos_result_initial_mj_gnos_);
     Kokkos::deep_copy(host_kokkos_result_initial_mj_gnos_,
       kokkos_result_initial_mj_gnos_);
+clock_copy_gnos.stop(true);
 
-    typename decltype (kokkos_result_initial_mj_gnos_)::HostMirror
+Clock clock_copy_part_ids("copy part ids to host", true);
+    typename decltype (kokkos_result_assigned_part_ids)::HostMirror
       host_kokkos_result_assigned_part_ids =
       Kokkos::create_mirror_view(kokkos_result_assigned_part_ids);
     Kokkos::deep_copy(host_kokkos_result_assigned_part_ids,
       kokkos_result_assigned_part_ids);
+clock_copy_part_ids.stop(true);
 
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_kokkos_result_initial_mj_gnos_(i)] = i;
