@@ -65,9 +65,14 @@ namespace Zoltan2 {
 
     Data types:
     \li \c scalar_t is the data type for weights and vector entry values.
-    \li \c lno_t is the integral data type used by Zoltan2 for local indices and local counts.
-    \li \c gno_t is the data type used by the application for global Ids; must be a Teuchos Ordinal.  (Teuchos Ordinals are those data types for which traits are defined in Trilinos/packages/teuchos/src/Teuchos_OrdinalTraits.hpp.)
-    \li \c node_t is a Kokkos CPU Node type.  If you don't use Kokkos, you can ignore this data type.
+    \li \c lno_t is the integral data type used by Zoltan2 for local indices
+           and local counts.
+    \li \c gno_t is the data type used by the application for global Ids; must
+           be a Teuchos Ordinal.  (Teuchos Ordinals are those data types for
+          which traits are defined in
+          Trilinos/packages/teuchos/src/Teuchos_OrdinalTraits.hpp.)
+    \li \c node_t is a Kokkos CPU Node type.  If you don't use Kokkos, you can
+          ignore this data type.
 
     The template parameter (\c User) is a C++ class type which provides the
     actual data types with which the Zoltan2 library will be compiled, through
@@ -234,20 +239,24 @@ public:
   // The Adapter interface.
   ////////////////////////////////////////////////////////////////
 
-  size_t getLocalNumIDs() const { return numIds_;}
+  size_t getLocalNumIDs() const {return numIds_;}
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
+    typename node_t::device_type> &ids) const
+  {
     // note we are converting from a non-const to a const gno_t type here since
-    // we built this one manually. In the MultiVector case it has to be const gno_t due to
-    // the way we read the sub view.
+    // we built this one manually. In the MultiVector case it has to be const
+    // gno_t due to the way we read the sub view.
     ids = this->kokkos_ids_;
   }
 
   int getNumWeightsPerID() const { return numWeights_;}
 
-  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
+    typename node_t::device_type> &wgt) const
+  {
     wgt = kokkos_weights_;
   }
 
@@ -282,12 +291,16 @@ public:
   }
 
   void getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & entries) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+    typename node_t::device_type> & entries) const
   {
     entries = kokkos_entries_;
   }
 
-// private: // For Kokkos Cuda refactor making this public - TODO: Clean up and resolve
+// For Kokkos Cuda refactor making this public
+#ifndef KOKKOS_HAVE_CUDA
+private: 
+#endif
 
   lno_t numIds_;
   const gno_t *idList_;
@@ -297,7 +310,8 @@ public:
 
   Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids_;
 
-  Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_entries_;
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+    typename node_t::device_type> kokkos_entries_;
 
   int numWeights_;
   ArrayRCP<StridedData<lno_t, scalar_t> > weights_;
@@ -312,7 +326,8 @@ public:
 
     if (numIds_){
       // make kokkos ids
-      kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>("ids", numIds_);
+      kokkos_ids_ = Kokkos::View<gno_t *,
+        typename node_t::device_type>("ids", numIds_);
       typename decltype(this->kokkos_ids_)::HostMirror
         host_temp_values = Kokkos::create_mirror_view(this->kokkos_ids_);
       for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
@@ -329,31 +344,55 @@ public:
         entries_[v] = input_t(eltV, stride);
       }
 
-      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>
+      // setup kokkos entries
+      kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+        typename node_t::device_type>
         ("entries", numIds_, numEntriesPerID_);
 
+      size_t length;
+      const scalar_t * entriesPtr;
+    
+      typename decltype(this->kokkos_entries_)::HostMirror host_kokkos_entries =
+        Kokkos::create_mirror_view(this->kokkos_entries_);
+
+      for (int idx=0; idx < numEntriesPerID_; idx++) {
+
+        entries_[idx].getStridedList(length, entriesPtr, stride);
+        size_t fill_index = 0;
+        for(int n = 0; n < numIds_; ++n) {
+          host_kokkos_entries(fill_index++,idx) = entriesPtr[n*stride];
+        }
+      }
+      
+      Kokkos::deep_copy(this->kokkos_entries_, host_kokkos_entries);
+      
+/*
       for (int v=0; v < numEntriesPerID_; v++) {
         size_t length;
         const scalar_t * entriesPtr;
         entries_[v].getStridedList(length, entriesPtr, stride);
 
-        Kokkos::View<scalar_t *> device_coord_temp_values("temp device values", numIds_);
+        Kokkos::View<scalar_t *>
+          device_coord_temp_values("temp device values", numIds_);
         typename decltype(device_coord_temp_values)::HostMirror
-          host_coord_temp_values = Kokkos::create_mirror_view(device_coord_temp_values);
+          host_coord_temp_values =
+            Kokkos::create_mirror_view(device_coord_temp_values);
         for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
           host_coord_temp_values(n) = entriesPtr[n*stride];
         }
         Kokkos::deep_copy(device_coord_temp_values, host_coord_temp_values);
 
         // now fill this->kokkos_entries on device
-        // TODO: Above deep_copy eventually should be straight to the this->kokkos_entries_
+        // TODO: Above deep_copy eventually should be straight to the
+        // this->kokkos_entries_
         auto local_kokkos_entries = this->kokkos_entries_;
         Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename node_t::execution_space, int> (0, numIds_),
-          KOKKOS_LAMBDA (int n) {
+          Kokkos::RangePolicy<typename node_t::execution_space, int>
+          (0, numIds_), KOKKOS_LAMBDA (int n) {
             local_kokkos_entries(n,v) = device_coord_temp_values(n);
         });
       }
+*/
     }
 
     // weights
@@ -367,7 +406,8 @@ public:
       }
 
       // set up final view with weights
-      kokkos_weights_ = Kokkos::View<scalar_t**, typename node_t::device_type>("kokkos weights", numIds_, numWeights_);
+      kokkos_weights_ = Kokkos::View<scalar_t**,
+        typename node_t::device_type>("kokkos weights", numIds_, numWeights_);
 
       // setup kokkos weights
       const scalar_t * weightsPtr;
@@ -378,7 +418,8 @@ public:
 
       // setup weights
       typename decltype(this->kokkos_weights_)::HostMirror
-        host_weight_temp_values = Kokkos::create_mirror_view(this->kokkos_weights_);
+        host_weight_temp_values =
+          Kokkos::create_mirror_view(this->kokkos_weights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
         weights_[idx].getStridedList(length, weightsPtr, stride);
         size_t fill_index = 0;
