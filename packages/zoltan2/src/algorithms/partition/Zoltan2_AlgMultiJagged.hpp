@@ -3591,29 +3591,44 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_1D_part_while_loop.start();
 
   while (total_incomplete_cut_count != 0) {
-    mj_part_t concurrent_cut_shifts = 0;
 
+    mj_part_t concurrent_cut_shifts = 0;
     size_t total_part_shift = 0;
+
+    // Note on the following two copies
+    // I've changed the patterns here to be more more modular as I work on the
+    // refactor but originally all of this was in a massive parallel loop.
+    // This new format lets us work on individual loops separately but created
+    // some bottle necks when moving between device and host.
+    // TODO: Make it better
+
+    // Pull the values for num cuts
+    typename std::remove_reference<
+      decltype (view_num_partitioning_in_current_dim)>::type::HostMirror
+      host_view_num_partitioning_in_current_dim =
+      Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
+    Kokkos::deep_copy(host_view_num_partitioning_in_current_dim,
+      view_num_partitioning_in_current_dim);
+
+    // Pull the values for incomplete cut cout
+    typename decltype (kokkos_my_incomplete_cut_count)::HostMirror
+      host_kokkos_my_incomplete_cut_count =
+      Kokkos::create_mirror_view(kokkos_my_incomplete_cut_count);
+    Kokkos::deep_copy(host_kokkos_my_incomplete_cut_count,
+      kokkos_my_incomplete_cut_count);
+    
     for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
       mj_1D_part_get_weights_init.start();
 
-      // TODO Clean up 
-      mj_part_t num_parts;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single =
-          view_num_partitioning_in_current_dim(current_work_part + kk);
-      }, num_parts);
+      mj_part_t num_parts =
+        host_view_num_partitioning_in_current_dim(current_work_part + kk);
       
       mj_part_t num_cuts = num_parts - 1;
       size_t total_part_count = num_parts + size_t (num_cuts);
 
-      mj_part_t kk_kokkos_my_incomplete_cut_count;
-       Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single = local_kokkos_my_incomplete_cut_count(kk);
-      }, kk_kokkos_my_incomplete_cut_count);
+      mj_part_t kk_kokkos_my_incomplete_cut_count =
+        kokkos_my_incomplete_cut_count(kk);
 
       mj_1D_part_get_weights_init.stop();
 
@@ -3724,31 +3739,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       clock_mj_get_new_cut_coordinates_init.start();
 
-      // TODO Clean up 
-      mj_part_t num_parts;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single =
-          view_num_partitioning_in_current_dim(current_work_part + kk);
-      }, num_parts);
+      mj_part_t num_parts =
+        host_view_num_partitioning_in_current_dim(current_work_part + kk);
 
       mj_part_t num_cuts = num_parts - 1;
-      size_t num_total_part = num_parts + size_t (num_cuts) ;
+      size_t num_total_part = num_parts + size_t (num_cuts);
+
       //if the cuts of this cut has already been completed.
       //nothing to do for this part.
       //just update the shift amount and proceed.
-
-      // TODO Clean up                 
-      mj_part_t kk_kokkos_my_incomplete_cut_count;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single = local_kokkos_my_incomplete_cut_count(kk);
-      }, kk_kokkos_my_incomplete_cut_count);
+                
+      mj_part_t kk_kokkos_my_incomplete_cut_count =
+        host_kokkos_my_incomplete_cut_count(kk);
 
       if (kk_kokkos_my_incomplete_cut_count == 0) {
-              cut_shift += num_cuts;
-              tlr_shift += (num_total_part + 2 * num_cuts);
-              continue;
+        cut_shift += num_cuts;
+        tlr_shift += (num_total_part + 2 * num_cuts);
+        continue;
       }
 
       Kokkos::View<mj_scalar_t *, device_t> kokkos_current_local_part_weights =
