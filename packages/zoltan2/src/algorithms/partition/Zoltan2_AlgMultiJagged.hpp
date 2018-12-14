@@ -3621,7 +3621,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       size_t total_part_count = num_parts + size_t (num_cuts);
 
       mj_part_t kk_kokkos_my_incomplete_cut_count
-        = host_host_kokkos_my_incomplete_cut_count(kk);
+        = host_kokkos_my_incomplete_cut_count(kk);
 
       mj_1D_part_get_weights_init.stop();
 
