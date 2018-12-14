@@ -832,11 +832,11 @@ private:
 
   /* \brief Function returns how many parts that will be obtained after this
    * dimension partitioning. It sets how many parts each current part will be
-   * partitioned into in this dimension to num_partitioning_in_current_dim
+   * partitioned into in this dimension to view_num_partitioning_in_current_dim
    * vector, sets how many total future parts each obtained part will be
    * partitioned into in next_future_num_parts_in_parts vector, If part boxes
    * are kept, then sets initializes the output_part_boxes as its ancestor.
-   * \param num_partitioning_in_current_dim: output. How many parts each
+   * \param view_num_partitioning_in_current_dim: output. How many parts each
    * current part will be partitioned into.
    * \param future_num_part_in_parts: input, how many future parts each
    * current part will be partitioned into.
@@ -851,7 +851,6 @@ private:
    * boundaries for obtained parts.
    */
   mj_part_t update_part_num_arrays(
-    std::vector<mj_part_t> &num_partitioning_in_current_dim,
     Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
     std::vector<mj_part_t> *future_num_part_in_parts,
     std::vector<mj_part_t> *next_future_num_parts_in_parts,
@@ -976,8 +975,8 @@ private:
    * the cut.
    * \param total_incomplete_cut_count is the number of cut lines whose
    * positions should be calculated.
-   * \param num_partitioning_in_current_dim is the vector that holds how many
-   * parts each part will be divided into.
+   * \param view_num_partitioning_in_current_dim is the vector that holds how
+   * many parts each part will be divided into.
    */
   void mj_1D_part(
     Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
@@ -986,7 +985,6 @@ private:
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
-    std::vector <mj_part_t> &num_partitioning_in_current_dim,
     Kokkos::View<mj_part_t*, device_t> &
       view_num_partitioning_in_current_dim,
     Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
@@ -1034,7 +1032,7 @@ private:
 
   /*! \brief Function that reduces the result of multiple threads for
    * left and right closest points and part weights in a single mpi process.
-   * \param num_partitioning_in_current_dim is the vector that holds the
+   * \param view_num_partitioning_in_current_dim is the vector that holds the
    * number of cut lines in current dimension for each part.
    * \param current_work_part holds the index of the first part (important
    * when concurrent parts are used.)
@@ -1042,7 +1040,7 @@ private:
    * lines will be calculated concurrently.
    */
   void mj_accumulate_thread_results(
-    Kokkos::View<mj_part_t*, device_t> num_partitioning_in_current_dim,
+    Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<bool *, device_t> local_kokkos_is_cut_line_determined,
@@ -1797,16 +1795,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // partitioning array. size will be as the number of current partitions
     // and this holds how many parts that each part will be in the current
     // dimension partitioning.
-    std::vector <mj_part_t> num_partitioning_in_current_dim;
-    // TODO: Eliminate above non-view duplicate
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim;
 
     // number of parts that will be obtained at the end of this partitioning.
     // future_num_part_in_parts is as the size of current number of parts.
     // holds how many more parts each should be divided in the further
     // iterations. this will be used to calculate
-    // num_partitioning_in_current_dim, as the number of parts that the part
-    // will be partitioned in the current dimension partitioning.
+    // view_num_partitioning_in_current_dim, as the number of parts that the
+    // part will be partitioned in the current dimension partitioning.
 
     // next_future_num_parts_in_parts will be as the size of outnumParts,
     // and this will hold how many more parts that each output part
@@ -1819,13 +1815,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // clear next_future_num_parts_in_parts array as
     // getPartitionArrays expects it to be empty.
-    // it also expects num_partitioning_in_current_dim to be empty as well.
+    // it also expects view_num_partitioning_in_current_dim to be empty as well.
     next_future_num_parts_in_parts->clear();
 
     // returns the total number of output parts for this dimension partitioning.
     mj_part_t output_part_count_in_dimension =
       this->update_part_num_arrays(
-        num_partitioning_in_current_dim,
         view_num_partitioning_in_current_dim,
         future_num_part_in_parts,
         next_future_num_parts_in_parts,
@@ -1872,6 +1867,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 
     // run for all available parts.
+
     for (; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -1889,8 +1885,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
         // if this part wont be partitioned any further
         //dont do any work for this part.
-        if (num_partitioning_in_current_dim[
-          current_work_part_in_concurrent_parts] == 1) {
+
+        mj_part_t partition_count;
+        Kokkos::parallel_reduce("Read single", 1,
+          KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+          set_single = view_num_partitioning_in_current_dim(
+            current_work_part_in_concurrent_parts);
+        }, partition_count);
+            
+        if (partition_count == 1) {
           continue;
         }
         ++actual_work_part_count;
@@ -2016,8 +2019,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             2 * current_concurrent_num_parts);
           mj_part_t concurrent_current_part_index = current_work_part + kk;
 
-          mj_part_t partition_count =
-            num_partitioning_in_current_dim[concurrent_current_part_index];
+          mj_part_t partition_count;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              concurrent_current_part_index);
+          }, partition_count);
+
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
               std::pair<mj_lno_t, mj_lno_t>(
@@ -2094,7 +2102,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           current_concurrent_num_parts,
           kokkos_current_cut_coordinates,
           total_incomplete_cut_count,
-          num_partitioning_in_current_dim,
           view_num_partitioning_in_current_dim,
           view_rectilinear_cut_count,
           view_total_reduction_size);
@@ -2114,9 +2121,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
           mj_part_t current_concurrent_work_part = current_work_part + kk;
-          mj_part_t num_parts =
-            num_partitioning_in_current_dim[current_concurrent_work_part];
-
+          
+          mj_part_t num_parts;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              current_concurrent_work_part);
+          }, num_parts);
+          
           // if the part is empty, skip the part.
           if((num_parts != 1  ) &&
             this->kokkos_global_min_max_coord_total_weight(kk) >
@@ -2204,8 +2216,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // wrote the indices as if there were a single part.
         // now we need to shift the beginning indices.
         for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
-          mj_part_t num_parts =
-            num_partitioning_in_current_dim[ current_work_part + kk];
+          mj_part_t num_parts;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              current_work_part + kk);
+          }, num_parts);
+          
           for (mj_part_t ii = 0;ii < num_parts ; ++ii) {
             //shift it by previousCount
             this->kokkos_new_part_xadj(output_part_index+ii) +=
@@ -2437,13 +2454,12 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
 /* \brief Function returns how many parts that will be obtained after this
  * dimension partitioning. It sets how many parts each current part will be
- * partitioned into in this dimension to num_partitioning_in_current_dim vector,
- * sets how many total future parts each obtained part will be partitioned into
- * in next_future_num_parts_in_parts vector. If part boxes are kept, then sets
- * initializes the output_part_boxes as its ancestor.
- *
- * \param num_partitioning_in_current_dim: output. How many parts each current
- * part will be partitioned into.
+ * partitioned into in this dimension to view_num_partitioning_in_current_dim
+ * vector, sets how many total future parts each obtained part will be
+ * partitioned into in next_future_num_parts_in_parts vector. If part boxes are
+ * kept, then sets initializes the output_part_boxes as its ancestor.
+ * \param view_num_partitioning_in_current_dim: output. How many parts each
+ * current part will be partitioned into.
  * \param future_num_part_in_parts: input, how many future parts each current
  * part will be partitioned into.
  * \param next_future_num_parts_in_parts: output, how many future parts each
@@ -2460,7 +2476,6 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   update_part_num_arrays(
-  std::vector <mj_part_t> &num_partitioning_in_current_dim,
   Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
   std::vector<mj_part_t> *future_num_part_in_parts,
   std::vector<mj_part_t> *next_future_num_parts_in_parts,
@@ -2471,6 +2486,27 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> output_part_boxes,
   mj_part_t atomic_part_count)
 {
+
+  // Working on view_num_partitioning_in_current_dim in stages which was
+  // originally a std::vector but converting to kokkos view.
+  // So here let's pull it back to a std::vector, build the new form,
+  // then convert back to a view. Later we can probably handle all this stuff
+  // on device but idea is to move the remaining refactor to a more localized
+  // area (here) instead of all over.
+  
+  // This got ugly quickly .... but it's at least partly temporary as I
+  // refactor
+  typename std::remove_reference<decltype(
+    view_num_partitioning_in_current_dim)>::type::HostMirror
+    hostArray
+    = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
+  Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
+  std::vector<mj_part_t> vector_num_partitioning_in_current_dim(
+    view_num_partitioning_in_current_dim.size());
+  for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
+    vector_num_partitioning_in_current_dim[n] = hostArray(n);
+  }
+  
   // how many parts that will be obtained after this dimension.
   mj_part_t output_num_parts = 0;
   if(this->kokkos_part_no_array.size()) {
@@ -2495,14 +2531,16 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       return current_num_parts;
     }
     for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
-      num_partitioning_in_current_dim.push_back(p);
+      vector_num_partitioning_in_current_dim.push_back(p);
     }
-    future_num_parts /= num_partitioning_in_current_dim[0];
-    output_num_parts = current_num_parts * num_partitioning_in_current_dim[0];
+    future_num_parts /= vector_num_partitioning_in_current_dim[0];
+    output_num_parts = current_num_parts *
+      vector_num_partitioning_in_current_dim[0];
     if (this->mj_keep_part_boxes){
       for (mj_part_t k = 0; k < current_num_parts; ++k){
         //initialized the output boxes as its ancestor.
-        for (mj_part_t j = 0; j < num_partitioning_in_current_dim[0]; ++j){
+        for (mj_part_t j = 0; j <
+          vector_num_partitioning_in_current_dim[0]; ++j){
           output_part_boxes->push_back((*input_part_boxes)[k]);
         }
       }
@@ -2547,8 +2585,9 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           std::endl;
         exit(1);
       }
-      // add this number to num_partitioning_in_current_dim vector.
-      num_partitioning_in_current_dim.push_back(num_partitions_in_current_dim);
+      // add this number to vector_num_partitioning_in_current_dim vector.
+      vector_num_partitioning_in_current_dim.push_back(
+        num_partitions_in_current_dim);
       mj_part_t largest_prime_factor = num_partitions_in_current_dim;
       if (this->divide_to_prime_first){
         //increase the output number of parts.
@@ -2653,18 +2692,17 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
   }
 
-  // TODO: Issue here is tha we have this num_partitioning_in_current_dim on
-  // host as a std::vector but also need a view of these values written to
-  // device. Need to clean it up and eliminate the std::vector.
+  // Now revert the vector form back to a view
+  // TODO: We'd like to avoid above conversion and just do all this on view
   Kokkos::View<mj_part_t*> temp = Kokkos::View<mj_part_t*>(
     "view_num_partitioning_in_current_dim",
-    num_partitioning_in_current_dim.size());
+    vector_num_partitioning_in_current_dim.size());
   typename decltype(temp)::HostMirror host_view_num_partitioning_in_current_dim
     = Kokkos::create_mirror_view(temp);
   for(int n = 0;
-    n < static_cast<int>(num_partitioning_in_current_dim.size()); ++n) {
+    n < static_cast<int>(vector_num_partitioning_in_current_dim.size()); ++n) {
     host_view_num_partitioning_in_current_dim(n) =
-      num_partitioning_in_current_dim[n];
+      vector_num_partitioning_in_current_dim[n];
   }
   Kokkos::deep_copy(temp, host_view_num_partitioning_in_current_dim);
   view_num_partitioning_in_current_dim = temp;
@@ -3423,7 +3461,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
  * \param current_cut_coordinates is array holding the coordinates of the cut.
  * \param total_incomplete_cut_count is the number of cut lines whose positions
  * should be calculated.
- * \param num_partitioning_in_current_dim is the vector that holds how many
+ * \param view_num_partitioning_in_current_dim is the vector that holds how many
  * parts each part will be divided into.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
@@ -3435,25 +3473,44 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t *, device_t> kokkos_current_cut_coordinates,
   mj_part_t total_incomplete_cut_count,
-  std::vector <mj_part_t> &num_partitioning_in_current_dim,
   Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
   Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
   Kokkos::View<size_t*, device_t> view_total_reduction_size)
 {
-mj_1D_part_init.start();
+  mj_1D_part_init.start();
 
   this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
 
   Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
                *reductionOp = NULL;
-  reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
-                   <mj_part_t, mj_scalar_t>(
-                               &num_partitioning_in_current_dim ,
-                               current_work_part ,
-                               current_concurrent_num_parts);
 
   bool bSingleProcess = (this->comm->getSize() == 1);
+  
+  // Refactor in progress
+  // I eliminated the original std::vector
+  // and replaced with kokkos view view_num_partitioning_in_current_dim.
+  // Now restore a std::vector here just for the reduction op which has not been
+  // refactored yet.
+  if(!bSingleProcess) {
+    // This got ugly quickly .... but it's at least partly temporary as I
+    // refactor and perhaps will remove reference type eventually.
+    typename std::remove_reference<decltype(
+      view_num_partitioning_in_current_dim)>::type::HostMirror
+      hostArray
+      = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
+    Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
+    std::vector<mj_part_t> temp(view_num_partitioning_in_current_dim.size());
+    for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
+      temp[n] = hostArray(n);
+    }
 
+    reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
+      <mj_part_t, mj_scalar_t>(
+        &temp,
+        current_work_part ,
+        current_concurrent_num_parts);
+  }
+  
   // use locals to avoid capturing this for cuda  
   auto local_kokkos_thread_part_weights = kokkos_thread_part_weights;
   auto local_kokkos_thread_cut_left_closest_point =
@@ -3541,8 +3598,14 @@ mj_1D_part_init.start();
 
       mj_1D_part_get_weights_init.start();
 
-      mj_part_t num_parts =
-        num_partitioning_in_current_dim[current_work_part + kk];
+      // TODO Clean up 
+      mj_part_t num_parts;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+        set_single =
+          view_num_partitioning_in_current_dim(current_work_part + kk);
+      }, num_parts);
+      
       mj_part_t num_cuts = num_parts - 1;
       size_t total_part_count = num_parts + size_t (num_cuts);
 
@@ -3661,8 +3724,14 @@ mj_1D_part_init.start();
 
       clock_mj_get_new_cut_coordinates_init.start();
 
-      mj_part_t num_parts =
-        num_partitioning_in_current_dim[current_work_part + kk];
+      // TODO Clean up 
+      mj_part_t num_parts;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+        set_single =
+          view_num_partitioning_in_current_dim(current_work_part + kk);
+      }, num_parts);
+
       mj_part_t num_cuts = num_parts - 1;
       size_t num_total_part = num_parts + size_t (num_cuts) ;
       //if the cuts of this cut has already been completed.
@@ -4392,7 +4461,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
-  typename decltype(kokkos_my_current_part_weights)::HostMirror::HostMirror
+  typename decltype(kokkos_my_current_part_weights)::HostMirror
     hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
   for(int i = 0; i < weight_array_size; ++i) {
     hostArray(i) = part_weights[i];
@@ -4465,9 +4534,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
-  typename decltype(kokkos_my_current_left_closest)::HostMirror::HostMirror
+  typename decltype(kokkos_my_current_left_closest)::HostMirror
     hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
-  typename decltype(kokkos_my_current_right_closest)::HostMirror::HostMirror
+  typename decltype(kokkos_my_current_right_closest)::HostMirror
     hostRightArray =
       Kokkos::create_mirror_view(kokkos_my_current_right_closest);
   for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
@@ -4486,8 +4555,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
 /*! \brief Function that reduces the result of multiple threads
  * for left and right closest points and part weights in a single mpi process.
- * \param num_partitioning_in_current_dim is the vector that holds the number of
- * cut lines in current dimension for each part.
+ * \param view_num_partitioning_in_current_dim is the vector that holds the
+ * number of cut lines in current dimension for each part.
  * \param current_work_part holds the index of the first part (important when
  * concurrent parts are used.)
  * \param current_concurrent_num_parts is the number of parts whose cut lines
@@ -4497,7 +4566,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_accumulate_thread_results(
-  Kokkos::View<mj_part_t*, device_t> num_partitioning_in_current_dim,
+  Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<bool *, device_t> local_kokkos_is_cut_line_determined,
@@ -4531,7 +4600,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
 
         mj_part_t num_parts_in_part =
-          num_partitioning_in_current_dim(current_work_part + i);
+          view_num_partitioning_in_current_dim(current_work_part + i);
         mj_part_t num_cuts_in_part =
           num_parts_in_part - 1;
         size_t num_total_part_in_part =
@@ -4566,7 +4635,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
 
         mj_part_t num_parts_in_part =
-          num_partitioning_in_current_dim(current_work_part + i);
+          view_num_partitioning_in_current_dim(current_work_part + i);
         mj_part_t num_cuts_in_part =
           num_parts_in_part - 1;
         size_t num_total_part_in_part =
@@ -7714,21 +7783,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // convert i to string to be used for debugging purposes.
     std::string istring = Teuchos::toString<int>(i);
-
-    // partitioning array. size will be as the number of current partitions
-    // and this holds how many parts that each part will be in the current
-    // dimension partitioning.
-    std::vector <mj_part_t> num_partitioning_in_current_dim;
     
-    // TODO: Eliminate above duplication - just have view form
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim; 
 
     // number of parts that will be obtained at the end of this partitioning.
     // future_num_part_in_parts is as the size of current number of parts.
     // holds how many more parts each should be divided in the further
     // iterations. this will be used to calculate
-    // num_partitioning_in_current_dim, as the number of parts that the part
-    // will be partitioned in the current dimension partitioning.
+    // view_num_partitioning_in_current_dim, as the number of parts that the
+    // part will be partitioned in the current dimension partitioning.
 
     // next_future_num_parts_in_parts will be as the size of outnumParts,
     // and this will hold how many more parts that each output part
@@ -7740,7 +7803,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // clear next_future_num_parts_in_parts array as
     // getPartitionArrays expects it to be empty.
-    // it also expects num_partitioning_in_current_dim to be empty as well.
+    // it also expects view_num_partitioning_in_current_dim to be empty as well.
     next_future_num_parts_in_parts->clear();
     if(this->mj_keep_part_boxes) {
       RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
@@ -7752,7 +7815,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // returns the total no. of output parts for this dimension partitioning.
     mj_part_t output_part_count_in_dimension =
       this->update_part_num_arrays(
-        num_partitioning_in_current_dim,
         view_num_partitioning_in_current_dim,
         future_num_part_in_parts,
         next_future_num_parts_in_parts,
@@ -7818,18 +7880,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         std::min(current_num_parts - current_work_part,
         this->max_concurrent_part_calculation);
 
-      // TODO: This loop could be a kernel but I think it will usually exit
-      // right away so probably not worth it. Could also be read from activity
-      // of mj_get_local_min_max_coord_totW below but may not be worth the
-      // device to host transfer - later if this section becomes device code we
-      // can optimize this a bit.
-      bool bDoingWork = false;
-      for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-        if(num_partitioning_in_current_dim[current_work_part + kk] != 1) {
-          bDoingWork = true;
-          break;
+      int bDoingWork_int;
+      Kokkos::parallel_reduce("Read bDoingWork", 1,
+        KOKKOS_LAMBDA(int dummy, int & set_single) {
+        set_single = 0;
+        for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+          if(view_num_partitioning_in_current_dim(current_work_part + kk) != 1) {
+            set_single = 1;
+            break;
+          }
         }
-      }
+      }, bDoingWork_int);
+      bool bDoingWork = (bDoingWork_int != 0) ? true : false;
+
 
       this->mj_get_local_min_max_coord_totW(
         current_work_part,
@@ -7883,8 +7946,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           }, global_total_weight);
 
           mj_part_t concurrent_current_part_index = current_work_part + kk;
-          mj_part_t partition_count =
-            num_partitioning_in_current_dim[concurrent_current_part_index];
+          
+          mj_part_t partition_count;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              concurrent_current_part_index);
+          }, partition_count);
 
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
@@ -8016,7 +8084,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           current_concurrent_num_parts,
           kokkos_current_cut_coordinates,
           total_incomplete_cut_count,
-          num_partitioning_in_current_dim,
           view_num_partitioning_in_current_dim,
           view_rectilinear_cut_count,
           view_total_reduction_size);
@@ -8039,9 +8106,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           mj_part_t current_concurrent_work_part = current_work_part + kk;
 
-          // TODO: num_partitioning_in_current_dim to vector onto device
-          mj_part_t num_parts =
-            num_partitioning_in_current_dim[current_concurrent_work_part];
+          // TODO: refactor clean up
+          mj_part_t num_parts;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              current_concurrent_work_part);
+          }, num_parts);
 
           // if the part is empty, skip the part.
 
@@ -8189,8 +8260,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // and write the indices as if there were a single part.
         // now we need to shift the beginning indices.
         for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
-          mj_part_t num_parts =
-            num_partitioning_in_current_dim[ current_work_part + kk];
+          // TODO: refactor clean up
+          mj_part_t num_parts;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+            set_single = view_num_partitioning_in_current_dim(
+              current_work_part + kk);
+          }, num_parts);
+
           auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
           Kokkos::parallel_for(
             Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
@@ -9191,7 +9268,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   typedef Kokkos::View<bool *> view_vector_t;
   view_vector_t device_hasUniformPartSizes(
     "device criteriaHasUniformPartSizes", criteria_dim);
-  typename decltype(device_hasUniformPartSizes)::HostMirror::HostMirror
+  typename decltype(device_hasUniformPartSizes)::HostMirror
     host_hasUniformPartSizes =
     Kokkos::create_mirror_view(device_hasUniformPartSizes);
   for(int wdim = 0; wdim < criteria_dim; ++wdim) {
