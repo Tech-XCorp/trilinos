@@ -3040,6 +3040,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::create_mirror_view(kokkos_part_xadj);
   Kokkos::deep_copy(host_kokkos_part_xadj, kokkos_part_xadj);
 
+  // pull kokkos_mj_uniform_weights to host
+  // TODO: Design
+  typename decltype(kokkos_mj_uniform_weights)::HostMirror
+    host_kokkos_mj_uniform_weights =
+    Kokkos::create_mirror_view(kokkos_mj_uniform_weights);
+  Kokkos::deep_copy(host_kokkos_mj_uniform_weights,
+    kokkos_mj_uniform_weights);
+  bool bUniformWeights = host_kokkos_mj_uniform_weights(0) ? true : false;
+  
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
     mj_part_t concurrent_current_part = current_work_part + kk;
@@ -3048,13 +3057,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       host_kokkos_part_xadj(concurrent_current_part -1);
     mj_lno_t coordinate_end_index =
       host_kokkos_part_xadj(concurrent_current_part);
-
-    int uniform_weights;
-    Kokkos::parallel_reduce("Read single", 1,
-      KOKKOS_LAMBDA(int dummy, int & set_single) {
-      set_single = local_kokkos_mj_uniform_weights(0);
-    }, uniform_weights);
-
     // total points to be processed by all teams
     mj_lno_t num_working_points =
       coordinate_end_index - coordinate_begin_index;
@@ -3116,7 +3118,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           running_max = kokkos_mj_current_dim_coords(i);
       }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
 
-      if(uniform_weights) {
+      if(bUniformWeights) {
         my_total_weight = coordinate_end_index - coordinate_begin_index;
       }
       else {
