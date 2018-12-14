@@ -3739,8 +3739,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       clock_mj_get_new_cut_coordinates_init.start();
 
-      mj_part_t num_parts =
-        host_view_num_partitioning_in_current_dim(current_work_part + kk);
+      // TODO Clean up 
+      mj_part_t num_parts;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+        set_single =
+          view_num_partitioning_in_current_dim(current_work_part + kk);
+      }, num_parts);
 
       mj_part_t num_cuts = num_parts - 1;
       size_t num_total_part = num_parts + size_t (num_cuts);
@@ -3748,9 +3753,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       //if the cuts of this cut has already been completed.
       //nothing to do for this part.
       //just update the shift amount and proceed.
-                
-      mj_part_t kk_kokkos_my_incomplete_cut_count =
-        host_kokkos_my_incomplete_cut_count(kk);
+
+      // TODO Clean up                 
+      mj_part_t kk_kokkos_my_incomplete_cut_count;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
+        set_single = local_kokkos_my_incomplete_cut_count(kk);
+      }, kk_kokkos_my_incomplete_cut_count);
 
       if (kk_kokkos_my_incomplete_cut_count == 0) {
         cut_shift += num_cuts;
