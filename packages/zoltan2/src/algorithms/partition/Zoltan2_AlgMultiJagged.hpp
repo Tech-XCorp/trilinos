@@ -3033,21 +3033,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_kokkos_mj_weights = this->kokkos_mj_weights;
   auto local_kokkos_mj_uniform_weights = this->kokkos_mj_uniform_weights;
 
+  // pull kokkos_part_xadj to host
+  // TODO: Design
+  typename decltype(kokkos_part_xadj)::HostMirror
+    host_kokkos_part_xadj =
+    Kokkos::create_mirror_view(kokkos_part_xadj);
+  Kokkos::deep_copy(host_kokkos_part_xadj, kokkos_part_xadj);
+
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
     mj_part_t concurrent_current_part = current_work_part + kk;
-    mj_lno_t coordinate_begin_index;
-    Kokkos::parallel_reduce("Read single", 1,
-      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-      set_single = concurrent_current_part == 0 ? 0 :
-        local_kokkos_part_xadj(concurrent_current_part -1);
-    }, coordinate_begin_index);
-    mj_lno_t coordinate_end_index;
 
-    Kokkos::parallel_reduce("Read single", 1,
-      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-      set_single = local_kokkos_part_xadj(concurrent_current_part);
-    }, coordinate_end_index);
+    mj_lno_t coordinate_begin_index = concurrent_current_part == 0 ? 0 :
+      host_kokkos_part_xadj(concurrent_current_part -1);
+    mj_lno_t coordinate_end_index =
+      host_kokkos_part_xadj(concurrent_current_part);
 
     int uniform_weights;
     Kokkos::parallel_reduce("Read single", 1,
