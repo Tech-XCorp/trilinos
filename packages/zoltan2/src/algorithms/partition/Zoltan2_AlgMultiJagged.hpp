@@ -161,6 +161,7 @@ static Clock mj_create_new_partitions_clock9("             mj_create_new_partiti
 static Clock mj_create_new_partitions_clock10("             mj_create_new_partitions10", false);
 static Clock mj_create_new_partitions_clock11("             mj_create_new_partitions11", false);
 static Clock mj_create_new_partitions_clock12("             mj_create_new_partitions12", false);
+static Clock clock_mj_get_local_min_max_coord_totW("mj_get_local_min_max_coord_totW", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -3022,7 +3023,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords)
 {
-
+  clock_mj_get_local_min_max_coord_totW.start();
+  
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations =
     this->kokkos_coordinate_permutations;
@@ -3143,6 +3145,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         kk + 2*current_concurrent_num_parts) = my_total_weight;
     });
   }
+  
+  clock_mj_get_local_min_max_coord_totW.stop();
 }
 
 /*! \brief Function to determine the local minimum and maximum coordinate, and
@@ -7650,14 +7654,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_create_new_partitions_clock10.reset();
   mj_create_new_partitions_clock11.reset();
   mj_create_new_partitions_clock12.reset();
-
   mj_1D_part_while_loop.reset();
   mj_1D_part_init.reset();
   mj_1D_part_init2.reset();
   mj_1D_part_get_weights_init.reset();
   mj_1D_part_get_weights_setup.reset();
   mj_1D_part_get_weights.reset();
-
   weights1.reset();
   weights2.reset();
   weights3.reset();
@@ -7666,17 +7668,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   weights5.reset();
   weights6.reset();
   functor2.reset();
-
   clock_mj_accumulate_thread_results.reset();
-
   clock_mj_get_new_cut_coordinates_init.reset();
   clock_mj_get_new_cut_coordinates.reset();
   clock_mj_get_new_cut_coordinates_end.reset();
-
   clock_write_globals.reset();
-
   mj_1D_part_end.reset();
-
+  clock_mj_get_local_min_max_coord_totW.reset();
+  
+  
   Clock clock_multi_jagged_part("multi_jagged_part", true);
   Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
   Clock clock_multi_jagged_part_init_begin(
@@ -8443,6 +8443,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_create_new_partitions_clock12.print();
 
   clock_multi_jagged_part_finish.print();
+  
+  clock_mj_get_local_min_max_coord_totW.print();
 }
 
 
