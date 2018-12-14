@@ -3614,22 +3614,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       mj_1D_part_get_weights_init.start();
 
-      // TODO Clean up 
-      mj_part_t num_parts;
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single =
-          view_num_partitioning_in_current_dim(current_work_part + kk);
-      }, num_parts);
+      mj_part_t num_parts =
+        host_view_num_partitioning_in_current_dim(current_work_part + kk);
       
       mj_part_t num_cuts = num_parts - 1;
       size_t total_part_count = num_parts + size_t (num_cuts);
 
-      mj_part_t kk_kokkos_my_incomplete_cut_count;
-       Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single = local_kokkos_my_incomplete_cut_count(kk);
-      }, kk_kokkos_my_incomplete_cut_count);
+      mj_part_t kk_kokkos_my_incomplete_cut_count
+        = host_host_kokkos_my_incomplete_cut_count(kk);
 
       mj_1D_part_get_weights_init.stop();
 
