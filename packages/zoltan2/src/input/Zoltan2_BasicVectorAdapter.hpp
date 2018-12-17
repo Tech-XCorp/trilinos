@@ -53,6 +53,7 @@
 #include <Zoltan2_VectorAdapter.hpp>
 #include <Zoltan2_StridedData.hpp>
 
+#include <Zoltan2_AlgMultiJagged.hpp> // Temporary for debugging clock - delete
 namespace Zoltan2 {
 
 /*!  \brief BasicVectorAdapter represents a vector (plus optional weights)

@@ -118,16 +118,8 @@ int checkBasicVector(
 
 int main(int narg, char *arg[])
 {
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
   Tpetra::ScopeGuard tscope(&narg, &arg);
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
-
-=======
-  Kokkos::initialize(argc, argv);
-
-  Teuchos::GlobalMPISession session(&argc, &argv);
-  RCP<const Comm<int> > comm = DefaultComm<int>::getComm();
->>>>>>> Zoltan2: Refactor MJ to use Cuda
   int rank = comm->getRank();
   int nprocs = comm->getSize();
   int fail = 0;
@@ -304,8 +296,6 @@ int main(int narg, char *arg[])
   delete [] mv_values;
   delete [] valueStrides;
   delete [] valuePtrs;
-
-  Kokkos::finalize();
 
   return fail;
 }

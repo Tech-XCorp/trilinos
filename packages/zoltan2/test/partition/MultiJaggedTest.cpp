@@ -60,14 +60,9 @@
 #include <Teuchos_LAPACK.hpp>
 #include <fstream>
 #include <string>
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-=======
-#include <vector>
-using namespace std;
->>>>>>> Zoltan2: Refactor MJ to use Cuda
+
 using Teuchos::RCP;
 using Teuchos::rcp;
-
 
 //#define hopper_separate_test
 #ifdef hopper_separate_test
@@ -658,20 +653,20 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
   for (inputAdapter_t::lno_t i = 0; i < bvlen; i++) {
     if (problem->getSolution().getPartListView()[i] !=
         bvproblem->getSolution().getPartListView()[i]) {
-      cout << bvme << " " << i << " "
+      std::cout << bvme << " " << i << " "
            << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
            << ": XMV " << problem->getSolution().getPartListView()[i]
            << "; BMV " << bvproblem->getSolution().getPartListView()[i]
-           << "  :  FAIL" << endl;
+           << "  :  FAIL" << std::endl;
         ++ierr;
     }
     /*  For debugging - plot all success as well
     else {
-      cout << bvme << " " << i << " "
+      std::cout << bvme << " " << i << " "
            << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
            << ": XMV " << problem->getSolution().getPartListView()[i]
            << "; BMV " << bvproblem->getSolution().getPartListView()[i]
-           << "  :  PASS" << endl;
+           << "  :  PASS" << std::endl;
     }
     */
   }
@@ -686,10 +681,10 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
       const inputAdapter_t::part_t *zparts =
             problem->getSolution().getPartListView();
       for (int i = 0; i < len; i++)
-          cout << comm->getRank()
+          std::cout << comm->getRank()
           << " lid " << i
           << " gid " << coords->getMap()->getGlobalElement(i)
-          << " part " << zparts[i] << endl;
+          << " part " << zparts[i] << std::endl;
   }
   
   return ierr;
@@ -758,25 +753,13 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     RCP<tMVector_t> coords = RCP<tMVector_t>(new
                                    tMVector_t(mp, coordView.view(0, coord_dim),
                                               coord_dim));
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-
-    RCP<const tMVector_t> coordsConst =
-                          Teuchos::rcp_const_cast<const tMVector_t>(tmVector);
     std::vector<const zscalar_t *> weights;
-=======
-    vector<const zscalar_t *> weights;
->>>>>>> Zoltan2: Refactor MJ to use Cuda
     if(numWeightsPerCoord){
         for (int i = 0; i < numWeightsPerCoord;++i){
           weights.push_back(weight[i]);
         }
     }
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
     std::vector<int> stride;
-
-=======
-    vector <int> stride;
->>>>>>> Zoltan2: Refactor MJ to use Cuda
     typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     typedef Zoltan2::EvaluatePartition<inputAdapter_t> quality_t;
     //inputAdapter_t ia(coordsConst); 
@@ -956,89 +939,8 @@ int testFromDataFile(
     }
     CATCH_EXCEPTIONS_AND_RETURN("solve()")
     {
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-    // Run a test with BasicVectorAdapter and xyzxyz format coordinates
-    const int bvme = comm->getRank();
-    const inputAdapter_t::lno_t bvlen =
-                          inputAdapter_t::lno_t(coords->getLocalLength());
-    const size_t bvnvecs = coords->getNumVectors();
-    const size_t bvsize = coords->getNumVectors() * coords->getLocalLength();
-
-    ArrayRCP<inputAdapter_t::scalar_t> *bvtpetravectors =
-            new ArrayRCP<inputAdapter_t::scalar_t>[bvnvecs];
-    for (size_t i = 0; i < bvnvecs; i++)
-      bvtpetravectors[i] = coords->getDataNonConst(i);
-
-    int idx = 0;
-    inputAdapter_t::gno_t *bvgids = new
-                           inputAdapter_t::gno_t[coords->getLocalLength()];
-    inputAdapter_t::scalar_t *bvcoordarr = new inputAdapter_t::scalar_t[bvsize];
-    for (inputAdapter_t::lno_t j = 0; j < bvlen; j++) {
-      bvgids[j] = coords->getMap()->getGlobalElement(j);
-      for (size_t i = 0; i < bvnvecs; i++) {
-        bvcoordarr[idx++] = bvtpetravectors[i][j];
-      }
-    }
-
-    typedef Zoltan2::BasicUserTypes<inputAdapter_t::scalar_t,
-                                    inputAdapter_t::lno_t,
-                                    inputAdapter_t::gno_t> bvtypes_t;
-    typedef Zoltan2::BasicVectorAdapter<bvtypes_t> bvadapter_t;
-    std::vector<const inputAdapter_t::scalar_t *> bvcoords(bvnvecs);
-    std::vector<int> bvstrides(bvnvecs);
-    for (size_t i = 0; i < bvnvecs; i++) {
-      bvcoords[i] = &bvcoordarr[i];
-      bvstrides[i] = bvnvecs;
-    }
-    std::vector<const inputAdapter_t::scalar_t *> bvwgts;
-    std::vector<int> bvwgtstrides;
-
-    bvadapter_t bvia(bvlen, bvgids, bvcoords, bvstrides,
-                       bvwgts, bvwgtstrides);
-
-    Zoltan2::PartitioningProblem<bvadapter_t> *bvproblem;
-    try {
-      bvproblem = new Zoltan2::PartitioningProblem<bvadapter_t>(&bvia,
-                                                 params.getRawPtr(),
-                                                 comm);
-    }
-    CATCH_EXCEPTIONS_AND_RETURN("PartitioningProblem()")
-
-    try {
-        bvproblem->solve();
-    }
-    CATCH_EXCEPTIONS_AND_RETURN("solve()")
-
-    // Compare with MultiVectorAdapter result
-    for (inputAdapter_t::lno_t i = 0; i < bvlen; i++) {
-      if (problem->getSolution().getPartListView()[i] !=
-          bvproblem->getSolution().getPartListView()[i])
-        std::cout << bvme << " " << i << " "
-             << coords->getMap()->getGlobalElement(i) << " " << bvgids[i]
-             << ": XMV " << problem->getSolution().getPartListView()[i]
-             << "; BMV " << bvproblem->getSolution().getPartListView()[i]
-             << "  :  FAIL" << std::endl;
-    }
-
-    delete [] bvgids;
-    delete [] bvcoordarr;
-    delete [] bvtpetravectors;
-    delete bvproblem;
-    }
-
-    if (coordsConst->getGlobalLength() < 40) {
-        int len = coordsConst->getLocalLength();
-        const inputAdapter_t::part_t *zparts =
-              problem->getSolution().getPartListView();
-        for (int i = 0; i < len; i++)
-            std::cout << comm->getRank()
-            << " lid " << i
-            << " gid " << coords->getMap()->getGlobalElement(i)
-            << " part " << zparts[i] << std::endl;
-=======
       ierr += compareWithBasicVectorAdapterTest<bv_use_node_t>(
         comm, params, problem, coords);
->>>>>>> Zoltan2: Refactor MJ to use Cuda
     }
 
     // create metric object
@@ -1451,25 +1353,14 @@ void print_usage(char *executable){
     std::cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << std::endl;
 }
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
 int main(int narg, char *arg[])
 {
     Tpetra::ScopeGuard tscope(&narg, &arg);
     Teuchos::RCP<const Teuchos::Comm<int> > tcomm = Tpetra::getDefaultComm();
 
-    int rank = tcomm->getRank();
-=======
 #ifdef KOKKOS_HAVE_CUDA
 #define RUN_UVM_OFF_TEST
 #endif
-
-int main(int argc, char *argv[])
-{
-    Teuchos::GlobalMPISession session(&argc, &argv);
-    Kokkos::ScopeGuard kokkosScope(argc, argv);
-
-    RCP<const Teuchos::Comm<int> > tcomm = Teuchos::DefaultComm<int>::getComm();
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
     int rank = tcomm->getRank();
 
