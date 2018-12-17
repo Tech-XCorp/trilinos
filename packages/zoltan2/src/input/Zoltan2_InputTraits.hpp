@@ -133,17 +133,7 @@ typedef int default_part_t;  // Restrictions in MPI interface will make it
     \li \c gno (global number) is the integral data type used by the application and Zoltan2 to represent global identifiers and global counts.
  */
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-template <typename scalar=default_scalar_t, 
-          typename lno=default_lno_t,
-          typename gno=default_gno_t>
-=======
-// MDM - I've added the Node type as well to the BasicUserTypes
-// This was part of the refactor to get the BasicKokkosVectorAdapter to have a
-// customizable view. But we may prefer to template that separately so I need
-// to discuss this design plan. TODO
 template <typename scalar=double, typename lno=int, typename gno=int, typename node=Zoltan2::default_node_t>
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 class BasicUserTypes{
 };
 

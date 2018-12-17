@@ -2474,61 +2474,6 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
  * boundaries for obtained parts.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-          typename mj_part_t>
-mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::update_part_num_arrays(
-        std::vector <mj_part_t> &num_partitioning_in_current_dim, //assumes this vector is empty.
-    std::vector<mj_part_t> *future_num_part_in_parts,
-    std::vector<mj_part_t> *next_future_num_parts_in_parts, //assumes this vector is empty.
-    mj_part_t &future_num_parts,
-    mj_part_t current_num_parts,
-    int current_iteration,
-    RCP<mj_partBoxVector_t> input_part_boxes,
-    RCP<mj_partBoxVector_t> output_part_boxes,
-    mj_part_t atomic_part_count
-){
-        //how many parts that will be obtained after this dimension.
-    mj_part_t output_num_parts = 0;
-    if(this->part_no_array){
-        //when the partNo array is provided as input,
-        //each current partition will be partition to the same number of parts.
-        //we dont need to use the future_num_part_in_parts vector in this case.
-
-        mj_part_t p = this->part_no_array[current_iteration];
-        if (p < 1){
-            std::cout << "i:" << current_iteration << " p is given as:" << p << std::endl;
-            exit(1);
-        }
-        if (p == 1){
-            return current_num_parts;
-        }
-
-        for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
-            num_partitioning_in_current_dim.push_back(p);
-        }
-        //std::cout << "me:" << this->myRank << " current_iteration" << current_iteration <<
-        //" current_num_parts:" << current_num_parts << std::endl;
-        //std::cout << "num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0] << std::endl;
-        //set the new value of future_num_parts.
-
-        /*
-       std::cout << "\tfuture_num_parts:" << future_num_parts
-                        << " num_partitioning_in_current_dim[0]:" << num_partitioning_in_current_dim[0]
-                        << future_num_parts/ num_partitioning_in_current_dim[0] << std::endl;
-        */
-
-        future_num_parts /= num_partitioning_in_current_dim[0];
-        output_num_parts = current_num_parts * num_partitioning_in_current_dim[0];
-
-        if (this->mj_keep_part_boxes){
-            for (mj_part_t k = 0; k < current_num_parts; ++k){
-                //initialized the output boxes as its ancestor.
-                for (mj_part_t j = 0; j < num_partitioning_in_current_dim[0]; ++j){
-                    output_part_boxes->push_back((*input_part_boxes)[k]);
-                }
-            }
-        }
-=======
   typename mj_part_t, typename mj_node_t>
 mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   update_part_num_arrays(
@@ -2542,8 +2487,6 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> output_part_boxes,
   mj_part_t atomic_part_count)
 {
->>>>>>> Zoltan2: Refactor MJ to use Cuda
-
   // Working on view_num_partitioning_in_current_dim in stages which was
   // originally a std::vector but converting to kokkos view.
   // So here let's pull it back to a std::vector, build the new form,
@@ -2602,104 +2545,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         }
       }
     }
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-    else {
-        //if partNo array is not provided as input,
-        //future_num_part_in_parts  holds how many parts each part should be divided.
-        //initially it holds a single number equal to the total number of global parts.
 
-        //calculate the future_num_parts from beginning,
-        //since each part might be divided into different number of parts.
-        future_num_parts = 1;
-
-        //std::cout << "i:" << i << std::endl;
-
-        for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
-            //get how many parts a part should be divided.
-            mj_part_t future_num_parts_of_part_ii = (*future_num_part_in_parts)[ii];
-
-            //get the ideal number of parts that is close to the
-            //(recursion_depth - i) root of the future_num_parts_of_part_ii.
-            mj_part_t num_partitions_in_current_dim =
-                                                this->get_part_count(
-                                                                future_num_parts_of_part_ii,
-                                                                1.0 / (this->recursion_depth - current_iteration)
-                                        );
-
-            if (num_partitions_in_current_dim > this->max_num_part_along_dim){
-                std::cerr << "ERROR: maxPartNo calculation is wrong. num_partitions_in_current_dim: "
-                          << num_partitions_in_current_dim <<  "this->max_num_part_along_dim:"
-                          << this->max_num_part_along_dim <<
-                          " this->recursion_depth:" << this->recursion_depth <<
-                          " current_iteration:" << current_iteration <<
-                          " future_num_parts_of_part_ii:" << future_num_parts_of_part_ii <<
-                          " might need to fix max part no calculation for largest_prime_first partitioning" <<
-                          std::endl;
-                exit(1);
-            }
-            //add this number to num_partitioning_in_current_dim vector.
-            num_partitioning_in_current_dim.push_back(num_partitions_in_current_dim);
-
-            mj_part_t largest_prime_factor = num_partitions_in_current_dim;
-            if (this->divide_to_prime_first){
-
-              //increase the output number of parts.
-              output_num_parts += num_partitions_in_current_dim;
-              if (future_num_parts_of_part_ii == atomic_part_count || future_num_parts_of_part_ii % atomic_part_count != 0){
-                atomic_part_count = 1;
-              }
-
-              largest_prime_factor = this->find_largest_prime_factor(future_num_parts_of_part_ii / atomic_part_count);
-
-              //we divide to  num_partitions_in_current_dim. But we adjust the weights based on largest prime/
-              //if num_partitions_in_current_dim = 2, largest prime = 5 --> we divide to 2 parts with weights 3x and 2x.
-              //if the largest prime is less than part count, we use the part count so that we divide uniformly.
-              if (largest_prime_factor < num_partitions_in_current_dim){
-                largest_prime_factor = num_partitions_in_current_dim;
-              }
-
-              //ideal number of future partitions for each part.
-              mj_part_t ideal_num_future_parts_in_part = (future_num_parts_of_part_ii / atomic_part_count) / largest_prime_factor;
-              //if num_partitions_in_current_dim = 2, largest prime = 5 then ideal weight is 2x
-              mj_part_t ideal_prime_scale = largest_prime_factor / num_partitions_in_current_dim;
-
-              //std::cout << "current num part:" << ii << " largest_prime_factor:" << largest_prime_factor << " To Partition:" << future_num_parts_of_part_ii << " ";
-              for (mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii){
-                //if num_partitions_in_current_dim = 2, largest prime = 5 then ideal weight is 2x
-                mj_part_t my_ideal_primescale = ideal_prime_scale;
-                //left over weighs. Left side is adjusted to be 3x, right side stays as 2x
-                if (iii < (largest_prime_factor) % num_partitions_in_current_dim){
-                  ++my_ideal_primescale;
-                }
-                //scale with 'x';
-                mj_part_t num_future_parts_for_part_iii = ideal_num_future_parts_in_part * my_ideal_primescale;
-
-                //if there is a remainder in the part increase the part weight.
-                if (iii < (future_num_parts_of_part_ii / atomic_part_count) % largest_prime_factor){
-                  //if not uniform, add 1 for the extra parts.
-                  ++num_future_parts_for_part_iii;
-                }
-
-                next_future_num_parts_in_parts->push_back(num_future_parts_for_part_iii * atomic_part_count);
-
-                //if part boxes are stored, initialize the box of the parts as the ancestor.
-                if (this->mj_keep_part_boxes){
-                  output_part_boxes->push_back((*input_part_boxes)[ii]);
-                }
-
-                //set num future_num_parts to maximum in this part.
-                if (num_future_parts_for_part_iii > future_num_parts) future_num_parts = num_future_parts_for_part_iii;
-
-              }
-
-
-            }
-            else {
-
-              //increase the output number of parts.
-              output_num_parts += num_partitions_in_current_dim;
-
-=======
     // set the how many more parts each part will be divided.
     // this is obvious when partNo array is provided as input.
     // however, fill this so weights will be calculated according to this array.
@@ -2793,7 +2639,6 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             //if not uniform, add 1 for the extra parts.
             ++num_future_parts_for_part_iii;
           }
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
           next_future_num_parts_in_parts->push_back(
             num_future_parts_for_part_iii * atomic_part_count);
@@ -3116,26 +2961,6 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
 
     auto local_kokkos_mj_coordinates = this->kokkos_mj_coordinates;
     for (int i = 0; i < this->coord_dim; ++i){
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-        mj_scalar_t localMin = std::numeric_limits<mj_scalar_t>::max();
-        mj_scalar_t localMax = -localMin;
-        if (localMax > 0) localMax = 0;
-
-
-        for (mj_lno_t j = 0; j < this->num_local_coords; ++j){
-            if (this->mj_coordinates[i][j] < localMin){
-                localMin = this->mj_coordinates[i][j];
-            }
-            if (this->mj_coordinates[i][j] > localMax){
-                localMax = this->mj_coordinates[i][j];
-            }
-        }
-        //std::cout << " localMin:" << localMin << std::endl;
-        //std::cout << " localMax:" << localMax << std::endl;
-        mins[i] = localMin;
-        maxs[i] = localMax;
-
-=======
       Kokkos::parallel_reduce("MinReduce", this->num_local_coords,
         KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_min) {
         if(local_kokkos_mj_coordinates(j,i) < running_min) {
@@ -3148,7 +2973,6 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
           running_max = local_kokkos_mj_coordinates(j,i);
         }
       }, Kokkos::Max<mj_scalar_t>(maxs[i]));
->>>>>>> Zoltan2: Refactor MJ to use Cuda
     }
 
     reduceAll<int, mj_scalar_t>(*this->comm, Teuchos::REDUCE_MIN,
@@ -3493,63 +3317,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
  * next_future_num_parts_in_parts for the output parts.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_get_initial_cut_coords_target_weights(
-    mj_scalar_t min_coord,
-    mj_scalar_t max_coord,
-    mj_part_t num_cuts/*p-1*/ ,
-    mj_scalar_t global_weight,
-    mj_scalar_t *initial_cut_coords /*p - 1 sized, coordinate of each cut line*/,
-    mj_scalar_t *current_target_part_weights /*cumulative weights, at left side of each cut line. p-1 sized*/,
-
-    std::vector <mj_part_t> *future_num_part_in_parts, //the vecto
-    std::vector <mj_part_t> *next_future_num_parts_in_parts,
-    mj_part_t concurrent_current_part,
-    mj_part_t obtained_part_index
-){
-
-    mj_scalar_t coord_range = max_coord - min_coord;
-    if(this->mj_uniform_parts[0]){
-        {
-            mj_part_t cumulative = 0;
-            //how many total future parts the part will be partitioned into.
-            mj_scalar_t total_future_part_count_in_part = mj_scalar_t((*future_num_part_in_parts)[concurrent_current_part]);
-
-
-            //how much each part should weigh in ideal case.
-            mj_scalar_t unit_part_weight = global_weight / total_future_part_count_in_part;
-            /*
-           std::cout << "total_future_part_count_in_part:" << total_future_part_count_in_part << std::endl;
-           std::cout << "global_weight:" << global_weight << std::endl;
-           std::cout << "unit_part_weight" << unit_part_weight << std::endl;
-            */
-            for(mj_part_t i = 0; i < num_cuts; ++i){
-                cumulative += (*next_future_num_parts_in_parts)[i + obtained_part_index];
-
-                /*
-               std::cout << "obtained_part_index:" << obtained_part_index <<
-                                " (*next_future_num_parts_in_parts)[i + obtained_part_index]:" << (*next_future_num_parts_in_parts)[i + obtained_part_index] <<
-                                " cumulative:" << cumulative << std::endl;
-                */
-                //set target part weight.
-                current_target_part_weights[i] = cumulative * unit_part_weight;
-                //std::cout <<"i:" << i << " current_target_part_weights:" << current_target_part_weights[i] <<std::endl;
-                //set initial cut coordinate.
-
-                initial_cut_coords[i] = min_coord + (coord_range * cumulative) / total_future_part_count_in_part;
-            }
-            current_target_part_weights[num_cuts] = 1;
-        }
-
-        //round the target part weights.
-        if (this->mj_uniform_weights[0]){
-                for(mj_part_t i = 0; i < num_cuts + 1; ++i){
-
-                current_target_part_weights[i] = long(current_target_part_weights[i] + 0.5);
-            }
-        }
-=======
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_get_initial_cut_coords_target_weights(
@@ -3597,7 +3364,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         kokkos_initial_cut_coords(i) = min_coord +
           (coord_range * cumulative) / total_future_part_count_in_part;
       });
->>>>>>> Zoltan2: Refactor MJ to use Cuda
     }
 
     Kokkos::parallel_for(
@@ -4355,56 +4121,12 @@ struct ReduceWeightsFunctor {
     });
   }
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-                /*
-               std::cout << "seen_weight_in_part:" << i << " is "<< seen_weight_in_part <<std::endl;
-               std::cout << "\tcut:" << current_cut_coordinates[i]
-                       << " current_cut_lower_bounds:" << current_cut_lower_bounds[i]
-               << " current_cut_upper_bounds:" << current_cut_upper_bounds[i] << std::endl;
-               */
-                //expected ratio
-                expected_weight_in_part = current_part_target_weights[i];
-                //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
-                imbalance_on_left = imbalanceOf2(seen_weight_in_part, expected_weight_in_part);
-                //rightImbalance = imbalanceOf(globalTotalWeight - seenW, globalTotalWeight, 1 - expected);
-                imbalance_on_right = imbalanceOf2(global_total_weight - seen_weight_in_part, global_total_weight - expected_weight_in_part);
-
-                bool is_left_imbalance_valid = ZOLTAN2_ABS(imbalance_on_left) - used_imbalance_tolerance < this->sEpsilon ;
-                bool is_right_imbalance_valid = ZOLTAN2_ABS(imbalance_on_right) - used_imbalance_tolerance < this->sEpsilon;
-
-                //if the cut line reaches to desired imbalance.
-                if(is_left_imbalance_valid && is_right_imbalance_valid){
-                        current_cut_line_determined[i] = true;
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp atomic
-#endif
-                        my_num_incomplete_cut -= 1;
-                        new_current_cut_coordinates [i] = current_cut_coordinates[i];
-                        continue;
-                }
-                else if(imbalance_on_left < 0){
-                        //if left imbalance < 0 then we need to move the cut to right.
-
-                        if(this->distribute_points_on_cut_lines){
-                                //if it is okay to distribute the coordinate on
-                                //the same coordinate to left and right.
-                                //then check if we can reach to the target weight by including the
-                                //coordinates in the part.
-                                if (current_global_part_weights[i * 2 + 1] == expected_weight_in_part){
-                                        //if it is we are done.
-                                        current_cut_line_determined[i] = true;
-#ifdef HAVE_ZOLTAN2_OMP
-#pragma omp atomic
-#endif
-                                        my_num_incomplete_cut -= 1;
-=======
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count; ++n) {
       dst[n] += src[n];
     }
   }
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type dst, const volatile value_type src) const {
@@ -4473,76 +4195,6 @@ struct ArrayMinMaxReducer {
   }
 };
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-        //communication to determine the ratios of processors for the distribution
-        //of coordinates on the cut lines.
-#ifdef HAVE_ZOLTAN2_OMP
-        //no need barrier here as it is implicit.
-#pragma omp single
-#endif
-        {
-                if(*rectilinear_cut_count > 0){
-
-                        try{
-                                Teuchos::scan<int,mj_scalar_t>(
-                                                *comm, Teuchos::REDUCE_SUM,
-                                                num_cuts,
-                                                this->process_rectilinear_cut_weight,
-                                                this->global_rectilinear_cut_weight
-                                );
-                        }
-                        Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
-
-                        for (mj_part_t i = 0; i < num_cuts; ++i){
-                                //if cut line weight to be distributed.
-                                if(this->global_rectilinear_cut_weight[i] > 0) {
-                                        //expected weight to go to left of the cut.
-                                        mj_scalar_t expected_part_weight = current_part_target_weights[i];
-                                        //the weight that should be put to left of the cut.
-                                        mj_scalar_t necessary_weight_on_line_for_left = expected_part_weight - current_global_part_weights[i * 2];
-                                        //the weight of the cut in the process
-                                        mj_scalar_t my_weight_on_line = this->process_rectilinear_cut_weight[i];
-                                        //the sum of the cut weights upto this process, including the weight of this process.
-                                        mj_scalar_t weight_on_line_upto_process_inclusive = this->global_rectilinear_cut_weight[i];
-                                        //the space on the left side of the cut after all processes before this process (including this process)
-                                        //puts their weights on cut to left.
-                                        mj_scalar_t space_to_put_left = necessary_weight_on_line_for_left - weight_on_line_upto_process_inclusive;
-                                        //add my weight to this space to find out how much space is left to me.
-                                        mj_scalar_t space_left_to_me = space_to_put_left + my_weight_on_line;
-
-                                        /*
-                                       std::cout << "expected_part_weight:" << expected_part_weight
-                                                        << " necessary_weight_on_line_for_left:" << necessary_weight_on_line_for_left
-                                                        << " my_weight_on_line" << my_weight_on_line
-                                                        << " weight_on_line_upto_process_inclusive:" << weight_on_line_upto_process_inclusive
-                                                        << " space_to_put_left:" << space_to_put_left
-                                                        << " space_left_to_me" << space_left_to_me << std::endl;
-                                         */
-                                        if(space_left_to_me < 0){
-                                                //space_left_to_me is negative and i dont need to put anything to left.
-                                                current_part_cut_line_weight_to_put_left[i] = 0;
-                                        }
-                                        else if(space_left_to_me >= my_weight_on_line){
-                                                //space left to me is bigger than the weight of the processor on cut.
-                                                //so put everything to left.
-                                                current_part_cut_line_weight_to_put_left[i] = my_weight_on_line;
-                                                //std::cout << "setting current_part_cut_line_weight_to_put_left to my_weight_on_line:" << my_weight_on_line << std::endl;
-                                        }
-                                        else {
-                                                //put only the weight as much as the space.
-                                                current_part_cut_line_weight_to_put_left[i] = space_left_to_me ;
-
-                                                //std::cout << "setting current_part_cut_line_weight_to_put_left to space_left_to_me:" << space_left_to_me << std::endl;
-                                        }
-
-                                }
-                        }
-                        *rectilinear_cut_count = 0;
-                }
-        }
-        }
-}
-=======
 template<class policy_t, class scalar_t, class part_t,
   class index_t, class node_t>
 struct RightLeftClosestFunctor {
@@ -4580,7 +4232,6 @@ struct RightLeftClosestFunctor {
     part_xadj(mj_part_xadj),
     sEpsilon(mj_sEpsilon) {
   }
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
   size_t team_shmem_size (int team_size) const {
     return sizeof(scalar_t) * value_count * team_size;
@@ -4628,34 +4279,6 @@ struct RightLeftClosestFunctor {
       int i = local_permutations(ii);
       const scalar_t & coord = local_coordinates(i);
   
-// Prototyping strategy for just reading the single part
-// instead of checking all - though would need to handle
-// empty parts so min/max is updated. However this doesn't
-// seem to help speed at all.
-/*
-      part_t my_part = parts(i);
-      part_t ref = my_part / 2;
-      if(my_part % 2 == 1) {
-        // coord is on cut so set cut min/max to be right on cut
-        scalar_t cut_coord = local_cut_coordinates(i);
-        threadSum.ptr[2+ref*2] = cut_coord;
-        threadSum.ptr[2+ref*2+1] = cut_coord;
-      }
-      else {
-        // coord is in part ref
-        part_t lower_cut = ref - 1;
-        part_t upper_cut = ref;
-        scalar_t & lower_max = threadSum.ptr[2+lower_cut*2+1];
-        scalar_t & upper_min = threadSum.ptr[2+upper_cut*2];
-        if(coord < lower_max) {
-          lower_max = coord;
-        }
-        if(coord > upper_min) {
-          upper_min = coord;
-        }
-      }
-*/
-
       // remove front end buffers - true count here
       part_t num_cuts = value_count / 2 - 2;
 
@@ -4665,17 +4288,8 @@ struct RightLeftClosestFunctor {
         if(coord > cut_coord && coord < *(p1+1)) {
           *(p1+1) = coord;
         }
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-        global_imbalance /= num_parts;
-        global_imbalance /= num_procs;
-
-                /*
-        if (this->myRank == 0) {
-               std::cout << "imbalance for next iteration:" << global_imbalance << std::endl;
-=======
         if(coord < cut_coord && coord > *p1) {
           *p1 = coord;
->>>>>>> Zoltan2: Refactor MJ to use Cuda
         }
         p1 += 2;
       }
@@ -4758,7 +4372,8 @@ struct RightLeftClosestFunctor {
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
+  mj_part_t, mj_node_t>::
   mj_1D_part_get_thread_part_weights(
   mj_part_t current_concurrent_num_parts,
   mj_part_t working_kk,
@@ -5165,70 +4780,11 @@ mj_create_new_partitions(
 
   mj_create_new_partitions_clock2.start();
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-            //we set number of points to -to_sent - 1 for the assigned processors.
-            //we reverse it here. This should not happen, as we have already reversed them above.
-#ifdef MJ_DEBUG
-            if (num_points_to_sent < 0) {
-               std::cout << "Migration - processor assignments - for part:" << i << "from proc:" << nonassigned_proc_id << " num_points_to_sent:" << num_points_to_sent << std::endl;
-                exit(1);
-            }
-#endif
-=======
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
 
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-#ifdef MJ_DEBUG
-                    if(next_part_to_send_index <  nprocs - required_proc_count ){
-                       std::cout << "Migration - processor assignments - for part:"
-                                        << i
-                                        <<  " next_part_to_send :" << next_part_to_send_index
-                                        << " nprocs:" << nprocs
-                                        << " required_proc_count:" << required_proc_count
-                                        << " Error: next_part_to_send_index <  nprocs - required_proc_count" << std::endl;
-                        exit(1)l
-
-                    }
-#endif
-                    //send the new id.
-                    next_proc_to_send_id =  sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
-                    //set the new space in the processor.
-                    space_left_in_sent_proc = ideal_num_points_in_a_proc - sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
-                }
-            } 
-	    }
-	    break;
-	    default:
-	    {
-		//to minimize messages, we want each processor to send its coordinates to only a single point.
-		//we do not respect imbalances here, we send all points to the next processor.
-		if (this->myRank == nonassigned_proc_id){
-                  //set my sent count to the sent processor.
-                  send_count_to_each_proc[next_proc_to_send_id] = num_points_to_sent;
-                  //save the processor in the list (processor_chains_in_parts and part_assignment_proc_begin_indices)
-                  //that the processor will send its point in part-i.
-                  mj_part_t prev_begin = part_assignment_proc_begin_indices[i];
-                  part_assignment_proc_begin_indices[i] = next_proc_to_send_id;
-                  processor_chains_in_parts[next_proc_to_send_id] = prev_begin;
-                }
-                num_points_to_sent = 0;
-                ++next_proc_to_send_index;
-		
-		//if we made it to the heaviest processor we round robin and go to beginning
-		if (next_proc_to_send_index == num_procs){
-       		  next_proc_to_send_index = num_procs - required_proc_count;
-		}
-                //send the new id.
-                next_proc_to_send_id =  sort_item_num_part_points_in_procs[next_proc_to_send_index].id;
-                //set the new space in the processor.
-                space_left_in_sent_proc = ideal_num_points_in_a_proc - sort_item_num_part_points_in_procs[next_proc_to_send_index].val;
-	    }	
-          }
-=======
   if(num_cuts > 0) {
 
     Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
@@ -5239,7 +4795,6 @@ mj_create_new_partitions(
           kokkos_current_concurrent_cut_coordinate(i -1)) < local_sEpsilon) {
             local_kokkos_thread_cut_line_weight_to_put_left(i) -=
               local_kokkos_thread_cut_line_weight_to_put_left(i - 1);
->>>>>>> Zoltan2: Refactor MJ to use Cuda
         }
         local_kokkos_thread_cut_line_weight_to_put_left(i) =
           int ((local_kokkos_thread_cut_line_weight_to_put_left(i) +
@@ -6963,55 +6518,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
  * partitioning.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-          typename mj_part_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::create_consistent_chunks(
-    mj_part_t num_parts,
-    mj_scalar_t *mj_current_dim_coords,
-    mj_scalar_t *current_concurrent_cut_coordinate,
-    mj_lno_t coordinate_begin,
-    mj_lno_t coordinate_end,
-    mj_scalar_t *used_local_cut_line_weight_to_left,
-    mj_lno_t *out_part_xadj,
-    int coordInd, bool longest_dim_part, uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted){
-
-        //mj_lno_t numCoordsInPart =  coordinateEnd - coordinateBegin;
-        mj_part_t no_cuts = num_parts - 1;
-
-
-
-        int me = 0;
-        mj_lno_t *thread_num_points_in_parts = this->thread_point_counts[me];
-        mj_scalar_t *my_local_thread_cut_weights_to_put_left = NULL;
-
-
-        //now if the rectilinear partitioning is allowed we decide how
-        //much weight each thread should put to left and right.
-        if (this->distribute_points_on_cut_lines){
-
-                my_local_thread_cut_weights_to_put_left = this->thread_cut_line_weight_to_put_left[me];
-                for (mj_part_t i = 0; i < no_cuts; ++i){
-                        //the left to be put on the left of the cut.
-                        mj_scalar_t left_weight = used_local_cut_line_weight_to_left[i];
-                        //std::cout << "i:" << i << " left_weight:" << left_weight << std::endl;
-                        for(int ii = 0; ii < this->num_threads; ++ii){
-                                if(left_weight > this->sEpsilon){
-                                        //the weight of thread ii on cut.
-                                        mj_scalar_t thread_ii_weight_on_cut = this->thread_part_weight_work[ii][i * 2 + 1] - this->thread_part_weight_work[ii][i * 2 ];
-                                        if(thread_ii_weight_on_cut < left_weight){
-                                                this->thread_cut_line_weight_to_put_left[ii][i] = thread_ii_weight_on_cut;
-                                        }
-                                        else {
-                                                this->thread_cut_line_weight_to_put_left[ii][i] = left_weight ;
-                                        }
-                                        left_weight -= thread_ii_weight_on_cut;
-                                }
-                                else {
-                                        this->thread_cut_line_weight_to_put_left[ii][i] = 0;
-                                }
-                        }
-                }
-=======
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_migrate_coords(
@@ -7044,7 +6550,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
     this->mj_env->timerStop(MACRO_TIMERS,
       "MultiJagged - Migration Z1PlanCreating-" + iteration);
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
     this->mj_env->timerStart(MACRO_TIMERS,
       "MultiJagged - Migration Z1Migration-" + iteration);
@@ -8824,23 +8329,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         "MultiJagged - Problem_Partitioning_" + istring);
     }
   }
-
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-/*
-               std::cout << "i:" << i << " j:" << current_work_part + kk
-                                << " coordinate_begin_index:" << coordinate_begin_index
-                                << " coordinate_end_index:" << coordinate_end_index
-                                << " total:" << coordinate_end_index - coordinate_begin_index<< std::endl;
-                                */
-                this->mj_get_local_min_max_coord_totW(
-                                coordinate_begin_index,
-                                coordinate_end_index,
-                                this->coordinate_permutations,
-                                mj_current_dim_coords,
-                            this->process_local_min_max_coord_total_weight[kk], //min_coordinate
-                            this->process_local_min_max_coord_total_weight[kk + current_concurrent_num_parts], //max_coordinate
-                            this->process_local_min_max_coord_total_weight[kk + 2*current_concurrent_num_parts]); //total_weight
-=======
   clock_multi_jagged_part_loop.stop();
   Clock clock_multi_jagged_part_finish("  multi_jagged_part finish", true);
 
@@ -8932,8 +8420,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   
   clock_mj_get_local_min_max_coord_totW.print();
 }
->>>>>>> Zoltan2: Refactor MJ to use Cuda
-
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -10148,89 +9634,6 @@ Zoltan2_AlgMJ<Adapter>::getGlobalBoxBoundaries() const
 {
   return this->mj_partitioner.get_kept_boxes();
 }
-
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::get_kept_boxes() const
-{
-  if (this->mj_keep_part_boxes)
-    return this->kept_boxes;
-  else
-    throw std::logic_error("Error: part boxes are not stored.");
-}
-
-template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-          typename mj_part_t>
-RCP<typename AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::mj_partBoxVector_t>
-AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t>::compute_global_box_boundaries(
-  RCP<mj_partBoxVector_t> &localPartBoxes
-) const
-{
-  mj_part_t ntasks = this->num_global_parts;
-  int dim = (*localPartBoxes)[0].getDim();
-  mj_scalar_t *localPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
-
-  memset(localPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
-
-  mj_scalar_t *globalPartBoundaries = new mj_scalar_t[ntasks * 2 *dim];
-  memset(globalPartBoundaries, 0, sizeof(mj_scalar_t) * ntasks * 2 *dim);
-
-  mj_scalar_t *localPartMins = localPartBoundaries;
-  mj_scalar_t *localPartMaxs = localPartBoundaries + ntasks * dim;
-
-  mj_scalar_t *globalPartMins = globalPartBoundaries;
-  mj_scalar_t *globalPartMaxs = globalPartBoundaries + ntasks * dim;
-
-  mj_part_t boxCount = localPartBoxes->size();
-  for (mj_part_t i = 0; i < boxCount; ++i){
-    mj_part_t pId = (*localPartBoxes)[i].getpId();
-      //std::cout << "me:" << comm->getRank() << " has:" << pId << std::endl;
-
-    mj_scalar_t *lmins = (*localPartBoxes)[i].getlmins();
-    mj_scalar_t *lmaxs = (*localPartBoxes)[i].getlmaxs();
-
-    for (int j = 0; j < dim; ++j){
-      localPartMins[dim * pId + j] = lmins[j];
-      localPartMaxs[dim * pId + j] = lmaxs[j];
-      /*
-      std::cout << "me:" << comm->getRank()  <<
-              " dim * pId + j:"<< dim * pId + j <<
-              " localMin:" << localPartMins[dim * pId + j] <<
-              " localMax:" << localPartMaxs[dim * pId + j] << std::endl;
-      */
-    }
-  }
-
-  Teuchos::Zoltan2_BoxBoundaries<int, mj_scalar_t> reductionOp(ntasks * 2 *dim);
-
-  reduceAll<int, mj_scalar_t>(*mj_problemComm, reductionOp,
-            ntasks * 2 *dim, localPartBoundaries, globalPartBoundaries);
-  RCP<mj_partBoxVector_t> pB(new mj_partBoxVector_t(),true);
-  for (mj_part_t i = 0; i < ntasks; ++i){
-    Zoltan2::coordinateModelPartBox <mj_scalar_t, mj_part_t> tpb(i, dim,
-                                               globalPartMins + dim * i,
-                                               globalPartMaxs + dim * i);
-
-    /*
-    for (int j = 0; j < dim; ++j){
-       std::cout << "me:" << comm->getRank()  <<
-                " dim * pId + j:"<< dim * i + j <<
-                " globalMin:" << globalPartMins[dim * i + j] <<
-                " globalMax:" << globalPartMaxs[dim * i + j] << std::endl;
-    }
-    */
-    pB->push_back(tpb);
-  }
-  delete []localPartBoundaries;
-  delete []globalPartBoundaries;
-  //RCP <mj_partBoxVector_t> tmpRCPBox(pB, true);
-  return pB;
-}
-=======
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 } // namespace Zoltan2
 
 #endif

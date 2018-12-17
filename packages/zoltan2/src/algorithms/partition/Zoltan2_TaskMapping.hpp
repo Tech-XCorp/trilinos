@@ -1178,11 +1178,7 @@ public:
 
 
     part_t invalid = 0;
-<<<<<<< 320f1a3877a7ab8863d49fb9cf32162a64233f4c
-    fillContinousArray<part_t>(proc_to_task_xadj, this->no_procs+1, &invalid);
-=======
     fillContinousArray<part_t, node_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
->>>>>>> Zoltan2: Refactor MJ to use Cuda
 
     //obtain the number of parts that should be divided.
     part_t num_parts = MINOF(this->no_procs, this->no_tasks);
