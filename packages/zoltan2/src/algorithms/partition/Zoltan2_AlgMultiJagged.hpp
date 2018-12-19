@@ -3987,6 +3987,88 @@ struct ArraySumReducer {
   }
 };
 
+template<class scalar_t, class part_t, class index_t, class node_t>
+struct ReduceWeightsFunctorInnerLoop {
+
+  Kokkos::View<index_t*, typename node_t::device_type> permutations;
+  Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
+  Kokkos::View<scalar_t**, typename node_t::device_type> weights;
+  Kokkos::View<part_t*, typename node_t::device_type> parts;
+  Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
+  bool bUniformWeights;
+  scalar_t sEpsilon;
+  int num_cuts;
+  
+  ReduceWeightsFunctorInnerLoop(
+    Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
+    Kokkos::View<scalar_t**, typename node_t::device_type> mj_weights,
+    Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
+    Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
+    bool mj_bUniformWeights,
+    scalar_t mj_sEpsilon,
+    int mj_num_cuts
+  ) : 
+    permutations(mj_permutations),
+    coordinates(mj_coordinates),
+    weights(mj_weights),
+    parts(mj_parts),
+    cut_coordinates(mj_cut_coordinates),
+    bUniformWeights(mj_bUniformWeights),
+    sEpsilon(mj_sEpsilon),
+    num_cuts(mj_num_cuts)
+  {
+  
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const size_t ii, ArrayType<scalar_t>& threadSum) const {
+
+    int i = permutations(ii);
+    scalar_t coord = coordinates(i);
+    scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+    // check part 0
+    scalar_t b = cut_coordinates(0);
+    if(coord <= b - sEpsilon) {
+      threadSum.ptr[0] += w;
+      parts(i) = 0;
+    }
+
+    // check cut 0
+    if( coord < b + sEpsilon && coord > b - sEpsilon) {
+      threadSum.ptr[1] += w;
+      parts(i) = 1;
+    }
+
+    scalar_t a;
+
+    // now check each part and it's right cut
+    for(index_t part = 1; part < num_cuts; ++part) {
+      a = b; 
+      b = cut_coordinates(part);
+
+      if(coord < b + sEpsilon && coord > b - sEpsilon) {
+        threadSum.ptr[part*2+1] += w;
+        parts(i) = part*2+1;
+      }
+      
+      if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+        threadSum.ptr[part*2] += w;
+        parts(i) = part*2;
+      }
+    }
+
+    // check last part
+    a = b;
+    if(coord >= a + sEpsilon) {
+      threadSum.ptr[num_cuts*2] += w;
+      parts(i) = num_cuts*2;
+    }
+  }
+
+};
+
 template<class policy_t, class scalar_t, class part_t,
   class index_t, class node_t>
 struct ReduceWeightsFunctor {
@@ -4004,6 +4086,7 @@ struct ReduceWeightsFunctor {
   Kokkos::View<index_t *, typename node_t::device_type> part_xadj;
   Kokkos::View<bool*, typename node_t::device_type> uniform_weights;
   scalar_t sEpsilon;
+  bool bUniformWeights;
   
   ReduceWeightsFunctor(
     part_t mj_concurrent_current_part,
@@ -4026,6 +4109,8 @@ struct ReduceWeightsFunctor {
     part_xadj(mj_part_xadj),
     uniform_weights(mj_uniform_weights),
     sEpsilon(mj_sEpsilon) {
+    
+    bUniformWeights = uniform_weights(0);
   }
 
   size_t team_shmem_size (int team_size) const {
@@ -4034,11 +4119,10 @@ struct ReduceWeightsFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
-
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
       part_xadj(concurrent_current_part -1);
     index_t all_end = part_xadj(concurrent_current_part);
-    bool bUniformWeights = uniform_weights(0);
+    
     index_t num_working_points = all_end - all_begin;
     int num_teams = teamMember.league_size();
     
@@ -4068,7 +4152,21 @@ struct ReduceWeightsFunctor {
     int num_cuts = value_count / 2;
 
     // call the reduce
-    
+    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
+      index_t, node_t> inner_functor(
+      permutations,
+      coordinates,
+      weights,
+      parts,
+      cut_coordinates,
+      bUniformWeights,
+      sEpsilon,
+      num_cuts);
+      
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      inner_functor, arraySumReducer);
+/*
     // this pointless line of code is resolving an intermittent
     // failure which occurs after rebasing to latest develop.
     // TODO: Resolve why this happens
@@ -4118,6 +4216,9 @@ struct ReduceWeightsFunctor {
         parts(i) = num_cuts*2;
       }
     }, arraySumReducer);
+    
+*/
+
     teamMember.team_barrier();
 
     // collect all the team's results
