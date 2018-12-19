@@ -4068,6 +4068,12 @@ struct ReduceWeightsFunctor {
     int num_cuts = value_count / 2;
 
     // call the reduce
+    
+    // this pointless line of code is resolving an intermittent
+    // failure which occurs after rebasing to latest develop.
+    // TODO: Resolve why this happens
+    if(teamMember.team_size() == 0) printf("dummy\n");
+
     Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
       int i = permutations(ii);
@@ -4112,6 +4118,7 @@ struct ReduceWeightsFunctor {
         parts(i) = num_cuts*2;
       }
     }, arraySumReducer);
+    teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
