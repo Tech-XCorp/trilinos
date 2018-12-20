@@ -64,6 +64,45 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
+class Clock {
+  typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
+  public:
+    Clock(std::string clock_name, bool bStart) :
+      name(clock_name), counter_start(0), counter_stop(0), time_sum(0) {
+      if(bStart) {
+        start();
+      }
+    }
+    double time() const {
+      if(counter_start != counter_stop) {
+        printf("Clock %s bad counters!\n", name.c_str());
+        throw std::logic_error("bad timer counters!\n");
+      }
+      return time_sum;
+    }
+    void start() {
+      ++counter_start;
+      start_time = std::chrono::steady_clock::now();
+    }
+    void stop(bool bPrint = false) {
+      ++counter_stop;
+      clock_t now_time = std::chrono::steady_clock::now();
+      time_sum += std::chrono::duration_cast<std::chrono::duration<double> >(now_time - start_time).count();
+      if(bPrint) {
+        print();
+      }
+    }
+    void print() {
+      printf("Clock %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
+    }
+  private:
+    std::string name;
+    int counter_start;
+    int counter_stop;
+    clock_t start_time;
+    double time_sum;
+};
+
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
 #else
@@ -3073,6 +3112,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_1D_part(
             }
         }
     }
+
     delete reductionOp;
 }
 
@@ -3660,7 +3700,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_create_new_partitions
                         thread_num_points_in_parts[j] += out_part_xadj[j - 1] ;
                 }
 
-
                 //now thread gets the coordinate and writes the index of coordinate to the permutation array
                 //using the part index we calculated.
 #ifdef HAVE_ZOLTAN2_OMP
@@ -3672,7 +3711,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_create_new_partitions
                         this->new_coordinate_permutations[coordinate_begin +
                                                           thread_num_points_in_parts[p]++] = i;
                 }
+
         }
+
 }
 
 
@@ -5966,7 +6007,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::multi_jagged_part(
         size_t num_global_parts_,
         mj_part_t *part_no_array_,
         int recursion_depth_,
-
         int coord_dim_,
         mj_lno_t num_local_coords_,
         mj_gno_t num_global_coords_,
@@ -5986,6 +6026,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::multi_jagged_part(
 
 
 
+Clock clock_multi_jagged_part("clock_multi_jagged_part", true);
 #ifdef print_debug
     if(comm->getRank() == 0){
         std::cout << "size of gno:" << sizeof(mj_gno_t) << std::endl;
@@ -6491,6 +6532,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::multi_jagged_part(
     this->mj_env->timerStop(MACRO_TIMERS, "MultiJagged - Total");
     this->mj_env->debug(3, "Out of MultiJagged");
 
+
+clock_multi_jagged_part.stop();
+clock_multi_jagged_part.print();
 }
 
 

@@ -203,7 +203,7 @@ int run_pointAssign_tests(
           part = problem->getSolution().pointAssign(coordDim, pointDrop);
         }
         CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + ": pointAssign -- OwnedPoints");
-
+/*
         std::cout << me << " Point " << localID
                   << " gid " << coords->getMap()->getGlobalElement(localID)
                   << " (" << pointDrop[0];
@@ -212,6 +212,7 @@ int run_pointAssign_tests(
         std::cout << ") in boxPart " << part
                   << "  in solnPart " << solnPart
                   << std::endl;
+*/
 
 // this error test does not work for points that fall on the cuts.
 // like Zoltan's RCB, pointAssign arbitrarily picks a part along the cut.
