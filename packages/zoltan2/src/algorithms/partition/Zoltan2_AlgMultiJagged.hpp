@@ -116,8 +116,7 @@ class Clock {
       }
     }
     void print() {
-    //  printf("%.2f\n", (float)(time() * 1000.0));
-      printf("--------------------------------------------------------- %s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
+      printf("%s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
     }
   private:
     std::string name;
@@ -149,19 +148,6 @@ static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cu
 static Clock clock_write_globals("          clock_write_globals", false);
 static Clock mj_1D_part_end("        mj_1D_part_end", false);
 static Clock mj_create_new_partitions_clock("           mj_create_new_partitions", false);
-static Clock mj_create_new_partitions_clock1("             mj_create_new_partitions1", false);
-static Clock mj_create_new_partitions_clock2("             mj_create_new_partitions2", false);
-static Clock mj_create_new_partitions_clock3("             mj_create_new_partitions3", false);
-static Clock mj_create_new_partitions_clock4("             mj_create_new_partitions4", false);
-static Clock mj_create_new_partitions_clock5("             mj_create_new_partitions5", false);
-static Clock mj_create_new_partitions_clock6("             mj_create_new_partitions6", false);
-static Clock mj_create_new_partitions_clock7("             mj_create_new_partitions7", false);
-static Clock mj_create_new_partitions_clock8("             mj_create_new_partitions8", false);
-static Clock mj_create_new_partitions_clock9("             mj_create_new_partitions9", false);
-static Clock mj_create_new_partitions_clock10("             mj_create_new_partitions10", false);
-static Clock mj_create_new_partitions_clock11("             mj_create_new_partitions11", false);
-static Clock mj_create_new_partitions_clock12("             mj_create_new_partitions12", false);
-static Clock clock_mj_get_local_min_max_coord_totW("mj_get_local_min_max_coord_totW", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -3023,8 +3009,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords)
 {
-  clock_mj_get_local_min_max_coord_totW.start();
-  
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   auto local_kokkos_coordinate_permutations =
     this->kokkos_coordinate_permutations;
@@ -3147,8 +3131,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         kk + 2*current_concurrent_num_parts) = my_total_weight;
     });
   }
-  
-  clock_mj_get_local_min_max_coord_totW.stop();
 }
 
 /*! \brief Function to determine the local minimum and maximum coordinate, and
@@ -4851,8 +4833,6 @@ mj_create_new_partitions(
 
   mj_create_new_partitions_clock.start();
 
-  mj_create_new_partitions_clock1.start();
-
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
 
   mj_part_t num_cuts = num_parts - 1;
@@ -4885,10 +4865,6 @@ mj_create_new_partitions(
     });
   }
 
-  mj_create_new_partitions_clock1.stop();
-
-  mj_create_new_partitions_clock2.start();
-
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
@@ -4913,9 +4889,6 @@ mj_create_new_partitions(
     });
   }
 
-  mj_create_new_partitions_clock2.stop();
-  mj_create_new_partitions_clock3.start();
-
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & i) {
@@ -4924,9 +4897,6 @@ mj_create_new_partitions(
 
   Kokkos::View<mj_lno_t *, device_t> record_total_on_cut(
     "track_on_cuts", 1);
-
-  mj_create_new_partitions_clock3.stop();
-  mj_create_new_partitions_clock4.start();
 
   mj_lno_t coordinate_begin_index;
   Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
@@ -4942,9 +4912,6 @@ mj_create_new_partitions(
     set_single = local_kokkos_part_xadj(current_concurrent_work_part);;
   }, coordinate_end_index);
 
-
-  mj_create_new_partitions_clock4.stop();
-  mj_create_new_partitions_clock5.start();
 
   mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
 
@@ -4967,9 +4934,6 @@ mj_create_new_partitions(
   if((num_working_points % num_teams) > 0) {
     stride += 1; // make sure we have coverage for the final points
   }
-
-  mj_create_new_partitions_clock5.stop();
-  mj_create_new_partitions_clock6.start();
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
     policy(num_teams, Kokkos::AUTO());
@@ -4994,9 +4958,6 @@ mj_create_new_partitions(
     });
   });
 
-  mj_create_new_partitions_clock6.stop();
-  mj_create_new_partitions_clock7.start();
-
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, int & set_single) {
@@ -5004,14 +4965,8 @@ mj_create_new_partitions(
     record_total_on_cut(0) = 0;
   }, total_on_cut);
 
-  mj_create_new_partitions_clock7.stop();
-  mj_create_new_partitions_clock8.start();
-
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
     "track_on_cuts", total_on_cut);
-
-  mj_create_new_partitions_clock8.stop();
-  mj_create_new_partitions_clock9.start();
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
     mj_lno_t team_begin_index =
@@ -5045,8 +5000,6 @@ mj_create_new_partitions(
     });
   });
 
-  mj_create_new_partitions_clock9.stop();
-  mj_create_new_partitions_clock10.start();
  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
@@ -5145,9 +5098,6 @@ mj_create_new_partitions(
     }
   });
 
-  mj_create_new_partitions_clock10.stop();
-  mj_create_new_partitions_clock11.start();
-
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
@@ -5159,9 +5109,6 @@ mj_create_new_partitions(
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     local_kokkos_thread_point_counts(j) = 0;
   });
-
-  mj_create_new_partitions_clock11.stop();
-  mj_create_new_partitions_clock12.start();
 
   // TODO: How do we efficiently parallelize this form? 
   // Copy first?
@@ -5196,8 +5143,6 @@ mj_create_new_partitions(
           coordinate_begin_index + idx) = i;
     });
   });
-
- mj_create_new_partitions_clock12.stop();
 
   mj_create_new_partitions_clock.stop();
 }
@@ -7726,18 +7671,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
       
   mj_create_new_partitions_clock.reset();
-  mj_create_new_partitions_clock1.reset();
-  mj_create_new_partitions_clock2.reset();
-  mj_create_new_partitions_clock3.reset();
-  mj_create_new_partitions_clock4.reset();
-  mj_create_new_partitions_clock5.reset();
-  mj_create_new_partitions_clock6.reset();
-  mj_create_new_partitions_clock7.reset();
-  mj_create_new_partitions_clock8.reset();
-  mj_create_new_partitions_clock9.reset();
-  mj_create_new_partitions_clock10.reset();
-  mj_create_new_partitions_clock11.reset();
-  mj_create_new_partitions_clock12.reset();
   mj_1D_part_while_loop.reset();
   mj_1D_part_init.reset();
   mj_1D_part_init2.reset();
@@ -7758,8 +7691,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_get_new_cut_coordinates_end.reset();
   clock_write_globals.reset();
   mj_1D_part_end.reset();
-  clock_mj_get_local_min_max_coord_totW.reset();
-  
   
   Clock clock_multi_jagged_part("multi_jagged_part", true);
   Clock clock_multi_jagged_part_init("  multi_jagged_part init", true);
@@ -7847,15 +7778,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock loopA("    loop A", false);
   Clock loopB("    loop B", false);
 
-  Clock loopB_1("      loop B 1", false);
-  Clock loopB_2("      loop B 2", false);
-
   Clock clock_mj_get_initial_cut_coords_target_weights(
     "      mj_get_initial_cut_coords_target_weights", false);
   Clock clock_set_initial_coordinate_parts(
     "      set_initial_coordinate_parts", false);
-  Clock loopB_2_A("      loopB_2_A", false);
-  Clock loopB_2_B("      loopB_2_B", false);
 
   Clock clock_mj_1D_part("      mj_1D_part", false);
 
@@ -8002,8 +7928,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         mj_part_t concurrent_part_part_shift = 0;
 
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-          loopB_1.start();
-
           // same as above - temporary measure to pull these values to host
           // I want to avoid making a parallel loop here for now so I get
           // internal loops running. Then revisit this. TODO: clean it up
@@ -8055,9 +7979,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           // shift the partRatio array as noParts.
           concurrent_part_part_shift += partition_count;
 
-          loopB_1.stop();
-          loopB_2.start();
-
           // calculate only if part is not empty,
           // and part will be further partitioned.
           if(partition_count > 1 && min_coordinate <= max_coordinate) {
@@ -8092,7 +8013,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               obtained_part_index);
 
             clock_mj_get_initial_cut_coords_target_weights.stop();
-            loopB_2_A.start();
 
             // TODO: refactor clean up
             mj_lno_t coordinate_end_index;
@@ -8116,7 +8036,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               "MultiJagged - Problem_Partitioning_" + istring +
               " set_initial_coordinate_parts()");
 
-            loopB_2_A.stop();
             clock_set_initial_coordinate_parts.start();
             
             this->set_initial_coordinate_parts(
@@ -8135,7 +8054,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             clock_set_initial_coordinate_parts.stop();
           }
           else {
-            loopB_2_B.start();
             // e.g., if have fewer coordinates than parts, don't need to do
             // next dim.
             auto local_kokkos_my_incomplete_cut_count =
@@ -8145,7 +8063,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk) = 0;
             });
-            loopB_2_B.stop();
           }
             
           obtained_part_index += partition_count;
@@ -8158,7 +8075,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         this->mj_env->timerStart(MACRO_TIMERS,
           "MultiJagged - Problem_Partitioning mj_1D_part()");
 
-        loopB_2.stop();
         clock_mj_1D_part.start();
 
         this->mj_1D_part(
@@ -8465,6 +8381,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_multi_jagged_part.stop();
 
+  printf("-------------------------------------------------------\n");
   clock_multi_jagged_part.print();
   clock_multi_jagged_part_init.print();
   clock_multi_jagged_part_init_begin.print();
@@ -8474,13 +8391,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_multi_jagged_part_loop.print();
   loopA.print();
   loopB.print();
-  loopB_1.print();
-  loopB_2.print();
 
   clock_mj_get_initial_cut_coords_target_weights.print();
   clock_set_initial_coordinate_parts.print();
-  loopB_2_A.print();
-  loopB_2_B.print();
 
   clock_mj_1D_part.print();
 
@@ -8512,22 +8425,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   new_part_chunks.print();
   mj_create_new_partitions_clock.print();
-  mj_create_new_partitions_clock1.print();
-  mj_create_new_partitions_clock2.print();
-  mj_create_new_partitions_clock3.print();
-  mj_create_new_partitions_clock4.print();
-  mj_create_new_partitions_clock5.print();
-  mj_create_new_partitions_clock6.print();
-  mj_create_new_partitions_clock7.print();
-  mj_create_new_partitions_clock8.print();
-  mj_create_new_partitions_clock9.print();
-  mj_create_new_partitions_clock10.print();
-  mj_create_new_partitions_clock11.print();
-  mj_create_new_partitions_clock12.print();
 
   clock_multi_jagged_part_finish.print();
   
-  clock_mj_get_local_min_max_coord_totW.print();
+  printf("-------------------------------------------------------\n");
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
