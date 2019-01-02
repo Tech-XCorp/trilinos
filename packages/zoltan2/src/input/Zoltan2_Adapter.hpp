@@ -136,6 +136,14 @@ public:
     Z2_THROW_NOT_IMPLEMENTED
   }
 
+  /*! \brief Provide a pointer to the coordinates view.
+  */
+  inline void getCoordinatesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
+  {
+    Z2_THROW_NOT_IMPLEMENTED
+  }
+
   ///*! \brief Provide pointer to a weight array with stride.
   // *    \param wgt on return a pointer to the weights for this idx
   // *    \param stride on return, the value such that
