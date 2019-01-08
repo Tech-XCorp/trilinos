@@ -73,7 +73,6 @@
 
 //----------------------------------------------------------------------------
 #if defined(_WIN32)
-// #if defined(_WIN32) && !defined(__clang__)
 #define KOKKOS_ENABLE_WINDOWS_ATOMICS
 #else
 #if defined( KOKKOS_ENABLE_CUDA )
@@ -202,7 +201,6 @@ const char * atomic_query_version()
 } // namespace Kokkos
 
 #ifdef _WIN32
-// #if defined(_WIN32) && !defined(__clang__)
 #include "impl/Kokkos_Atomic_Windows.hpp"
 #else
 
