@@ -240,7 +240,11 @@ public:
     typedef typename hash_type::result_type hash_value_type;
 
     const hash_value_type hashVal = hash_type::hashFunc (keys_[i], size_);
+#ifdef _WIN32
+    Kokkos::atomic_fetch_add (&counts_[hashVal], typename std::remove_reference<decltype(counts_[hashVal])>::type(1));
+#else
     Kokkos::atomic_fetch_add (&counts_[hashVal], 1);
+#endif
   }
 
 private:
@@ -467,7 +471,7 @@ public:
     const hash_value_type hashVal = hash_type::hashFunc (key, size_);
 
     // Return the old count; decrement afterwards.
-    const offset_type count = Kokkos::atomic_fetch_add (&counts_[hashVal], -1);
+    const offset_type count = Kokkos::atomic_fetch_add (&counts_[hashVal], typename std::remove_reference<decltype(counts_[hashVal])>::type(-1));
     if (count == 0) {
       dst.success_ = false; // FAILURE!
     }

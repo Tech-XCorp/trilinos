@@ -230,6 +230,7 @@ struct FillSymmetricEdgesHashMap{
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const team_member & teamMember/*, idx &nnz*/) const {
+    using INTTYPE = typename std::remove_reference<decltype(pre_pps(idx(0)))>::type;
     idx ii = teamMember.league_rank()  * teamMember.team_size()+ teamMember.team_rank();
     if (ii >= num_rows) {
       return;
@@ -246,22 +247,22 @@ struct FillSymmetricEdgesHashMap{
           Kokkos::UnorderedMapInsertResult r = umap.insert(Kokkos::pair<idx, idx>(colIndex, ii));
           if (r.success()){
 
-            Kokkos::atomic_fetch_add(&(pre_pps(ii)),1);
+            Kokkos::atomic_fetch_add(&(pre_pps(ii)), INTTYPE(1));
 
-            Kokkos::atomic_fetch_add(&(pre_pps(colIndex)),1);
+            Kokkos::atomic_fetch_add(&(pre_pps(colIndex)), INTTYPE(1));
           }
         }
         else if (colIndex > ii){
 
           Kokkos::UnorderedMapInsertResult r = umap.insert(Kokkos::pair<idx, idx>(ii, colIndex));
           if (r.success()){
-            Kokkos::atomic_fetch_add(&(pre_pps(colIndex)),1);
+            Kokkos::atomic_fetch_add(&(pre_pps(colIndex)), INTTYPE(1));
 
-            Kokkos::atomic_fetch_add(&(pre_pps(ii)),1);
+            Kokkos::atomic_fetch_add(&(pre_pps(ii)), INTTYPE(1));
           }
         }
         else {
-          Kokkos::atomic_fetch_add(&(pre_pps(ii)),1);
+          Kokkos::atomic_fetch_add(&(pre_pps(ii)), INTTYPE(1));
         }
       }
 
@@ -359,6 +360,7 @@ struct FillSymmetricCRS_HashMap{
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const team_member_t & teamMember) const {
+    using INTTYPE = typename std::remove_reference<decltype(pre_pps(idx(0)))>::type;
     idx ii = teamMember.league_rank()  * teamMember.team_size()+ teamMember.team_rank();
     if (ii >= num_rows) {
       return;
@@ -374,22 +376,22 @@ struct FillSymmetricCRS_HashMap{
       if (colIndex < num_rows){
         if (colIndex < ii){
           if (umap.insert(Kokkos::pair<idx, idx>(colIndex, ii)).success()){
-            idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)),1);
-            idx iAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(ii)),1);
+            idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)), INTTYPE(1));
+            idx iAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(ii)), INTTYPE(1));
             sym_adj[cAdjInd] = ii;
             sym_adj[iAdjInd] = colIndex;
           }
         }
         else if (colIndex > ii){
           if (umap.insert(Kokkos::pair<idx, idx>(ii, colIndex)).success()){
-            idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)),1);
-            idx iAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(ii)),1);
+            idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)), INTTYPE(1));
+            idx iAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(ii)), INTTYPE(1));
             sym_adj[cAdjInd] = ii;
             sym_adj[iAdjInd] = colIndex;
           }
         }
         else {
-          idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)),1);
+          idx cAdjInd = Kokkos::atomic_fetch_add(&(pre_pps(colIndex)), INTTYPE(1));
           sym_adj[cAdjInd] = ii;
         }
       }
@@ -430,6 +432,7 @@ struct FillSymmetricEdgeList_HashMap{
 
   KOKKOS_INLINE_FUNCTION
   void operator()(const team_member_t & teamMember) const {
+    using INTTYPE = typename std::remove_reference<decltype(pps(idx(0)))>::type;
     idx ii = teamMember.league_rank()  * teamMember.team_size()+ teamMember.team_rank();
     if (ii >= num_rows) {
       return;
@@ -445,7 +448,7 @@ struct FillSymmetricEdgeList_HashMap{
       if (colIndex < num_rows){
         if (colIndex < ii){
           if (umap.insert(Kokkos::pair<idx, idx>(colIndex, ii)).success()){
-            idx cAdjInd = Kokkos::atomic_fetch_add(&(pps(colIndex)),1);
+            idx cAdjInd = Kokkos::atomic_fetch_add(&(pps(colIndex)), INTTYPE(1));
             sym_src[cAdjInd] = colIndex;
             sym_dst[cAdjInd] = ii;
           }

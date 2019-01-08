@@ -426,6 +426,8 @@ private:
     void operator()(const team_member_t & teamMember) const {
 
 
+      using INTTYPE = typename std::remove_reference<
+          decltype(lower_xadj_counts(nnz_lno_t(0)))>::type;
       nnz_lno_t ii = teamMember.league_rank()  * teamMember.team_size()+ teamMember.team_rank();
       if (ii >= nv) {
         return;
@@ -441,8 +443,7 @@ private:
         size_type adjind = i + xadj_begin;
         nnz_lno_t n = adj[adjind];
         if (ii < n && n < nv){
-          size_type position =
-              Kokkos::atomic_fetch_add( &(lower_xadj_counts(ii)), 1);
+          size_type position = Kokkos::atomic_fetch_add(&(lower_xadj_counts(ii)), INTTYPE(1));
           lower_srcs(position) = ii;
           lower_dsts(position) = n;
         }

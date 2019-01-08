@@ -49,7 +49,9 @@ extern "C" {
 
 #ifndef UF_long
 
-#ifdef _WIN64
+// Code calls UF_long functions with long int, which is long on Win64
+// #ifdef _WIN64
+#if 0
 
 #define UF_long __int64
 #define UF_long_max _I64_MAX

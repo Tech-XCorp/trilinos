@@ -80,13 +80,13 @@ private:
 
   //----------------------------------------
 
-  struct VOID {};
+  struct VOID_STR {};
 
   template< typename P = Policy , typename = std::false_type >
   struct has_work_tag
     {
       using type = void ;
-      using wtag = VOID ;
+      using wtag = VOID_STR ;
     };
 
   template< typename P >
@@ -231,7 +231,7 @@ private:
 
   // Stub to avoid defining a type 'void &'
   using ValueType = typename
-    std::conditional< candidate_is_void , VOID , value_type >::type ;
+    std::conditional< candidate_is_void , VOID_STR , value_type >::type ;
 
 public:
 

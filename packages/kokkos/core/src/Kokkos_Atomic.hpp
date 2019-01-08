@@ -73,6 +73,7 @@
 
 //----------------------------------------------------------------------------
 #if defined(_WIN32)
+// #if defined(_WIN32) && !defined(__clang__)
 #define KOKKOS_ENABLE_WINDOWS_ATOMICS
 #else
 #if defined( KOKKOS_ENABLE_CUDA )
@@ -155,6 +156,19 @@ KOKKOS_INLINE_FUNCTION
 void atomic_add(volatile T * const dest, const T src);
 
 // Atomic increment
+#ifdef _WIN32
+
+template<typename T>
+KOKKOS_INLINE_FUNCTION
+T atomic_increment(volatile T* const a);
+
+template<typename T>
+KOKKOS_INLINE_FUNCTION
+T atomic_decrement(volatile T* const a);
+}
+
+#else
+
 template<typename T>
 KOKKOS_INLINE_FUNCTION
 void atomic_increment(volatile T* a);
@@ -163,6 +177,8 @@ template<typename T>
 KOKKOS_INLINE_FUNCTION
 void atomic_decrement(volatile T* a);
 }
+
+#endif
 
 namespace Kokkos {
 
@@ -186,6 +202,7 @@ const char * atomic_query_version()
 } // namespace Kokkos
 
 #ifdef _WIN32
+// #if defined(_WIN32) && !defined(__clang__)
 #include "impl/Kokkos_Atomic_Windows.hpp"
 #else
 

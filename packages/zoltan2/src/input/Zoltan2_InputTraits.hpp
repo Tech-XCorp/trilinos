@@ -68,6 +68,12 @@
 #include <Xpetra_CrsGraph.hpp>
 #include <Kokkos_DefaultNode.hpp>
 
+// Make sure ssize_t is defined
+#ifdef _WIN32
+#include <cstddef>
+#define ssize_t ptrdiff_t
+#endif
+
 namespace Zoltan2{
 
 // Default local ordinal

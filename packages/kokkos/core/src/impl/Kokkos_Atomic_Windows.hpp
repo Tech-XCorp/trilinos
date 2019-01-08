@@ -202,7 +202,7 @@ namespace Kokkos {
 
   template< typename T >
   void atomic_assign(volatile T * const dest, const T val) {
-    atomic_fetch_exchange(dest, val);
+    atomic_exchange(dest, val);
   }
 
   template< typename T >

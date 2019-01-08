@@ -50,6 +50,7 @@
 #include <Kokkos_ExecPolicy.hpp>
 #include <impl/Kokkos_FunctorAdapter.hpp>
 #include <impl/Kokkos_FunctorAnalysis.hpp>
+#include <algorithm>
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
