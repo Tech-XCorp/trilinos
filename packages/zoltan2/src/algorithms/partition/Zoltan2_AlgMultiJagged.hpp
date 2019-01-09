@@ -130,17 +130,19 @@ class Clock {
 static Clock clock_mj_1D_part_init("        clock_mj_1D_part_init", false);
 static Clock clock_mj_1D_part_init2("        clock_mj_1D_part_init2", false);
 static Clock clock_mj_1D_part_while_loop("        clock_mj_1D_part_while_loop", false);
+static Clock clock_swap("          clock_swap", false);
+static Clock clock_host_copies("          clock_host_copies", false);
 static Clock clock_mj_1D_part_get_weights_init("          clock_mj_1D_part_get_weights_init", false);
 static Clock clock_mj_1D_part_get_weights_setup("          clock_mj_1D_part_get_weights_setup", false);
 static Clock clock_mj_1D_part_get_weights("          clock_mj_1D_part_get_weights", false);
 static Clock clock_weights1("            clock_weights1", false);
 static Clock clock_weights2("            clock_weights2", false);
 static Clock clock_weights3("            clock_weights3", false);
-static Clock clock_functor1("              clock_functor1", false);
+static Clock clock_functor_weights("              clock_functor_weights", false);
 static Clock clock_weights4("            clock_weights4", false);
 static Clock clock_weights5("            clock_weights5", false);
 static Clock clock_weights6("            clock_weights6", false);
-static Clock clock_functor2("              clock_functor2", false);
+static Clock clock_functor_rightleft_closest("              clock_functor_rightleft_closest", false);
 static Clock clock_mj_accumulate_thread_results("          clock_mj_accumulate_thread_results", false);
 static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
 static Clock clock_mj_get_new_cut_coordinates("          clock_mj_get_new_cut_coordinates", false);
@@ -3583,6 +3585,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     mj_part_t concurrent_cut_shifts = 0;
     size_t total_part_shift = 0;
 
+    clock_host_copies.start();
+
     // Pull the values for num cuts
     typename std::remove_reference<
       decltype (view_num_partitioning_in_current_dim)>::type::HostMirror
@@ -3597,6 +3601,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       Kokkos::create_mirror_view(kokkos_my_incomplete_cut_count);
     Kokkos::deep_copy(host_kokkos_my_incomplete_cut_count,
       kokkos_my_incomplete_cut_count);
+
+    clock_host_copies.stop();
       
     for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
@@ -3862,6 +3868,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       // swap the cut coordinates for next iteration
       // TODO: Need to figure this out - how to swap cleanly with Cuda/Kokkos
       // This is inefficient as a test to get some basic cuda up and running
+
+      clock_swap.start();
+
       Kokkos::parallel_for((int) local_kokkos_temp_cut_coords.size(),
         KOKKOS_LAMBDA(int n) { 
         // for(int n = 0; n < (int) local_kokkos_temp_cut_coords.size(); ++n) {
@@ -3870,6 +3879,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
           local_kokkos_cut_coordinates_work_array(n);
         local_kokkos_cut_coordinates_work_array(n) = t;
       });
+
+      clock_swap.stop();
     }
   } // end of the while loop
 
@@ -4010,7 +4021,44 @@ struct ReduceWeightsFunctorInnerLoop {
     int i = permutations(ii);
     scalar_t coord = coordinates(i);
     scalar_t w = bUniformWeights ? 1 : weights(i,0);
+#ifdef NEW_FORM
+    auto checking = (int) parts(i);
+    scalar_t a;
 
+    checking = 0;
+
+    if(checking < 0) checking = 0;
+    if(checking > num_cuts * 2) checking = num_cuts * 2;
+
+    bool bRun = true;
+    while(bRun) {
+      if(checking % 2 == 0) {
+        auto part = checking / 2;
+        a = (part > 0) ? cut_coordinates(part-1) : -9999999.9f; // to do fix range
+        scalar_t b = (part < num_cuts) ? cut_coordinates(part) : 999999.9f; // to do fix range
+        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+          threadSum.ptr[part*2] += w;
+          parts(i) = part*2;
+          bRun = false;
+        }
+      }
+      else {
+        auto cut = checking / 2;
+        a = cut_coordinates(cut);
+        if(coord < a + sEpsilon && coord > a - sEpsilon) {
+          threadSum.ptr[cut*2+1] += w;
+          parts(i) = cut*2+1;
+          bRun = false;
+        }
+      }
+      if(coord < a) {
+        --checking;
+      }           
+      else {
+        ++checking;
+      }
+    }
+#else
     // check part 0
     scalar_t b = cut_coordinates(0);
     if(coord <= b - sEpsilon) {
@@ -4048,8 +4096,8 @@ struct ReduceWeightsFunctorInnerLoop {
       threadSum.ptr[num_cuts*2] += w;
       parts(i) = num_cuts*2;
     }
+#endif
   }
-
 };
 
 template<class policy_t, class scalar_t, class part_t,
@@ -4522,12 +4570,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   mj_scalar_t * part_weights = new mj_scalar_t[weight_array_size];
 
-  clock_functor1.start();
+  clock_functor_weights.start();
 
+//Clock weight_single("single", true);
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
+//weight_single.stop(true);
 
-  clock_functor1.stop();
+  clock_functor_weights.stop();
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
@@ -4592,7 +4642,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   // parallel loop
   mj_scalar_t * left_max_right_min_values = new mj_scalar_t[(num_cuts+2)*2];
 
-  clock_functor2.start();
+  clock_functor_rightleft_closest.start();
 
   auto policy_RightLeftClosestFunctor =
     policy_t(SET_NUM_TEAMS_RightLeftClosestFunctor, Kokkos::AUTO);
@@ -4600,7 +4650,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
     rightLeftClosestFunctor, left_max_right_min_values);
     
-  clock_functor2.stop();
+  clock_functor_rightleft_closest.stop();
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
@@ -7672,6 +7722,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       
   clock_mj_create_new_partitions.reset();
   clock_mj_1D_part_while_loop.reset();
+  clock_host_copies.reset();
+  clock_swap.reset();
   clock_mj_1D_part_init.reset();
   clock_mj_1D_part_init2.reset();
   clock_mj_1D_part_get_weights_init.reset();
@@ -7680,11 +7732,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights1.reset();
   clock_weights2.reset();
   clock_weights3.reset();
-  clock_functor1.reset();
+  clock_functor_weights.reset();
   clock_weights4.reset();
   clock_weights5.reset();
   clock_weights6.reset();
-  clock_functor2.reset();
+  clock_functor_rightleft_closest.reset();
   clock_mj_accumulate_thread_results.reset();
   clock_mj_get_new_cut_coordinates_init.reset();
   clock_mj_get_new_cut_coordinates.reset();
@@ -7775,9 +7827,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_multi_jagged_part_init.stop();
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
 
-  Clock clock_loopA("    clock_loop_A", false);
-  Clock clock_loopB("    clock_loop_B", false);
-
+  Clock clock_loopA("    clock_loopA", false);
+  Clock clock_main_loop("    clock_main_loop", false);
+  Clock clock_main_loop_setup("      clock_main_loop_setup", false);
+  Clock clock_mj_get_local_min_max_coord_totW(
+    "      clock_mj_get_local_min_max_coord_totW", false);
+  Clock clock_mj_get_global_min_max_coord_totW(
+    "      clock_mj_get_global_min_max_coord_totW", false);
+  Clock clock_main_loop_inner("      clock_main_loop_inner", false);
+  Clock clock_main_loop_inner2("      clock_main_loop_inner2", false);
   Clock clock_mj_get_initial_cut_coords_target_weights(
     "      clock_mj_get_initial_cut_coords_target_weights", false);
   Clock clock_set_initial_coordinate_parts(
@@ -7881,11 +7939,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_part_t obtained_part_index = 0;
 
     clock_loopA.stop();
-    clock_loopB.start();
+    clock_main_loop.start();
 
     // run for all available parts.
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
+
+      clock_main_loop_setup.start();
+       
       current_concurrent_num_parts =
         std::min(current_num_parts - current_work_part,
         this->max_concurrent_part_calculation);
@@ -7903,19 +7964,29 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }, bDoingWork_int);
       bool bDoingWork = (bDoingWork_int != 0) ? true : false;
 
+      clock_main_loop_setup.stop();
+
+      clock_mj_get_local_min_max_coord_totW.start();
 
       this->mj_get_local_min_max_coord_totW(
         current_work_part,
         current_concurrent_num_parts,
         kokkos_mj_current_dim_coords);
 
+      clock_mj_get_local_min_max_coord_totW.stop();
+
       // 1D partitioning
       if (bDoingWork) {
+
+        clock_mj_get_global_min_max_coord_totW.start();
+
         // obtain global Min max of the part.
         this->mj_get_global_min_max_coord_totW(
           current_concurrent_num_parts,
           this->kokkos_process_local_min_max_coord_total_weight,
           this->kokkos_global_min_max_coord_total_weight);
+
+        clock_mj_get_global_min_max_coord_totW.stop();
 
         // represents the total number of cutlines
         // whose coordinate should be determined.
@@ -7928,6 +7999,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         mj_part_t concurrent_part_part_shift = 0;
 
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+
+
+          clock_main_loop_inner.start();
+
           // same as above - temporary measure to pull these values to host
           // I want to avoid making a parallel loop here for now so I get
           // internal loops running. Then revisit this. TODO: clean it up
@@ -7979,10 +8054,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           // shift the partRatio array as noParts.
           concurrent_part_part_shift += partition_count;
 
+          clock_main_loop_inner.stop();
+
           // calculate only if part is not empty,
           // and part will be further partitioned.
           if(partition_count > 1 && min_coordinate <= max_coordinate) {
 
+            clock_main_loop_inner2.start();
+          
             // increase num_cuts_do_be_determined by the number of cuts of the
             // current part's cut line number.
             total_incomplete_cut_count += partition_count - 1;
@@ -7998,6 +8077,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
             });
                    
+            clock_main_loop_inner2.stop();
+
             // get the target weights of the parts.
             clock_mj_get_initial_cut_coords_target_weights.start();
             this->mj_get_initial_cut_coords_target_weights(
@@ -8291,7 +8372,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       clock_new_part_chunks.stop();
     }
 
-    clock_loopB.stop();
+    clock_main_loop.stop();
 
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
@@ -8390,8 +8471,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_multi_jagged_part_loop.print();
   clock_loopA.print();
-  clock_loopB.print();
-
+  clock_main_loop.print();
+  clock_main_loop_setup.print();
+  clock_mj_get_local_min_max_coord_totW.print();
+  clock_mj_get_global_min_max_coord_totW.print();
+  clock_main_loop_inner.print();
+  clock_main_loop_inner2.print();
   clock_mj_get_initial_cut_coords_target_weights.print();
   clock_set_initial_coordinate_parts.print();
 
@@ -8400,6 +8485,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_1D_part_init.print();
   clock_mj_1D_part_init2.print();
   clock_mj_1D_part_while_loop.print();
+  clock_host_copies.print();
   clock_mj_1D_part_get_weights_init.print();
   clock_mj_1D_part_get_weights_setup.print();
   clock_mj_1D_part_get_weights.print();
@@ -8407,11 +8493,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights1.print();
   clock_weights2.print();
   clock_weights3.print();
-  clock_functor1.print();
+  clock_functor_weights.print();
   clock_weights4.print();
   clock_weights5.print();
   clock_weights6.print();
-  clock_functor2.print();
+  clock_functor_rightleft_closest.print();
 
   clock_mj_accumulate_thread_results.print();
 
@@ -8420,6 +8506,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_get_new_cut_coordinates_init.print();
   clock_mj_get_new_cut_coordinates.print();
   clock_mj_get_new_cut_coordinates_end.print();
+  clock_swap.print();
 
   clock_mj_1D_part_end.print();
 
