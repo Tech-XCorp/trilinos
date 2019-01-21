@@ -718,7 +718,7 @@ private:
   // necessary because previous cut line information is used for determining
   // the next cutline information. therefore, cannot update the cut work array
   // until all cutlines are determined.
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_coordinates_work_array[MAX_WORKING_PARTS];
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_coordinates_work_array;
   
   // Used for swapping above kokkos_cut_coordinates_work_array
   Kokkos::View<mj_scalar_t **, device_t> kokkos_temp_cut_coords;
@@ -2798,11 +2798,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // necessary because previous cut line information is used for determining
   // the next cutline information. therefore, cannot update the cut work array
   // until all cutlines are determined.
-  for(int n = 0; n < MAX_WORKING_PARTS; ++n) {
-    this->kokkos_cut_coordinates_work_array[n] =
-      Kokkos::View<mj_scalar_t *, device_t>("kokkos_cut_coordinates_work_array",
-      this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-  }
+  this->kokkos_cut_coordinates_work_array =
+    Kokkos::View<mj_scalar_t **, device_t>("kokkos_cut_coordinates_work_array",
+    this->max_working_parts,
+    this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
   
   // cumulative part weight array.
   for(int n = 0; n < MAX_WORKING_PARTS; ++n) {
@@ -3541,7 +3540,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_total_part_weight_left_right_closests =
     kokkos_total_part_weight_left_right_closests;
   auto local_kokkos_cut_coordinates_work_array =
-    kokkos_cut_coordinates_work_array[current_work_part];
+      Kokkos::subview(kokkos_cut_coordinates_work_array,
+      current_work_part, Kokkos::ALL);
   auto local_kokkos_part_xadj = kokkos_part_xadj;
   auto local_kokkos_global_min_max_coord_total_weight =
     kokkos_global_min_max_coord_total_weight;
