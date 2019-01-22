@@ -4177,67 +4177,10 @@ struct ReduceWeightsFunctor {
       sEpsilon,
       num_cuts);
 
-//    if(teamMember.team_size() == 0) printf("dummy\n");
-
-    if(teamMember.league_rank() == 0) {
-      printf("Inner loop runs %d - %d\n", all_begin, all_end);
-    }
-    
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       inner_functor, arraySumReducer);
 
-/*
-    // this pointless line of code is resolving an intermittent
-    // failure which occurs after rebasing to latest develop.
-    // TODO: Resolve why this happens
-    if(teamMember.team_size() == 0) printf("dummy\n");
-
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
-      int i = permutations(ii);
-      scalar_t coord = coordinates(i);
-      scalar_t w = bUniformWeights ? 1 : weights(i,0);
-
-      // check part 0
-      scalar_t b = cut_coordinates(0);
-      if(coord <= b - sEpsilon) {
-        threadSum.ptr[0] += w;
-        parts(i) = 0;
-      }
-
-      // check cut 0
-      if( coord < b + sEpsilon && coord > b - sEpsilon) {
-        threadSum.ptr[1] += w;
-        parts(i) = 1;
-      }
- 
-      scalar_t a;
- 
-      // now check each part and it's right cut
-      for(index_t part = 1; part < num_cuts; ++part) {
-        a = b; 
-        b = cut_coordinates(part);
-
-        if(coord < b + sEpsilon && coord > b - sEpsilon) {
-          threadSum.ptr[part*2+1] += w;
-          parts(i) = part*2+1;
-        }
-        
-        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-          threadSum.ptr[part*2] += w;
-          parts(i) = part*2;
-        }
-      }
-
-      // check last part
-      a = b;
-      if(coord >= a + sEpsilon) {
-        threadSum.ptr[num_cuts*2] += w;
-        parts(i) = num_cuts*2;
-      }
-    }, arraySumReducer);
-*/
     teamMember.team_barrier();
 
     // collect all the team's results
@@ -7935,8 +7878,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
-      printf("current_work_part: %d\n", (int) current_work_part);
-      
+
       current_concurrent_num_parts =
         std::min(current_num_parts - current_work_part,
         this->max_concurrent_part_calculation);
@@ -7984,8 +7926,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
           
           if(kk != 0) {
-            std::abort();
             printf("Currently current_concurrent_num_parts not refactored!\n");
+            std::abort();
           }
           
           // same as above - temporary measure to pull these values to host
@@ -8148,10 +8090,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         
         this->mj_env->timerStart(MACRO_TIMERS,
           "MultiJagged - Problem_Partitioning mj_1D_part()");
-       
-        printf("Calling OLD mj_1D_part with total_incomplete_cut_count: %d current_work_part: %d\n", (int) total_incomplete_cut_count,
-          (int) current_work_part);
-        
+
         this->mj_1D_part(
           kokkos_mj_current_dim_coords,
           used_imbalance,
@@ -8201,8 +8140,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         
         this->mj_env->timerStart(MACRO_TIMERS,
           "MultiJagged - Problem_Partitioning mj_1D_part()");
-       
-        printf("Calling NEW mj_1D_part with total_incomplete_cut_count: %d   current_work_part: %d\n", (int) runInfo[current_work_part].total_incomplete_cut_count, (int) current_work_part);
 
         this->mj_1D_part(
           kokkos_mj_current_dim_coords,
