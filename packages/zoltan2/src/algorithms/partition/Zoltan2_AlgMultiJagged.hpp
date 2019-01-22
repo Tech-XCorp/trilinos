@@ -2022,9 +2022,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
-              std::pair<mj_lno_t, mj_lno_t>(
-                concurrent_part_cut_shift,
-                kokkos_current_cut_coordinates.size()));
+            current_work_part,
+            std::pair<mj_lno_t, mj_lno_t>(
+              concurrent_part_cut_shift,
+              kokkos_current_cut_coordinates.extent(1)));
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_target_part_weights =
             Kokkos::subview(kokkos_target_part_weights,
@@ -2150,9 +2151,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_concurrent_cut_coordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
-              std::pair<mj_lno_t, mj_lno_t>(
-                cut_shift,
-                kokkos_current_cut_coordinates.size()));
+            current_work_part,
+            std::pair<mj_lno_t, mj_lno_t>(
+              cut_shift,
+              kokkos_current_cut_coordinates.extent(1)));
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_used_local_cut_line_weight_to_left =
             Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
