@@ -615,9 +615,6 @@ private:
   
   // how many parts we can calculate concurrently.
   mj_part_t max_concurrent_part_calculation;
-  
-  // new testing idea
-  #define MAX_WORKING_PARTS 10 // For a trial refactor
 
   bool mj_run_as_rcb; // means recursion depth is adjusted to maximum value.
   int mj_user_recursion_depth; // the recursion depth value provided by user.
@@ -704,7 +701,8 @@ private:
   // work array for beginning and end of each part.
   Kokkos::View<mj_lno_t *, device_t> kokkos_new_part_xadj;
 
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_all_cut_coordinates;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_all_cut_coordinates;
   
   // how much weight should a MPI put left side of the each cutline
   Kokkos::View<mj_scalar_t **, device_t>
@@ -721,7 +719,8 @@ private:
   Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_coordinates_work_array;
   
   // Used for swapping above kokkos_cut_coordinates_work_array
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_temp_cut_coords;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_temp_cut_coords;
 
   // cumulative part weight array.
   Kokkos::View<mj_scalar_t **, device_t> kokkos_target_part_weights;
@@ -977,7 +976,8 @@ private:
     mj_scalar_t imbalanceTolerance,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
-    Kokkos::View<mj_scalar_t **, device_t> kokkos_current_cut_coordinates,
+    Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+      kokkos_current_cut_coordinates,
     mj_part_t total_incomplete_cut_count,
     Kokkos::View<mj_part_t*, device_t> &
       view_num_partitioning_in_current_dim,
@@ -1758,8 +1758,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   mj_part_t current_num_parts = 1;
 
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_current_cut_coordinates =
-    this->kokkos_all_cut_coordinates;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
 
   mj_part_t future_num_parts = this->total_num_part;
 
@@ -2022,10 +2022,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
-            current_work_part,
             std::pair<mj_lno_t, mj_lno_t>(
               concurrent_part_cut_shift,
-              kokkos_current_cut_coordinates.extent(1)));
+              kokkos_current_cut_coordinates.extent(0)),
+            current_work_part);
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_target_part_weights =
             Kokkos::subview(kokkos_target_part_weights,
@@ -2151,10 +2151,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_concurrent_cut_coordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
-            current_work_part,
             std::pair<mj_lno_t, mj_lno_t>(
               cut_shift,
-              kokkos_current_cut_coordinates.extent(1)));
+              kokkos_current_cut_coordinates.extent(0)),
+            current_work_part);
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_used_local_cut_line_weight_to_left =
             Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
@@ -2764,11 +2764,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
 
   // only store this much if cuts are needed to be stored.
-  // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
-  this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t**, device_t>(
-    "all cut coordinates",
-    this->max_working_parts,
-    this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+  this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t**,
+    Kokkos::LayoutLeft, device_t>("all cut coordinates",
+    this->max_num_cut_along_dim * this->max_concurrent_part_calculation,
+    this->max_working_parts);
       
   // how much weight percentage should a MPI put left side of the each cutline
   this->kokkos_process_cut_line_weight_to_put_left =
@@ -3478,7 +3477,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_scalar_t used_imbalance_tolerance,
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_current_cut_coordinates,
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_current_cut_coordinates,
   mj_part_t total_incomplete_cut_count,
   Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
   Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
@@ -3544,7 +3544,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
   auto local_kokkos_temp_cut_coords =
       Kokkos::subview(kokkos_temp_cut_coords,
-      current_work_part, Kokkos::ALL);
+      Kokkos::ALL, current_work_part);
   auto local_kokkos_global_total_part_weight_left_right_closests =
     kokkos_global_total_part_weight_left_right_closests;
   auto local_kokkos_total_part_weight_left_right_closests =
@@ -3666,7 +3666,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
           std::pair<mj_lno_t, mj_lno_t>(concurrent_cut_shifts,
               local_kokkos_thread_cut_right_closest_point.size()));
               
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
+        Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+          kokkos_temp_current_cut_coords =
           Kokkos::subview(local_kokkos_temp_cut_coords,
           std::pair<mj_lno_t, mj_lno_t>(
             concurrent_cut_shifts, local_kokkos_temp_cut_coords.size()));
@@ -3926,7 +3927,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
               view_num_partitioning_in_current_dim(current_work_part + i);
             mj_part_t num_cuts = num_parts - 1;
             for(mj_part_t ii = 0; ii < num_cuts; ++ii){
-              kokkos_current_cut_coordinates(current_work_part, next + ii) =
+              kokkos_current_cut_coordinates(next + ii, current_work_part) =
                 local_kokkos_temp_cut_coords(next + ii);
             }
             next += num_cuts;
@@ -7724,8 +7725,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // initially there is a single partition
   mj_part_t current_num_parts = 1;
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_current_cut_coordinates =
-    this->kokkos_all_cut_coordinates;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_current_cut_coordinates = this->kokkos_all_cut_coordinates;
   this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Problem_Partitioning");
   mj_part_t output_part_begin_index = 0;
   mj_part_t future_num_parts = this->total_num_part;
@@ -7964,10 +7965,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               concurrent_current_part_index);
           }, partition_count);
 
-          Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate(
-              kokkos_current_cut_coordinates, current_work_part,
-              std::pair<mj_lno_t, mj_lno_t>(concurrent_part_cut_shift,
-                kokkos_current_cut_coordinates.extent(1)));
+          Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
+            kokkos_usedCutCoordinate(kokkos_current_cut_coordinates,
+            std::pair<mj_lno_t, mj_lno_t>(concurrent_part_cut_shift,
+              kokkos_current_cut_coordinates.extent(0)), current_work_part);
               
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_target_part_weights =
@@ -8214,9 +8215,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_concurrent_cut_coordinate =
-            Kokkos::subview(kokkos_current_cut_coordinates, current_work_part,
+            Kokkos::subview(kokkos_current_cut_coordinates,
               std::pair<mj_lno_t, mj_lno_t>(cut_shift,
-                kokkos_current_cut_coordinates.extent(1)));
+                kokkos_current_cut_coordinates.extent(0)),
+              current_work_part);
 
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_used_local_cut_line_weight_to_left =
