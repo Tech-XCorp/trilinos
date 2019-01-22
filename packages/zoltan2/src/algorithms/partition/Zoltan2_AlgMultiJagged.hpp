@@ -727,16 +727,16 @@ private:
   Kokkos::View<mj_scalar_t **, device_t> kokkos_target_part_weights;
 
   // upper bound coordinate of a cut line
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_coordinates[MAX_WORKING_PARTS];
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_upper_bound_coordinates;
   
   // lower bound coordinate of a cut line
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_coordinates[MAX_WORKING_PARTS];
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_lower_bound_coordinates;
 
   // lower bound weight of a cut line
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_lower_bound_weights[MAX_WORKING_PARTS];
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_lower_bound_weights;
   
   // upper bound weight of a cut line  
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_cut_upper_bound_weights[MAX_WORKING_PARTS];
+  Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_upper_bound_weights;
 
   // combined array to exchange the min and max coordinate, and total
   // weight of part.
@@ -2810,27 +2810,29 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->max_working_parts,
     this->max_num_part_along_dim * this->max_concurrent_part_calculation);
   
-  for(int n = 0; n < MAX_WORKING_PARTS; ++n) {
-    // upper bound coordinate of a cut line
-    this->kokkos_cut_upper_bound_coordinates[n] =
-      Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_upper_bound_coordinates",
-      this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
-      
-    // lower bound coordinate of a cut line  
-    this->kokkos_cut_lower_bound_coordinates[n] =
-      Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_lower_bound_coordinates",
-      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
+  // upper bound coordinate of a cut line
+  this->kokkos_cut_upper_bound_coordinates =
+    Kokkos::View<mj_scalar_t**, device_t>("kokkos_cut_upper_bound_coordinates",
+    this->max_working_parts,
+    this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+    
+  // lower bound coordinate of a cut line  
+  this->kokkos_cut_lower_bound_coordinates =
+    Kokkos::View<mj_scalar_t**, device_t>("kokkos_cut_lower_bound_coordinates",
+    this->max_working_parts,
+    this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
-    // lower bound weight of a cut line
-    this->kokkos_cut_lower_bound_weights[n] =
-      Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_lower_bound_weights",
-      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
+  // lower bound weight of a cut line
+  this->kokkos_cut_lower_bound_weights =
+    Kokkos::View<mj_scalar_t**, device_t>("kokkos_cut_lower_bound_weights",
+    this->max_working_parts,
+    this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
-    //upper bound weight of a cut line
-    this->kokkos_cut_upper_bound_weights[n] =
-      Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_upper_bound_weights",
-      this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
-  }
+  //upper bound weight of a cut line
+  this->kokkos_cut_upper_bound_weights =
+    Kokkos::View<mj_scalar_t**, device_t>("kokkos_cut_upper_bound_weights",
+    this->max_working_parts,
+    this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
   // combined array to exchange the min and max coordinate,
   // and total weight of part.
@@ -3522,13 +3524,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     kokkos_thread_cut_right_closest_point;
   auto local_kokkos_is_cut_line_determined = kokkos_is_cut_line_determined;
   auto local_kokkos_cut_lower_bound_coordinates =
-    kokkos_cut_lower_bound_coordinates[current_work_part];
+      Kokkos::subview(kokkos_cut_lower_bound_coordinates,
+      current_work_part, Kokkos::ALL);
   auto local_kokkos_cut_upper_bound_coordinates =
-    kokkos_cut_upper_bound_coordinates[current_work_part];
+      Kokkos::subview(kokkos_cut_upper_bound_coordinates,
+      current_work_part, Kokkos::ALL);
   auto local_kokkos_cut_upper_bound_weights =
-    kokkos_cut_upper_bound_weights[current_work_part];
+      Kokkos::subview(kokkos_cut_upper_bound_weights,
+      current_work_part, Kokkos::ALL);
   auto local_kokkos_cut_lower_bound_weights =
-    kokkos_cut_lower_bound_weights[current_work_part];
+      Kokkos::subview(kokkos_cut_lower_bound_weights,
+      current_work_part, Kokkos::ALL);
   bool local_distribute_points_on_cut_lines = distribute_points_on_cut_lines;
   auto local_kokkos_process_cut_line_weight_to_put_left =
       Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
