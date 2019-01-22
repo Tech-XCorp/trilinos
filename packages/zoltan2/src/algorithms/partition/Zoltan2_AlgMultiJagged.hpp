@@ -724,7 +724,8 @@ private:
     kokkos_temp_cut_coords;
 
   // cumulative part weight array.
-  Kokkos::View<mj_scalar_t **, device_t> kokkos_target_part_weights;
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+    kokkos_target_part_weights;
 
   // upper bound coordinate of a cut line
   Kokkos::View<mj_scalar_t **, device_t> kokkos_cut_upper_bound_coordinates;
@@ -2030,10 +2031,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_target_part_weights =
             Kokkos::subview(kokkos_target_part_weights,
-              current_work_part,
               std::pair<mj_lno_t, mj_lno_t>(
                 concurrent_part_part_shift,
-                kokkos_target_part_weights.extent(1)));
+                kokkos_target_part_weights.extent(0)),
+              current_work_part);
 
           // shift the usedCutCoordinate array as noCuts.
           concurrent_part_cut_shift += partition_count - 1;
@@ -2808,10 +2809,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->max_working_parts);
   
   // cumulative part weight array.
-  this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t**, device_t>(
+  this->kokkos_target_part_weights =
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>(
     "kokkos_target_part_weights",
-    this->max_working_parts,
-    this->max_num_part_along_dim * this->max_concurrent_part_calculation);
+    this->max_num_part_along_dim * this->max_concurrent_part_calculation,
+    this->max_working_parts);
   
   // upper bound coordinate of a cut line
   this->kokkos_cut_upper_bound_coordinates =
@@ -3559,7 +3561,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     kokkos_global_min_max_coord_total_weight;
   auto local_kokkos_target_part_weights =
     Kokkos::subview(kokkos_target_part_weights,
-    current_work_part, Kokkos::ALL);
+    Kokkos::ALL, current_work_part);
   auto local_kokkos_global_rectilinear_cut_weight =
     kokkos_global_rectilinear_cut_weight;
   auto local_kokkos_process_rectilinear_cut_weight =
@@ -7975,10 +7977,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           Kokkos::View<mj_scalar_t *, device_t>
             kokkos_current_target_part_weights =
             Kokkos::subview(kokkos_target_part_weights,
-              current_work_part,
               std::pair<mj_lno_t, mj_lno_t>(
                 concurrent_part_part_shift,
-                kokkos_target_part_weights.extent(1)));
+                kokkos_target_part_weights.extent(0)),
+              current_work_part);
       
           // shift the usedCutCoordinate array as noCuts.
           concurrent_part_cut_shift += partition_count - 1;
