@@ -3575,6 +3575,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_process_rectilinear_cut_weight =
     kokkos_process_rectilinear_cut_weight;
 
+  auto local_kokkos_current_cut_coordinates =
+    Kokkos::subview(kokkos_current_cut_coordinates,
+    Kokkos::ALL, current_work_part);
+
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
@@ -3929,7 +3933,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     // cutCoordinates and cutCoordinatesWork.
     // (at first iteration, cutCoordinates == cutCoorindates_tmp).
     // computed cuts must be in cutCoordinates.
-    if (kokkos_current_cut_coordinates != kokkos_temp_cut_coords) {
+
+
+    // TODO: Need to resolve the ptr logic here as original forms could
+    // check ptr but now we have 2D kokkos array and subviews of each.    
+    if (local_kokkos_current_cut_coordinates !=
+      local_kokkos_temp_cut_coords) {
       if(team_member.league_rank() == 0) {
         Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
           mj_part_t next = 0;
@@ -3939,7 +3948,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
               view_num_partitioning_in_current_dim(current_work_part + i);
             mj_part_t num_cuts = num_parts - 1;
             for(mj_part_t ii = 0; ii < num_cuts; ++ii){
-              kokkos_current_cut_coordinates(next + ii, current_work_part) =
+              local_kokkos_current_cut_coordinates(next + ii) =
                 local_kokkos_temp_cut_coords(next + ii);
             }
             next += num_cuts;
