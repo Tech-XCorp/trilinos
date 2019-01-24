@@ -49,7 +49,7 @@
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
-//#define TRY_OLD_SYSTEM
+#define TRY_OLD_SYSTEM
 
 #include <Zoltan2_MultiJagged_ReductionOps.hpp>
 #include <Zoltan2_CoordinateModel.hpp>
@@ -8069,10 +8069,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               partition_count - 1;
 #endif
 
-            clock_main_loop_inner2.stop();
-                   
             // get the target weights of the parts.
             clock_mj_get_initial_cut_coords_target_weights.start();
+
             this->mj_get_initial_cut_coords_target_weights(
               min_coordinate,
               max_coordinate,
