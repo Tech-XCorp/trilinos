@@ -697,6 +697,16 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, tmVector);
     }
 
+    if (coordsConst->getGlobalLength() < 40) {
+        int len = coordsConst->getLocalLength();
+        const inputAdapter_t::part_t *zparts =
+                                      problem->getSolution().getPartListView();
+        for (int i = 0; i < len; i++)
+            std::cout << comm->getRank()
+            << " gid " << coordsConst->getMap()->getGlobalElement(i)
+            << " part " << zparts[i] << std::endl;
+    }
+
     if(numWeightsPerCoord){
         for(int i = 0; i < numWeightsPerCoord; ++i)
             delete [] weight[i];
@@ -707,6 +717,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
             delete [] coords[i];
         delete [] coords;
     }
+
     delete problem;
     delete ia;
     return ierr;
