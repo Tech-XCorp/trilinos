@@ -153,6 +153,9 @@ static Clock clock_write_globals("          clock_write_globals", false);
 static Clock clock_mj_1D_part_end("        clock_mj_1D_part_end", false);
 static Clock clock_mj_create_new_partitions("           clock_mj_create_new_partitions", false);
 
+static Clock clock_optimize_loop("clock_optimize_loop", false);
+static Clock clock_optimize_loop2("clock_optimize_loop2", false);
+
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
 #else
@@ -7682,6 +7685,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   std::cout << "Memory Space: " << mj_node_t::memory_space::name()
     << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
       
+  clock_optimize_loop.reset();
+  clock_optimize_loop2.reset();
+
   clock_mj_create_new_partitions.reset();
   clock_mj_1D_part_while_loop.reset();
   clock_host_copies.reset();
@@ -7917,7 +7923,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // used imbalance, it is always 0, as it is difficult to
     // estimate a range.
     mj_scalar_t used_imbalance = 0;
-    
+
+
+#ifndef TRY_OLD_SYSTEM
+    clock_optimize_loop.start();
+#endif
+ 
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -8061,8 +8072,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
             });
-            printf("partition count: %d\n", (int) partition_count);
-            
 #ifndef TRY_OLD_SYSTEM
             runInfo[current_work_part].set_incomplete_cut_count =
               partition_count - 1;
@@ -8174,7 +8183,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 #else // TRY_OLD_SYSTEM
       } // if bDoingWork
     }
-        
+
+    clock_optimize_loop.stop();
+    clock_optimize_loop2.start();
+
     // run for all available parts.
     for(current_work_part = 0; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
@@ -8220,8 +8232,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           clock_mj_1D_part.stop();
         }
       }
+    }
+
+    clock_optimize_loop2.stop();
 
 #endif // TRY_OLD_SYSTEM
+
+    // run for all available parts.
+    for(current_work_part = 0; current_work_part < current_num_parts;
+      current_work_part += current_concurrent_num_parts) {
 
       clock_new_part_chunks.start();
             
@@ -8564,7 +8583,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_create_new_partitions.print();
 
   clock_multi_jagged_part_finish.print();
-  
+ 
+  clock_optimize_loop.print();
+  clock_optimize_loop2.print();
   printf("-------------------------------------------------------\n");
 }
 
