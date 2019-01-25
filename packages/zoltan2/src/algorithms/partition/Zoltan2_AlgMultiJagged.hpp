@@ -765,7 +765,7 @@ private:
   // been finalized for each part when concurrentPartCount>1, using this
   // information, if my_incomplete_cut_count[x]==0, then no work is done
   // for this part.
-  Kokkos::View<mj_part_t *, device_t> kokkos_my_incomplete_cut_count;
+  Kokkos::View<mj_part_t **, device_t> kokkos_my_incomplete_cut_count;
 
   // local part weights of each thread.
   Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
@@ -2057,7 +2057,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             total_incomplete_cut_count += partition_count - 1;
             // set the number of cut lines that should be determined
             // for this part.
-            this->kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
+            this->kokkos_my_incomplete_cut_count(kk,current_work_part) = partition_count - 1;
             // get the target weights of the parts.
             this->mj_get_initial_cut_coords_target_weights(
               min_coordinate,
@@ -2091,7 +2091,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           else {
             // e.g., if have fewer coordinates than parts,
             // don't need to do next dim.
-            this->kokkos_my_incomplete_cut_count(kk) = 0;
+            this->kokkos_my_incomplete_cut_count(kk,current_work_part) = 0;
           }
           obtained_part_index += partition_count;
         }
@@ -2876,8 +2876,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // been finalized for each part when concurrentPartCount>1, using this
   // information, if my_incomplete_cut_count[x]==0, then no work is done for
   // this part.
-  this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, device_t>(
-    "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
+  this->kokkos_my_incomplete_cut_count = Kokkos::View<mj_part_t **, device_t>(
+    "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation,
+    this->max_working_parts);
 
   // local part weights of each thread.
   this->kokkos_thread_part_weights = Kokkos::View<double *,
@@ -3558,7 +3559,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_process_cut_line_weight_to_put_left =
     Kokkos::subview(kokkos_process_cut_line_weight_to_put_left,
     Kokkos::ALL, current_work_part);
-  auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
+  auto local_kokkos_my_incomplete_cut_count =
+    Kokkos::subview(kokkos_my_incomplete_cut_count,
+    Kokkos::ALL, current_work_part);
   auto local_kokkos_temp_cut_coords =
     Kokkos::subview(kokkos_temp_cut_coords,
     Kokkos::ALL, current_work_part);
@@ -3664,7 +3667,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       size_t total_part_count = num_parts + size_t (num_cuts);
 
       mj_part_t kk_kokkos_my_incomplete_cut_count
-        = host_kokkos_my_incomplete_cut_count(kk);
+        = host_kokkos_my_incomplete_cut_count(kk, current_work_part);
 
       clock_mj_1D_part_get_weights_init.stop();
 
@@ -3786,7 +3789,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       //just update the shift amount and proceed.
                
       mj_part_t kk_kokkos_my_incomplete_cut_count
-        = host_kokkos_my_incomplete_cut_count(kk);
+        = host_kokkos_my_incomplete_cut_count(kk, current_work_part);
 
       if (kk_kokkos_my_incomplete_cut_count == 0) {
         cut_shift += num_cuts;
