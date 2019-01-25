@@ -49,7 +49,7 @@
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
-#define TRY_OLD_SYSTEM
+// #define TRY_OLD_SYSTEM
 
 #include <Zoltan2_MultiJagged_ReductionOps.hpp>
 #include <Zoltan2_CoordinateModel.hpp>
@@ -4534,10 +4534,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_functor_weights.start();
 
-  Clock weight_single("single", true);
+//  Clock weight_single("single", true);
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
-  weight_single.stop(true);
+//  weight_single.stop(true);
 
   clock_functor_weights.stop();
 
@@ -7909,7 +7909,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     struct RunInfo {
       mj_part_t total_incomplete_cut_count;
       bool bDoingWork;
-      mj_part_t my_incomplete_cut_count;
+      mj_part_t set_incomplete_cut_count;
     };    
     RunInfo runInfo[current_num_parts]; 
 #endif
@@ -8054,7 +8054,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             //for this part.
             // TODO: eventually this is already in a parallel loop or we
             // clean this up, write to device
-#ifdef TRY_OLD_SYSTEM
             auto local_kokkos_my_incomplete_cut_count =
               this->kokkos_my_incomplete_cut_count;
             Kokkos::parallel_for(
@@ -8062,13 +8061,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
             });
-
-            clock_main_loop_inner2.stop();
-#else
-            runInfo[current_work_part].my_incomplete_cut_count =
+            printf("partition count: %d\n", (int) partition_count);
+            
+#ifndef TRY_OLD_SYSTEM
+            runInfo[current_work_part].set_incomplete_cut_count =
               partition_count - 1;
-#endif
-
+#endif 
+            clock_main_loop_inner2.stop();
+            
             // get the target weights of the parts.
             clock_mj_get_initial_cut_coords_target_weights.start();
 
@@ -8126,7 +8126,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             clock_set_initial_coordinate_parts.stop();
           }
           else {
-#ifdef TRY_OLD_SYSTEM
             // e.g., if have fewer coordinates than parts, don't need to do
             // next dim.
             auto local_kokkos_my_incomplete_cut_count =
@@ -8136,9 +8135,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk) = 0;
             });
-#else
-            runInfo[current_work_part].my_incomplete_cut_count = 0;
-#endif
+#ifndef TRY_OLD_SYSTEM
+            runInfo[current_work_part].set_incomplete_cut_count = 0;
+#endif 
           }
             
           obtained_part_index += partition_count;
@@ -8170,56 +8169,56 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           "MultiJagged - Problem_Partitioning mj_1D_part()");
 
         clock_mj_1D_part.stop();
-      }
+      } // if bDoingWork
 
 #else // TRY_OLD_SYSTEM
-      }
+      } // if bDoingWork
     }
         
     // run for all available parts.
     for(current_work_part = 0; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
-      
-      if(!runInfo[current_work_part].bDoingWork) {
-        continue;
-      }
+        
+      if(runInfo[current_work_part].bDoingWork) {
      
-      // TODO - temporarily ignoring this and assume 1
-      // See abort above if kk != 0 
-      // Need to add this data to the RunInfo loop
-      for(int kk = 0; kk < 1; ++kk) {
-
-        auto local_my_incomplete_cut_count =
-          runInfo[current_work_part].my_incomplete_cut_count;
-        auto local_kokkos_my_incomplete_cut_count =
-          this->kokkos_my_incomplete_cut_count;
-        Kokkos::parallel_for(
-          Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-            (0, 1), KOKKOS_LAMBDA (const int dummy) {
-            local_kokkos_my_incomplete_cut_count(kk) =
-              local_my_incomplete_cut_count;
-        });
-      
-        clock_mj_1D_part.start();
+        // TODO - temporarily ignoring this and assume 1
+        // See abort above if kk != 0 
+        // Need to add this data to the RunInfo loop
+        for(int kk = 0; kk < 1; ++kk) {
         
-        this->mj_env->timerStart(MACRO_TIMERS,
-          "MultiJagged - Problem_Partitioning mj_1D_part()");
+          auto local_kokkos_my_incomplete_cut_count =
+            this->kokkos_my_incomplete_cut_count;
+          auto local_set_incomplete_cut_count =
+            runInfo[current_work_part].set_incomplete_cut_count;
+            
+          Kokkos::parallel_for(
+            Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+              (0, 1), KOKKOS_LAMBDA (const int dummy) {
+              local_kokkos_my_incomplete_cut_count(kk) =
+                local_set_incomplete_cut_count;
+          });
+          
+          clock_mj_1D_part.start();
+          
+          this->mj_env->timerStart(MACRO_TIMERS,
+            "MultiJagged - Problem_Partitioning mj_1D_part()");
 
-        this->mj_1D_part(
-          kokkos_mj_current_dim_coords,
-          used_imbalance,
-          current_work_part,
-          current_concurrent_num_parts,
-          kokkos_current_cut_coordinates,
-          runInfo[current_work_part].total_incomplete_cut_count,
-          view_num_partitioning_in_current_dim,
-          view_rectilinear_cut_count,
-          view_total_reduction_size);
-        
-        this->mj_env->timerStop(MACRO_TIMERS,
-          "MultiJagged - Problem_Partitioning mj_1D_part()");
+          this->mj_1D_part(
+            kokkos_mj_current_dim_coords,
+            used_imbalance,
+            current_work_part,
+            current_concurrent_num_parts,
+            kokkos_current_cut_coordinates,
+            runInfo[current_work_part].total_incomplete_cut_count,
+            view_num_partitioning_in_current_dim,
+            view_rectilinear_cut_count,
+            view_total_reduction_size);
+          
+          this->mj_env->timerStop(MACRO_TIMERS,
+            "MultiJagged - Problem_Partitioning mj_1D_part()");
 
-        clock_mj_1D_part.stop();
+          clock_mj_1D_part.stop();
+        }
       }
 
 #endif // TRY_OLD_SYSTEM
