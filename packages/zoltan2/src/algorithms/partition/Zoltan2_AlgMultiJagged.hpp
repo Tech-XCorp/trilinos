@@ -1102,6 +1102,7 @@ private:
    * (whose cut lines are determined).
    */
   void mj_get_new_cut_coordinates(
+    mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
     mj_part_t kk,
     const size_t &num_total_part,
@@ -3873,6 +3874,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       // Now compute the new cut coordinates.
       this->mj_get_new_cut_coordinates(
+        current_work_part,
         current_concurrent_num_parts,
         kk,
         num_total_part,
@@ -5211,6 +5213,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   mj_node_t>::mj_get_new_cut_coordinates(
+  mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
   mj_part_t kk,
   const size_t &num_total_part,
@@ -5330,7 +5333,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         //if the cut line reaches to desired imbalance.
         if(is_left_imbalance_valid && is_right_imbalance_valid) {
           kokkos_current_cut_line_determined(i) = true;
-          Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
+          Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
           kokkos_new_current_cut_coordinates(i) =
             kokkos_current_cut_coordinates(i);
         }
@@ -5345,7 +5348,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               expected_weight_in_part) {
               // if it is we are done.
               kokkos_current_cut_line_determined(i) = true;
-              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
+              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
 
               //then assign everything on the cut to the left of the cut.
               kokkos_new_current_cut_coordinates(i) =
@@ -5365,7 +5368,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
 
               // increase the num cuts to be determined with rectilinear
               // partitioning.
-              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
+              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
               kokkos_new_current_cut_coordinates(i) =
                 kokkos_current_cut_coordinates(i);
               local_kokkos_process_rectilinear_cut_weight[i] =
@@ -5450,7 +5453,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               new_cut_position) < local_sEpsilon) {
               kokkos_current_cut_line_determined(i) = true;
               Kokkos::atomic_add(
-                &local_kokkos_my_incomplete_cut_count(kk), -1);
+                &local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
 
               //set the cut coordinate and proceed.
               kokkos_new_current_cut_coordinates(i) =
@@ -5532,7 +5535,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               new_cut_position) < local_sEpsilon) {
               kokkos_current_cut_line_determined(i) = true;
               Kokkos::atomic_add(
-                &local_kokkos_my_incomplete_cut_count(kk), -1);
+                &local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
               //set the cut coordinate and proceed.
               kokkos_new_current_cut_coordinates(i) =
                 kokkos_current_cut_coordinates(i);
@@ -8073,7 +8076,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
-                local_kokkos_my_incomplete_cut_count(kk) = partition_count - 1;
+                local_kokkos_my_incomplete_cut_count(kk, current_work_part) = partition_count - 1;
             });
 #ifndef TRY_OLD_SYSTEM
             runInfo[current_work_part].set_incomplete_cut_count =
@@ -8145,7 +8148,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
-                local_kokkos_my_incomplete_cut_count(kk) = 0;
+                local_kokkos_my_incomplete_cut_count(kk, current_work_part) = 0;
             });
 #ifndef TRY_OLD_SYSTEM
             runInfo[current_work_part].set_incomplete_cut_count = 0;
@@ -8205,11 +8208,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             this->kokkos_my_incomplete_cut_count;
           auto local_set_incomplete_cut_count =
             runInfo[current_work_part].set_incomplete_cut_count;
-            
+
           Kokkos::parallel_for(
             Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
               (0, 1), KOKKOS_LAMBDA (const int dummy) {
-              local_kokkos_my_incomplete_cut_count(kk) =
+              local_kokkos_my_incomplete_cut_count(kk, current_work_part) =
                 local_set_incomplete_cut_count;
           });
           
