@@ -3608,7 +3608,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       mj_part_t num_part_in_dim =
         view_num_partitioning_in_current_dim(current_work_part + i);
       mj_part_t num_cut_in_dim = num_part_in_dim - 1;
-      view_total_reduction_size(0) += (4 * num_cut_in_dim + 1);
+      view_total_reduction_size(current_work_part) += (4 * num_cut_in_dim + 1);
 
       for(mj_part_t ii = 0; ii < num_cut_in_dim; ++ii){
         local_kokkos_is_cut_line_determined(next) = false;
