@@ -1793,9 +1793,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // Need a device counter - how best to allocate?
   // Putting this allocation in the loops is very costly so moved out here.
   Kokkos::View<mj_part_t*, device_t>
-    view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
+    view_rectilinear_cut_count("view_rectilinear_cut_count",
+    this->max_working_parts);
   Kokkos::View<size_t*, device_t>
-    view_total_reduction_size("view_total_reduction_size", 1);
+    view_total_reduction_size("view_total_reduction_size",
+    this->max_working_parts);
 
   for (int i = 0; i < this->recursion_depth; ++i){
     // partitioning array. size will be as the number of current partitions
@@ -2502,7 +2504,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // then convert back to a view. Later we can probably handle all this stuff
   // on device but idea is to move the remaining refactor to a more localized
   // area (here) instead of all over.
-  
+
   // This got ugly quickly .... but it's at least partly temporary as I
   // refactor
   typename std::remove_reference<decltype(
@@ -3597,8 +3599,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(int dummy) {
 
     // these need to be initialized
-    view_rectilinear_cut_count(0) = 0;
-    view_total_reduction_size(0) = 0;
+    view_rectilinear_cut_count(current_work_part) = 0;
+    view_total_reduction_size(current_work_part) = 0;
 
     //initialize the lower and upper bounds of the cuts.
     mj_part_t next = 0;
@@ -3752,14 +3754,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         #ifndef KOKKOS_ENABLE_CUDA
         // TODO: Remove use of data() - refactor in progress
         reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
-          view_total_reduction_size(0),
+          view_total_reduction_size(current_work_part),
           this->kokkos_total_part_weight_left_right_closests.data(),
           this->kokkos_global_total_part_weight_left_right_closests.data());
         #endif
       }
       else {
         // TODO: Optimize and fix this c cast - clean up use of the view
-        for(int n = 0; n < (int) view_total_reduction_size(0); ++n) {
+        for(int n = 0;
+          n < (int) view_total_reduction_size(current_work_part); ++n) {
           local_kokkos_global_total_part_weight_left_right_closests(n) =
             local_kokkos_total_part_weight_left_right_closests(n);
         }
@@ -5364,7 +5367,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               // if the weight is larger than the expected weight,
               // then we need to distribute some points to left, some to right.
               kokkos_current_cut_line_determined(i) = true;
-              Kokkos::atomic_add(&view_rectilinear_cut_count(0), 1);
+              Kokkos::atomic_add(
+                &view_rectilinear_cut_count(current_work_part), 1);
 
               // increase the num cuts to be determined with rectilinear
               // partitioning.
@@ -5556,7 +5560,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       {
 
         Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-          if(view_rectilinear_cut_count(0) > 0) {
+          if(view_rectilinear_cut_count(current_work_part) > 0) {
           // try
           {
             // For cuda initial testing reduce this to a form ok for device
@@ -5642,7 +5646,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               }
             }
           }
-          view_rectilinear_cut_count(0) = 0;
+          view_rectilinear_cut_count(current_work_part) = 0;
         }
       });
       team_member.team_barrier(); // for end of Kokkos::single
@@ -7794,9 +7798,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // Need a device counter - how best to allocate?
   // Putting this allocation in the loops is very costly so moved out here.
   Kokkos::View<mj_part_t*, device_t>
-    view_rectilinear_cut_count("view_rectilinear_cut_count", 1);
+    view_rectilinear_cut_count("view_rectilinear_cut_count",
+    this->max_working_parts);
   Kokkos::View<size_t*, device_t>
-    view_total_reduction_size("view_total_reduction_size", 1);
+    view_total_reduction_size("view_total_reduction_size",
+    this->max_working_parts);
 
   clock_multi_jagged_part_init.stop();
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
@@ -7921,7 +7927,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     struct RunInfo {
       mj_part_t total_incomplete_cut_count;
       bool bDoingWork;
-      mj_part_t set_incomplete_cut_count;
     };    
     RunInfo runInfo[current_num_parts]; 
 #endif
@@ -8078,10 +8083,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk, current_work_part) = partition_count - 1;
             });
-#ifndef TRY_OLD_SYSTEM
-            runInfo[current_work_part].set_incomplete_cut_count =
-              partition_count - 1;
-#endif 
+
             clock_main_loop_inner2.stop();
             
             // get the target weights of the parts.
@@ -8150,9 +8152,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk, current_work_part) = 0;
             });
-#ifndef TRY_OLD_SYSTEM
-            runInfo[current_work_part].set_incomplete_cut_count = 0;
-#endif 
           }
             
           obtained_part_index += partition_count;
@@ -8203,18 +8202,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // See abort above if kk != 0 
         // Need to add this data to the RunInfo loop
         for(int kk = 0; kk < 1; ++kk) {
-        
-          auto local_kokkos_my_incomplete_cut_count =
-            this->kokkos_my_incomplete_cut_count;
-          auto local_set_incomplete_cut_count =
-            runInfo[current_work_part].set_incomplete_cut_count;
-
-          Kokkos::parallel_for(
-            Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-              (0, 1), KOKKOS_LAMBDA (const int dummy) {
-              local_kokkos_my_incomplete_cut_count(kk, current_work_part) =
-                local_set_incomplete_cut_count;
-          });
           
           clock_mj_1D_part.start();
           
