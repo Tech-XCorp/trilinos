@@ -641,7 +641,7 @@ private:
   mj_part_t max_num_part_along_dim ;  // maximum part count along a dimension.
   mj_part_t max_num_cut_along_dim;    // maximum cut count along a dimension.
   
-  mj_part_t max_working_parts = 10;  // TODO refactoring test
+  mj_part_t max_working_parts = 1000;  // TODO refactoring test
   
   // maximum part+cut count along a dimension.
   size_t max_num_total_part_along_dim;
@@ -3204,6 +3204,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_lno_t coordinate_end_index =
       local_kokkos_part_xadj(current_work_part_in_concurrent_parts);
     mj_lno_t coordinate_begin_index =
+      current_work_part_in_concurrent_parts == 0 ? 0 :
       local_kokkos_part_xadj(current_work_part_in_concurrent_parts-1);
 
     mj_scalar_t my_thread_min_coord = 0;
@@ -3212,8 +3213,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     //if the part is empty.
     //set the min and max coordinates as reverse.
-    if(coordinate_begin_index >= coordinate_end_index)
-    {
+    if(coordinate_begin_index >= coordinate_end_index) {
       my_thread_min_coord = max_scalar;
       my_thread_max_coord = -max_scalar;
       my_total_weight = 0;
