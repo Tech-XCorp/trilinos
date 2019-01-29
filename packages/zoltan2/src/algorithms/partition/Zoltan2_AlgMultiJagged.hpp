@@ -983,6 +983,9 @@ private:
    * many parts each part will be divided into.
    */
   void mj_1D_part(
+#ifndef TRY_OLD_SYSTEM
+    int phase, // A TEMPORARY measure - I want to call the parts of this method in a loop one at a time 
+#endif
     Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
     mj_scalar_t imbalanceTolerance,
     mj_part_t current_work_part,
@@ -2106,6 +2109,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // Determine cut lines for k parts here.
         this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part B()");
         this->mj_1D_part(
+#ifndef TRY_OLD_SYSTEM
+          -1,
+#endif
           kokkos_mj_current_dim_coords,
           used_imbalance,
           current_work_part,
@@ -3494,6 +3500,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
+#ifndef TRY_OLD_SYSTEM
+  int phase, // A TEMPORARY measure - I want to call the parts of this method in a loop one at a time 
+#endif
   Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
   mj_scalar_t used_imbalance_tolerance,
   mj_part_t current_work_part,
@@ -3505,39 +3514,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
   Kokkos::View<size_t*, device_t> view_total_reduction_size)
 {
-  clock_mj_1D_part_init.start();
-
   this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
-
-  Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
-               *reductionOp = NULL;
-
-  bool bSingleProcess = (this->comm->getSize() == 1);
-  
-  // Refactor in progress
-  // I eliminated the original std::vector
-  // and replaced with kokkos view view_num_partitioning_in_current_dim.
-  // Now restore a std::vector here just for the reduction op which has not been
-  // refactored yet.
-  if(!bSingleProcess) {
-    // This got ugly quickly .... but it's at least partly temporary as I
-    // refactor and perhaps will remove reference type eventually.
-    typename std::remove_reference<decltype(
-      view_num_partitioning_in_current_dim)>::type::HostMirror
-      hostArray
-      = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
-    Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
-    std::vector<mj_part_t> temp(view_num_partitioning_in_current_dim.size());
-    for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
-      temp[n] = hostArray(n);
-    }
-
-    reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
-      <mj_part_t, mj_scalar_t>(
-        &temp,
-        current_work_part ,
-        current_concurrent_num_parts);
-  }
   
   // use locals to avoid capturing this for cuda  
   auto local_kokkos_thread_part_weights = kokkos_thread_part_weights;
@@ -3585,15 +3562,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     kokkos_global_rectilinear_cut_weight;
   auto local_kokkos_process_rectilinear_cut_weight =
     kokkos_process_rectilinear_cut_weight;
-
   auto local_kokkos_current_cut_coordinates =
     Kokkos::subview(kokkos_current_cut_coordinates,
     Kokkos::ALL, current_work_part);
-
-  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
-    member_type member_type;
-
-  clock_mj_1D_part_init.stop();
+    
+  bool bSingleProcess = (this->comm->getSize() == 1);
+  
+  if(phase == -1 || phase == 0) {
+  
   clock_mj_1D_part_init2.start();
 
   Kokkos::parallel_for(1, KOKKOS_LAMBDA(int dummy) {
@@ -3633,8 +3609,45 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   });
 
   clock_mj_1D_part_init2.stop();
-  clock_mj_1D_part_while_loop.start();
 
+  } // if(phase == -1 || phase == 0)
+  
+  if(phase == -1 || phase == 1) {
+  
+  clock_mj_1D_part_while_loop.start();
+  
+  clock_mj_1D_part_init.start();
+  
+  Teuchos::MultiJaggedCombinedReductionOp<mj_part_t, mj_scalar_t>
+               *reductionOp = NULL;
+  
+  // Refactor in progress
+  // I eliminated the original std::vector
+  // and replaced with kokkos view view_num_partitioning_in_current_dim.
+  // Now restore a std::vector here just for the reduction op which has not been
+  // refactored yet.
+  if(!bSingleProcess) {
+    // This got ugly quickly .... but it's at least partly temporary as I
+    // refactor and perhaps will remove reference type eventually.
+    typename std::remove_reference<decltype(
+      view_num_partitioning_in_current_dim)>::type::HostMirror
+      hostArray
+      = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
+    Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
+    std::vector<mj_part_t> temp(view_num_partitioning_in_current_dim.size());
+    for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
+      temp[n] = hostArray(n);
+    }
+
+    reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
+      <mj_part_t, mj_scalar_t>(
+        &temp,
+        current_work_part ,
+        current_concurrent_num_parts);
+  }
+  
+  clock_mj_1D_part_init.stop();
+  
   while (total_incomplete_cut_count != 0) {
 
     mj_part_t concurrent_cut_shifts = 0;
@@ -3942,11 +3955,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     }
   } // end of the while loop
 
+  delete reductionOp;
+  
   clock_mj_1D_part_while_loop.stop();
+
+  } // if(phase == -1 || phase == 1) 
+  
+  if(phase == -1 || phase == 2) {
+  
   clock_mj_1D_part_end.start();
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
     policy3 (1, Kokkos::AUTO());
+    
+  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
+    member_type member_type;
+    
   Kokkos::parallel_for (policy3, KOKKOS_LAMBDA(member_type team_member) {
 
     // Needed only if keep_cuts; otherwise can simply swap array pointers
@@ -3993,7 +4017,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   }); // end of outer mj_1D_part loop
 
   clock_mj_1D_part_end.stop();
-  delete reductionOp;
+  
+  } // if(phase == -1 || phase == 2)
 }
 
 template<class scalar_t>
@@ -8208,7 +8233,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           this->mj_env->timerStart(MACRO_TIMERS,
             "MultiJagged - Problem_Partitioning mj_1D_part()");
 
+for(int phase = 0; phase < 3; ++phase) {
           this->mj_1D_part(
+            phase,
             kokkos_mj_current_dim_coords,
             used_imbalance,
             current_work_part,
@@ -8218,7 +8245,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             view_num_partitioning_in_current_dim,
             view_rectilinear_cut_count,
             view_total_reduction_size);
-          
+}
+
           this->mj_env->timerStop(MACRO_TIMERS,
             "MultiJagged - Problem_Partitioning mj_1D_part()");
 
