@@ -4081,8 +4081,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     total_incomplete_cut_count = 0;
     Kokkos::parallel_reduce("Read total incomplete cut count",
       local_kokkos_my_incomplete_cut_count.size(),
-      KOKKOS_LAMBDA(int kk, mj_lno_t & set_single) {
-      set_single += local_kokkos_my_incomplete_cut_count(kk);
+      KOKKOS_LAMBDA(int kk_2, mj_lno_t & set_single) {
+      set_single += local_kokkos_my_incomplete_cut_count(kk_2);
     }, total_incomplete_cut_count);
   
   } // end of the while loop
