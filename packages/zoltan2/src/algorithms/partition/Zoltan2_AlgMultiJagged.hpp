@@ -993,7 +993,6 @@ private:
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
       kokkos_current_cut_coordinates,
-    mj_part_t total_incomplete_cut_count,
     Kokkos::View<mj_part_t*, device_t> &
       view_num_partitioning_in_current_dim,
     Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
@@ -3528,7 +3527,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
     kokkos_current_cut_coordinates,
-  mj_part_t total_incomplete_cut_count,
   Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
   Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
   Kokkos::View<size_t*, device_t> view_total_reduction_size)
@@ -3677,6 +3675,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   }
   
   clock_mj_1D_part_init.stop();
+  
+  // TODO: Will need to rework this - may drop kk loop as well
+  mj_part_t total_incomplete_cut_count;
+  Kokkos::parallel_reduce("Read total incomplete cut count",
+    local_kokkos_my_incomplete_cut_count.size(),
+    KOKKOS_LAMBDA(int kk, mj_lno_t & set_single) {
+    set_single += local_kokkos_my_incomplete_cut_count(kk);
+  }, total_incomplete_cut_count);
   
   while (total_incomplete_cut_count != 0) {
 
@@ -3951,6 +3957,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       cut_shift += num_cuts;
       tlr_shift += (num_total_part + 2 * num_cuts);
 
+
+// Dump all this - we're just going to read incomplete cut count directly
+
+/*
       Kokkos::parallel_reduce("Read single", 1,
         KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
         set_single = local_kokkos_my_incomplete_cut_count(kk);
@@ -3961,6 +3971,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       Kokkos::atomic_add(&total_incomplete_cut_count,
         -iteration_complete_cut_count);
+*/
 
       clock_mj_get_new_cut_coordinates_end.stop();
     }
@@ -3984,6 +3995,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       clock_swap.stop();
     }
+    
+    // TODO: Will need to rework this - may drop kk loop as well
+    total_incomplete_cut_count = 0;
+    Kokkos::parallel_reduce("Read total incomplete cut count",
+      local_kokkos_my_incomplete_cut_count.size(),
+      KOKKOS_LAMBDA(int kk, mj_lno_t & set_single) {
+      set_single += local_kokkos_my_incomplete_cut_count(kk);
+    }, total_incomplete_cut_count);
+  
   } // end of the while loop
 
   delete reductionOp;
@@ -7986,15 +8006,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     clock_loopA.stop();
     clock_main_loop.start();
 
-    // run for all available parts.
-#ifndef TRY_OLD_SYSTEM
-    struct RunInfo {
-      mj_part_t total_incomplete_cut_count;
-      bool bDoingWork;
-    };    
-    RunInfo runInfo[current_num_parts]; 
-#endif
-
     // used imbalance, it is always 0, as it is difficult to
     // estimate a range.
     mj_scalar_t used_imbalance = 0;
@@ -8004,6 +8015,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     clock_optimize_loop.start();
 #endif
  
+    
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -8036,11 +8048,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         kokkos_mj_current_dim_coords);
 
       clock_mj_get_local_min_max_coord_totW.stop();
-
-      // 1D partitioning
-#ifndef TRY_OLD_SYSTEM
-      runInfo[current_work_part].bDoingWork = bDoingWork;
-#endif
 
       if (bDoingWork) {
 
@@ -8222,11 +8229,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           obtained_part_index += partition_count;
         }
 
-#ifndef TRY_OLD_SYSTEM
-        runInfo[current_work_part].total_incomplete_cut_count =
-          total_incomplete_cut_count;
-#endif
-
 #ifdef TRY_OLD_SYSTEM
         clock_mj_1D_part.start();
         
@@ -8239,7 +8241,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           current_work_part,
           current_concurrent_num_parts,
           kokkos_current_cut_coordinates,
-          total_incomplete_cut_count,
           view_num_partitioning_in_current_dim,
           view_rectilinear_cut_count,
           view_total_reduction_size);
@@ -8263,7 +8264,7 @@ for(int phase = 0; phase < 3; ++phase) {
     for(current_work_part = 0; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
         
-      if(runInfo[current_work_part].bDoingWork) {
+  //    if(runInfo[current_work_part].bDoingWork) {
      
         // TODO - temporarily ignoring this and assume 1
         // See abort above if kk != 0 
@@ -8283,7 +8284,6 @@ for(int phase = 0; phase < 3; ++phase) {
             current_work_part,
             current_concurrent_num_parts,
             kokkos_current_cut_coordinates,
-            runInfo[current_work_part].total_incomplete_cut_count,
             view_num_partitioning_in_current_dim,
             view_rectilinear_cut_count,
             view_total_reduction_size);
@@ -8295,7 +8295,7 @@ for(int phase = 0; phase < 3; ++phase) {
           clock_mj_1D_part.stop();
         }
       }
-    }
+//    }
     
 }
 
