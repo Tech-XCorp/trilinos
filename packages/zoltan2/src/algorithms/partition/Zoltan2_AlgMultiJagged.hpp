@@ -986,7 +986,6 @@ private:
     mj_scalar_t imbalanceTolerance,
     mj_part_t current_num_parts,
     mj_part_t do_only_this_part,
-    mj_part_t do_only_this_concurrent_part,
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
       kokkos_current_cut_coordinates,
@@ -2117,7 +2116,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               used_imbalance,
               current_num_parts,
               current_work_part, // normally passed as -1 to do all
-              kk, // normally passed as -1 to do all
               current_concurrent_num_parts,
               kokkos_current_cut_coordinates,
               view_num_partitioning_in_current_dim,
@@ -3530,7 +3528,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_scalar_t used_imbalance_tolerance,
   mj_part_t current_num_parts,
   mj_part_t do_only_this_part, // special option for task mapper - TODO - will need to decide handling
-  mj_part_t do_only_this_concurrent_part, // special option for task mapper - TODO - will need to decide handling
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
     kokkos_current_cut_coordinates,
@@ -3608,12 +3605,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_is_cut_line_determined =
     Kokkos::subview(kokkos_is_cut_line_determined,
     Kokkos::ALL, current_work_part);
-    
-  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-
-    if(do_only_this_concurrent_part != -1 && kk != do_only_this_concurrent_part) {
-      continue; // Task Mapper issue to resolve TODO
-    }
   
   clock_mj_1D_part_init2.start();
 
@@ -3655,7 +3646,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
   clock_mj_1D_part_init2.stop();
 
-  }  // kk loop
   }  // current_work_part loop
   
   for(mj_part_t current_work_part = 0; current_work_part < current_num_parts; current_work_part += current_concurrent_num_parts) {
@@ -3718,12 +3708,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_is_cut_line_determined =
     Kokkos::subview(kokkos_is_cut_line_determined,
     Kokkos::ALL, current_work_part);
-    
-  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-
-    if(do_only_this_concurrent_part != -1 && kk != do_only_this_concurrent_part) {
-      continue; // Task Mapper issue to resolve TODO
-    }
   
   clock_mj_1D_part_while_loop.start();
   
@@ -3764,8 +3748,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   mj_part_t total_incomplete_cut_count;
   Kokkos::parallel_reduce("Read total incomplete cut count",
     local_kokkos_my_incomplete_cut_count.size(),
-    KOKKOS_LAMBDA(int kk_2, mj_lno_t & set_single) {
-    set_single += local_kokkos_my_incomplete_cut_count(kk_2);
+    KOKKOS_LAMBDA(int kk, mj_lno_t & set_single) {
+    set_single += local_kokkos_my_incomplete_cut_count(kk);
   }, total_incomplete_cut_count);
   
   while (total_incomplete_cut_count != 0) {
@@ -4081,8 +4065,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     total_incomplete_cut_count = 0;
     Kokkos::parallel_reduce("Read total incomplete cut count",
       local_kokkos_my_incomplete_cut_count.size(),
-      KOKKOS_LAMBDA(int kk_2, mj_lno_t & set_single) {
-      set_single += local_kokkos_my_incomplete_cut_count(kk_2);
+      KOKKOS_LAMBDA(int kk, mj_lno_t & set_single) {
+      set_single += local_kokkos_my_incomplete_cut_count(kk);
     }, total_incomplete_cut_count);
   
   } // end of the while loop
@@ -4091,7 +4075,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   
   clock_mj_1D_part_while_loop.stop();
 
-  }  // kk loop
   }  // current_work_part loop
   
   for(mj_part_t current_work_part = 0; current_work_part < current_num_parts; current_work_part += current_concurrent_num_parts) {
@@ -4154,12 +4137,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   auto local_kokkos_is_cut_line_determined =
     Kokkos::subview(kokkos_is_cut_line_determined,
     Kokkos::ALL, current_work_part);
-    
-  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-
-    if(do_only_this_concurrent_part != -1 && kk != do_only_this_concurrent_part) {
-      continue; // Task Mapper issue to resolve TODO
-    }
   
   clock_mj_1D_part_end.start();
 
@@ -4216,7 +4193,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
   clock_mj_1D_part_end.stop();
   
-  }  // kk loop
   }  // current_work_part loop
 }
 
@@ -8388,7 +8364,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       kokkos_mj_current_dim_coords,
       used_imbalance,
       current_num_parts,
-      -1, -1, // Task Mapper has special case right now TODO
+      -1, // Task Mapper has special case right now TODO
       current_concurrent_num_parts,
       kokkos_current_cut_coordinates,
       view_num_partitioning_in_current_dim,
