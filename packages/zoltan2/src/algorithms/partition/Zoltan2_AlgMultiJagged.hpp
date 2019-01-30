@@ -49,8 +49,6 @@
 #ifndef _ZOLTAN2_ALGMultiJagged_HPP_
 #define _ZOLTAN2_ALGMultiJagged_HPP_
 
-// #define TRY_OLD_SYSTEM
-
 #include <Zoltan2_MultiJagged_ReductionOps.hpp>
 #include <Zoltan2_CoordinateModel.hpp>
 #include <Zoltan2_Parameters.hpp>
@@ -641,7 +639,7 @@ private:
   mj_part_t max_num_part_along_dim ;  // maximum part count along a dimension.
   mj_part_t max_num_cut_along_dim;    // maximum cut count along a dimension.
   
-  mj_part_t max_working_parts = 1000;  // TODO refactoring test
+  mj_part_t max_working_parts = 256;  // TODO refactoring test - need to determine this run-time
   
   // maximum part+cut count along a dimension.
   size_t max_num_total_part_along_dim;
@@ -984,12 +982,11 @@ private:
    * many parts each part will be divided into.
    */
   void mj_1D_part(
-#ifndef TRY_OLD_SYSTEM
-    int phase, // A TEMPORARY measure - I want to call the parts of this method in a loop one at a time 
-#endif
     Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
     mj_scalar_t imbalanceTolerance,
-    mj_part_t current_work_part,
+    mj_part_t current_num_parts,
+    mj_part_t do_only_this_part,
+    mj_part_t do_only_this_concurrent_part,
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
       kokkos_current_cut_coordinates,
@@ -1881,7 +1878,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::subview(this->kokkos_mj_coordinates, Kokkos::ALL, coordInd);
 
     // run for all available parts.
-
     for (; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -1894,6 +1890,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       // get the min and max coordinates of each part
       // together with the part weights of each part.
       for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+        if(kk != 0) {
+          printf("kk was not 0 - thought it was always 0....\n");
+          std::abort();
+        }
         mj_part_t current_work_part_in_concurrent_parts =
           current_work_part + kk;
 
@@ -2097,6 +2097,36 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               kokkos_mj_current_dim_coords,
               this->kokkos_assigned_part_ids,
               partition_count);
+              
+            // used imbalance, it is always 0, as it is difficult
+            // to estimate a range.
+            mj_scalar_t used_imbalance = 0;
+
+            // Determine cut lines for k parts here.
+            this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part B()");
+
+            // the new form for most tests will run all the chunks in
+            // parallel but for task mapper that won't work - I didn't figure
+            // out exactly what the dependencies are that prevent it from 
+            // working but for now we pass the do_single_part to specify
+            // it only needs to process one part
+            // I'm trying to avoid having a new version of mj_1D_part
+            // but that may not be possible in the end.
+            this->mj_1D_part(
+              kokkos_mj_current_dim_coords,
+              used_imbalance,
+              current_num_parts,
+              current_work_part, // normally passed as -1 to do all
+              kk, // normally passed as -1 to do all
+              current_concurrent_num_parts,
+              kokkos_current_cut_coordinates,
+              view_num_partitioning_in_current_dim,
+              view_rectilinear_cut_count,
+              view_total_reduction_size);
+              
+            this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part B()");
+    
+    
           }
           else {
             // e.g., if have fewer coordinates than parts,
@@ -2105,28 +2135,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           }
           obtained_part_index += partition_count;
         }
-
-        // used imbalance, it is always 0, as it is difficult
-        // to estimate a range.
-        mj_scalar_t used_imbalance = 0;
-
-        // Determine cut lines for k parts here.
-        this->mj_env->timerStart(MACRO_TIMERS, "mj_1D_part B()");
-        this->mj_1D_part(
-#ifndef TRY_OLD_SYSTEM
-          -1,
-#endif
-          kokkos_mj_current_dim_coords,
-          used_imbalance,
-          current_work_part,
-          current_concurrent_num_parts,
-          kokkos_current_cut_coordinates,
-          total_incomplete_cut_count,
-          view_num_partitioning_in_current_dim,
-          view_rectilinear_cut_count,
-          view_total_reduction_size);
-            
-        this->mj_env->timerStop(MACRO_TIMERS, "mj_1D_part B()");
       }
       else {
         obtained_part_index += current_concurrent_num_parts;
@@ -3518,12 +3526,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
-#ifndef TRY_OLD_SYSTEM
-  int phase, // A TEMPORARY measure - I want to call the parts of this method in a loop one at a time 
-#endif
   Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
   mj_scalar_t used_imbalance_tolerance,
-  mj_part_t current_work_part,
+  mj_part_t current_num_parts,
+  mj_part_t do_only_this_part, // special option for task mapper - TODO - will need to decide handling
+  mj_part_t do_only_this_concurrent_part, // special option for task mapper - TODO - will need to decide handling
   mj_part_t current_concurrent_num_parts,
   Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
     kokkos_current_cut_coordinates,
@@ -3531,6 +3538,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count,
   Kokkos::View<size_t*, device_t> view_total_reduction_size)
 {
+  for(int phase = 0; phase < 3; ++phase) {
+  for(mj_part_t current_work_part = 0; current_work_part < current_num_parts; current_work_part += current_concurrent_num_parts) {
+  
+    if(do_only_this_part != -1 && current_work_part != do_only_this_part) {
+      continue; // Task Mapper issue to resolve TODO
+    }
+    
+  for(int kk = 0; kk < 1; ++kk) {
+
+    if(do_only_this_concurrent_part != -1 && kk != do_only_this_concurrent_part) {
+      continue; // Task Mapper issue to resolve TODO
+    }
+        
   this->kokkos_temp_cut_coords = kokkos_current_cut_coordinates;
   
   // use locals to avoid capturing this for cuda  
@@ -3896,9 +3916,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             cut_shift,
             local_kokkos_process_cut_line_weight_to_put_left.size()));
 
-      mj_part_t initial_incomplete_cut_count =
-        kk_kokkos_my_incomplete_cut_count;
-
       Kokkos::View<mj_scalar_t *, device_t>
         kokkos_current_cut_lower_bound_weights =
         Kokkos::subview(local_kokkos_cut_lower_bound_weights,
@@ -4070,6 +4087,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   clock_mj_1D_part_end.stop();
   
   } // if(phase == -1 || phase == 2)
+  
+  }
+  }
+  }
 }
 
 template<class scalar_t>
@@ -5434,7 +5455,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               expected_weight_in_part) {
               // if it is we are done.
               kokkos_current_cut_line_determined(i) = true;
-              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
+              Kokkos::atomic_add(&local_kokkos_my_incomplete_cut_count(kk), -1);
 
               //then assign everything on the cut to the left of the cut.
               kokkos_new_current_cut_coordinates(i) =
@@ -5540,7 +5561,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               new_cut_position) < local_sEpsilon) {
               kokkos_current_cut_line_determined(i) = true;
               Kokkos::atomic_add(
-                &local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
+                &local_kokkos_my_incomplete_cut_count(kk), -1);
 
               //set the cut coordinate and proceed.
               kokkos_new_current_cut_coordinates(i) =
@@ -5622,7 +5643,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
               new_cut_position) < local_sEpsilon) {
               kokkos_current_cut_line_determined(i) = true;
               Kokkos::atomic_add(
-                &local_kokkos_my_incomplete_cut_count(kk, current_work_part), -1);
+                &local_kokkos_my_incomplete_cut_count(kk), -1);
               //set the cut coordinate and proceed.
               kokkos_new_current_cut_coordinates(i) =
                 kokkos_current_cut_coordinates(i);
@@ -8010,12 +8031,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // estimate a range.
     mj_scalar_t used_imbalance = 0;
 
-
-#ifndef TRY_OLD_SYSTEM
     clock_optimize_loop.start();
-#endif
- 
-    
+     
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -8228,80 +8245,35 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             
           obtained_part_index += partition_count;
         }
-
-#ifdef TRY_OLD_SYSTEM
-        clock_mj_1D_part.start();
-        
-        this->mj_env->timerStart(MACRO_TIMERS,
-          "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-        this->mj_1D_part(
-          kokkos_mj_current_dim_coords,
-          used_imbalance,
-          current_work_part,
-          current_concurrent_num_parts,
-          kokkos_current_cut_coordinates,
-          view_num_partitioning_in_current_dim,
-          view_rectilinear_cut_count,
-          view_total_reduction_size);
-        
-        this->mj_env->timerStop(MACRO_TIMERS,
-          "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-        clock_mj_1D_part.stop();
-      } // if bDoingWork
-
-#else // TRY_OLD_SYSTEM
       } // if bDoingWork
     }
 
     clock_optimize_loop.stop();
+
     clock_optimize_loop2.start();
-
-for(int phase = 0; phase < 3; ++phase) {
-
-    // run for all available parts.
-    for(current_work_part = 0; current_work_part < current_num_parts;
-      current_work_part += current_concurrent_num_parts) {
-        
-  //    if(runInfo[current_work_part].bDoingWork) {
-     
-        // TODO - temporarily ignoring this and assume 1
-        // See abort above if kk != 0 
-        // Need to add this data to the RunInfo loop
-        for(int kk = 0; kk < 1; ++kk) {
           
-          clock_mj_1D_part.start();
-          
-          this->mj_env->timerStart(MACRO_TIMERS,
-            "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-
-          this->mj_1D_part(
-            phase,
-            kokkos_mj_current_dim_coords,
-            used_imbalance,
-            current_work_part,
-            current_concurrent_num_parts,
-            kokkos_current_cut_coordinates,
-            view_num_partitioning_in_current_dim,
-            view_rectilinear_cut_count,
-            view_total_reduction_size);
-
-
-          this->mj_env->timerStop(MACRO_TIMERS,
-            "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-          clock_mj_1D_part.stop();
-        }
-      }
-//    }
+    clock_mj_1D_part.start();
     
-}
+    this->mj_env->timerStart(MACRO_TIMERS,
+      "MultiJagged - Problem_Partitioning mj_1D_part()");
+
+    this->mj_1D_part(
+      kokkos_mj_current_dim_coords,
+      used_imbalance,
+      current_num_parts,
+      -1, -1, // Task Mapper has special case right now TODO
+      current_concurrent_num_parts,
+      kokkos_current_cut_coordinates,
+      view_num_partitioning_in_current_dim,
+      view_rectilinear_cut_count,
+      view_total_reduction_size);
+
+    this->mj_env->timerStop(MACRO_TIMERS,
+      "MultiJagged - Problem_Partitioning mj_1D_part()");
+
+    clock_mj_1D_part.stop();
 
     clock_optimize_loop2.stop();
-
-#endif // TRY_OLD_SYSTEM
 
     // run for all available parts.
     for(current_work_part = 0; current_work_part < current_num_parts;
