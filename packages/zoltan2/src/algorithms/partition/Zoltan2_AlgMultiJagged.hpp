@@ -3742,6 +3742,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       if (kk_kokkos_my_incomplete_cut_count == 0) {
         cut_shift += num_cuts;
         tlr_shift += (num_total_part + 2 * num_cuts);
+        clock_mj_get_new_cut_coordinates_init.stop();
         continue;
       }
 
