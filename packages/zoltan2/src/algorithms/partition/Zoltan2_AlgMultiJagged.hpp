@@ -4580,14 +4580,21 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_functor_weights.stop();
 
+  // TODO: Need to clean this up
+  // Be careful with edits here as originally as I was getting some subtle
+  // differences between UVM on and UVM off for Cuda only and only some tests.
+  // Make sure we only copy the proper elements of the view
+  // I think we may want to remap the parent view to be shorter but that
+  // was causing an issue I still need to investigate
+  auto temp = Kokkos::subview(kokkos_my_current_part_weights, std::pair<mj_lno_t,mj_lno_t>(0,total_part_count));
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
-  typename decltype(kokkos_my_current_part_weights)::HostMirror
-    hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
-  for(int i = 0; i < weight_array_size; ++i) {
+  typename decltype(temp)::HostMirror
+    hostArray = Kokkos::create_mirror_view(temp);
+  for(int i = 0; i < total_part_count; ++i) {
     hostArray(i) = part_weights[i];
   }
-  Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
+  Kokkos::deep_copy(temp, hostArray);
  
   delete [] part_weights;
 
