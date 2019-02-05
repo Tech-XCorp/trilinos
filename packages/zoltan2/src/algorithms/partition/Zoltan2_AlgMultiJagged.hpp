@@ -4503,32 +4503,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
   mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
+  Kokkos::parallel_reduce("Read num parts", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
     set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
   }, num_parts);
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
-  
-  Kokkos::View<bool *, device_t> kokkos_current_cut_status =
-    Kokkos::subview(local_kokkos_is_cut_line_determined,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_is_cut_line_determined.size()));
-  Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
-    Kokkos::subview(local_kokkos_thread_part_weights,
-      std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
-       local_kokkos_thread_part_weights.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
-    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
-    std::pair<mj_lno_t, mj_lno_t>(
-      working_kk * num_cuts,
-      local_kokkos_thread_cut_left_closest_point.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
-    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_thread_cut_right_closest_point.size()));
+
   Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
     Kokkos::subview(local_kokkos_temp_cut_coords,
       std::pair<mj_lno_t, mj_lno_t>(
@@ -4573,15 +4554,18 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   // Make sure we only copy the proper elements of the view
   // I think we may want to remap the parent view to be shorter but that
   // was causing an issue I still need to investigate
-  auto temp = Kokkos::subview(kokkos_my_current_part_weights, std::pair<mj_lno_t,mj_lno_t>(0,total_part_count));
+  Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
+    Kokkos::subview(local_kokkos_thread_part_weights,
+      std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
+       working_kk * total_part_count + total_part_count));
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
-  typename decltype(temp)::HostMirror
-    hostArray = Kokkos::create_mirror_view(temp);
+  typename decltype(kokkos_my_current_part_weights)::HostMirror
+    hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
   for(int i = 0; i < total_part_count; ++i) {
     hostArray(i) = part_weights[i];
   }
-  Kokkos::deep_copy(temp, hostArray);
+  Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
  
   delete [] part_weights;
 
@@ -4599,25 +4583,10 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
   
-  Kokkos::View<bool *, device_t> kokkos_current_cut_status =
-    Kokkos::subview(local_kokkos_is_cut_line_determined,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_is_cut_line_determined.size()));
   Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
     Kokkos::subview(local_kokkos_thread_part_weights,
       std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
        local_kokkos_thread_part_weights.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
-    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
-    std::pair<mj_lno_t, mj_lno_t>(
-      working_kk * num_cuts,
-      local_kokkos_thread_cut_left_closest_point.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
-    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_thread_cut_right_closest_point.size()));
   Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
     Kokkos::subview(local_kokkos_temp_cut_coords,
       std::pair<mj_lno_t, mj_lno_t>(
@@ -4666,15 +4635,6 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
   
-  Kokkos::View<bool *, device_t> kokkos_current_cut_status =
-    Kokkos::subview(local_kokkos_is_cut_line_determined,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_is_cut_line_determined.size()));
-  Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
-    Kokkos::subview(local_kokkos_thread_part_weights,
-      std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
-       local_kokkos_thread_part_weights.size()));
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
     Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
     std::pair<mj_lno_t, mj_lno_t>(
