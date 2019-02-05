@@ -1007,17 +1007,13 @@ private:
    * \param partIds is the array that holds the part ids of the coordinates
    */
   void mj_1D_part_get_thread_part_weights(
+    int phase,
     mj_part_t current_concurrent_num_parts,
     mj_part_t kk,
     mj_part_t current_work_part,
     size_t total_part_count,
     mj_part_t num_cuts,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords,
-    Kokkos::View<bool *, device_t> kokkos_current_cut_status,
-    Kokkos::View<double *, device_t> kokkos_my_current_part_weights,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest,
-    Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest);
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords);
 
   /*! \brief Function that reduces the result of multiple threads for
    * left and right closest points and part weights in a single mpi process.
@@ -3582,9 +3578,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
   while (total_incomplete_cut_count != 0) {
 
-    mj_part_t concurrent_cut_shifts = 0;
-    size_t total_part_shift = 0;
-
     clock_host_copies.start();
 
     // Pull the values for num cuts
@@ -3604,6 +3597,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     clock_host_copies.stop();
       
+for(int phase = 0; phase < 4; ++phase) {
+
     for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
       clock_mj_1D_part_get_weights_init.start();
@@ -3619,57 +3614,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       clock_mj_1D_part_get_weights_init.stop();
 
-      if(kk_kokkos_my_incomplete_cut_count > 0) {
+    //  if(kk_kokkos_my_incomplete_cut_count > 0) {
 
-        clock_mj_1D_part_get_weights_setup.start();
-
-        Kokkos::View<bool *, device_t> kokkos_current_cut_status =
-          Kokkos::subview(local_kokkos_is_cut_line_determined,
-            std::pair<mj_lno_t, mj_lno_t>(
-              concurrent_cut_shifts,
-              local_kokkos_is_cut_line_determined.size()));
-        Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
-          Kokkos::subview(local_kokkos_thread_part_weights,
-            std::pair<mj_lno_t, mj_lno_t>(total_part_shift,
-             local_kokkos_thread_part_weights.size()));
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
-          Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
-          std::pair<mj_lno_t, mj_lno_t>(
-            concurrent_cut_shifts,
-            local_kokkos_thread_cut_left_closest_point.size()));
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
-          Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-            std::pair<mj_lno_t, mj_lno_t>(
-              concurrent_cut_shifts,
-              local_kokkos_thread_cut_right_closest_point.size()));
-        Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
-          Kokkos::subview(local_kokkos_temp_cut_coords,
-            std::pair<mj_lno_t, mj_lno_t>(
-              concurrent_cut_shifts,
-              local_kokkos_temp_cut_coords.size()));
-
-        clock_mj_1D_part_get_weights_setup.stop();
         clock_mj_1D_part_get_weights.start();
 
         this->mj_1D_part_get_thread_part_weights(
+          phase,
           current_concurrent_num_parts,
           kk,
           current_work_part, 
           total_part_count,
           num_cuts,
-          kokkos_mj_current_dim_coords,
-          kokkos_temp_current_cut_coords,
-          kokkos_current_cut_status,
-          kokkos_my_current_part_weights,
-          kokkos_my_current_left_closest,
-          kokkos_my_current_right_closest);
+          kokkos_mj_current_dim_coords);
 
         clock_mj_1D_part_get_weights.stop();
-      }
-      
-      concurrent_cut_shifts += num_cuts;
-      total_part_shift += total_part_count;
-    }
+      } // end of if kk_kokkos_my_incomplete_cut_count > 0
+    } // end of kk loop
+} // end of the temp phase loop
 
     clock_mj_accumulate_thread_results.start();
 
@@ -4515,18 +4476,51 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   mj_part_t, mj_node_t>::
   mj_1D_part_get_thread_part_weights(
+  int phase,
   mj_part_t current_concurrent_num_parts,
   mj_part_t working_kk,
   mj_part_t current_work_part,
   size_t total_part_count,
   mj_part_t num_cuts,
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords,
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords,
-  Kokkos::View<bool *, device_t> kokkos_current_cut_status,
-  Kokkos::View<double *, device_t> kokkos_my_current_part_weights,
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest,
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest)
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_mj_current_dim_coords)
 {
+  clock_mj_1D_part_get_weights_setup.start();
+        
+  auto local_kokkos_is_cut_line_determined = kokkos_is_cut_line_determined;
+  auto local_kokkos_thread_part_weights = kokkos_thread_part_weights;
+  auto local_kokkos_thread_cut_left_closest_point =
+    kokkos_thread_cut_left_closest_point;
+  auto local_kokkos_thread_cut_right_closest_point =
+    kokkos_thread_cut_right_closest_point;
+  auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
+  
+  Kokkos::View<bool *, device_t> kokkos_current_cut_status =
+    Kokkos::subview(local_kokkos_is_cut_line_determined,
+      std::pair<mj_lno_t, mj_lno_t>(
+        working_kk * num_cuts,
+        local_kokkos_is_cut_line_determined.size()));
+  Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
+    Kokkos::subview(local_kokkos_thread_part_weights,
+      std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
+       local_kokkos_thread_part_weights.size()));
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
+    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
+    std::pair<mj_lno_t, mj_lno_t>(
+      working_kk * num_cuts,
+      local_kokkos_thread_cut_left_closest_point.size()));
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
+    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
+      std::pair<mj_lno_t, mj_lno_t>(
+        working_kk * num_cuts,
+        local_kokkos_thread_cut_right_closest_point.size()));
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
+    Kokkos::subview(local_kokkos_temp_cut_coords,
+      std::pair<mj_lno_t, mj_lno_t>(
+        working_kk * num_cuts,
+        local_kokkos_temp_cut_coords.size()));
+          
+  clock_mj_1D_part_get_weights_setup.stop();
+        
   // Create some locals so we don't use this inside the kernels
   // which causes problems
   auto local_sEpsilon = this->sEpsilon;
@@ -4539,6 +4533,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   auto local_kokkos_global_min_max_coord_total_weight =
     this->kokkos_global_min_max_coord_total_weight;
 
+  typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
+  
+if(phase == 0) {
+
   clock_weights1.start();
 
   // initializations for part weights
@@ -4547,10 +4545,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   });
 
   clock_weights1.stop();
+  
+} // end phase 0
+
+if(phase == 1) {
+
   clock_weights2.start();
 
   int weight_array_size = num_cuts * 2 + 1;
-  typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
     teamFunctor(current_work_part + working_kk,
     weight_array_size,
@@ -4599,6 +4601,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   delete [] part_weights;
 
   clock_weights3.stop();
+  
+} // end phase 1
+
+if(phase == 2) {
+
   clock_weights4.start();
 
   Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
@@ -4628,6 +4635,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   });     
 
   clock_weights4.stop();
+  
+} // end phase 2
+
+if(phase == 3) {
+
   clock_weights5.start();
 
   RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t,
@@ -4679,6 +4691,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
 
   clock_weights6.stop();
+} // end phase 3
+
 }
 
 /*! \brief Function that reduces the result of multiple threads
