@@ -4573,7 +4573,7 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   // TODO: Need to figure out how we can better manage this
   typename decltype(kokkos_my_current_part_weights)::HostMirror
     hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
-  for(int i = 0; i < total_part_count; ++i) {
+  for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
     hostArray(i) = part_weights[i];
   }
   Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
