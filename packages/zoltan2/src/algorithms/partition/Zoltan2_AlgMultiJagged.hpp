@@ -3932,7 +3932,8 @@ struct ReduceWeightsFunctorInnerLoop {
   Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
   bool bUniformWeights;
   scalar_t sEpsilon;
-  int num_cuts;
+  part_t num_cuts;
+  part_t kk;
   
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
@@ -3943,7 +3944,8 @@ struct ReduceWeightsFunctorInnerLoop {
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
     bool mj_bUniformWeights,
     scalar_t mj_sEpsilon,
-    int mj_num_cuts
+    part_t mj_num_cuts,
+    part_t mj_kk
   ) : 
     permutations(mj_permutations),
     coordinates(mj_coordinates),
@@ -3952,13 +3954,16 @@ struct ReduceWeightsFunctorInnerLoop {
     cut_coordinates(mj_cut_coordinates),
     bUniformWeights(mj_bUniformWeights),
     sEpsilon(mj_sEpsilon),
-    num_cuts(mj_num_cuts)
+    num_cuts(mj_num_cuts),
+    kk(mj_kk)
   {
   
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const size_t ii, ArrayType<scalar_t>& threadSum) const {
+
+    auto offset = kk * num_cuts;
 
     int i = permutations(ii);
     scalar_t coord = coordinates(i);
@@ -3976,8 +3981,8 @@ struct ReduceWeightsFunctorInnerLoop {
     while(bRun) {
       if(checking % 2 == 0) {
         auto part = checking / 2;
-        a = (part > 0) ? cut_coordinates(part-1) : -9999999.9f; // to do fix range
-        scalar_t b = (part < num_cuts) ? cut_coordinates(part) : 999999.9f; // to do fix range
+        a = (part > 0) ? cut_coordinates(offset+part-1) : -9999999.9f; // to do fix range
+        scalar_t b = (part < num_cuts) ? cut_coordinates(offset+part) : 999999.9f; // to do fix range
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
           threadSum.ptr[part*2] += w;
           parts(i) = part*2;
@@ -3986,7 +3991,7 @@ struct ReduceWeightsFunctorInnerLoop {
       }
       else {
         auto cut = checking / 2;
-        a = cut_coordinates(cut);
+        a = cut_coordinates(offset+cut);
         if(coord < a + sEpsilon && coord > a - sEpsilon) {
           threadSum.ptr[cut*2+1] += w;
           parts(i) = cut*2+1;
@@ -4002,7 +4007,7 @@ struct ReduceWeightsFunctorInnerLoop {
     }
 #else
     // check part 0
-    scalar_t b = cut_coordinates(0);
+    scalar_t b = cut_coordinates(offset+0);
     if(coord <= b - sEpsilon) {
       threadSum.ptr[0] += w;
       parts(i) = 0;
@@ -4019,7 +4024,7 @@ struct ReduceWeightsFunctorInnerLoop {
     // now check each part and it's right cut
     for(index_t part = 1; part < num_cuts; ++part) {
       a = b; 
-      b = cut_coordinates(part);
+      b = cut_coordinates(offset+part);
 
       if(coord < b + sEpsilon && coord > b - sEpsilon) {
         threadSum.ptr[part*2+1] += w;
@@ -4138,10 +4143,11 @@ struct ReduceWeightsFunctor {
       coordinates,
       weights,
       parts,
-      cut_coordinates, // TODO - This has incorrect coordinate mapping - need to fix XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+      cut_coordinates,
       bUniformWeights,
       sEpsilon,
-      num_cuts);
+      num_cuts,
+      kk);
 
 //    if(teamMember.team_size() == 0) printf("dummy\n");
 
@@ -4517,14 +4523,6 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   }, num_parts);
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
-
-/*
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
-    Kokkos::subview(local_kokkos_temp_cut_coords,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_temp_cut_coords.size()));
-*/
 
   clock_weights2.start();
 
