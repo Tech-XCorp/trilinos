@@ -4049,6 +4049,9 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
+  part_t num_cuts;
+  part_t current_work_part;
+  part_t kk;
   part_t concurrent_current_part;
   int value_count;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
@@ -4061,7 +4064,9 @@ struct ReduceWeightsFunctor {
   scalar_t sEpsilon;
   
   ReduceWeightsFunctor(
-    part_t mj_concurrent_current_part,
+    part_t mj_num_cuts,
+    part_t mj_current_work_part,
+    part_t mj_kk,
     const int & mj_weight_array_size,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
@@ -4071,7 +4076,10 @@ struct ReduceWeightsFunctor {
     Kokkos::View<index_t *, typename node_t::device_type> mj_part_xadj,
     Kokkos::View<bool*, typename node_t::device_type> mj_uniform_weights,
     scalar_t mj_sEpsilon) :
-    concurrent_current_part(mj_concurrent_current_part),
+    num_cuts(mj_num_cuts),
+    current_work_part(mj_current_work_part),
+    kk(mj_kk),
+    concurrent_current_part(mj_current_work_part+mj_kk),
     value_count(mj_weight_array_size),
     permutations(mj_permutations),
     coordinates(mj_coordinates),
@@ -4130,7 +4138,7 @@ struct ReduceWeightsFunctor {
       coordinates,
       weights,
       parts,
-      cut_coordinates,
+      cut_coordinates, // TODO - This has incorrect coordinate mapping - need to fix XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
       bUniformWeights,
       sEpsilon,
       num_cuts);
@@ -4510,26 +4518,31 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
 
+/*
   Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
     Kokkos::subview(local_kokkos_temp_cut_coords,
       std::pair<mj_lno_t, mj_lno_t>(
         working_kk * num_cuts,
         local_kokkos_temp_cut_coords.size()));
-        
+*/
+
   clock_weights2.start();
 
   int weight_array_size = num_cuts * 2 + 1;
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
-    teamFunctor(current_work_part + working_kk,
-    weight_array_size,
-    kokkos_coordinate_permutations,
-    kokkos_mj_current_dim_coords,
-    kokkos_mj_weights,
-    kokkos_assigned_part_ids,
-    kokkos_temp_current_cut_coords,
-    kokkos_part_xadj,
-    kokkos_mj_uniform_weights,
-    sEpsilon);
+    teamFunctor(
+      num_cuts,
+      current_work_part,
+      working_kk,
+      weight_array_size,
+      kokkos_coordinate_permutations,
+      kokkos_mj_current_dim_coords,
+      kokkos_mj_weights,
+      kokkos_assigned_part_ids,
+      local_kokkos_temp_cut_coords,
+      kokkos_part_xadj,
+      kokkos_mj_uniform_weights,
+      sEpsilon);
 
   clock_weights2.stop();
   clock_weights3.start();
