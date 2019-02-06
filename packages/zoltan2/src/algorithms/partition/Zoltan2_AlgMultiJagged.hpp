@@ -3595,7 +3595,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       kokkos_my_incomplete_cut_count);
 
     clock_host_copies.stop();
-
+printf("Check 1\n");
   // TODO: We are merging - can we just skip this?
   // Need to evaluate how this logic is handled internally.
   // From a testing viewpoint it seems fine...
@@ -4448,16 +4448,53 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   
   clock_weights1.start();
 
+  auto local_kokkos_my_incomplete_cut_count = kokkos_my_incomplete_cut_count;
+
   // TODO: Confirm - I think this is right - now we can initialize the full
   // set to 0 since we're independently looping kk below, not outside anymore.
   // initializations for part weights
+for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
+
+
+  // TODO: Expensive - optimize it
+  mj_part_t num_parts;
+  Kokkos::parallel_reduce("Read num parts", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
+  }, num_parts);
+  mj_part_t num_cuts = num_parts - 1;
+  size_t total_part_count = num_parts + size_t (num_cuts);
+
+        Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
+          Kokkos::subview(local_kokkos_thread_part_weights,
+            std::pair<mj_lno_t, mj_lno_t>(total_part_count * working_kk,
+             local_kokkos_thread_part_weights.size()));
+
+  // TODO: Expensive - optimize it
+  mj_part_t incomplete_cut_count;
+  Kokkos::parallel_reduce("Read incomplete_cut_count", 1,
+    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
+  }, incomplete_cut_count);
+  if(incomplete_cut_count == 0) continue;
+
+  Kokkos::parallel_for (total_part_count,
+    KOKKOS_LAMBDA(size_t i) {
+    kokkos_my_current_part_weights(i) = 0;
+  });
+
+/*
   Kokkos::parallel_for (local_kokkos_thread_part_weights.size(),
     KOKKOS_LAMBDA(size_t i) {
     local_kokkos_thread_part_weights(i) = 0;
   });
+*/
+}
 
   clock_weights1.stop();
 
+
+printf("Check 2\n");
 
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
@@ -4472,12 +4509,12 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   
   // TODO: Expensive - optimize it
   mj_part_t incomplete_cut_count;
-  Kokkos::parallel_reduce("Read num parts", 1,
+  Kokkos::parallel_reduce("Read incomplete_cut_count", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = kokkos_my_incomplete_cut_count(working_kk);
+    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
-  
+
   clock_weights2.start();
 
   int weight_array_size = num_cuts * 2 + 1;
@@ -4538,11 +4575,13 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   
 } // end phase 1
 
+printf("Check 3\n");
+
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
   // TODO: Expensive - optimize it
   mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
+  Kokkos::parallel_reduce("Read num_parts", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
     set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
   }, num_parts);
@@ -4551,9 +4590,9 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   
   // TODO: Expensive - optimize it
   mj_part_t incomplete_cut_count;
-  Kokkos::parallel_reduce("Read num parts", 1,
+  Kokkos::parallel_reduce("Read incomplete_cut_count", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = kokkos_my_incomplete_cut_count(working_kk);
+    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
   
@@ -4603,7 +4642,7 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
 
   // TODO: Expensive - optimize it
   mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
+  Kokkos::parallel_reduce("Read num_parts", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
     set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
   }, num_parts);
@@ -4611,9 +4650,9 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   
   // TODO: Expensive - optimize it
   mj_part_t incomplete_cut_count;
-  Kokkos::parallel_reduce("Read num parts", 1,
+  Kokkos::parallel_reduce("Read incomplete cut count", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = kokkos_my_incomplete_cut_count(working_kk);
+    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
   
