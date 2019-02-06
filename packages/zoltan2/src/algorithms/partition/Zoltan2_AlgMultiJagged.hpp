@@ -4644,7 +4644,6 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
     set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
   }, num_parts);
   mj_part_t num_cuts = num_parts - 1;
-  size_t total_part_count = num_parts + size_t (num_cuts);
   
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
     Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
