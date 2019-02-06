@@ -4134,8 +4134,6 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
-    int num_cuts = value_count / 2;
-
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, node_t> inner_functor(
