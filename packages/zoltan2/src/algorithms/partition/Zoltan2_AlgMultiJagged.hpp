@@ -4149,63 +4149,10 @@ struct ReduceWeightsFunctor {
       num_cuts,
       kk);
 
-//    if(teamMember.team_size() == 0) printf("dummy\n");
-
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       inner_functor, arraySumReducer);
 
-/*
-    // this pointless line of code is resolving an intermittent
-    // failure which occurs after rebasing to latest develop.
-    // TODO: Resolve why this happens
-    if(teamMember.team_size() == 0) printf("dummy\n");
-
-    Kokkos::parallel_reduce(Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
-      int i = permutations(ii);
-      scalar_t coord = coordinates(i);
-      scalar_t w = bUniformWeights ? 1 : weights(i,0);
-
-      // check part 0
-      scalar_t b = cut_coordinates(0);
-      if(coord <= b - sEpsilon) {
-        threadSum.ptr[0] += w;
-        parts(i) = 0;
-      }
-
-      // check cut 0
-      if( coord < b + sEpsilon && coord > b - sEpsilon) {
-        threadSum.ptr[1] += w;
-        parts(i) = 1;
-      }
- 
-      scalar_t a;
- 
-      // now check each part and it's right cut
-      for(index_t part = 1; part < num_cuts; ++part) {
-        a = b; 
-        b = cut_coordinates(part);
-
-        if(coord < b + sEpsilon && coord > b - sEpsilon) {
-          threadSum.ptr[part*2+1] += w;
-          parts(i) = part*2+1;
-        }
-        
-        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-          threadSum.ptr[part*2] += w;
-          parts(i) = part*2;
-        }
-      }
-
-      // check last part
-      a = b;
-      if(coord >= a + sEpsilon) {
-        threadSum.ptr[num_cuts*2] += w;
-        parts(i) = num_cuts*2;
-      }
-    }, arraySumReducer);
-*/
     teamMember.team_barrier();
 
     // collect all the team's results
