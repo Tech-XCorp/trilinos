@@ -4535,67 +4535,39 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   
 } // end phase 1
 
-for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
-
-  // TODO: Expensive - optimize it
-  mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read num_parts", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
-  }, num_parts);
-  mj_part_t num_cuts = num_parts - 1;
-  size_t total_part_count = num_parts + size_t (num_cuts);
-  
-  // TODO: Expensive - optimize it
-  mj_part_t incomplete_cut_count;
-  Kokkos::parallel_reduce("Read incomplete_cut_count", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
-  }, incomplete_cut_count);
-  if(incomplete_cut_count == 0) continue;
-  
-  Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
-    Kokkos::subview(local_kokkos_thread_part_weights,
-      std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
-       local_kokkos_thread_part_weights.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
-    Kokkos::subview(local_kokkos_temp_cut_coords,
-      std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
-        local_kokkos_temp_cut_coords.size()));
-        
   clock_weights4.start();
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
-  typedef typename Kokkos::TeamPolicy<typename mj_node_t::
-    execution_space>::member_type member_type;
-  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
-    // prefix sum computation.
-    // we need prefix sum for each part to determine cut positions.
-    for (size_t i = 1; i < total_part_count; ++i){
-      // check for cuts sharing the same position; all cuts sharing a position
-      // have the same weight == total weight for all cuts sharing the position.
-      // don't want to accumulate that total weight more than once.
-      if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
-        ZOLTAN2_ABS(kokkos_temp_current_cut_coords(i / 2) -
-          kokkos_temp_current_cut_coords(i /2 - 1))
-      < local_sEpsilon){
-        // i % 2 = 0 when part i represents the cut coordinate.
-        // if it is a cut, and if next cut also has the same coordinate, then
-        // dont addup.
-        kokkos_my_current_part_weights(i) = kokkos_my_current_part_weights(i-2);
-        continue;
-      }
+  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(size_t kk) {
+    mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
+    mj_part_t num_cuts = num_parts - 1;
+    size_t total_part_count = num_parts + size_t (num_cuts);
+    auto offset = kk * total_part_count;
+    if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
+      for (size_t i = 1; i < total_part_count; ++i){
+        // check for cuts sharing the same position; all cuts sharing a position
+        // have the same weight == total weight for all cuts sharing the position.
+        // don't want to accumulate that total weight more than once.
+        if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
+          ZOLTAN2_ABS(local_kokkos_temp_cut_coords(kk * num_cuts + i / 2) -
+            local_kokkos_temp_cut_coords(kk * num_cuts + i /2 - 1))
+            < local_sEpsilon){
+          // i % 2 = 0 when part i represents the cut coordinate.
+          // if it is a cut, and if next cut also has the same coordinate, then
+          // dont addup.
+          local_kokkos_thread_part_weights(offset + i)
+            = local_kokkos_thread_part_weights(offset + i-2);
+          continue;
+        }
 
-      //otherwise do the prefix sum.
-      kokkos_my_current_part_weights(i) += kokkos_my_current_part_weights(i-1);
+        //otherwise do the prefix sum.
+        local_kokkos_thread_part_weights(offset + i) +=
+          local_kokkos_thread_part_weights(offset + i-1);
+      }
     }
-  });     
+  });
 
   clock_weights4.stop();
   
-} // end phase 2
-
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
   // TODO: Expensive - optimize it
