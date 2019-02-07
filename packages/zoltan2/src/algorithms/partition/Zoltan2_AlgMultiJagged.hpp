@@ -3924,37 +3924,35 @@ struct ReduceWeightsFunctorInnerLoop {
   Kokkos::View<scalar_t *, typename node_t::device_type> cut_coordinates;
   bool bUniformWeights;
   scalar_t sEpsilon;
-  part_t num_cuts;
-  part_t kk;
+  part_t current_concurrent_num_parts;
   
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
+    part_t mj_current_concurrent_num_parts,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
     Kokkos::View<scalar_t**, typename node_t::device_type> mj_weights,
     Kokkos::View<part_t*, typename node_t::device_type> mj_parts,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_cut_coordinates,
     bool mj_bUniformWeights,
-    scalar_t mj_sEpsilon,
-    part_t mj_num_cuts,
-    part_t mj_kk
+    scalar_t mj_sEpsilon
   ) : 
+    current_concurrent_num_parts(mj_current_concurrent_num_parts),
     permutations(mj_permutations),
     coordinates(mj_coordinates),
     weights(mj_weights),
     parts(mj_parts),
     cut_coordinates(mj_cut_coordinates),
     bUniformWeights(mj_bUniformWeights),
-    sEpsilon(mj_sEpsilon),
-    num_cuts(mj_num_cuts),
-    kk(mj_kk)
+    sEpsilon(mj_sEpsilon)
   {
   
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const size_t ii, ArrayType<scalar_t>& threadSum) const {
-
+/*
+for(int concurrent_part = 0; concurrent_part < current_concurrent_num_parts; ++concurrent_part) {
     auto offset = kk * num_cuts;
 
     int i = permutations(ii);
@@ -4036,6 +4034,8 @@ struct ReduceWeightsFunctorInnerLoop {
       parts(i) = num_cuts*2;
     }
 #endif
+}
+*/
   }
 };
 
@@ -4046,10 +4046,8 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
-  part_t num_cuts;
   part_t current_work_part;
-  part_t kk;
-  part_t concurrent_current_part;
+  part_t current_concurrent_num_parts;
   int value_count;
   Kokkos::View<index_t*, typename node_t::device_type> permutations;
   Kokkos::View<scalar_t *, typename node_t::device_type> coordinates;
@@ -4061,9 +4059,8 @@ struct ReduceWeightsFunctor {
   scalar_t sEpsilon;
   
   ReduceWeightsFunctor(
-    part_t mj_num_cuts,
     part_t mj_current_work_part,
-    part_t mj_kk,
+    part_t mj_current_concurrent_num_parts,
     const int & mj_weight_array_size,
     Kokkos::View<index_t*, typename node_t::device_type> mj_permutations,
     Kokkos::View<scalar_t *, typename node_t::device_type> mj_coordinates,
@@ -4073,10 +4070,8 @@ struct ReduceWeightsFunctor {
     Kokkos::View<index_t *, typename node_t::device_type> mj_part_xadj,
     Kokkos::View<bool*, typename node_t::device_type> mj_uniform_weights,
     scalar_t mj_sEpsilon) :
-    num_cuts(mj_num_cuts),
     current_work_part(mj_current_work_part),
-    kk(mj_kk),
-    concurrent_current_part(mj_current_work_part+mj_kk),
+    current_concurrent_num_parts(mj_current_concurrent_num_parts),
     value_count(mj_weight_array_size),
     permutations(mj_permutations),
     coordinates(mj_coordinates),
@@ -4096,6 +4091,7 @@ struct ReduceWeightsFunctor {
   void operator() (const member_type & teamMember, value_type teamSum) const {
     bool bUniformWeights = uniform_weights(0);
 
+for(int concurrent_current_part = 0; concurrent_current_part < current_concurrent_num_parts; ++concurrent_current_part) {
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
       part_xadj(concurrent_current_part -1);
     index_t all_end = part_xadj(concurrent_current_part);
@@ -4129,15 +4125,14 @@ struct ReduceWeightsFunctor {
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, node_t> inner_functor(
+      current_concurrent_num_parts,
       permutations,
       coordinates,
       weights,
       parts,
       cut_coordinates,
       bUniformWeights,
-      sEpsilon,
-      num_cuts,
-      kk);
+      sEpsilon);
 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
@@ -4151,6 +4146,8 @@ struct ReduceWeightsFunctor {
         teamSum[n] += array.ptr[n];
       }
     });
+}
+
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4456,6 +4453,71 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_weights1.stop();
 
+  // We need to establish the total working array size
+  int array_length = 0;
+  Kokkos::parallel_reduce("Get array size", current_concurrent_num_parts,
+    KOKKOS_LAMBDA(int kk, int & length) {
+    mj_part_t num_parts =
+      view_num_partitioning_in_current_dim(current_work_part + kk);
+    mj_part_t num_cuts = num_parts - 1;
+    length += num_cuts * 2 + 1;
+  }, array_length);
+    
+  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, mj_node_t>
+    teamFunctor(
+      current_work_part,
+      current_concurrent_num_parts,
+      array_length,
+      kokkos_coordinate_permutations,
+      kokkos_mj_current_dim_coords,
+      kokkos_mj_weights,
+      kokkos_assigned_part_ids,
+      local_kokkos_temp_cut_coords,
+      kokkos_part_xadj,
+      kokkos_mj_uniform_weights,
+      sEpsilon);
+
+  auto policy_ReduceWeightsFunctor =
+    policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
+
+  mj_scalar_t * part_weights = new mj_scalar_t[array_length];
+
+  Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
+    teamFunctor, part_weights);
+  
+  int offset = 0;
+  for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
+  
+    // TODO: Expensive - optimize it
+    mj_part_t num_parts;
+    Kokkos::parallel_reduce("Read num parts", 1,
+      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+      set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
+    }, num_parts);
+    mj_part_t num_cuts = num_parts - 1;
+    size_t total_part_count = num_parts + size_t (num_cuts);
+    
+    Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
+      Kokkos::subview(local_kokkos_thread_part_weights,
+        std::pair<mj_lno_t, mj_lno_t>(working_kk * total_part_count,
+         working_kk * total_part_count + total_part_count));
+    // Move it from global memory to device memory
+    // TODO: Need to figure out how we can better manage this
+    typename decltype(kokkos_my_current_part_weights)::HostMirror
+      hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
+    for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
+      hostArray(i) = part_weights[i+offset];
+    }
+    Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
+   
+    offset += num_cuts * 2 + 1;
+    
+  
+  }
+  
+  delete [] part_weights;
+  
+/*
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
   // TODO: Expensive - optimize it
@@ -4503,10 +4565,8 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
 
   clock_functor_weights.start();
 
-//Clock weight_single("single", true);
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
-//weight_single.stop(true);
 
   clock_functor_weights.stop();
 
@@ -4534,6 +4594,8 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   clock_weights3.stop();
   
 } // end phase 1
+
+*/
 
   clock_weights4.start();
 
