@@ -4022,8 +4022,6 @@ struct ReduceWeightsFunctorInnerLoop {
         threadSum.ptr[total_part_shift+num_cuts*2] += w;
         parts(i) = num_cuts*2;
       }
-      
-      printf("Set %d: %d\n", (int) i, (int) parts(i));
     }
   }
 };
