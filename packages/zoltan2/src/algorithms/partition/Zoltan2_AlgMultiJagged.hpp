@@ -4449,9 +4449,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     // This is an inefficiency but not sure if it matters much
     size_t offset = 0;
     for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
-      mj_part_t num_parts2 = view_num_partitioning_in_current_dim(current_work_part + kk2);
-      mj_part_t num_cuts = num_parts - 1;
-      offset += num_parts2 + num_cuts;
+      offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
     }
     
     size_t total_part_count = num_parts + size_t (num_cuts);  
@@ -4553,9 +4551,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     // This is an inefficiency but not sure if it matters much
     size_t offset = 0;
     for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
-      mj_part_t num_parts2 = view_num_partitioning_in_current_dim(current_work_part + kk2);
-      mj_part_t num_cuts = num_parts - 1;
-      offset += num_parts2 + num_cuts;
+      offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
     }
     if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
       for (size_t i = 1; i < total_part_count; ++i){
