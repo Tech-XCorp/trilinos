@@ -4539,7 +4539,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   // TODO: This is not correct - assumes num_cuts constant
   // we need to sum as we loop for num_cutd and total_part_count
-  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(size_t kk) {
+  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
     size_t total_part_count = num_parts + num_cuts;
