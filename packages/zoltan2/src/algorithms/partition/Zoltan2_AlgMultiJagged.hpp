@@ -4595,12 +4595,14 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
   
-  size_t offset_cuts = 0;
-  for(mj_part_t kk2 = 0; kk2 < working_kk; ++kk2) {
-    offset_cuts += view_num_partitioning_in_current_dim(current_work_part + kk2) - 1;
-  }
-      
-  // TODO This is not correct need to sum num_cuts as we loop
+  // can simplify this to a non-kernel loop once we convert all of this
+  // to be a kernel.
+  int offset_cuts = 0;
+  Kokkos::parallel_reduce("Get cut shift", working_kk,
+    KOKKOS_LAMBDA(int kk2, int & offset) {
+    offset += view_num_partitioning_in_current_dim(current_work_part + kk2) - 1;
+  }, offset_cuts);
+  
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
     Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
     std::pair<mj_lno_t, mj_lno_t>(
