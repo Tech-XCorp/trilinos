@@ -4118,8 +4118,6 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
-    printf("   Kernel: %d - %d\n", (int) all_begin, (int) all_end);
-
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, device_t> inner_functor(
@@ -4475,8 +4473,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     length += num_cuts * 2 + 1;
   }, array_length);
 
-  printf("Calling kernel for kk range: %d - %d\n", 0, (int) current_concurrent_num_parts);
-  
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type>
     teamFunctor(
@@ -4548,13 +4544,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     mj_part_t num_cuts = num_parts - 1;
     size_t total_part_count = num_parts + num_cuts;
     
-    // get the prefix sum
-    // This is an inefficiency but not sure if it matters much
-    size_t offset = 0;
-    for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
-      offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
-    }
     if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
+      // get the prefix sum
+      // This is an inefficiency but not sure if it matters much
+      size_t offset = 0;
+      for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
+        offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
+      }
+      
       for (size_t i = 1; i < total_part_count; ++i){
         // check for cuts sharing the same position; all cuts sharing a position
         // have the same weight == total weight for all cuts sharing the position.
@@ -4598,21 +4595,26 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
   
+  size_t offset_cuts = 0;
+  for(mj_part_t kk2 = 0; kk2 < working_kk; ++kk2) {
+    offset_cuts += view_num_partitioning_in_current_dim(current_work_part + kk2) - 1;
+  }
+      
   // TODO This is not correct need to sum num_cuts as we loop
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
     Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
     std::pair<mj_lno_t, mj_lno_t>(
-      working_kk * num_cuts,
+      offset_cuts,
       local_kokkos_thread_cut_left_closest_point.size()));
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
     Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
       std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
+        offset_cuts,
         local_kokkos_thread_cut_right_closest_point.size()));
   Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
     Kokkos::subview(local_kokkos_temp_cut_coords,
       std::pair<mj_lno_t, mj_lno_t>(
-        working_kk * num_cuts,
+        offset_cuts,
         local_kokkos_temp_cut_coords.size()));
         
   clock_weights5.start();
