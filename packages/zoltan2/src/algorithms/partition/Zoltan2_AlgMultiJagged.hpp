@@ -4133,7 +4133,7 @@ struct ReduceWeightsFunctor {
       part_xadj,
       view_num_partitioning_in_current_dim,
       kokkos_my_incomplete_cut_count);
-
+    
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       inner_functor, arraySumReducer);
@@ -4495,8 +4495,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   mj_scalar_t * part_weights = new mj_scalar_t[array_length];
 
+  clock_functor_weights.start();
+    
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
+  
+  clock_functor_weights.stop();
   
   mj_part_t total_part_shift = 0;
   for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
