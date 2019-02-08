@@ -4440,7 +4440,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   // TODO: Still passing with skipping all this code
   // Is this definitely necessary - need to review
-  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(size_t kk) {
+  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts =
       view_num_partitioning_in_current_dim(current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
