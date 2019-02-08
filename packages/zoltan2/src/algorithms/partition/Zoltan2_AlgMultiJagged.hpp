@@ -4481,8 +4481,6 @@ for(mj_part_t temp_test_kk = 0; temp_test_kk < current_concurrent_num_parts; ++t
   }, incomplete_cut_count);
   if(incomplete_cut_count == 0) continue;
 
-  clock_weights2.start();
-
   int array_length = num_cuts * 2 + 1;
 
 /*
