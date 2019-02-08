@@ -4118,6 +4118,8 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
+    printf("   Kernel: %d - %d\n", (int) all_begin, (int) all_end);
+
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, device_t> inner_functor(
@@ -4473,6 +4475,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     length += num_cuts * 2 + 1;
   }, array_length);
 
+  printf("Calling kernel for kk range: %d - %d\n", 0, (int) current_concurrent_num_parts);
+  
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type>
     teamFunctor(
