@@ -4097,8 +4097,9 @@ struct ReduceWeightsFunctor {
     index_t all_begin = 0;
     index_t all_end = part_xadj(current_concurrent_num_parts-1);
     
-all_begin = (temp_test_kk != 0) ? part_xadj(temp_test_kk-1) : 0;
-all_end = part_xadj(temp_test_kk);
+auto current_concurrent_part = current_work_part + temp_test_kk;
+all_begin = (current_concurrent_part != 0) ? part_xadj(current_concurrent_part-1) : 0;
+all_end = part_xadj(current_concurrent_part);
     
     index_t num_working_points = all_end - all_begin;
     int num_teams = teamMember.league_size();
@@ -4538,7 +4539,7 @@ for(mj_part_t temp_test_kk = 0; temp_test_kk < current_concurrent_num_parts; ++t
     hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
   for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
     hostArray(i) = part_weights[i];
-}
+  }
 
 /*
   mj_part_t total_part_shift = 0;
@@ -4578,7 +4579,7 @@ for(mj_part_t temp_test_kk = 0; temp_test_kk < current_concurrent_num_parts; ++t
 */
 
   delete [] part_weights;
-
+}
 
   clock_weights4.start();
 
@@ -4612,8 +4613,6 @@ for(mj_part_t temp_test_kk = 0; temp_test_kk < current_concurrent_num_parts; ++t
       }
     }
   });
-
-}
 
   clock_weights4.stop();
   
