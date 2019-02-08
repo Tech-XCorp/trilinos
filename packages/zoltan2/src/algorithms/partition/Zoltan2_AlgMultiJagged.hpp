@@ -3979,7 +3979,8 @@ struct ReduceWeightsFunctorInnerLoop {
       num_cuts = num_parts - 1;
       total_part_count = num_parts + size_t(num_cuts);  
       incomplete_cut_count = kokkos_my_incomplete_cut_count(kk);
-      if(ii >= ((kk == 0) ? 0 : part_xadj(kk-1)) && ii < part_xadj(kk)) {
+      auto current_concurrent_work_part = current_work_part + kk;
+      if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
         // we found our shift
         break;
       }
@@ -3987,7 +3988,6 @@ struct ReduceWeightsFunctorInnerLoop {
       total_part_shift += total_part_count;
     }
 
-concurrent_cut_shifts = temp_test_kk * num_cuts;
 total_part_shift = 0;
 
     
