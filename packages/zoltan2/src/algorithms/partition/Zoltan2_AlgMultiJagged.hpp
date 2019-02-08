@@ -4530,9 +4530,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       }
       Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
     }
-    else {
-      printf("SKIPPED incomplete > 0!\n");
-    }
     total_part_shift += total_part_count;
   }
 
