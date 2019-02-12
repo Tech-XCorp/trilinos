@@ -753,6 +753,9 @@ private:
   // for this part.
   Kokkos::View<mj_part_t *, device_t> kokkos_my_incomplete_cut_count;
 
+  // used to optimize kernel - sums 
+  Kokkos::View<mj_part_t *, device_t> kokkos_prefix_sum_num_cuts;
+
   // local part weights of each thread.
   Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
     kokkos_thread_part_weights;
@@ -2840,6 +2843,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, device_t>(
     "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
 
+  this->kokkos_prefix_sum_num_cuts =  Kokkos::View<mj_part_t *, device_t>(
+    "kokkos_prefix_sum_num_cuts", this->max_concurrent_part_calculation);
+
   // local part weights of each thread.
   this->kokkos_thread_part_weights = Kokkos::View<double *,
     Kokkos::LayoutLeft, device_t>("thread_part_weights",
@@ -3930,6 +3936,7 @@ struct ReduceWeightsFunctorInnerLoop {
   Kokkos::View<index_t *, device_t> part_xadj;
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> kokkos_my_incomplete_cut_count;
+  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
   
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
@@ -3944,7 +3951,8 @@ struct ReduceWeightsFunctorInnerLoop {
     scalar_t mj_sEpsilon,
     Kokkos::View<index_t *, device_t> mj_part_xadj,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
-    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count) :
+    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count,
+    Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts) :
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
       permutations(mj_permutations),
@@ -3957,7 +3965,8 @@ struct ReduceWeightsFunctorInnerLoop {
       part_xadj(mj_part_xadj),
       view_num_partitioning_in_current_dim(
         mj_view_num_partitioning_in_current_dim),
-      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count) {
+      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count),
+      kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts) {
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -3966,29 +3975,14 @@ struct ReduceWeightsFunctorInnerLoop {
     int i = permutations(ii);
     scalar_t coord = coordinates(i);
     scalar_t w = bUniformWeights ? 1 : weights(i,0);
-    part_t concurrent_cut_shifts = 0;
-    part_t total_part_shift = 0;
-    part_t incomplete_cut_count = 0;
-    part_t num_cuts = 0;
-    size_t total_part_count = 0;
-    
-    // TODO: Need to optimize this prefix sum
-    for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-      part_t num_parts =
-        view_num_partitioning_in_current_dim(current_work_part + kk);
-      num_cuts = num_parts - 1;
-      total_part_count = num_parts + size_t(num_cuts);  
-      incomplete_cut_count = kokkos_my_incomplete_cut_count(kk);
-      auto current_concurrent_work_part = current_work_part + kk;
-      if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
-        // we found our shift
-        break;
-      }
-      concurrent_cut_shifts += num_cuts;
-      total_part_shift += total_part_count;
-    }
-    
-    if(incomplete_cut_count > 0) {
+
+    part_t kk = parts(i);
+    part_t concurrent_cut_shifts = kokkos_prefix_sum_num_cuts(kk);
+    part_t total_part_shift = concurrent_cut_shifts * 2 + kk;
+    part_t num_cuts =
+        view_num_partitioning_in_current_dim(current_work_part + kk) - 1;
+
+    if(kokkos_my_incomplete_cut_count(kk) >= 0) {
       // check part 0
       scalar_t b = cut_coordinates(concurrent_cut_shifts+0);
       if(coord <= b - sEpsilon) {
@@ -4052,6 +4046,7 @@ struct ReduceWeightsFunctor {
   scalar_t sEpsilon;
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> kokkos_my_incomplete_cut_count;
+  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
   
   ReduceWeightsFunctor(
     part_t mj_current_work_part,
@@ -4066,7 +4061,8 @@ struct ReduceWeightsFunctor {
     Kokkos::View<bool*, device_t> mj_uniform_weights,
     scalar_t mj_sEpsilon,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
-    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count) :
+    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count,
+    Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts) :
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
       value_count(mj_weight_array_size),
@@ -4079,7 +4075,8 @@ struct ReduceWeightsFunctor {
       uniform_weights(mj_uniform_weights),
       sEpsilon(mj_sEpsilon),
       view_num_partitioning_in_current_dim(mj_view_num_partitioning_in_current_dim),
-      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count) {
+      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count),
+      kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts) {
   }
 
   size_t team_shmem_size (int team_size) const {
@@ -4109,6 +4106,37 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(teamMember, current_concurrent_num_parts),
+      [=] (const int & kk) {
+      part_t sum_num_cuts = 0;
+      for(int kk2 = 0; kk2 < kk; ++kk2) {
+        part_t num_parts =
+          view_num_partitioning_in_current_dim(current_work_part + kk2);
+        sum_num_cuts += num_parts - 1;
+      }
+      kokkos_prefix_sum_num_cuts(kk) = sum_num_cuts;      
+    });
+    
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const int & ii) {
+      int i = permutations(ii);
+      
+      for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+        auto current_concurrent_work_part = current_work_part + kk;
+        if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
+          parts(i) = kk;
+          break;
+        }
+      }
+    });
+  
+  // write the parts loop
+    // TODO: Need to optimize this prefix sum
+
+    
+    
     // create the team shared data - each thread gets one of the arrays
     scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
       sizeof(scalar_t) * value_count * teamMember.team_size());
@@ -4135,7 +4163,8 @@ if(!bTest) {
       sEpsilon,
       part_xadj,
       view_num_partitioning_in_current_dim,
-      kokkos_my_incomplete_cut_count);
+      kokkos_my_incomplete_cut_count,
+      kokkos_prefix_sum_num_cuts);
 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
@@ -4475,7 +4504,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     mj_part_t num_cuts = num_parts - 1;
     length += num_cuts * 2 + 1;
   }, array_length);
-
+    
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type>
     teamFunctor(
@@ -4491,7 +4520,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       kokkos_mj_uniform_weights,
       sEpsilon,
       view_num_partitioning_in_current_dim,
-      local_kokkos_my_incomplete_cut_count);
+      local_kokkos_my_incomplete_cut_count,
+      kokkos_prefix_sum_num_cuts);
 
   auto policy_ReduceWeightsFunctor =
     policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
