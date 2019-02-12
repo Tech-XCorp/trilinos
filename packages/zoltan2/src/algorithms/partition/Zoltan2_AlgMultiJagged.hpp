@@ -139,6 +139,7 @@ static Clock clock_weights1("            clock_weights1", false);
 static Clock clock_weights2("            clock_weights2", false);
 static Clock clock_weights3("            clock_weights3", false);
 static Clock clock_functor_weights("              clock_functor_weights", false);
+static Clock clock_functor_weights_test("              clock_functor_weights_test", false);
 static Clock clock_weights4("            clock_weights4", false);
 static Clock clock_weights5("            clock_weights5", false);
 static Clock clock_weights6("            clock_weights6", false);
@@ -4036,6 +4037,8 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
+  bool bTest = false;
+
   part_t current_work_part;
   part_t current_concurrent_num_parts;
   int value_count;
@@ -4117,7 +4120,7 @@ struct ReduceWeightsFunctor {
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
-
+if(!bTest) {
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, device_t> inner_functor(
@@ -4133,11 +4136,11 @@ struct ReduceWeightsFunctor {
       part_xadj,
       view_num_partitioning_in_current_dim,
       kokkos_my_incomplete_cut_count);
-    
+
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       inner_functor, arraySumReducer);
-
+}
     teamMember.team_barrier();
 
     // collect all the team's results
@@ -4495,11 +4498,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   mj_scalar_t * part_weights = new mj_scalar_t[array_length];
 
-  clock_functor_weights.start();
-    
+  clock_functor_weights_test.start();
+  
+  teamFunctor.bTest = true;  
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
-  
+  teamFunctor.bTest = false;
+
+  clock_functor_weights_test.stop();
+  clock_functor_weights.start();
+
+  Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
+    teamFunctor, part_weights);
+
   clock_functor_weights.stop();
   
   mj_part_t total_part_shift = 0;
@@ -7739,6 +7750,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights2.reset();
   clock_weights3.reset();
   clock_functor_weights.reset();
+  clock_functor_weights_test.reset();
   clock_weights4.reset();
   clock_weights5.reset();
   clock_weights6.reset();
@@ -8500,6 +8512,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights2.print();
   clock_weights3.print();
   clock_functor_weights.print();
+  clock_functor_weights_test.print();
   clock_weights4.print();
   clock_weights5.print();
   clock_weights6.print();
