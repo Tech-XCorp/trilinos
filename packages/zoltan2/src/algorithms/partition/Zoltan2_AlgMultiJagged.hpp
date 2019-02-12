@@ -4022,82 +4022,26 @@ struct ReduceWeightsFunctorInnerLoop {
     int i = permutations(ii);
     scalar_t coord = coordinates(i);
     scalar_t w = bUniformWeights ? 1 : weights(i,0);
-#ifdef NEW_FORM
-    auto checking = (int) parts(i);
-    scalar_t a;
 
-    checking = 0;
-
-    if(checking < 0) checking = 0;
-    if(checking > num_cuts * 2) checking = num_cuts * 2;
-
-    bool bRun = true;
-    while(bRun) {
-      if(checking % 2 == 0) {
-        auto part = checking / 2;
-        a = (part > 0) ? cut_coordinates(part-1) : -9999999.9f; // to do fix range
-        scalar_t b = (part < num_cuts) ? cut_coordinates(part) : 999999.9f; // to do fix range
-        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-          threadSum.ptr[part*2] += w;
-          parts(i) = part*2;
-          bRun = false;
-        }
-      }
-      else {
-        auto cut = checking / 2;
-        a = cut_coordinates(cut);
-        if(coord < a + sEpsilon && coord > a - sEpsilon) {
-          threadSum.ptr[cut*2+1] += w;
-          parts(i) = cut*2+1;
-          bRun = false;
-        }
-      }
-      if(coord < a) {
-        --checking;
-      }           
-      else {
-        ++checking;
-      }
-    }
-#else
     // check part 0
-    scalar_t b = cut_coordinates(0);
-    if(coord <= b - sEpsilon) {
-      threadSum.ptr[0] += w;
-      parts(i) = 0;
-    }
+    scalar_t b = -99999999999.9;
 
-    // check cut 0
-    if( coord < b + sEpsilon && coord > b - sEpsilon) {
-      threadSum.ptr[1] += w;
-      parts(i) = 1;
-    }
+    // now check each part and it's associated cut
+    // for the last part we skip the cut
+    for(index_t part = 0; part <= num_cuts; ++part) {
+      scalar_t a = b; 
+      b = (part != num_cuts) ? cut_coordinates(part) : 99999999999.9;
 
-    scalar_t a;
-
-    // now check each part and it's right cut
-    for(index_t part = 1; part < num_cuts; ++part) {
-      a = b; 
-      b = cut_coordinates(part);
-
-      if(coord < b + sEpsilon && coord > b - sEpsilon) {
-        threadSum.ptr[part*2+1] += w;
-        parts(i) = part*2+1;
-      }
-      
       if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
         threadSum.ptr[part*2] += w;
         parts(i) = part*2;
       }
+      
+      if(coord < b + sEpsilon && coord > b - sEpsilon && part != num_cuts) {
+        threadSum.ptr[part*2+1] += w;
+        parts(i) = part*2+1;
+      }
     }
-
-    // check last part
-    a = b;
-    if(coord >= a + sEpsilon) {
-      threadSum.ptr[num_cuts*2] += w;
-      parts(i) = num_cuts*2;
-    }
-#endif
   }
 };
 
