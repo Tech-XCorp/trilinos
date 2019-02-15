@@ -3983,42 +3983,27 @@ struct ReduceWeightsFunctorInnerLoop {
         view_num_partitioning_in_current_dim(current_work_part + kk) - 1;
 
     if(kokkos_my_incomplete_cut_count(kk) >= 0) {
-      // check part 0
-      scalar_t b = cut_coordinates(concurrent_cut_shifts+0);
-      if(coord <= b - sEpsilon) {
-        threadSum.ptr[total_part_shift+0] += w;
-        parts(i) = 0;
-      }
 
-      // check cut 0
-      if(coord < b + sEpsilon && coord > b - sEpsilon) {
-        threadSum.ptr[total_part_shift+1] += w;
-        parts(i) = 1;
-      }
-
-      scalar_t a;
+      scalar_t b = -99999999.9; // TODO: Clean up bounds
 
       // now check each part and it's right cut
-      for(index_t part = 1; part < num_cuts; ++part) {
-        a = b; 
-        b = cut_coordinates(concurrent_cut_shifts+part);
+      for(index_t part = 0; part <= num_cuts; ++part) {
+      
+        scalar_t a = b;
+        b = (part == num_cuts) ? 99999999.9 : // TODO: Clean up bounds
+          cut_coordinates(concurrent_cut_shifts+part);
 
-        if(coord < b + sEpsilon && coord > b - sEpsilon) {
-          threadSum.ptr[total_part_shift+part*2+1] += w;
-          parts(i) = part*2+1;
-        }
-        
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
           threadSum.ptr[total_part_shift+part*2] += w;
           parts(i) = part*2;
         }
-      }
 
-      // check last part
-      a = b;
-      if(coord >= a + sEpsilon) {
-        threadSum.ptr[total_part_shift+num_cuts*2] += w;
-        parts(i) = num_cuts*2;
+        if(part != num_cuts) {
+          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+            threadSum.ptr[total_part_shift+part*2+1] += w;
+            parts(i) = part*2+1;
+          }
+        }
       }
     }
   }
@@ -4131,12 +4116,7 @@ struct ReduceWeightsFunctor {
         }
       }
     });
-  
-  // write the parts loop
-    // TODO: Need to optimize this prefix sum
 
-    
-    
     // create the team shared data - each thread gets one of the arrays
     scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
       sizeof(scalar_t) * value_count * teamMember.team_size());
@@ -4148,28 +4128,30 @@ struct ReduceWeightsFunctor {
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
-if(!bTest) {
-    // call the reduce
-    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
-      index_t, device_t> inner_functor(
-      current_work_part,
-      current_concurrent_num_parts,
-      permutations,
-      coordinates,
-      weights,
-      parts,
-      cut_coordinates,
-      bUniformWeights,
-      sEpsilon,
-      part_xadj,
-      view_num_partitioning_in_current_dim,
-      kokkos_my_incomplete_cut_count,
-      kokkos_prefix_sum_num_cuts);
 
-    Kokkos::parallel_reduce(
-      Kokkos::TeamThreadRange(teamMember, begin, end),
-      inner_functor, arraySumReducer);
-}
+    if(!bTest) {
+        // call the reduce
+        ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
+          index_t, device_t> inner_functor(
+          current_work_part,
+          current_concurrent_num_parts,
+          permutations,
+          coordinates,
+          weights,
+          parts,
+          cut_coordinates,
+          bUniformWeights,
+          sEpsilon,
+          part_xadj,
+          view_num_partitioning_in_current_dim,
+          kokkos_my_incomplete_cut_count,
+          kokkos_prefix_sum_num_cuts);
+
+        Kokkos::parallel_reduce(
+          Kokkos::TeamThreadRange(teamMember, begin, end),
+          inner_functor, arraySumReducer);
+    }
+
     teamMember.team_barrier();
 
     // collect all the team's results
