@@ -755,7 +755,9 @@ private:
   Kokkos::View<mj_part_t *, device_t> kokkos_my_incomplete_cut_count;
 
   // used to optimize kernel - sums 
+#ifndef TURN_OFF_MERGE_CHUNKS
   Kokkos::View<mj_part_t *, device_t> kokkos_prefix_sum_num_cuts;
+#endif
 
   // local part weights of each thread.
   Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
@@ -2844,8 +2846,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, device_t>(
     "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
 
+#ifndef TURN_OFF_MERGE_CHUNKS
   this->kokkos_prefix_sum_num_cuts =  Kokkos::View<mj_part_t *, device_t>(
     "kokkos_prefix_sum_num_cuts", this->max_concurrent_part_calculation);
+#endif
 
   // local part weights of each thread.
   this->kokkos_thread_part_weights = Kokkos::View<double *,
@@ -3940,8 +3944,11 @@ struct ReduceWeightsFunctorInnerLoop {
   Kokkos::View<index_t *, device_t> part_xadj;
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> kokkos_my_incomplete_cut_count;
-  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
   
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
+#endif
+
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -3958,8 +3965,11 @@ struct ReduceWeightsFunctorInnerLoop {
     scalar_t mj_sEpsilon,
     Kokkos::View<index_t *, device_t> mj_part_xadj,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
-    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count,
-    Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts) :
+    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+    , Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts
+#endif
+    ) :
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
 #endif
@@ -3975,8 +3985,11 @@ struct ReduceWeightsFunctorInnerLoop {
       part_xadj(mj_part_xadj),
       view_num_partitioning_in_current_dim(
         mj_view_num_partitioning_in_current_dim),
-      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count),
-      kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts) {
+      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count)
+#ifndef TURN_OFF_MERGE_CHUNKS
+      , kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts)
+#endif
+  {
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -3991,8 +4004,12 @@ struct ReduceWeightsFunctorInnerLoop {
     part_t concurrent_cut_shifts = 0;
 #else
     part_t concurrent_current_part = parts(i);
+
+#ifndef TURN_OFF_MERGE_CHUNKS
     part_t concurrent_cut_shifts =
       kokkos_prefix_sum_num_cuts(concurrent_current_part);
+#endif
+
     part_t total_part_shift =
       concurrent_cut_shifts * 2 + concurrent_current_part;
 #endif
@@ -4058,8 +4075,11 @@ struct ReduceWeightsFunctor {
   scalar_t sEpsilon;
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> kokkos_my_incomplete_cut_count;
-  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
   
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> kokkos_prefix_sum_num_cuts;
+#endif
+
   ReduceWeightsFunctor(
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
@@ -4076,8 +4096,12 @@ struct ReduceWeightsFunctor {
     Kokkos::View<bool*, device_t> mj_uniform_weights,
     scalar_t mj_sEpsilon,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
-    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count,
-    Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts) :
+    Kokkos::View<part_t *, device_t> mj_kokkos_my_incomplete_cut_count
+
+#ifndef TURN_OFF_MERGE_CHUNKS
+    , Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts
+#endif
+    ) :
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
 #endif
@@ -4093,8 +4117,11 @@ struct ReduceWeightsFunctor {
       uniform_weights(mj_uniform_weights),
       sEpsilon(mj_sEpsilon),
       view_num_partitioning_in_current_dim(mj_view_num_partitioning_in_current_dim),
-      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count),
-      kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts) {
+      kokkos_my_incomplete_cut_count(mj_kokkos_my_incomplete_cut_count)
+#ifndef TURN_OFF_MERGE_CHUNKS
+      , kokkos_prefix_sum_num_cuts(mj_kokkos_prefix_sum_num_cuts)
+#endif
+  {
   }
 
   size_t team_shmem_size (int team_size) const {
@@ -4190,8 +4217,11 @@ struct ReduceWeightsFunctor {
           sEpsilon,
           part_xadj,
           view_num_partitioning_in_current_dim,
-          kokkos_my_incomplete_cut_count,
-          kokkos_prefix_sum_num_cuts);
+          kokkos_my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+          ,kokkos_prefix_sum_num_cuts
+#endif
+          );
 
         Kokkos::parallel_reduce(
           Kokkos::TeamThreadRange(teamMember, begin, end),
@@ -4523,8 +4553,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_weights1.stop();
 
-
-
   // We need to establish the total working array size
 #ifndef TURN_OFF_MERGE_CHUNKS
   int array_length = 0;
@@ -4537,6 +4565,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   }, array_length);
 #endif
    
+  mj_part_t total_part_shift = 0;
+
 #ifdef TURN_OFF_MERGE_CHUNKS 
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
@@ -4558,7 +4588,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       local_kokkos_my_incomplete_cut_count(kk);
   }, incomplete);
 
-  if(incomplete <= 0) {
+  if(incomplete == 0) {
     continue;
   }
 #endif
@@ -4587,8 +4617,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       kokkos_mj_uniform_weights,
       sEpsilon,
       view_num_partitioning_in_current_dim,
-      local_kokkos_my_incomplete_cut_count,
-      kokkos_prefix_sum_num_cuts);
+      local_kokkos_my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+      ,kokkos_prefix_sum_num_cuts
+#endif
+      );
 
 /*
   clock_functor_weights_test.start();
@@ -4608,11 +4641,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_functor_weights.stop();
   
-  mj_part_t total_part_shift = 0;
+  
 #ifndef TURN_OFF_MERGE_CHUNKS 
   for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
-
     // TODO: Expensive - optimize it
     mj_part_t num_parts;
     Kokkos::parallel_reduce("Read num parts", 1,
@@ -4638,7 +4670,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       typename decltype(kokkos_my_current_part_weights)::HostMirror
         hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
       for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+        hostArray(i) = part_weights[i];
+#else
         hostArray(i) = part_weights[i+total_part_shift];
+#endif
       }
       Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
     }
@@ -4651,6 +4687,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   delete [] part_weights;
   
 #ifdef TURN_OFF_MERGE_CHUNKS 
+  total_part_shift += total_part_count;
   } // for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
 
