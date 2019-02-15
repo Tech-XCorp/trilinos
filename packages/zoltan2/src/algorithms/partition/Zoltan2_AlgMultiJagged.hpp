@@ -4005,21 +4005,23 @@ struct ReduceWeightsFunctorInnerLoop {
 #else
     part_t concurrent_current_part = parts(i);
 
+    int kk = concurrent_current_part - current_work_part;
+  
 #ifndef TURN_OFF_MERGE_CHUNKS
     part_t concurrent_cut_shifts =
-      kokkos_prefix_sum_num_cuts(concurrent_current_part);
+      kokkos_prefix_sum_num_cuts(kk);
 #endif
 
     part_t total_part_shift =
-      concurrent_cut_shifts * 2 + concurrent_current_part;
+      concurrent_cut_shifts * 2 + kk;
 #endif
         
 #ifndef TURN_OFF_MERGE_CHUNKS
-    if(kokkos_my_incomplete_cut_count(concurrent_current_part) > 0) {
+    if(kokkos_my_incomplete_cut_count(kk) > 0) {
 #endif
 
       part_t num_cuts = view_num_partitioning_in_current_dim(
-        current_work_part + concurrent_current_part) - 1;
+        concurrent_current_part) - 1;
       
       scalar_t b = -99999999.9; // TODO: Clean up bounds
 
@@ -4179,7 +4181,7 @@ struct ReduceWeightsFunctor {
         auto current_concurrent_work_part = current_work_part + kk;
         if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
           if(kokkos_my_incomplete_cut_count(kk) > 0) {
-            parts(i) = kk;
+            parts(i) = current_concurrent_work_part;
           }
           break;
         }
@@ -4603,7 +4605,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     typename mj_node_t::device_type>
     teamFunctor(
 #ifdef TURN_OFF_MERGE_CHUNKS
-      kk,
+      current_work_part + kk,
 #endif
       current_work_part,
       current_concurrent_num_parts,
