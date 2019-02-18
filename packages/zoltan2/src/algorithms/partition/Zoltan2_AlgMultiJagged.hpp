@@ -4597,7 +4597,7 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights3.start();
 
-  mj_scalar_t * part_weights = new mj_scalar_t[array_length];
+  mj_scalar_t * part_weights = new mj_scalar_t[static_cast<size_t>(array_length)];
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type>
