@@ -71,7 +71,7 @@
 #define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
 #define SET_MAX_TEAMS 200 // to do - optimize
 
-#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -3924,7 +3924,9 @@ struct ReduceWeightsFunctorInnerLoop {
   Kokkos::View<scalar_t *, device_t> coordinates;
   Kokkos::View<scalar_t**, device_t> weights;
   Kokkos::View<part_t*, device_t> parts;
+#ifndef TURN_OFF_MERGE_CHUNKS
   Kokkos::View<part_t*, device_t> info;
+#endif
   Kokkos::View<scalar_t *, device_t> cut_coordinates;
   bool bUniformWeights;
   scalar_t sEpsilon;
@@ -3947,7 +3949,9 @@ struct ReduceWeightsFunctorInnerLoop {
     Kokkos::View<scalar_t *, device_t> mj_coordinates,
     Kokkos::View<scalar_t**, device_t> mj_weights,
     Kokkos::View<part_t*, device_t> mj_parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
     Kokkos::View<part_t*, device_t> mj_info,
+#endif
     Kokkos::View<scalar_t *, device_t> mj_cut_coordinates,
     bool mj_bUniformWeights,
     scalar_t mj_sEpsilon,
@@ -3967,7 +3971,9 @@ struct ReduceWeightsFunctorInnerLoop {
       coordinates(mj_coordinates),
       weights(mj_weights),
       parts(mj_parts),
+#ifndef TURN_OFF_MERGE_CHUNKS
       info(mj_info),
+#endif
       cut_coordinates(mj_cut_coordinates),
       bUniformWeights(mj_bUniformWeights),
       sEpsilon(mj_sEpsilon),
@@ -3988,7 +3994,7 @@ struct ReduceWeightsFunctorInnerLoop {
     scalar_t coord = coordinates(i);
     scalar_t w = bUniformWeights ? 1 : weights(i,0);
 
-#ifdef TURN_OFF_MERGE_CHUNKS
+#ifdef TURN_OFF_MERGE_CHUNKS // ACTION
     part_t total_part_shift = 0;
     part_t concurrent_cut_shifts = 0;
 #else
@@ -4053,7 +4059,9 @@ struct ReduceWeightsFunctor {
   Kokkos::View<scalar_t *, device_t> coordinates;
   Kokkos::View<scalar_t**, device_t> weights;
   Kokkos::View<part_t*, device_t> parts;
+#ifndef TURN_OFF_MERGE_CHUNKS
   Kokkos::View<part_t*, device_t> info;
+#endif
   Kokkos::View<scalar_t *, device_t> cut_coordinates;
   Kokkos::View<index_t *, device_t> part_xadj;
   Kokkos::View<bool*, device_t> uniform_weights;
@@ -4076,7 +4084,9 @@ struct ReduceWeightsFunctor {
     Kokkos::View<scalar_t *, device_t> mj_coordinates,
     Kokkos::View<scalar_t**, device_t> mj_weights,
     Kokkos::View<part_t*, device_t> mj_parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
     Kokkos::View<part_t*, device_t> mj_info,
+#endif
     Kokkos::View<scalar_t *, device_t> mj_cut_coordinates,
     Kokkos::View<index_t *, device_t> mj_part_xadj,
     Kokkos::View<bool*, device_t> mj_uniform_weights,
@@ -4098,7 +4108,9 @@ struct ReduceWeightsFunctor {
       coordinates(mj_coordinates),
       weights(mj_weights),
       parts(mj_parts),
+#ifndef TURN_OFF_MERGE_CHUNKS
       info(mj_info),
+#endif
       cut_coordinates(mj_cut_coordinates),
       part_xadj(mj_part_xadj),
       uniform_weights(mj_uniform_weights),
@@ -4119,7 +4131,7 @@ struct ReduceWeightsFunctor {
   void operator() (const member_type & teamMember, value_type teamSum) const {
     bool bUniformWeights = uniform_weights(0);
 
-#ifdef TURN_OFF_MERGE_CHUNKS
+#ifdef TURN_OFF_MERGE_CHUNKS // ACTION
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
       part_xadj(concurrent_current_part - 1);
     index_t all_end = part_xadj(concurrent_current_part);
@@ -4144,7 +4156,7 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
-#ifndef TURN_OFF_MERGE_CHUNKS
+#ifndef TURN_OFF_MERGE_CHUNKS // ACTION
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, current_concurrent_num_parts),
       [=] (const int & kk) {
@@ -4196,7 +4208,9 @@ struct ReduceWeightsFunctor {
       coordinates,
       weights,
       parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
       info,
+#endif
       cut_coordinates,
       bUniformWeights,
       sEpsilon,
@@ -4537,7 +4551,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_weights1.stop();
 
-#ifndef TURN_OFF_MERGE_CHUNKS
+#ifndef TURN_OFF_MERGE_CHUNKS // ACTION 1
   // We need to establish the total working array size
   mj_part_t array_length = 0;
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
@@ -4550,7 +4564,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
    
   mj_part_t total_part_shift = 0;
 
-#ifdef TURN_OFF_MERGE_CHUNKS 
+#ifdef TURN_OFF_MERGE_CHUNKS // ACTION 2
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
 clock_weights_new_to_optimize.start();
@@ -4558,6 +4572,7 @@ clock_weights_new_to_optimize.start();
   mj_part_t num_parts =
     vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
+  mj_part_t total_part_count = num_parts + num_cuts;
   mj_part_t array_length = num_cuts + num_parts;
   
   mj_part_t incomplete = 0;
@@ -4566,8 +4581,6 @@ clock_weights_new_to_optimize.start();
     incomplete_cut_count =
       local_kokkos_my_incomplete_cut_count(kk);
   }, incomplete);
-
-  mj_part_t total_part_count = num_parts + num_cuts;
 
   if(incomplete == 0) {
     total_part_shift += total_part_count;
@@ -4578,7 +4591,6 @@ clock_weights_new_to_optimize.start();
 clock_weights_new_to_optimize.stop();
 
 #endif
-
 
   auto policy_ReduceWeightsFunctor =
     policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
@@ -4600,7 +4612,9 @@ clock_weights_new_to_optimize.stop();
       kokkos_mj_current_dim_coords,
       kokkos_mj_weights,
       kokkos_assigned_part_ids,
+#ifndef TURN_OFF_MERGE_CHUNKS
       kokkos_info,
+#endif
       local_kokkos_temp_cut_coords,
       kokkos_part_xadj,
       kokkos_mj_uniform_weights,
@@ -4618,17 +4632,14 @@ clock_weights_new_to_optimize.stop();
     teamFunctor, part_weights);
 
   clock_functor_weights.stop();
-  
-  
-#ifndef TURN_OFF_MERGE_CHUNKS 
+
+#ifndef TURN_OFF_MERGE_CHUNKS // ACTION 3
   for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
-    // TODO: Expensive - optimize it
     mj_part_t num_parts =
       vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
     mj_part_t total_part_count = num_parts + num_cuts;
-
 
     // TODO: Expensive - optimize it
     mj_part_t incomplete_cut_count;
@@ -4648,16 +4659,17 @@ clock_weights_new_to_optimize.stop();
       typename decltype(kokkos_my_current_part_weights)::HostMirror
         hostArray = Kokkos::create_mirror_view(kokkos_my_current_part_weights);
       for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
-#ifdef TURN_OFF_MERGE_CHUNKS
+#ifdef TURN_OFF_MERGE_CHUNKS // ACTION 4
         hostArray(i) = part_weights[i];
 #else
         hostArray(i) = part_weights[i+total_part_shift];
-      }
 #endif
+      }
+
       Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
+      
+#ifndef TURN_OFF_MERGE_CHUNKS // Action 5
     }
-    
-#ifndef TURN_OFF_MERGE_CHUNKS 
     total_part_shift += total_part_count;
   }
 #endif
@@ -4666,7 +4678,7 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights3.stop();
   
-#ifdef TURN_OFF_MERGE_CHUNKS 
+#ifdef TURN_OFF_MERGE_CHUNKS // ACTION 6
   total_part_shift += total_part_count;
   } // for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
