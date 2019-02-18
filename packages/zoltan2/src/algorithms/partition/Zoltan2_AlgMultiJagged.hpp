@@ -4738,7 +4738,7 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   int offset_cuts = 0;
   for(int kk2 = 0; kk2 < working_kk; ++kk2) {
     offset_cuts +=
-      vector_num_partitioning_in_current_dim[current_work_part + kk2];
+      vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
   }
   
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
