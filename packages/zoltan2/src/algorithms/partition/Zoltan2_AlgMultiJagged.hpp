@@ -795,6 +795,9 @@ private:
   Kokkos::View<mj_scalar_t *, device_t>
     kokkos_global_total_part_weight_left_right_closests;
 
+  // For host access we save a copy
+  std::vector<mj_part_t> vector_num_partitioning_in_current_dim;
+  
   /* \brief Either the mj array (part_no_array) or num_global_parts should be
    * provided in the input. part_no_array takes precedence if both are
    * provided. Depending on these parameters, total cut/part number, maximum
@@ -2010,12 +2013,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             2 * current_concurrent_num_parts);
           mj_part_t concurrent_current_part_index = current_work_part + kk;
 
-          mj_part_t partition_count;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              concurrent_current_part_index);
-          }, partition_count);
+          mj_part_t partition_count =
+            vector_num_partitioning_in_current_dim[concurrent_current_part_index];
 
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
@@ -2113,12 +2112,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
           mj_part_t current_concurrent_work_part = current_work_part + kk;
           
-          mj_part_t num_parts;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              current_concurrent_work_part);
-          }, num_parts);
+          mj_part_t num_parts =
+            vector_num_partitioning_in_current_dim[current_concurrent_work_part];
           
           // if the part is empty, skip the part.
           if((num_parts != 1  ) &&
@@ -2207,12 +2202,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // wrote the indices as if there were a single part.
         // now we need to shift the beginning indices.
         for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
-          mj_part_t num_parts;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              current_work_part + kk);
-          }, num_parts);
+          mj_part_t num_parts =
+            vector_num_partitioning_in_current_dim[current_work_part + kk];
           
           for (mj_part_t ii = 0;ii < num_parts ; ++ii) {
             //shift it by previousCount
@@ -2491,7 +2482,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     hostArray
     = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
   Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
-  std::vector<mj_part_t> vector_num_partitioning_in_current_dim(
+  vector_num_partitioning_in_current_dim.resize(
     view_num_partitioning_in_current_dim.size());
   for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
     vector_num_partitioning_in_current_dim[n] = hostArray(n);
@@ -4555,16 +4546,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_weights1.stop();
 
-  // We need to establish the total working array size
 #ifndef TURN_OFF_MERGE_CHUNKS
+  // We need to establish the total working array size
   int array_length = 0;
-  Kokkos::parallel_reduce("Get array size", current_concurrent_num_parts,
-    KOKKOS_LAMBDA(int kk, int & length) {
+  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
     mj_part_t num_parts =
-      view_num_partitioning_in_current_dim(current_work_part + kk);
+      vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
-    length += num_cuts * 2 + 1;
-  }, array_length);
+    array_length += num_cuts * 2 + 1;
+  }
 #endif
    
   mj_part_t total_part_shift = 0;
@@ -4575,13 +4565,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 clock_weights_new_to_optimize.start();
 
   int array_length = 0;
-  Kokkos::parallel_reduce("Get array size", 1,
-    KOKKOS_LAMBDA(int dummy, int & length) {
+  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
     mj_part_t num_parts =
-      view_num_partitioning_in_current_dim(current_work_part + kk);
+      vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
-    length += num_cuts * 2 + 1;
-  }, array_length);
+    array_length += num_cuts * 2 + 1;
+  }
   
   mj_part_t incomplete = 0;
   Kokkos::parallel_reduce("Get incomplete cut cout", 1,
@@ -4590,14 +4579,11 @@ clock_weights_new_to_optimize.start();
       local_kokkos_my_incomplete_cut_count(kk);
   }, incomplete);
 
-  mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read num parts", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = view_num_partitioning_in_current_dim(current_work_part + kk);
-  }, num_parts);
+  mj_part_t num_parts =
+    vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
   size_t total_part_count = num_parts + size_t (num_cuts);
-    
+
   if(incomplete == 0) {
     total_part_shift += total_part_count;
     continue;
@@ -4652,11 +4638,8 @@ clock_weights_new_to_optimize.stop();
   for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
     // TODO: Expensive - optimize it
-    mj_part_t num_parts;
-    Kokkos::parallel_reduce("Read num parts", 1,
-      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-      set_single = view_num_partitioning_in_current_dim(current_work_part + kk);
-    }, num_parts);
+    mj_part_t num_parts =
+      vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
     size_t total_part_count = num_parts + size_t (num_cuts);
 #endif
@@ -4743,11 +4726,8 @@ clock_weights_new_to_optimize.stop();
 for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
   // TODO: Expensive - optimize it
-  mj_part_t num_parts;
-  Kokkos::parallel_reduce("Read num_parts", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = view_num_partitioning_in_current_dim(current_work_part + working_kk);
-  }, num_parts);
+  mj_part_t num_parts =
+    vector_num_partitioning_in_current_dim[current_work_part + working_kk];
   mj_part_t num_cuts = num_parts - 1;
   
   // TODO: Expensive - optimize it
@@ -4761,10 +4741,10 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   // can simplify this to a non-kernel loop once we convert all of this
   // to be a kernel.
   int offset_cuts = 0;
-  Kokkos::parallel_reduce("Get cut shift", working_kk,
-    KOKKOS_LAMBDA(int kk2, int & offset) {
-    offset += view_num_partitioning_in_current_dim(current_work_part + kk2) - 1;
-  }, offset_cuts);
+  for(int kk2 = 0; kk2 < working_kk; ++kk2) {
+    offset_cuts +=
+      vector_num_partitioning_in_current_dim[current_work_part + kk2];
+  }
   
   Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
     Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
@@ -8196,12 +8176,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           mj_part_t concurrent_current_part_index = current_work_part + kk;
           
-          mj_part_t partition_count;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              concurrent_current_part_index);
-          }, partition_count);
+          mj_part_t partition_count =
+            vector_num_partitioning_in_current_dim[concurrent_current_part_index];
 
           Kokkos::View<mj_scalar_t *, device_t> kokkos_usedCutCoordinate =
             Kokkos::subview(kokkos_current_cut_coordinates,
@@ -8354,12 +8330,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           mj_part_t current_concurrent_work_part = current_work_part + kk;
 
           // TODO: refactor clean up
-          mj_part_t num_parts;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              current_concurrent_work_part);
-          }, num_parts);
+          mj_part_t num_parts =
+            vector_num_partitioning_in_current_dim[current_concurrent_work_part];
 
           // if the part is empty, skip the part.
 
@@ -8508,12 +8480,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // now we need to shift the beginning indices.
         for(mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
           // TODO: refactor clean up
-          mj_part_t num_parts;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-            set_single = view_num_partitioning_in_current_dim(
-              current_work_part + kk);
-          }, num_parts);
+          mj_part_t num_parts =
+            vector_num_partitioning_in_current_dim[current_work_part + kk];
 
           auto local_kokkos_new_part_xadj = this->kokkos_new_part_xadj;
           Kokkos::parallel_for(
