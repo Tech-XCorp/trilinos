@@ -4567,7 +4567,7 @@ clock_weights_new_to_optimize.start();
   mj_part_t num_parts =
     vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
-  int array_length = num_cuts * 2 + 1;
+  int array_length = num_cuts + num_parts;
   
   mj_part_t incomplete = 0;
   Kokkos::parallel_reduce("Get incomplete cut cout", 1,
@@ -4580,6 +4580,7 @@ clock_weights_new_to_optimize.start();
 
   if(incomplete == 0) {
     total_part_shift += total_part_count;
+    clock_weights_new_to_optimize.stop();
     continue;
   }
 
