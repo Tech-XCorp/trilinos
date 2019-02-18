@@ -71,7 +71,7 @@
 #define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
 #define SET_MAX_TEAMS 200 // to do - optimize
 
-// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -137,10 +137,10 @@ static Clock clock_mj_1D_part_get_weights_init("          clock_mj_1D_part_get_w
 static Clock clock_mj_1D_part_get_weights_setup("          clock_mj_1D_part_get_weights_setup", false);
 static Clock clock_mj_1D_part_get_weights("          clock_mj_1D_part_get_weights", false);
 static Clock clock_weights1("            clock_weights1", false);
+static Clock clock_weights_new_to_optimize("              clock_weights_new_to_optimize", false);
 static Clock clock_weights2("            clock_weights2", false);
 static Clock clock_weights3("            clock_weights3", false);
 static Clock clock_functor_weights("              clock_functor_weights", false);
-static Clock clock_functor_weights_test("              clock_functor_weights_test", false);
 static Clock clock_weights4("            clock_weights4", false);
 static Clock clock_weights5("            clock_weights5", false);
 static Clock clock_weights6("            clock_weights6", false);
@@ -4061,8 +4061,6 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
 
-  bool bTest = false;
-
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
 #endif
@@ -4204,35 +4202,33 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, scalar_t, part_t> arraySumReducer(
       array, value_count);
 
-    if(!bTest) {
-        // call the reduce
-        ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
-          index_t, device_t> inner_functor(
+    // call the reduce
+    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
+      index_t, device_t> inner_functor(
 #ifdef TURN_OFF_MERGE_CHUNKS
-          concurrent_current_part,
+      concurrent_current_part,
 #endif
-          current_work_part,
-          current_concurrent_num_parts,
-          permutations,
-          coordinates,
-          weights,
-          parts,
-          info,
-          cut_coordinates,
-          bUniformWeights,
-          sEpsilon,
-          part_xadj,
-          view_num_partitioning_in_current_dim,
-          kokkos_my_incomplete_cut_count
+      current_work_part,
+      current_concurrent_num_parts,
+      permutations,
+      coordinates,
+      weights,
+      parts,
+      info,
+      cut_coordinates,
+      bUniformWeights,
+      sEpsilon,
+      part_xadj,
+      view_num_partitioning_in_current_dim,
+      kokkos_my_incomplete_cut_count
 #ifndef TURN_OFF_MERGE_CHUNKS
-          ,kokkos_prefix_sum_num_cuts
+      ,kokkos_prefix_sum_num_cuts
 #endif
-          );
+    );
 
-        Kokkos::parallel_reduce(
-          Kokkos::TeamThreadRange(teamMember, begin, end),
-          inner_functor, arraySumReducer);
-    }
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      inner_functor, arraySumReducer);
 
     teamMember.team_barrier();
 
@@ -4575,9 +4571,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
 #ifdef TURN_OFF_MERGE_CHUNKS 
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-#endif
 
-#ifdef TURN_OFF_MERGE_CHUNKS
+clock_weights_new_to_optimize.start();
+
   int array_length = 0;
   Kokkos::parallel_reduce("Get array size", 1,
     KOKKOS_LAMBDA(int dummy, int & length) {
@@ -4594,7 +4590,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       local_kokkos_my_incomplete_cut_count(kk);
   }, incomplete);
 
-  // TODO: Expensive - optimize it
   mj_part_t num_parts;
   Kokkos::parallel_reduce("Read num parts", 1,
     KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
@@ -4607,11 +4602,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     total_part_shift += total_part_count;
     continue;
   }
+
+clock_weights_new_to_optimize.stop();
+
 #endif
 
 
   auto policy_ReduceWeightsFunctor =
     policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
+
+  clock_weights3.start();
 
   mj_scalar_t * part_weights = new mj_scalar_t[array_length];
 
@@ -4639,17 +4639,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
       ,kokkos_prefix_sum_num_cuts
 #endif
       );
-
-/*
-  clock_functor_weights_test.start();
-  
-  teamFunctor.bTest = true;  
-  Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
-    teamFunctor, part_weights);
-  teamFunctor.bTest = false;
-
-  clock_functor_weights_test.stop();
-*/
 
   clock_functor_weights.start();
 
@@ -4703,6 +4692,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 #endif
 
   delete [] part_weights;
+
+  clock_weights3.stop();
   
 #ifdef TURN_OFF_MERGE_CHUNKS 
   total_part_shift += total_part_count;
@@ -7904,10 +7895,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_1D_part_get_weights_setup.reset();
   clock_mj_1D_part_get_weights.reset();
   clock_weights1.reset();
+  clock_weights_new_to_optimize.reset();
   clock_weights2.reset();
   clock_weights3.reset();
   clock_functor_weights.reset();
-  clock_functor_weights_test.reset();
   clock_weights4.reset();
   clock_weights5.reset();
   clock_weights6.reset();
@@ -8639,8 +8630,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   printf("-------------------------------------------------------\n");
   clock_multi_jagged_part.print();
-  clock_multi_jagged_part_init.print();
   clock_multi_jagged_part_init_begin.print();
+  clock_multi_jagged_part_init.print();
   clock_set_part_specifications.print();
   clock_allocate_set_work_memory.print();
 
@@ -8666,10 +8657,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_1D_part_get_weights.print();
 
   clock_weights1.print();
+  clock_weights_new_to_optimize.print();
   clock_weights2.print();
   clock_weights3.print();
   clock_functor_weights.print();
-  clock_functor_weights_test.print();
   clock_weights4.print();
   clock_weights5.print();
   clock_weights6.print();
