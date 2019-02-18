@@ -3583,15 +3583,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   while (total_incomplete_cut_count != 0) {
     clock_host_copies.start();
 
-    // TODO: Need to eliminate all of this
-    // Pull the values for num cuts
-    typename std::remove_reference<
-      decltype (view_num_partitioning_in_current_dim)>::type::HostMirror
-      host_view_num_partitioning_in_current_dim =
-      Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
-    Kokkos::deep_copy(host_view_num_partitioning_in_current_dim,
-      view_num_partitioning_in_current_dim);
-
     // Pull the values for incomplete cut cout
     typename decltype (kokkos_my_incomplete_cut_count)::HostMirror
       host_kokkos_my_incomplete_cut_count =
@@ -3667,7 +3658,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       clock_mj_get_new_cut_coordinates_init.start();
 
       mj_part_t num_parts =
-        host_view_num_partitioning_in_current_dim(current_work_part + kk);
+        vector_num_partitioning_in_current_dim[current_work_part + kk];
 
       mj_part_t num_cuts = num_parts - 1;
       size_t num_total_part = num_parts + size_t (num_cuts);
