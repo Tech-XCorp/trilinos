@@ -4527,7 +4527,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
         view_num_partitioning_in_current_dim(current_work_part + kk2)) * 2 - 1;
     }
     
-    mj_part_t total_part_count = num_parts + size_t (num_cuts);  
+    mj_part_t total_part_count = num_parts + num_cuts;  
     if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
       for(int n = 0; n < static_cast<int>(total_part_count); ++n) {
         local_kokkos_thread_part_weights(offset + n) = 0;
@@ -4539,12 +4539,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
 #ifndef TURN_OFF_MERGE_CHUNKS
   // We need to establish the total working array size
-  int array_length = 0;
+  mj_part_t array_length = 0;
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
     mj_part_t num_parts =
       vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
-    array_length += num_cuts * 2 + 1;
+    array_length += num_cuts + num_parts;
   }
 #endif
    
@@ -4558,7 +4558,7 @@ clock_weights_new_to_optimize.start();
   mj_part_t num_parts =
     vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
-  int array_length = num_cuts + num_parts;
+  mj_part_t array_length = num_cuts + num_parts;
   
   mj_part_t incomplete = 0;
   Kokkos::parallel_reduce("Get incomplete cut cout", 1,
@@ -4567,7 +4567,7 @@ clock_weights_new_to_optimize.start();
       local_kokkos_my_incomplete_cut_count(kk);
   }, incomplete);
 
-  size_t total_part_count = num_parts + size_t (num_cuts);
+  mj_part_t total_part_count = num_parts + num_cuts;
 
   if(incomplete == 0) {
     total_part_shift += total_part_count;
@@ -4627,8 +4627,8 @@ clock_weights_new_to_optimize.stop();
     mj_part_t num_parts =
       vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
-    size_t total_part_count = num_parts + size_t (num_cuts);
-#endif
+    mj_part_t total_part_count = num_parts + num_cuts;
+
 
     // TODO: Expensive - optimize it
     mj_part_t incomplete_cut_count;
@@ -4637,6 +4637,8 @@ clock_weights_new_to_optimize.stop();
       set_single = local_kokkos_my_incomplete_cut_count(kk);
     }, incomplete_cut_count);
     if(incomplete_cut_count > 0) {
+#endif
+
       Kokkos::View<double *, device_t> kokkos_my_current_part_weights =
         Kokkos::subview(local_kokkos_thread_part_weights,
           std::pair<mj_lno_t, mj_lno_t>(total_part_shift,
@@ -4650,8 +4652,8 @@ clock_weights_new_to_optimize.stop();
         hostArray(i) = part_weights[i];
 #else
         hostArray(i) = part_weights[i+total_part_shift];
-#endif
       }
+#endif
       Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
     }
     
@@ -4674,7 +4676,7 @@ clock_weights_new_to_optimize.stop();
   Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
-    size_t total_part_count = num_parts + num_cuts;
+    mj_part_t total_part_count = num_parts + num_cuts;
     
     if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
       // get the prefix sum
@@ -4684,7 +4686,7 @@ clock_weights_new_to_optimize.stop();
         offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
       }
       
-      for (size_t i = 1; i < total_part_count; ++i){
+      for (mj_part_t i = 1; i < total_part_count; ++i){
         // check for cuts sharing the same position; all cuts sharing a position
         // have the same weight == total weight for all cuts sharing the position.
         // don't want to accumulate that total weight more than once.
