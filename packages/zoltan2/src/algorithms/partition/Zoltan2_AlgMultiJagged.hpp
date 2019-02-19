@@ -3917,6 +3917,7 @@ struct ReduceWeightsFunctorInnerLoop {
 
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
+  part_t num_cuts;
 #endif
   part_t current_work_part;
   part_t current_concurrent_num_parts;
@@ -3942,6 +3943,7 @@ struct ReduceWeightsFunctorInnerLoop {
   ReduceWeightsFunctorInnerLoop(
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
+    part_t mj_num_cuts,
 #endif
     part_t mj_current_work_part,
     part_t mj_current_concurrent_num_parts,
@@ -3964,6 +3966,7 @@ struct ReduceWeightsFunctorInnerLoop {
     ) :
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
+      num_cuts(mj_num_cuts),
 #endif
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
@@ -3994,10 +3997,7 @@ struct ReduceWeightsFunctorInnerLoop {
     scalar_t coord = coordinates(i);
     scalar_t w = bUniformWeights ? 1 : weights(i,0);
 
-#ifdef TURN_OFF_MERGE_CHUNKS // ACTION
-    part_t total_part_shift = 0;
-    part_t concurrent_cut_shifts = 0;
-#else
+#ifndef TURN_OFF_MERGE_CHUNKS // ACTION
     part_t concurrent_current_part = info(i);
     int kk = concurrent_current_part - current_work_part;
 
@@ -4010,9 +4010,6 @@ struct ReduceWeightsFunctorInnerLoop {
         concurrent_cut_shifts * 2 + kk;
 #endif
 
-      part_t num_cuts = view_num_partitioning_in_current_dim(
-        concurrent_current_part) - 1;
-      
       scalar_t b = -99999999.9; // TODO: Clean up bounds
 
       // now check each part and it's right cut
@@ -4020,16 +4017,28 @@ struct ReduceWeightsFunctorInnerLoop {
       
         scalar_t a = b;
         b = (part == num_cuts) ? 99999999.9 : // TODO: Clean up bounds
+#ifdef TURN_OFF_MERGE_CHUNKS
+          cut_coordinates(part);
+#else
           cut_coordinates(concurrent_cut_shifts+part);
+#endif
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+          threadSum.ptr[part*2] += w;
+#else
           threadSum.ptr[total_part_shift+part*2] += w;
+#endif
           parts(i) = part*2;
         }
 
         if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2+1] += w;
+#else
             threadSum.ptr[total_part_shift+part*2+1] += w;
+#endif
             parts(i) = part*2+1;
           }
         }        
@@ -4051,6 +4060,7 @@ struct ReduceWeightsFunctor {
 
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
+  part_t num_cuts;
 #endif
   part_t current_work_part;
   part_t current_concurrent_num_parts;
@@ -4076,6 +4086,7 @@ struct ReduceWeightsFunctor {
   ReduceWeightsFunctor(
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
+    part_t mj_num_cuts,
 #endif
     part_t mj_current_work_part,
     part_t mj_current_concurrent_num_parts,
@@ -4100,6 +4111,7 @@ struct ReduceWeightsFunctor {
     ) :
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
+      num_cuts(mj_num_cuts),
 #endif
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
@@ -4201,6 +4213,7 @@ struct ReduceWeightsFunctor {
       index_t, device_t> inner_functor(
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part,
+      num_cuts,
 #endif
       current_work_part,
       current_concurrent_num_parts,
@@ -4614,6 +4627,7 @@ clock_weights_new_to_optimize.stop();
     teamFunctor(
 #ifdef TURN_OFF_MERGE_CHUNKS
       current_work_part + kk,
+      num_cuts,
 #endif
       current_work_part,
       current_concurrent_num_parts,
