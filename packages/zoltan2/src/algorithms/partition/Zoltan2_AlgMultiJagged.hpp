@@ -71,7 +71,7 @@
 #define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
 #define SET_MAX_TEAMS 200 // to do - optimize
 
-#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -755,6 +755,10 @@ private:
   // information, if my_incomplete_cut_count[x]==0, then no work is done
   // for this part.
   Kokkos::View<mj_part_t *, device_t> kokkos_my_incomplete_cut_count;
+  
+  // Need a quick accessor for this on host
+  typename decltype (kokkos_my_incomplete_cut_count)::HostMirror
+      host_kokkos_my_incomplete_cut_count;
 
   // used to optimize kernel - sums 
 #ifndef TURN_OFF_MERGE_CHUNKS
@@ -2840,7 +2844,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // this part.
   this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, device_t>(
     "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
-
+    
+  // we'll copy to host sometimes so we can access things quickly
+  this->host_kokkos_my_incomplete_cut_count =
+    Kokkos::create_mirror_view(kokkos_my_incomplete_cut_count);
+      
 #ifndef TURN_OFF_MERGE_CHUNKS
   this->kokkos_prefix_sum_num_cuts =  Kokkos::View<mj_part_t *, device_t>(
     "kokkos_prefix_sum_num_cuts", this->max_concurrent_part_calculation);
@@ -3584,9 +3592,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     clock_host_copies.start();
 
     // Pull the values for incomplete cut cout
-    typename decltype (kokkos_my_incomplete_cut_count)::HostMirror
-      host_kokkos_my_incomplete_cut_count =
-      Kokkos::create_mirror_view(kokkos_my_incomplete_cut_count);
     Kokkos::deep_copy(host_kokkos_my_incomplete_cut_count,
       kokkos_my_incomplete_cut_count);
 
@@ -3782,10 +3787,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       cut_shift += num_cuts;
       tlr_shift += (num_total_part + 2 * num_cuts);
 
-      Kokkos::parallel_reduce("Read single", 1,
-        KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
-        set_single = local_kokkos_my_incomplete_cut_count(kk);
-      }, kk_kokkos_my_incomplete_cut_count);
+      kk_kokkos_my_incomplete_cut_count =
+        host_kokkos_my_incomplete_cut_count(kk);
 
       mj_part_t iteration_complete_cut_count =
         initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
@@ -4008,6 +4011,10 @@ struct ReduceWeightsFunctorInnerLoop {
         
       part_t total_part_shift =
         concurrent_cut_shifts * 2 + kk;
+        
+      part_t num_cuts = view_num_partitioning_in_current_dim(
+        concurrent_current_part) - 1;
+
 #endif
 
       scalar_t b = -99999999.9; // TODO: Clean up bounds
@@ -4598,12 +4605,7 @@ clock_weights_new_to_optimize.start();
   mj_part_t total_part_count = num_parts + num_cuts;
   mj_part_t array_length = num_cuts + num_parts;
   
-  mj_part_t incomplete = 0;
-  Kokkos::parallel_reduce("Get incomplete cut cout", 1,
-    KOKKOS_LAMBDA(int dummy, mj_part_t & incomplete_cut_count) {
-    incomplete_cut_count =
-      local_kokkos_my_incomplete_cut_count(kk);
-  }, incomplete);
+  mj_part_t incomplete = host_kokkos_my_incomplete_cut_count(kk);
 
   if(incomplete == 0) {
     total_part_shift += total_part_count;
@@ -4666,11 +4668,8 @@ clock_weights_new_to_optimize.stop();
     mj_part_t total_part_count = num_parts + num_cuts;
 
     // TODO: Expensive - optimize it
-    mj_part_t incomplete_cut_count;
-    Kokkos::parallel_reduce("Read incomplete_cut_count", 1,
-      KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-      set_single = local_kokkos_my_incomplete_cut_count(kk);
-    }, incomplete_cut_count);
+    mj_part_t incomplete_cut_count =
+      host_kokkos_my_incomplete_cut_count(kk);
     if(incomplete_cut_count > 0) {
 #endif
 
@@ -4759,11 +4758,8 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   mj_part_t num_cuts = num_parts - 1;
   
   // TODO: Expensive - optimize it
-  mj_part_t incomplete_cut_count;
-  Kokkos::parallel_reduce("Read incomplete cut count", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_kokkos_my_incomplete_cut_count(working_kk);
-  }, incomplete_cut_count);
+  mj_part_t incomplete_cut_count =
+    host_kokkos_my_incomplete_cut_count(working_kk);
   if(incomplete_cut_count == 0) continue;
   
   // can simplify this to a non-kernel loop once we convert all of this
