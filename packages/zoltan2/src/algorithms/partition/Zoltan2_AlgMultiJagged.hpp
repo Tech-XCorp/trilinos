@@ -71,7 +71,7 @@
 #define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
 #define SET_MAX_TEAMS 200 // to do - optimize
 
-// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -4503,8 +4503,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
     kokkos_thread_cut_left_closest_point;
   auto local_kokkos_thread_cut_right_closest_point =
     kokkos_thread_cut_right_closest_point;
+    
+#ifndef TURN_OFF_MERGE_CHUNKS
   auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
-          
+#endif
+
   clock_mj_1D_part_get_weights_setup.stop();
         
   // Create some locals so we don't use this inside the kernels
@@ -4565,10 +4568,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   mj_part_t total_part_shift = 0;
 
 #ifdef TURN_OFF_MERGE_CHUNKS // ACTION 2
+  mj_part_t concurrent_cut_shifts = 0;
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
 clock_weights_new_to_optimize.start();
 
+  Kokkos::View<mj_scalar_t *, device_t> local_kokkos_temp_cut_coords =
+    Kokkos::subview(kokkos_temp_cut_coords,
+      std::pair<mj_lno_t, mj_lno_t>(
+        concurrent_cut_shifts,
+        kokkos_temp_cut_coords.size()));
+              
   mj_part_t num_parts =
     vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
@@ -4680,11 +4690,15 @@ clock_weights_new_to_optimize.stop();
   
 #ifdef TURN_OFF_MERGE_CHUNKS // ACTION 6
   total_part_shift += total_part_count;
+  concurrent_cut_shifts += num_cuts;
   } // for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
 
   clock_weights4.start();
 
+#ifdef TURN_OFF_MERGE_CHUNKS // can probably organize this better to avoid this declaration here
+  auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
+#endif
   Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
@@ -4757,10 +4771,10 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
         offset_cuts,
         local_kokkos_thread_cut_right_closest_point.size()));
   Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
-    Kokkos::subview(local_kokkos_temp_cut_coords,
+    Kokkos::subview(kokkos_temp_cut_coords,
       std::pair<mj_lno_t, mj_lno_t>(
         offset_cuts,
-        local_kokkos_temp_cut_coords.size()));
+        kokkos_temp_cut_coords.size()));
         
   clock_weights5.start();
 
