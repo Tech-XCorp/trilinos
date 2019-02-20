@@ -3671,7 +3671,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       //if the cuts of this cut has already been completed.
       //nothing to do for this part.
       //just update the shift amount and proceed.
-               
       mj_part_t kk_kokkos_my_incomplete_cut_count
         = host_kokkos_my_incomplete_cut_count(kk);
 
@@ -3787,8 +3786,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       cut_shift += num_cuts;
       tlr_shift += (num_total_part + 2 * num_cuts);
 
-      kk_kokkos_my_incomplete_cut_count =
-        host_kokkos_my_incomplete_cut_count(kk);
+      // if we refactor this loop a bit we might make this a single host copy
+      // TODO: Optimize
+      Kokkos::parallel_reduce("Read incomplete cut count", 1,
+        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
+        set_single = local_kokkos_my_incomplete_cut_count(kk);
+      }, kk_kokkos_my_incomplete_cut_count);
 
       mj_part_t iteration_complete_cut_count =
         initial_incomplete_cut_count - kk_kokkos_my_incomplete_cut_count;
@@ -4606,7 +4609,6 @@ clock_weights_new_to_optimize.start();
   mj_part_t array_length = num_cuts + num_parts;
   
   mj_part_t incomplete = host_kokkos_my_incomplete_cut_count(kk);
-
   if(incomplete == 0) {
     total_part_shift += total_part_count;
     clock_weights_new_to_optimize.stop();
@@ -4667,8 +4669,6 @@ clock_weights_new_to_optimize.stop();
       vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
     mj_part_t total_part_count = num_parts + num_cuts;
-
-    // TODO: Expensive - optimize it
     mj_part_t incomplete_cut_count =
       host_kokkos_my_incomplete_cut_count(kk);
     if(incomplete_cut_count > 0) {
@@ -4757,8 +4757,6 @@ for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++work
   mj_part_t num_parts =
     vector_num_partitioning_in_current_dim[current_work_part + working_kk];
   mj_part_t num_cuts = num_parts - 1;
-  
-  // TODO: Expensive - optimize it
   mj_part_t incomplete_cut_count =
     host_kokkos_my_incomplete_cut_count(working_kk);
   if(incomplete_cut_count == 0) continue;
