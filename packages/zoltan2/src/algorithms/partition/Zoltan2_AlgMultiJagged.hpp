@@ -2472,26 +2472,8 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> output_part_boxes,
   mj_part_t atomic_part_count)
 {
-  // Working on view_num_partitioning_in_current_dim in stages which was
-  // originally a std::vector but converting to kokkos view.
-  // So here let's pull it back to a std::vector, build the new form,
-  // then convert back to a view. Later we can probably handle all this stuff
-  // on device but idea is to move the remaining refactor to a more localized
-  // area (here) instead of all over.
-  
-  // This got ugly quickly .... but it's at least partly temporary as I
-  // refactor
-  typename std::remove_reference<decltype(
-    view_num_partitioning_in_current_dim)>::type::HostMirror
-    hostArray
-    = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
-  Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
-  vector_num_partitioning_in_current_dim.resize(
-    view_num_partitioning_in_current_dim.size());
-  for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
-    vector_num_partitioning_in_current_dim[n] = hostArray(n);
-  }
-  
+  vector_num_partitioning_in_current_dim.resize(0);
+
   // how many parts that will be obtained after this dimension.
   mj_part_t output_num_parts = 0;
   if(this->kokkos_part_no_array.size()) {
@@ -4624,7 +4606,9 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights3.start();
 
-  typedef float weight_t;
+  // TODO: Probably just delete this and remoeve weight_t everywhere
+  // Added to experiment with costs for float versus double
+  typedef mj_scalar_t weight_t;
   weight_t * part_weights = new weight_t[static_cast<size_t>(array_length)];
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
@@ -7997,6 +7981,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
 
   Clock clock_loopA("    clock_loopA", false);
+  Clock clock_update_part_num_arrays("      clock_update_part_num_arrays", false);
   Clock clock_main_loop("    clock_main_loop", false);
   Clock clock_main_loop_setup("      clock_main_loop_setup", false);
   Clock clock_mj_get_local_min_max_coord_totW(
@@ -8050,6 +8035,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
 
     // returns the total no. of output parts for this dimension partitioning.
+
+    clock_update_part_num_arrays.start();
     mj_part_t output_part_count_in_dimension =
       this->update_part_num_arrays(
         view_num_partitioning_in_current_dim,
@@ -8060,7 +8047,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         i,
         input_part_boxes,
         output_part_boxes, 1);
-  
+    clock_update_part_num_arrays.stop();
+
     // if the number of obtained parts equal to current number of parts,
     // skip this dimension. For example, this happens when 1 is given in the
     // input part array is given. P=4,5,1,2
@@ -8628,6 +8616,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_multi_jagged_part_loop.print();
   clock_loopA.print();
+  clock_update_part_num_arrays.print();
   clock_main_loop.print();
   clock_main_loop_setup.print();
   clock_mj_get_local_min_max_coord_totW.print();
