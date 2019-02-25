@@ -694,9 +694,10 @@ private:
   
   // the part ids assigned to coordinates.
   Kokkos::View<mj_part_t*, device_t> kokkos_assigned_part_ids;
-  
+#ifndef TURN_OFF_MERGE_CHUNKS
   Kokkos::View<mj_part_t*, device_t> kokkos_info; // temp need info - might be able to use kokkos_assigned_part_ids as a way to send in info - in progress
-  
+#endif
+
   // beginning and end of each part.
   Kokkos::View<mj_lno_t *, device_t> kokkos_part_xadj;
     
@@ -2692,7 +2693,8 @@ Clock partA("partA", true);
     // creating temp view and doing host mirror copy was worse.
     // Also figure out why we can't make the host mirror direcrly from view_num_partitioning_in_current_dim.
     printf("Must optimize and fix this loop. This temporary code setup as was not sure why host mirror procedure was giving bad performance only for some cases.\n");
-    for(int n = 0; n < vector_num_partitioning_in_current_dim.size(); ++n) {
+    for(int n = 0; n < static_cast<int>(
+      vector_num_partitioning_in_current_dim.size()); ++n) {
       mj_part_t local_set_value_n = vector_num_partitioning_in_current_dim[n];
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
@@ -2730,20 +2732,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // new_coordinate_permutations holds the current permutation.
   this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
-    "num_local_coords", this->num_local_coords);
+    Kokkos::ViewAllocateWithoutInitializing("num_local_coords"), this->num_local_coords);
   this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
     "assigned parts"); // TODO empty is ok for NULL replacement?
   if(this->num_local_coords > 0){
     this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
-      "assigned part ids", this->num_local_coords);
+      Kokkos::ViewAllocateWithoutInitializing("assigned part ids"), this->num_local_coords);
+#ifndef TURN_OFF_MERGE_CHUNKS
     this->kokkos_info = Kokkos::View<mj_part_t*, device_t>(
-      "info", this->num_local_coords);
+      Kokkos::ViewAllocateWithoutInitializing("info"), this->num_local_coords);
+#endif
   }
   // single partition starts at index-0, and ends at numLocalCoords
   // inTotalCounts array holds the end points in coordinate_permutations array
   // for each partition. Initially sized 1, and single element is set to
   // numLocalCoords.
-  this->kokkos_part_xadj = Kokkos::View<mj_lno_t*, device_t>("part xadj", 1);
+  this->kokkos_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("part xadj"), 1);
 
   // TODO: How do do the above operation on device
   auto local_num_local_coords = this->num_local_coords;
@@ -2761,7 +2766,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // only store this much if cuts are needed to be stored.
   // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
   this->kokkos_all_cut_coordinates = Kokkos::View<mj_scalar_t*, device_t>(
-    "all cut coordinates",
+    Kokkos::ViewAllocateWithoutInitializing("all cut coordinates"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     
   // how much weight percentage should a MPI put left side of the each cutline
@@ -2777,17 +2782,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   if(this->distribute_points_on_cut_lines){
     this->kokkos_process_cut_line_weight_to_put_left =
       Kokkos::View<mj_scalar_t *, device_t>(
-      "kokkos_process_cut_line_weight_to_put_left",
+      Kokkos::ViewAllocateWithoutInitializing("kokkos_process_cut_line_weight_to_put_left"),
         this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     this->kokkos_thread_cut_line_weight_to_put_left =
       Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>(
-      "kokkos_thread_cut_line_weight_to_put_left", this->max_num_cut_along_dim);
+      Kokkos::ViewAllocateWithoutInitializing("kokkos_thread_cut_line_weight_to_put_left")
+      , this->max_num_cut_along_dim);
     this->kokkos_process_rectilinear_cut_weight =
       Kokkos::View<mj_scalar_t *, device_t>(
-      "kokkos_process_rectilinear_cut_weight", this->max_num_cut_along_dim);
+      Kokkos::ViewAllocateWithoutInitializing("kokkos_process_rectilinear_cut_weight"),
+      this->max_num_cut_along_dim);
     this->kokkos_global_rectilinear_cut_weight =
       Kokkos::View<mj_scalar_t *, device_t>(
-      "kokkos_global_rectilinear_cut_weight", this->max_num_cut_along_dim);
+      Kokkos::ViewAllocateWithoutInitializing("kokkos_global_rectilinear_cut_weight"),
+      this->max_num_cut_along_dim);
   }
 
   // work array to manipulate coordinate of cutlines in different iterations.
