@@ -2720,18 +2720,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // instead of the moving the coordinates, hold a permutation array for parts.
   // coordinate_permutations holds the current permutation.
   Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
+  auto local_kokkos_coordinate_permutations = kokkos_coordinate_permutations;
 
-  Kokkos::View<mj_lno_t*, device_t> temp = Kokkos::View<mj_lno_t*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("kokkos_coordinate_permutations"),
-    num_local_coords);
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
-      temp(i) = i;
+      local_kokkos_coordinate_permutations(i) = i;
   });
-
-  // bring the local data back to the class
-  this->kokkos_coordinate_permutations = temp;
 
   // new_coordinate_permutations holds the current permutation.
   this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
