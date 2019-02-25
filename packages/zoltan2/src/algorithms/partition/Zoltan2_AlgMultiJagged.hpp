@@ -2472,6 +2472,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> output_part_boxes,
   mj_part_t atomic_part_count)
 {
+Clock partA("partA", true);
   vector_num_partitioning_in_current_dim.resize(0);
 
   // how many parts that will be obtained after this dimension.
@@ -2660,20 +2661,46 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
   }
 
-  // Now revert the vector form back to a view
-  // TODO: We'd like to avoid above conversion and just do all this on view
-  Kokkos::View<mj_part_t*> temp = Kokkos::View<mj_part_t*>(
-    "view_num_partitioning_in_current_dim",
-    vector_num_partitioning_in_current_dim.size());
-  typename decltype(temp)::HostMirror host_view_num_partitioning_in_current_dim
-    = Kokkos::create_mirror_view(temp);
-  for(int n = 0;
-    n < static_cast<int>(vector_num_partitioning_in_current_dim.size()); ++n) {
-    host_view_num_partitioning_in_current_dim(n) =
-      vector_num_partitioning_in_current_dim[n];
+  // this optmization should/could be eliminated once the alternative code is working better
+  if(vector_num_partitioning_in_current_dim.size() != view_num_partitioning_in_current_dim.size() == 1) {
+    Kokkos::resize(view_num_partitioning_in_current_dim, vector_num_partitioning_in_current_dim.size());
   }
-  Kokkos::deep_copy(temp, host_view_num_partitioning_in_current_dim);
-  view_num_partitioning_in_current_dim = temp;
+
+  auto local_view_num_partitioning_in_current_dim = view_num_partitioning_in_current_dim;
+
+  if(vector_num_partitioning_in_current_dim.size() == 1) {
+    mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+      0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+      local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
+    });
+  }
+  else if(vector_num_partitioning_in_current_dim.size() == 2) {
+    mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
+    mj_part_t local_set_value_2 = vector_num_partitioning_in_current_dim[0];
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+      0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+      local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
+      local_view_num_partitioning_in_current_dim(1) = local_set_value_2;
+
+    });
+  }
+  else {
+    // TODO: Clearly this is not the right way to do this - need to investigate why
+    // creating temp view and doing host mirror copy was worse.
+    // Also figure out why we can't make the host mirror direcrly from view_num_partitioning_in_current_dim.
+    printf("Must optimize and fix this loop. This temporary code setup as was not sure why host mirror procedure was giving bad performance only for some cases.\n");
+    for(int n = 0; n < vector_num_partitioning_in_current_dim.size(); ++n) {
+      mj_part_t local_set_value_n = vector_num_partitioning_in_current_dim[n];
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+        0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+        local_view_num_partitioning_in_current_dim(n) = local_set_value_n;
+      });
+    }
+  }
 
   return output_num_parts;
 }
@@ -2695,7 +2722,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
 
   Kokkos::View<mj_lno_t*, device_t> temp = Kokkos::View<mj_lno_t*, device_t>(
-    "kokkos_coordinate_permutations", num_local_coords);
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_coordinate_permutations"),
+    num_local_coords);
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
