@@ -7648,6 +7648,31 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+Clock checkA("checkA", true);
+
+    for(int i = 0; i < current_num_parts; ++i) {
+      Kokkos::parallel_for(
+        Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+          ((i != 0) ? local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
+          KOKKOS_LAMBDA (const int ii) {
+          mj_lno_t k = local_kokkos_coordinate_permutations(ii);
+          local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;          
+      });
+    }
+
+/*
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+        (current_num_parts), KOKKOS_LAMBDA (const int i) {
+        for(int ii = (i != 0) ? local_kokkos_part_xadj(i-1) : 0;
+          ii < local_kokkos_part_xadj(i); ++ii) {
+          mj_lno_t k = local_kokkos_coordinate_permutations(ii);
+          local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
+        }
+    });
+*/
+
+/*
     Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
       current_num_parts, Kokkos::AUTO());
     typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
@@ -7661,6 +7686,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
       });
     });
+*/
+
+checkA.stop(true);
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
