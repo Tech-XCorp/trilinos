@@ -2914,21 +2914,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       (this->max_num_total_part_along_dim +
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
-  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> coord(
-    Kokkos::ViewAllocateWithoutInitializing("coord"),
-    this->num_local_coords, this->coord_dim);
-
-  auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; 
-  auto local_coord_dim = this->coord_dim;
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, local_num_local_coords),
-    KOKKOS_LAMBDA (const int j) {
-    for (int i=0; i < local_coord_dim; i++){
-      coord(j,i) = local_kokkos_mj_coordinates(j,i);
-  }});
-  this->kokkos_mj_coordinates = coord;
-
   Kokkos::View<mj_scalar_t**, device_t> weights(
     Kokkos::ViewAllocateWithoutInitializing("weights"),
     this->num_local_coords, this->num_weights_per_coord);
@@ -7293,6 +7278,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   freeArray<int>(coordinate_destinations);
 
   if(this->num_local_coords != num_new_local_points){
+    // TODO: Change to no initialization ... not doing now because not testing migration
     this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
       ("kokkos_new_coordinate_permutations", num_new_local_points);
     this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
