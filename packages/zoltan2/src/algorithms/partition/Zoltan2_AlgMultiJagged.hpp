@@ -2721,9 +2721,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // Throughout the partitioning execution,
   // instead of the moving the coordinates, hold a permutation array for parts.
   // coordinate_permutations holds the current permutation.
-  Kokkos::resize(this->kokkos_coordinate_permutations, this->num_local_coords);
+  this->kokkos_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_coordinate_permutations"),
+    this->num_local_coords);
   auto local_kokkos_coordinate_permutations = kokkos_coordinate_permutations;
-
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
@@ -2734,7 +2735,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("num_local_coords"), this->num_local_coords);
   this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
-    "assigned parts"); // TODO empty is ok for NULL replacement?
+    Kokkos::ViewAllocateWithoutInitializing("assigned parts")); // TODO empty is ok for NULL replacement?
   if(this->num_local_coords > 0){
     this->kokkos_assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
       Kokkos::ViewAllocateWithoutInitializing("assigned part ids"), this->num_local_coords);
@@ -2750,7 +2751,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("part xadj"), 1);
 
-  // TODO: How do do the above operation on device
+  // TODO: How can we do this single init more efficiently?
   auto local_num_local_coords = this->num_local_coords;
   auto local_kokkos_part_xadj = this->kokkos_part_xadj;
   Kokkos::parallel_for(
@@ -2761,7 +2762,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   });
 
   // the ends points of the output, this is allocated later.
-  this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
+  this->kokkos_new_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("empty"));
 
   // only store this much if cuts are needed to be stored.
   // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
@@ -2771,12 +2773,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     
   // how much weight percentage should a MPI put left side of the each cutline
   this->kokkos_process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*,
-    device_t>("empty");
+    device_t>(Kokkos::ViewAllocateWithoutInitializing("empty"));
     
   // how much weight percentage should each thread in MPI put left side of
   // each outline
   this->kokkos_thread_cut_line_weight_to_put_left =
-    Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, device_t>("empty");
+    Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("empty"));
     
   // distribute_points_on_cut_lines = false;
   if(this->distribute_points_on_cut_lines){
