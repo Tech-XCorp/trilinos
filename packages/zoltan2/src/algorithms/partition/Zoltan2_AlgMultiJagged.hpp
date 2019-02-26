@@ -2913,27 +2913,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::ViewAllocateWithoutInitializing("global_total_part_weight_left_right_closests"),
       (this->max_num_total_part_along_dim +
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
-  
-  this->kokkos_current_mj_gnos =
-  Kokkos::View<mj_gno_t*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("gids"), local_num_local_coords);
-  auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos;
-  auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos;
-
-  this->kokkos_owner_of_coordinate = Kokkos::View<int*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("kokkos_owner_of_coordinate"),
-    this->num_local_coords);
-
-  auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate;
-  auto local_myActualRank = this->myActualRank;
-
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, local_num_local_coords),
-    KOKKOS_LAMBDA (const int j) {
-    local_kokkos_current_mj_gnos(j) = local_kokkos_initial_mj_gnos(j);
-    local_kokkos_owner_of_coordinate(j) = local_myActualRank;
-  });
 }
 
 /* \brief compute the global bounding box
