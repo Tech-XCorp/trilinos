@@ -2803,52 +2803,57 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // the next cutline information. therefore, cannot update the cut work array
   // until all cutlines are determined.
   this->kokkos_cut_coordinates_work_array =
-    Kokkos::View<mj_scalar_t *, device_t>("kokkos_cut_coordinates_work_array",
+    Kokkos::View<mj_scalar_t *, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_cut_coordinates_work_array"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
 
   // cumulative part weight array.
   this->kokkos_target_part_weights = Kokkos::View<mj_scalar_t*, device_t>(
-    "kokkos_target_part_weights",
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_target_part_weights"),
     this->max_num_part_along_dim * this->max_concurrent_part_calculation);
   
   // upper bound coordinate of a cut line
   this->kokkos_cut_upper_bound_coordinates =
-    Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_upper_bound_coordinates",
+    Kokkos::View<mj_scalar_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_cut_upper_bound_coordinates"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     
   // lower bound coordinate of a cut line  
   this->kokkos_cut_lower_bound_coordinates =
-    Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_lower_bound_coordinates",
+    Kokkos::View<mj_scalar_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_cut_lower_bound_coordinates"),
     this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
   // lower bound weight of a cut line
   this->kokkos_cut_lower_bound_weights =
-    Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_lower_bound_weights",
+    Kokkos::View<mj_scalar_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_cut_lower_bound_weights"),
     this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
   //upper bound weight of a cut line
   this->kokkos_cut_upper_bound_weights =
-    Kokkos::View<mj_scalar_t*, device_t>("kokkos_cut_upper_bound_weights",
+    Kokkos::View<mj_scalar_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_cut_upper_bound_weights"),
     this->max_num_cut_along_dim* this->max_concurrent_part_calculation);
 
   // combined array to exchange the min and max coordinate,
   // and total weight of part.
   this->kokkos_process_local_min_max_coord_total_weight =
     Kokkos::View<mj_scalar_t*, device_t>(
-    "kokkos_process_local_min_max_coord_total_weight",
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_process_local_min_max_coord_total_weight"),
     3 * this->max_concurrent_part_calculation);
 
   // global combined array with the results for min, max and total weight.
   this->kokkos_global_min_max_coord_total_weight =
     Kokkos::View<mj_scalar_t*, device_t>(
-    "kokkos_global_min_max_coord_total_weight",
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_global_min_max_coord_total_weight"),
     3 * this->max_concurrent_part_calculation);
 
   // is_cut_line_determined is used to determine if a cutline is
   // determined already. If a cut line is already determined, the next
   // iterations will skip this cut line.
   this->kokkos_is_cut_line_determined = Kokkos::View<bool *, device_t>(
-    "kokkos_is_cut_line_determined",
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_is_cut_line_determined"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
 
   // my_incomplete_cut_count count holds the number of cutlines that have not
@@ -2856,7 +2861,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // information, if my_incomplete_cut_count[x]==0, then no work is done for
   // this part.
   this->kokkos_my_incomplete_cut_count =  Kokkos::View<mj_part_t *, device_t>(
-    "kokkos_my_incomplete_cut_count", this->max_concurrent_part_calculation);
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_my_incomplete_cut_count"),
+    this->max_concurrent_part_calculation);
     
   // we'll copy to host sometimes so we can access things quickly
   this->host_kokkos_my_incomplete_cut_count =
@@ -2864,27 +2870,32 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       
 #ifndef TURN_OFF_MERGE_CHUNKS
   this->kokkos_prefix_sum_num_cuts =  Kokkos::View<mj_part_t *, device_t>(
-    "kokkos_prefix_sum_num_cuts", this->max_concurrent_part_calculation);
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_prefix_sum_num_cuts"),
+    this->max_concurrent_part_calculation);
 #endif
 
   // local part weights of each thread.
   this->kokkos_thread_part_weights = Kokkos::View<double *,
-    Kokkos::LayoutLeft, device_t>("thread_part_weights",
+    Kokkos::LayoutLeft, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("thread_part_weights"),
     this->max_num_total_part_along_dim * this->max_concurrent_part_calculation);
 
   this->kokkos_thread_cut_left_closest_point = Kokkos::View<mj_scalar_t *,
-    Kokkos::LayoutLeft, device_t>("kokkos_thread_cut_left_closest_point",
+    Kokkos::LayoutLeft, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_thread_cut_left_closest_point"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
 
   // thread_cut_right_closest_point to hold the closest coordinate to a
   // cutline from right (for each thread)
   this->kokkos_thread_cut_right_closest_point = Kokkos::View<mj_scalar_t *,
-    Kokkos::LayoutLeft, device_t>("kokkos_thread_cut_right_closest_point",
+    Kokkos::LayoutLeft, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_thread_cut_right_closest_point"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
 
   // to store how many points in each part a thread has.
   this->kokkos_thread_point_counts = Kokkos::View<mj_lno_t *,
-    Kokkos::LayoutLeft, device_t>("kokkos_thread_point_counts",
+    Kokkos::LayoutLeft, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_thread_point_counts"),
     this->max_num_part_along_dim);
 
   // for faster communication, concatanation of
@@ -2893,18 +2904,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // rightClosest distances size P-1, since P-1 cut lines.
   this->kokkos_total_part_weight_left_right_closests =
     Kokkos::View<mj_scalar_t*, device_t>(
-      "total_part_weight_left_right_closests",
+      Kokkos::ViewAllocateWithoutInitializing("total_part_weight_left_right_closests"),
       (this->max_num_total_part_along_dim + this->max_num_cut_along_dim * 2) *
       this->max_concurrent_part_calculation);
 
   this->kokkos_global_total_part_weight_left_right_closests =
     Kokkos::View<mj_scalar_t*, device_t>(
-      "global_total_part_weight_left_right_closests",
+      Kokkos::ViewAllocateWithoutInitializing("global_total_part_weight_left_right_closests"),
       (this->max_num_total_part_along_dim +
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> coord(
-    "coord", this->num_local_coords, this->coord_dim);
+    Kokkos::ViewAllocateWithoutInitializing("coord"),
+    this->num_local_coords, this->coord_dim);
 
   auto local_kokkos_mj_coordinates = kokkos_mj_coordinates; 
   auto local_coord_dim = this->coord_dim;
@@ -2918,7 +2930,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_mj_coordinates = coord;
 
   Kokkos::View<mj_scalar_t**, device_t> weights(
-  "weights", this->num_local_coords, this->num_weights_per_coord);
+    Kokkos::ViewAllocateWithoutInitializing("weights"),
+    this->num_local_coords, this->num_weights_per_coord);
 
   auto local_kokkos_mj_weights = kokkos_mj_weights;
   auto local_num_weights_per_coord = this->num_weights_per_coord;
@@ -2933,12 +2946,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->kokkos_mj_weights = weights;
 
   this->kokkos_current_mj_gnos =
-  Kokkos::View<mj_gno_t*, device_t>("gids", local_num_local_coords);
+  Kokkos::View<mj_gno_t*, device_t>(
+    Kokkos::ViewAllocateWithoutInitializing("gids"), local_num_local_coords);
   auto local_kokkos_current_mj_gnos = this->kokkos_current_mj_gnos;
   auto local_kokkos_initial_mj_gnos = this->kokkos_initial_mj_gnos;
 
   this->kokkos_owner_of_coordinate = Kokkos::View<int*, device_t>(
-    "kokkos_owner_of_coordinate", this->num_local_coords);
+    Kokkos::ViewAllocateWithoutInitializing("kokkos_owner_of_coordinate"),
+    this->num_local_coords);
 
   auto local_kokkos_owner_of_coordinate = this->kokkos_owner_of_coordinate;
   auto local_myActualRank = this->myActualRank;
