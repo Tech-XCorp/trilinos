@@ -2913,23 +2913,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::ViewAllocateWithoutInitializing("global_total_part_weight_left_right_closests"),
       (this->max_num_total_part_along_dim +
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
-
-  Kokkos::View<mj_scalar_t**, device_t> weights(
-    Kokkos::ViewAllocateWithoutInitializing("weights"),
-    this->num_local_coords, this->num_weights_per_coord);
-
-  auto local_kokkos_mj_weights = kokkos_mj_weights;
-  auto local_num_weights_per_coord = this->num_weights_per_coord;
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, local_num_local_coords),
-    KOKKOS_LAMBDA (const int j) {
-    for (int i=0; i < local_num_weights_per_coord; i++){
-      weights(j,i) = local_kokkos_mj_weights(j,i);
-  }});
-
-  this->kokkos_mj_weights = weights;
-
+  
   this->kokkos_current_mj_gnos =
   Kokkos::View<mj_gno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("gids"), local_num_local_coords);
