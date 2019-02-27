@@ -4245,7 +4245,7 @@ struct ReduceWeightsFunctor {
 #endif
 
     // create the team shared data - each thread gets one of the arrays
-#ifdef MERGE_THE_KERNELS
+#ifndef MERGE_THE_KERNELS
     size_t sh_mem_size = sizeof(weight_t) * value_count * teamMember.team_size();
 #else
     size_t sh_mem_size = sizeof(weight_t) * (value_count + value_count + 2) * teamMember.team_size();
