@@ -72,7 +72,7 @@
 #define SET_MAX_TEAMS 200 // to do - optimize
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
-#define MERGE_THE_KERNELS // for debugging - will be removed
+//#define MERGE_THE_KERNELS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -4260,7 +4260,11 @@ struct ReduceWeightsFunctor {
 
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
-      max_scalar, array, value_count_rightleft, value_count);
+      max_scalar, array,
+#ifdef MERGE_THE_KERNELS
+      value_count_rightleft,
+#endif
+      value_count);
 
     // This is the setup if we want to use an inner functor instead of
     // of a lambda - probably will delete later unless performance suggests
