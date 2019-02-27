@@ -72,6 +72,7 @@
 #define SET_MAX_TEAMS 200 // to do - optimize
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+#define MERGE_THE_KERNELS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -4803,92 +4804,94 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights4.stop();
   
-for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
+  // TODO: For merging chunks we need to merge this as well
+  // That was slow anyways so not bothering yet until I resolve above
+  // performance issues.
+  for (mj_part_t working_kk = 0; working_kk < current_concurrent_num_parts; ++working_kk) {
 
-  // TODO: Expensive - optimize it
-  mj_part_t num_parts =
-    vector_num_partitioning_in_current_dim[current_work_part + working_kk];
-  mj_part_t num_cuts = num_parts - 1;
-  mj_part_t incomplete_cut_count =
-    host_kokkos_my_incomplete_cut_count(working_kk);
-  if(incomplete_cut_count == 0) continue;
-  
-  // can simplify this to a non-kernel loop once we convert all of this
-  // to be a kernel.
-  int offset_cuts = 0;
-  for(int kk2 = 0; kk2 < working_kk; ++kk2) {
-    offset_cuts +=
-      vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
-  }
-  
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
-    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
-    std::pair<mj_lno_t, mj_lno_t>(
-      offset_cuts,
-      local_kokkos_thread_cut_left_closest_point.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
-    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-      std::pair<mj_lno_t, mj_lno_t>(
-        offset_cuts,
-        local_kokkos_thread_cut_right_closest_point.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
-    Kokkos::subview(kokkos_temp_cut_coords,
-      std::pair<mj_lno_t, mj_lno_t>(
-        offset_cuts,
-        kokkos_temp_cut_coords.size()));
-        
-  clock_weights5.start();
-
-  RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t,
-    mj_lno_t, mj_node_t> rightLeftClosestFunctor(
-    std::numeric_limits<mj_scalar_t>::max(),
-    current_work_part + working_kk,
-    num_cuts+2, // buffer beginning and end to skip if checks
-    kokkos_coordinate_permutations,
-    kokkos_mj_current_dim_coords,
-    kokkos_assigned_part_ids,
-    kokkos_temp_current_cut_coords,
-    kokkos_part_xadj,
-    sEpsilon);
-
-  clock_weights5.stop();
-  clock_weights6.start();
-
-  // will have them as left, right, left, right, etc   2 for each cut
-  // add a dummy cut beginning and end so we can skip if checks in the
-  // parallel loop
-  mj_scalar_t * left_max_right_min_values = new mj_scalar_t[(num_cuts+2)*2];
-
-  clock_functor_rightleft_closest.start();
-
-  auto policy_RightLeftClosestFunctor =
-    policy_t(SET_NUM_TEAMS_RightLeftClosestFunctor, Kokkos::AUTO);
- 
-  Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
-    rightLeftClosestFunctor, left_max_right_min_values);
+    mj_part_t num_parts =
+      vector_num_partitioning_in_current_dim[current_work_part + working_kk];
+    mj_part_t num_cuts = num_parts - 1;
+    mj_part_t incomplete_cut_count =
+      host_kokkos_my_incomplete_cut_count(working_kk);
+    if(incomplete_cut_count == 0) continue;
     
-  clock_functor_rightleft_closest.stop();
+    // can simplify this to a non-kernel loop once we convert all of this
+    // to be a kernel.
+    int offset_cuts = 0;
+    for(int kk2 = 0; kk2 < working_kk; ++kk2) {
+      offset_cuts +=
+        vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
+    }
+    
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
+      Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
+      std::pair<mj_lno_t, mj_lno_t>(
+        offset_cuts,
+        local_kokkos_thread_cut_left_closest_point.size()));
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
+      Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
+        std::pair<mj_lno_t, mj_lno_t>(
+          offset_cuts,
+          local_kokkos_thread_cut_right_closest_point.size()));
+    Kokkos::View<mj_scalar_t *, device_t> kokkos_temp_current_cut_coords =
+      Kokkos::subview(kokkos_temp_cut_coords,
+        std::pair<mj_lno_t, mj_lno_t>(
+          offset_cuts,
+          kokkos_temp_cut_coords.size()));
+          
+    clock_weights5.start();
 
-  // Move it from global memory to device memory
-  // TODO: Need to figure out how we can better manage this
-  typename decltype(kokkos_my_current_left_closest)::HostMirror
-    hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
-  typename decltype(kokkos_my_current_right_closest)::HostMirror
-    hostRightArray =
-      Kokkos::create_mirror_view(kokkos_my_current_right_closest);
-  for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
-    // when reading shift right 1 due to the buffer at beginning and end
-    hostLeftArray(cut)  = left_max_right_min_values[(cut+1)*2+0];
-    hostRightArray(cut) = left_max_right_min_values[(cut+1)*2+1];
+    RightLeftClosestFunctor<policy_t, mj_scalar_t, mj_part_t,
+      mj_lno_t, mj_node_t> rightLeftClosestFunctor(
+      std::numeric_limits<mj_scalar_t>::max(),
+      current_work_part + working_kk,
+      num_cuts+2, // buffer beginning and end to skip if checks
+      kokkos_coordinate_permutations,
+      kokkos_mj_current_dim_coords,
+      kokkos_assigned_part_ids,
+      kokkos_temp_current_cut_coords,
+      kokkos_part_xadj,
+      sEpsilon);
+
+    clock_weights5.stop();
+    clock_weights6.start();
+
+    // will have them as left, right, left, right, etc   2 for each cut
+    // add a dummy cut beginning and end so we can skip if checks in the
+    // parallel loop
+    mj_scalar_t * left_max_right_min_values = new mj_scalar_t[(num_cuts+2)*2];
+
+    clock_functor_rightleft_closest.start();
+
+    auto policy_RightLeftClosestFunctor =
+      policy_t(SET_NUM_TEAMS_RightLeftClosestFunctor, Kokkos::AUTO);
+   
+    Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
+      rightLeftClosestFunctor, left_max_right_min_values);
+      
+    clock_functor_rightleft_closest.stop();
+
+    // Move it from global memory to device memory
+    // TODO: Need to figure out how we can better manage this
+    typename decltype(kokkos_my_current_left_closest)::HostMirror
+      hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
+    typename decltype(kokkos_my_current_right_closest)::HostMirror
+      hostRightArray =
+        Kokkos::create_mirror_view(kokkos_my_current_right_closest);
+    for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
+      // when reading shift right 1 due to the buffer at beginning and end
+      hostLeftArray(cut)  = left_max_right_min_values[(cut+1)*2+0];
+      hostRightArray(cut) = left_max_right_min_values[(cut+1)*2+1];
+    }
+
+    delete [] left_max_right_min_values;
+
+    Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
+    Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
+
+    clock_weights6.stop();
   }
-
-  delete [] left_max_right_min_values;
-
-  Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
-  Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
-
-  clock_weights6.stop();
-} // end phase 3
 
 }
 
