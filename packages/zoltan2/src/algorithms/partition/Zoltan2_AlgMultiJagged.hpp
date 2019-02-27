@@ -7650,43 +7650,34 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
 Clock checkA("checkA", true);
 
-    for(int i = 0; i < current_num_parts; ++i) {
+    if(current_num_parts == 2) {
+      // this is much master than the following loop
+      // maybe do a special case for 3 as well
+      auto local_num_local_coords = this->num_local_coords;
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-          ((i != 0) ? local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
-          KOKKOS_LAMBDA (const int ii) {
+        (0, local_num_local_coords), KOKKOS_LAMBDA (const int ii) {
           mj_lno_t k = local_kokkos_coordinate_permutations(ii);
-          local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;          
+          //  we need to map back from ii to i (index in local_kokkos_part_xadj)
+          mj_part_t i = (ii < local_kokkos_part_xadj(1)) ? 0 : 1;
+          local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
       });
     }
-
-/*
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-        (current_num_parts), KOKKOS_LAMBDA (const int i) {
-        for(int ii = (i != 0) ? local_kokkos_part_xadj(i-1) : 0;
-          ii < local_kokkos_part_xadj(i); ++ii) {
+    else {
+      Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
+        current_num_parts, Kokkos::AUTO());
+      typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
+        member_type member_type;
+      Kokkos::parallel_for(policy, KOKKOS_LAMBDA(member_type team_member) {
+        int i = team_member.league_rank();
+        Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, (i != 0) ?
+          local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
+          [=] (int & ii) {
           mj_lno_t k = local_kokkos_coordinate_permutations(ii);
           local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
-        }
-    });
-*/
-
-/*
-    Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
-      current_num_parts, Kokkos::AUTO());
-    typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
-      member_type member_type;
-    Kokkos::parallel_for(policy, KOKKOS_LAMBDA(member_type team_member) {
-      int i = team_member.league_rank();
-      Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, (i != 0) ?
-        local_kokkos_part_xadj(i-1) : 0, local_kokkos_part_xadj(i)),
-        [=] (int & ii) {
-        mj_lno_t k = local_kokkos_coordinate_permutations(ii);
-        local_kokkos_assigned_part_ids(k) = i + output_part_begin_index;
+        });
       });
-    });
-*/
+    }
 
 checkA.stop(true);
 
