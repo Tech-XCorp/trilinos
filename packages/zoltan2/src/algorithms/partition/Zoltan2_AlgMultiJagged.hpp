@@ -4775,6 +4775,12 @@ clock_weights_new_to_optimize.start();
   mj_part_t total_part_count = num_parts + num_cuts;
   mj_part_t array_length = num_cuts + num_parts;
   
+#ifdef MERGE_THE_KERNELS
+  int base_weight_length = array_length;
+  array_length += (num_cuts * 2) * 2; // for right/left closest
+#endif
+
+  
   mj_part_t incomplete = host_kokkos_my_incomplete_cut_count(kk);
   if(incomplete == 0) {
     total_part_shift += total_part_count;
@@ -4866,6 +4872,38 @@ clock_weights_new_to_optimize.stop();
     }
     total_part_shift += total_part_count;
   }
+#endif
+
+#ifdef MERGE_THE_KERNELS
+  // Move it from global memory to device memory
+  // TODO: Need to figure out how we can better manage this
+  int offset_cuts = 0;
+  for(int kk2 = 0; kk2 < kk; ++kk2) {
+    offset_cuts +=
+      vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
+  }
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
+    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
+    std::pair<mj_lno_t, mj_lno_t>(
+      offset_cuts,
+      local_kokkos_thread_cut_left_closest_point.size()));
+  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
+    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
+      std::pair<mj_lno_t, mj_lno_t>(
+        offset_cuts,
+        local_kokkos_thread_cut_right_closest_point.size()));
+  typename decltype(kokkos_my_current_left_closest)::HostMirror
+    hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
+  typename decltype(kokkos_my_current_right_closest)::HostMirror
+    hostRightArray =
+      Kokkos::create_mirror_view(kokkos_my_current_right_closest);
+  for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
+    // when reading shift right 1 due to the buffer at beginning and end
+    hostLeftArray(cut)  = part_weights[base_weight_length+(cut+1)*2+0];
+    hostRightArray(cut) = part_weights[base_weight_length+(cut+1)*2+1];
+  }
+  Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
+  Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
 #endif
 
   delete [] part_weights;
