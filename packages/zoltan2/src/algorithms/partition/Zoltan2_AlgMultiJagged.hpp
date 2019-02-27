@@ -7648,8 +7648,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
-Clock checkA("checkA", true);
-
     if(current_num_parts == 2) {
       // this is much master than the following loop
       // maybe do a special case for 3 as well
@@ -7678,8 +7676,6 @@ Clock checkA("checkA", true);
         });
       });
     }
-
-checkA.stop(true);
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
