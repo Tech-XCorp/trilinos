@@ -72,7 +72,7 @@
 #define SET_MAX_TEAMS 200 // to do - optimize
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
-// #define MERGE_THE_KERNELS // for debugging - will be removed
+#define MERGE_THE_KERNELS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -3865,11 +3865,15 @@ struct ArraySumReducer {
   typedef ArrayType<scalar_t> value_type;
   value_type * value;
   size_t value_count;
-
+  scalar_t max_scalar;
+    
   KOKKOS_INLINE_FUNCTION ArraySumReducer(
+    scalar_t mj_max_scalar,
     value_type &val,
     const size_t & count) :
-    value(&val), value_count(count)
+      max_scalar(mj_max_scalar),
+      value(&val),
+      value_count(count)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -3882,6 +3886,17 @@ struct ArraySumReducer {
     for(int n = 0; n < value_count; ++n) {
       dst.ptr[n] += src.ptr[n];
     }
+
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      if(src.ptr[n] > dst.ptr[n]) {
+        dst.ptr[n] = src.ptr[n];
+      }
+      if(src.ptr[n+1] < dst.ptr[n+1]) {
+        dst.ptr[n+1] = src.ptr[n+1];
+      }
+    }
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -3889,12 +3904,30 @@ struct ArraySumReducer {
     for(int n = 0; n < value_count; ++n) {
       dst.ptr[n] += src.ptr[n];
     }
+
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      if(src.ptr[n] > dst.ptr[n]) {
+        dst.ptr[n] = src.ptr[n];
+      }
+      if(src.ptr[n+1] < dst.ptr[n+1]) {
+        dst.ptr[n+1] = src.ptr[n+1];
+      }
+    }
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
     for(int n = 0; n < value_count; ++n) {
       dst.ptr[n] = 0;
     }
+    
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      dst.ptr[n]   = -max_scalar;
+      dst.ptr[n+1] =  max_scalar;
+    }
+#endif
   }
 };
 
@@ -4049,7 +4082,8 @@ struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef weight_t value_type[];
-
+  scalar_t max_scalar;
+  
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
   part_t num_cuts;
@@ -4076,6 +4110,7 @@ struct ReduceWeightsFunctor {
 #endif
 
   ReduceWeightsFunctor(
+    scalar_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
     part_t mj_num_cuts,
@@ -4101,6 +4136,7 @@ struct ReduceWeightsFunctor {
     , Kokkos::View<part_t *, device_t> mj_kokkos_prefix_sum_num_cuts
 #endif
     ) :
+      max_scalar(mj_max_scalar),
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
       num_cuts(mj_num_cuts),
@@ -4128,7 +4164,12 @@ struct ReduceWeightsFunctor {
   }
 
   size_t team_shmem_size (int team_size) const {
+#ifdef MERGE_THE_KERNELS
+    // weight and scalar_r must be the same for MERGE_THE_KERNELS
+    return sizeof(scalar_t) * (value_count + value_count + 2) * team_size;
+#else
     return sizeof(weight_t) * value_count * team_size;
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4189,8 +4230,14 @@ struct ReduceWeightsFunctor {
 #endif
 
     // create the team shared data - each thread gets one of the arrays
+#ifdef MERGE_THE_KERNELS
+    size_t sh_mem_size = sizeof(weight_t) * value_count * teamMember.team_size();
+#else
+    size_t sh_mem_size = sizeof(weight_t) * (value_count + value_count + 2) * teamMember.team_size();
+#endif
+
     weight_t * shared_ptr = (weight_t *) teamMember.team_shmem().get_shmem(
-      sizeof(weight_t) * value_count * teamMember.team_size());
+      sh_mem_size);
 
     // select the array for this thread
     ArrayType<weight_t>
@@ -4198,7 +4245,7 @@ struct ReduceWeightsFunctor {
 
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
-      array, value_count);
+      max_scalar, array, value_count);
 
     // This is the setup if we want to use an inner functor instead of
     // of a lambda - probably will delete later unless performance suggests
@@ -4244,6 +4291,11 @@ struct ReduceWeightsFunctor {
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
       scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+  #ifdef MERGE_THE_KERNELS
+      // now handle the left/right closest part
+      scalar_t * p1 = &threadSum.ptr[2+value_count];
+  #endif
 
   #ifndef TURN_OFF_MERGE_CHUNKS // ACTION
       part_t concurrent_current_part = info(i);
@@ -4293,13 +4345,23 @@ struct ReduceWeightsFunctor {
   #endif
               parts(i) = part*2+1;
             }
+
+  #ifdef MERGE_THE_KERNELS
+            // now handle the left/right closest part
+            if(coord > b && coord < *(p1+1)) {
+              *(p1+1) = coord;
+            }
+            if(coord < b && coord > *p1) {
+              *p1 = coord;
+            }
+            p1 += 2;
+  #endif
           }        
         }
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
-  #endif
-
+  #endif      
     }, arraySumReducer);
 
     teamMember.team_barrier();
@@ -4311,12 +4373,23 @@ struct ReduceWeightsFunctor {
       }
     });
   }
-
+  
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count; ++n) {
       dst[n] += src[n];
     }
+
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      if(src[n] > dst[n]) {
+        dst[n] = src[n];
+      }
+      if(src[n+1] < dst[n+1]) {
+        dst[n+1] = src[n+1];
+      }
+    }
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4324,14 +4397,34 @@ struct ReduceWeightsFunctor {
     for(int n = 0; n < value_count; ++n) {
       dst[n] += src[n];
     }
+
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      if(src[n] > dst[n]) {
+        dst[n] = src[n];
+      }
+      if(src[n+1] < dst[n+1]) {
+        dst[n+1] = src[n+1];
+      }
+    }
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
     for(int n = 0; n < value_count; ++n) {
       dst[n] = 0;
     }
+    
+#ifdef MERGE_THE_KERNELS
+    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+      dst[n]   = -max_scalar;
+      dst[n+1] =  max_scalar;
+    }
+#endif
   }
 };
+
+#ifndef MERGE_THE_KERNELS
 
 template<class policy_t, class scalar_t, class part_t>
 struct ArrayMinMaxReducer {
@@ -4385,6 +4478,8 @@ struct ArrayMinMaxReducer {
     }
   }
 };
+
+#endif // #ifndef MERGE_THE_KERNELS
 
 #ifndef MERGE_THE_KERNELS
 
@@ -4537,7 +4632,7 @@ struct RightLeftClosestFunctor {
   }
 };
 
-#endif
+#endif // #ifndef MERGE_THE_KERNELS
 
 /*! \brief Function that calculates the weights of each part according to given
  * part cut coordinates. Function is called inside the parallel region. Thread
@@ -4689,6 +4784,7 @@ clock_weights_new_to_optimize.stop();
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type, weight_t>
     teamFunctor(
+      std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
       current_work_part + kk,
       num_cuts,
