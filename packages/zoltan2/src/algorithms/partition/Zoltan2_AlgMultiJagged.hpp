@@ -3898,6 +3898,7 @@ struct ArraySumReducer {
   }
 };
 
+/*
 template<class scalar_t, class part_t, class index_t, class device_t, class weight_t>
 struct ReduceWeightsFunctorInnerLoop {
 
@@ -4040,6 +4041,7 @@ struct ReduceWeightsFunctorInnerLoop {
 
   }
 };
+*/
 
 template<class policy_t, class scalar_t, class part_t,
   class index_t, class device_t, class weight_t>
