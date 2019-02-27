@@ -4197,6 +4197,10 @@ struct ReduceWeightsFunctor {
     ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
       array, value_count);
 
+    // This is the setup if we want to use an inner functor instead of
+    // of a lambda - probably will delete later unless performance suggests
+    // we need this form.
+/*
     // call the reduce
     ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
       index_t, device_t, weight_t> inner_functor(
@@ -4227,6 +4231,73 @@ struct ReduceWeightsFunctor {
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       inner_functor, arraySumReducer);
+*/
+
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      
+      
+      int i = permutations(ii);
+      scalar_t coord = coordinates(i);
+      scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+  #ifndef TURN_OFF_MERGE_CHUNKS // ACTION
+      part_t concurrent_current_part = info(i);
+      int kk = concurrent_current_part - current_work_part;
+
+      if(kokkos_my_incomplete_cut_count(kk) > 0) {
+      
+        part_t concurrent_cut_shifts =
+          kokkos_prefix_sum_num_cuts(kk);
+          
+        part_t total_part_shift =
+          concurrent_cut_shifts * 2 + kk;
+          
+        part_t num_cuts = view_num_partitioning_in_current_dim(
+          concurrent_current_part) - 1;
+
+  #endif
+
+        scalar_t b = -99999999.9; // TODO: Clean up bounds
+
+        // now check each part and it's right cut
+        for(index_t part = 0; part <= num_cuts; ++part) {
+        
+          scalar_t a = b;
+          b = (part == num_cuts) ? 99999999.9 : // TODO: Clean up bounds
+  #ifdef TURN_OFF_MERGE_CHUNKS
+            cut_coordinates(part);
+  #else
+            cut_coordinates(concurrent_cut_shifts+part);
+  #endif
+
+          if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+  #ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2] += w;
+  #else
+            threadSum.ptr[total_part_shift+part*2] += w;
+  #endif
+            parts(i) = part*2;
+          }
+
+          if(part != num_cuts) {
+            if(coord < b + sEpsilon && coord > b - sEpsilon) {
+  #ifdef TURN_OFF_MERGE_CHUNKS
+              threadSum.ptr[part*2+1] += w;
+  #else
+              threadSum.ptr[total_part_shift+part*2+1] += w;
+  #endif
+              parts(i) = part*2+1;
+            }
+          }        
+        }
+        
+  #ifndef TURN_OFF_MERGE_CHUNKS
+      }
+  #endif
+
+    }, arraySumReducer);
 
     teamMember.team_barrier();
 
