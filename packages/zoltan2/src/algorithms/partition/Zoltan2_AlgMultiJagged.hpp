@@ -72,7 +72,7 @@
 #define SET_MAX_TEAMS 200 // to do - optimize
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
-#define MERGE_THE_KERNELS // for debugging - will be removed
+// #define MERGE_THE_KERNELS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -4386,6 +4386,8 @@ struct ArrayMinMaxReducer {
   }
 };
 
+#ifndef MERGE_THE_KERNELS
+
 template<class policy_t, class scalar_t, class part_t,
   class index_t, class node_t>
 struct RightLeftClosestFunctor {
@@ -4534,6 +4536,8 @@ struct RightLeftClosestFunctor {
     }
   }
 };
+
+#endif
 
 /*! \brief Function that calculates the weights of each part according to given
  * part cut coordinates. Function is called inside the parallel region. Thread
@@ -4806,6 +4810,8 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights4.stop();
   
+#ifndef MERGE_THE_KERNELS
+
   // TODO: For merging chunks we need to merge this as well
   // That was slow anyways so not bothering yet until I resolve above
   // performance issues.
@@ -4894,6 +4900,7 @@ clock_weights_new_to_optimize.stop();
 
     clock_weights6.stop();
   }
+#endif // #ifndef MERGE_THE_KERNELS
 
 }
 
