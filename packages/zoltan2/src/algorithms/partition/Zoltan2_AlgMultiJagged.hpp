@@ -3864,15 +3864,24 @@ struct ArraySumReducer {
   typedef ArraySumReducer reducer;
   typedef ArrayType<scalar_t> value_type;
   value_type * value;
+#ifdef MERGE_THE_KERNELS
+  size_t value_count_rightleft;
+#endif
   size_t value_count;
   scalar_t max_scalar;
     
   KOKKOS_INLINE_FUNCTION ArraySumReducer(
     scalar_t mj_max_scalar,
     value_type &val,
+#ifdef MERGE_THE_KERNELS
+    const size_t & count_right_left,
+#endif
     const size_t & count) :
       max_scalar(mj_max_scalar),
       value(&val),
+#ifdef MERGE_THE_KERNELS
+      value_count_rightleft(count-1),
+#endif
       value_count(count)
   {}
 
@@ -3888,7 +3897,7 @@ struct ArraySumReducer {
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       if(src.ptr[n] > dst.ptr[n]) {
         dst.ptr[n] = src.ptr[n];
       }
@@ -3906,7 +3915,7 @@ struct ArraySumReducer {
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       if(src.ptr[n] > dst.ptr[n]) {
         dst.ptr[n] = src.ptr[n];
       }
@@ -3923,7 +3932,7 @@ struct ArraySumReducer {
     }
     
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       dst.ptr[n]   = -max_scalar;
       dst.ptr[n+1] =  max_scalar;
     }
@@ -4090,6 +4099,9 @@ struct ReduceWeightsFunctor {
 #endif
   part_t current_work_part;
   part_t current_concurrent_num_parts;
+#ifdef MERGE_THE_KERNELS
+  int value_count_rightleft;
+#endif
   int value_count;
   Kokkos::View<index_t*, device_t> permutations;
   Kokkos::View<scalar_t *, device_t> coordinates;
@@ -4143,6 +4155,9 @@ struct ReduceWeightsFunctor {
 #endif
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
+#ifdef MERGE_THE_KERNELS
+      value_count_rightleft((mj_num_cuts+2)*2),  
+#endif
       value_count(mj_weight_array_size),
       permutations(mj_permutations),
       coordinates(mj_coordinates),
@@ -4245,7 +4260,7 @@ struct ReduceWeightsFunctor {
 
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
-      max_scalar, array, value_count);
+      max_scalar, array, value_count_rightleft, value_count);
 
     // This is the setup if we want to use an inner functor instead of
     // of a lambda - probably will delete later unless performance suggests
@@ -4381,7 +4396,7 @@ struct ReduceWeightsFunctor {
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
@@ -4399,7 +4414,7 @@ struct ReduceWeightsFunctor {
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
@@ -4416,7 +4431,7 @@ struct ReduceWeightsFunctor {
     }
     
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count - 2; n += 2) {
+    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
       dst[n]   = -max_scalar;
       dst[n+1] =  max_scalar;
     }
