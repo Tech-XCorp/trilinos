@@ -72,7 +72,7 @@
 #define SET_MAX_TEAMS 200 // to do - optimize
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
-//#define MERGE_THE_KERNELS // for debugging - will be removed
+#define MERGE_THE_KERNELS // for debugging - will be removed
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -3874,13 +3874,13 @@ struct ArraySumReducer {
     scalar_t mj_max_scalar,
     value_type &val,
 #ifdef MERGE_THE_KERNELS
-    const size_t & count_right_left,
+    const size_t & mj_value_count_rightleft,
 #endif
     const size_t & count) :
       max_scalar(mj_max_scalar),
       value(&val),
 #ifdef MERGE_THE_KERNELS
-      value_count_rightleft(count-1),
+      value_count_rightleft(mj_value_count_rightleft),
 #endif
       value_count(count)
   {}
@@ -4156,7 +4156,7 @@ struct ReduceWeightsFunctor {
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
 #ifdef MERGE_THE_KERNELS
-      value_count_rightleft((mj_num_cuts+2)*2),  
+      value_count_rightleft((mj_num_cuts+2)*2), // won't work for merge chunks - TODO   
 #endif
       value_count(mj_weight_array_size),
       permutations(mj_permutations),
@@ -4181,7 +4181,7 @@ struct ReduceWeightsFunctor {
   size_t team_shmem_size (int team_size) const {
 #ifdef MERGE_THE_KERNELS
     // weight and scalar_r must be the same for MERGE_THE_KERNELS
-    return sizeof(scalar_t) * (value_count + value_count + 2) * team_size;
+    return sizeof(scalar_t) * (value_count + value_count_rightleft) * team_size;
 #else
     return sizeof(weight_t) * value_count * team_size;
 #endif
@@ -4248,7 +4248,7 @@ struct ReduceWeightsFunctor {
 #ifndef MERGE_THE_KERNELS
     size_t sh_mem_size = sizeof(weight_t) * value_count * teamMember.team_size();
 #else
-    size_t sh_mem_size = sizeof(weight_t) * (value_count + value_count + 2) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(weight_t) * (value_count + value_count_rightleft) * teamMember.team_size();
 #endif
 
     weight_t * shared_ptr = (weight_t *) teamMember.team_shmem().get_shmem(
@@ -4781,7 +4781,7 @@ clock_weights_new_to_optimize.start();
   
 #ifdef MERGE_THE_KERNELS
   int base_weight_length = array_length;
-  array_length += (num_cuts * 2) * 2; // for right/left closest
+  array_length += (num_cuts + 2) * 2; // for right/left closest + buffer cut on either side
 #endif
 
   
