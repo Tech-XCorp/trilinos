@@ -8274,6 +8274,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock clock_loopA("    clock_loopA", false);
   Clock clock_update_part_num_arrays("      clock_update_part_num_arrays", false);
   Clock clock_main_loop("    clock_main_loop", false);
+  Clock clock_loopB("    clock_loopB", false);
+
   Clock clock_main_loop_setup("      clock_main_loop_setup", false);
   Clock clock_mj_get_local_min_max_coord_totW(
     "      clock_mj_get_local_min_max_coord_totW", false);
@@ -8810,6 +8812,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     clock_main_loop.stop();
 
+    clock_loopB.start();
+
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
     long migration_reduce_all_population =
@@ -8870,6 +8874,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Problem_Partitioning_" + istring);
     }
+    clock_loopB.stop();
   }
   clock_multi_jagged_part_loop.stop();
   Clock clock_multi_jagged_part_finish("  clock_multi_jagged_part_finish", true);
@@ -8953,6 +8958,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_new_part_chunks.print();
   clock_mj_create_new_partitions.print();
+  clock_loopB.print();
 
   clock_multi_jagged_part_finish.print();
   
