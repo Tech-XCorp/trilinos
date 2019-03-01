@@ -8231,6 +8231,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->allocate_set_work_memory();
   clock_allocate_set_work_memory.stop();
 
+  Clock clock_multi_jagged_part_init_finish(
+    "    clock_multi_jagged_part_init_finish", true);
+
   // We duplicate the comm as we create subcommunicators during migration.
   // We keep the problemComm as it is, while comm changes after each migration.
   this->comm = this->mj_problemComm->duplicate();
@@ -8264,6 +8267,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<size_t*, device_t>
     view_total_reduction_size("view_total_reduction_size", 1);
 
+  clock_multi_jagged_part_init_finish.stop();
   clock_multi_jagged_part_init.stop();
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
 
@@ -8900,6 +8904,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_multi_jagged_part_init_begin.print();
   clock_set_part_specifications.print();
   clock_allocate_set_work_memory.print();
+  clock_multi_jagged_part_init_finish.print();
 
   clock_multi_jagged_part_loop.print();
   clock_loopA.print();
