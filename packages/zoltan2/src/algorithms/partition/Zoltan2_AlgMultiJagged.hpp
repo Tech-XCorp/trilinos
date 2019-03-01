@@ -149,7 +149,7 @@ static Clock clock_weights5("            clock_weights5", false);
 static Clock clock_weights6("            clock_weights6", false);
 static Clock clock_functor_rightleft_closest("              clock_functor_rightleft_closest", false);
 #endif
-static Clock clock_mj_accumulate_thread_results("          clock_mj_accumulate_thread_results", false);
+static Clock clock_mj_combine_rightleft_and_weights("          clock_mj_combine_rightleft_and_weights", false);
 static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
 static Clock clock_mj_get_new_cut_coordinates("          clock_mj_get_new_cut_coordinates", false);
 static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cut_coordinates_end", false);
@@ -1042,7 +1042,7 @@ private:
    * \param current_concurrent_num_parts is the number of parts whose cut
    * lines will be calculated concurrently.
    */
-  void mj_accumulate_thread_results(
+  void mj_combine_rightleft_and_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
@@ -3590,12 +3590,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     clock_mj_1D_part_get_weights.stop();
 
-    clock_mj_accumulate_thread_results.start();
+    clock_mj_combine_rightleft_and_weights.start();
 
-    // sum up the results of threads
-    // TODO: Now with threads eliminated we should eliminate a lot of this code
-    // There is only 1 thread block in the new cuda refactor setup
-    this->mj_accumulate_thread_results(
+    this->mj_combine_rightleft_and_weights(
       view_num_partitioning_in_current_dim,
       current_work_part,
       current_concurrent_num_parts,
@@ -3606,7 +3603,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       local_thread_part_weights
     );
 
-    clock_mj_accumulate_thread_results.stop();
+    clock_mj_combine_rightleft_and_weights.stop();
     clock_write_globals.start();
 
     // Rewrite as single TODO
@@ -5105,7 +5102,7 @@ clock_weights_new_to_optimize.stop();
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
-  mj_accumulate_thread_results(
+  mj_combine_rightleft_and_weights(
   Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_work_part,
   mj_part_t current_concurrent_num_parts,
@@ -5119,93 +5116,58 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
     local_thread_part_weights)
 {
+  size_t tlr_array_shift = 0;
+  mj_part_t cut_shift = 0;
+  size_t total_part_array_shift = 0;
+      
+  // iterate for all concurrent parts to find the left and right closest
+  // points in the process.
+  for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
 
-  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
-    member_type member_type;
+    mj_part_t num_parts_in_part =
+      vector_num_partitioning_in_current_dim[current_work_part + i];
+    mj_part_t num_cuts_in_part = num_parts_in_part - 1;
+    size_t num_total_part_in_part =
+      num_parts_in_part + size_t (num_cuts_in_part) ;
 
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
-  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+    // iterate for cuts in a single part.
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, num_cuts_in_part), KOKKOS_LAMBDA (const int & ii) {
+      mj_part_t next = tlr_array_shift + ii;
+      mj_part_t cut_index = cut_shift + ii;
 
-    // needs barrier here, as it requires all threads to finish
-    // mj_1D_part_get_thread_part_weights using parallel region here reduces the
-    // performance because of the cache invalidates.
-    // Note: I confirmed we still need this barrier with the new kokkos refactor
-    team_member.team_barrier();
-    
-    Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-      size_t tlr_array_shift = 0;
-      mj_part_t cut_shift = 0;
-      // iterate for all concurrent parts to find the left and right closest
-      // points in the process.
-      for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
+      // store the left and right closes points.
+      local_total_part_weight_left_right_closests(
+        num_total_part_in_part + next) =
+        local_thread_cut_left_closest_point(cut_index);
 
-        mj_part_t num_parts_in_part =
-          view_num_partitioning_in_current_dim(current_work_part + i);
-        mj_part_t num_cuts_in_part =
-          num_parts_in_part - 1;
-        size_t num_total_part_in_part =
-          num_parts_in_part + size_t (num_cuts_in_part) ;
-        // iterate for cuts in a single part.
-        for(mj_part_t ii = 0; ii < num_cuts_in_part ; ++ii){
-          mj_part_t next = tlr_array_shift + ii;
-          mj_part_t cut_index = cut_shift + ii;
+      local_total_part_weight_left_right_closests(
+        num_total_part_in_part + num_cuts_in_part + next) =
+        local_thread_cut_right_closest_point(cut_index);
+    });
+        
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, num_total_part_in_part), KOKKOS_LAMBDA (const int & j) {
+      mj_part_t cut_ind = j / 2 + cut_shift;
 
-          if(local_is_cut_line_determined(cut_index)) continue;
-          mj_scalar_t left_closest_in_process =
-            local_thread_cut_left_closest_point(cut_index);
-          mj_scalar_t right_closest_in_process =
-            local_thread_cut_right_closest_point(cut_index);
-
-          // store the left and right closes points.
-          local_total_part_weight_left_right_closests(
-            num_total_part_in_part + next) = left_closest_in_process;
-          local_total_part_weight_left_right_closests(
-            num_total_part_in_part + num_cuts_in_part + next) =
-            right_closest_in_process;
-        }
-        // set the shift position in the arrays
-        tlr_array_shift += (num_total_part_in_part + 2 * num_cuts_in_part);
-        cut_shift += num_cuts_in_part;
-      }
-
-      tlr_array_shift = 0;
-      cut_shift = 0;
-      size_t total_part_array_shift = 0;
-      //iterate for all concurrent parts to find the total weight in the process.
-      for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
-
-        mj_part_t num_parts_in_part =
-          view_num_partitioning_in_current_dim(current_work_part + i);
-        mj_part_t num_cuts_in_part =
-          num_parts_in_part - 1;
-        size_t num_total_part_in_part =
-          num_parts_in_part + size_t (num_cuts_in_part);
-
-      for(size_t j = 0; j < num_total_part_in_part; ++j) {
-        mj_part_t cut_ind = j / 2 + cut_shift;
-
-        // need to check j !=  num_total_part_in_part - 1
-        // which is same as j/2 != num_cuts_in_part.
-        // we cannot check it using cut_ind, because of the concurrent part
-        // concantanetion.
-        if(j !=  num_total_part_in_part - 1 &&
-          local_is_cut_line_determined(cut_ind)) continue;
-
-        double pwj =
-          local_thread_part_weights(total_part_array_shift + j);
-
-        // size_t jshift = j % total_part_count + i *
-        //   (total_part_count + 2 * noCuts);
-        local_total_part_weight_left_right_closests(tlr_array_shift + j)
-          = pwj;
-      }
-      cut_shift += num_cuts_in_part;
-      tlr_array_shift += num_total_part_in_part + 2 * num_cuts_in_part;
-      total_part_array_shift += num_total_part_in_part;
+      // need to check j !=  num_total_part_in_part - 1
+      // which is same as j/2 != num_cuts_in_part.
+      // we cannot check it using cut_ind, because of the concurrent part
+      // concantanetion.
+      if(j ==  num_total_part_in_part - 1 ||
+        !local_is_cut_line_determined(cut_ind)) {
+        double pwj = local_thread_part_weights(total_part_array_shift + j);
+        local_total_part_weight_left_right_closests(tlr_array_shift + j)= pwj;
       }
     });
-    team_member.team_barrier();  // for end of Kokkos::single
-  });
+    
+    // set the shift position in the arrays
+    cut_shift += num_cuts_in_part;
+    tlr_array_shift += num_total_part_in_part + 2 * num_cuts_in_part;
+    total_part_array_shift += num_total_part_in_part;
+  }
 }
 
 /*! \brief
@@ -8178,7 +8140,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_functor_rightleft_closest.reset();
 #endif
 
-  clock_mj_accumulate_thread_results.reset();
+  clock_mj_combine_rightleft_and_weights.reset();
   clock_mj_get_new_cut_coordinates_init.reset();
   clock_mj_get_new_cut_coordinates.reset();
   clock_mj_get_new_cut_coordinates_end.reset();
@@ -8965,7 +8927,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_functor_rightleft_closest.print();
 #endif
 
-  clock_mj_accumulate_thread_results.print();
+  clock_mj_combine_rightleft_and_weights.print();
 
   clock_write_globals.print();
 
