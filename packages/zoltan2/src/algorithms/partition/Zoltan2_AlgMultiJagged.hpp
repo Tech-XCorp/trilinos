@@ -155,7 +155,7 @@ static Clock clock_mj_get_new_cut_coordinates("          clock_mj_get_new_cut_co
 static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cut_coordinates_end", false);
 static Clock clock_write_globals("          clock_write_globals", false);
 static Clock clock_mj_1D_part_end("        clock_mj_1D_part_end", false);
-static Clock clock_mj_create_new_partitions("           clock_mj_create_new_partitions", false);
+static Clock clock_mj_create_new_partitions("         clock_mj_create_new_partitions", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -8458,7 +8458,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         clock_kk_loop.start();
 
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-
 
           clock_main_loop_inner.start();
 
