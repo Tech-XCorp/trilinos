@@ -143,9 +143,11 @@ static Clock clock_weights2("            clock_weights2", false);
 static Clock clock_weights3("            clock_weights3", false);
 static Clock clock_functor_weights("              clock_functor_weights", false);
 static Clock clock_weights4("            clock_weights4", false);
+#ifndef MERGE_THE_KERNELS
 static Clock clock_weights5("            clock_weights5", false);
 static Clock clock_weights6("            clock_weights6", false);
 static Clock clock_functor_rightleft_closest("              clock_functor_rightleft_closest", false);
+#endif
 static Clock clock_mj_accumulate_thread_results("          clock_mj_accumulate_thread_results", false);
 static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
 static Clock clock_mj_get_new_cut_coordinates("          clock_mj_get_new_cut_coordinates", false);
@@ -8169,9 +8171,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights3.reset();
   clock_functor_weights.reset();
   clock_weights4.reset();
+#ifndef MERGE_THE_KERNELS
   clock_weights5.reset();
   clock_weights6.reset();
   clock_functor_rightleft_closest.reset();
+#endif
+
   clock_mj_accumulate_thread_results.reset();
   clock_mj_get_new_cut_coordinates_init.reset();
   clock_mj_get_new_cut_coordinates.reset();
@@ -8924,9 +8929,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights3.print();
   clock_functor_weights.print();
   clock_weights4.print();
+#ifndef MERGE_THE_KERNELS
   clock_weights5.print();
   clock_weights6.print();
   clock_functor_rightleft_closest.print();
+#endif
 
   clock_mj_accumulate_thread_results.print();
 
