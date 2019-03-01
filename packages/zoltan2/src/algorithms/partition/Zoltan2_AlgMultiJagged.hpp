@@ -4872,10 +4872,6 @@ clock_weights_new_to_optimize.stop();
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
 
-  for(int n = 0; n < weight_array_length + right_left_array_length; ++n) {
-    printf("%d: %.2f\n", (int) n, part_weights[n]);
-  }
-
   clock_functor_weights.stop();
 
 #ifndef TURN_OFF_MERGE_CHUNKS // ACTION 3
@@ -5037,8 +5033,6 @@ clock_weights_new_to_optimize.stop();
       // when reading shift right 1 due to the buffer at beginning and end
       hostLeftArray(cut)  = left_max_right_min_values[(cut+1)*2+0];
       hostRightArray(cut) = left_max_right_min_values[(cut+1)*2+1];
-      
-      printf("Results for cut %d: %.2f %.2f\n", cut, (float) hostLeftArray(cut), (float) hostRightArray(cut));
     }
 
     delete [] left_max_right_min_values;
