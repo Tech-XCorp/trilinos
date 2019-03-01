@@ -5116,58 +5116,75 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
     local_thread_part_weights)
 {
-  size_t tlr_array_shift = 0;
-  mj_part_t cut_shift = 0;
-  size_t total_part_array_shift = 0;
-      
-  // iterate for all concurrent parts to find the left and right closest
-  // points in the process.
-  for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
-
-    mj_part_t num_parts_in_part =
-      vector_num_partitioning_in_current_dim[current_work_part + i];
-    mj_part_t num_cuts_in_part = num_parts_in_part - 1;
-    size_t num_total_part_in_part =
-      num_parts_in_part + size_t (num_cuts_in_part) ;
-
-    // iterate for cuts in a single part.
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-      (0, num_cuts_in_part), KOKKOS_LAMBDA (const int & ii) {
-      mj_part_t next = tlr_array_shift + ii;
-      mj_part_t cut_index = cut_shift + ii;
-
-      // store the left and right closes points.
-      local_total_part_weight_left_right_closests(
-        num_total_part_in_part + next) =
-        local_thread_cut_left_closest_point(cut_index);
-
-      local_total_part_weight_left_right_closests(
-        num_total_part_in_part + num_cuts_in_part + next) =
-        local_thread_cut_right_closest_point(cut_index);
-    });
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, 1), KOKKOS_LAMBDA (const int & dummy) {
         
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-      (0, num_total_part_in_part), KOKKOS_LAMBDA (const int & j) {
-      mj_part_t cut_ind = j / 2 + cut_shift;
+    size_t tlr_array_shift = 0;
+    mj_part_t cut_shift = 0;
+    size_t total_part_array_shift = 0;
+        
+    // iterate for all concurrent parts to find the left and right closest
+    // points in the process.
+    for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
 
-      // need to check j !=  num_total_part_in_part - 1
-      // which is same as j/2 != num_cuts_in_part.
-      // we cannot check it using cut_ind, because of the concurrent part
-      // concantanetion.
-      if(j ==  num_total_part_in_part - 1 ||
-        !local_is_cut_line_determined(cut_ind)) {
-        double pwj = local_thread_part_weights(total_part_array_shift + j);
-        local_total_part_weight_left_right_closests(tlr_array_shift + j)= pwj;
+      mj_part_t num_parts_in_part =
+        vector_num_partitioning_in_current_dim[current_work_part + i];
+      mj_part_t num_cuts_in_part =
+      num_parts_in_part - 1;
+      size_t num_total_part_in_part =
+        num_parts_in_part + size_t (num_cuts_in_part) ;
+
+      // iterate for cuts in a single part.
+      for(int ii = 0; ii < num_cuts_in_part; ++ii) {
+        mj_part_t next = tlr_array_shift + ii;
+        mj_part_t cut_index = cut_shift + ii;
+
+        if(!local_is_cut_line_determined(cut_index)) {
+          mj_scalar_t left_closest_in_process =
+            local_thread_cut_left_closest_point(cut_index);
+          mj_scalar_t right_closest_in_process =
+            local_thread_cut_right_closest_point(cut_index);
+
+          // store the left and right closes points.
+          local_total_part_weight_left_right_closests(
+            num_total_part_in_part + next) = left_closest_in_process;
+
+          local_total_part_weight_left_right_closests(
+            num_total_part_in_part + num_cuts_in_part + next) =
+            right_closest_in_process;
+        }
       }
-    });
-    
-    // set the shift position in the arrays
-    cut_shift += num_cuts_in_part;
-    tlr_array_shift += num_total_part_in_part + 2 * num_cuts_in_part;
-    total_part_array_shift += num_total_part_in_part;
-  }
+         
+      for(size_t j = 0; j < num_total_part_in_part; ++j) {
+        mj_part_t cut_ind = j / 2 + cut_shift;
+
+        // need to check j !=  num_total_part_in_part - 1
+        // which is same as j/2 != num_cuts_in_part.
+        // we cannot check it using cut_ind, because of the concurrent part
+        // concantanetion.
+        if(j !=  num_total_part_in_part - 1 &&
+          local_is_cut_line_determined(cut_ind)) {
+          
+        }
+        else {
+
+          double pwj =
+            local_thread_part_weights(total_part_array_shift + j);
+
+          // size_t jshift = j % total_part_count + i *
+          //   (total_part_count + 2 * noCuts);
+          local_total_part_weight_left_right_closests(tlr_array_shift + j)= pwj;
+        }
+      }
+      
+      // set the shift position in the arrays
+      cut_shift += num_cuts_in_part;
+      tlr_array_shift += num_total_part_in_part + 2 * num_cuts_in_part;
+      total_part_array_shift += num_total_part_in_part;
+    }
+  
+  });
 }
 
 /*! \brief
