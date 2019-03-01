@@ -8282,12 +8282,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     "      clock_mj_get_local_min_max_coord_totW", false);
   Clock clock_mj_get_global_min_max_coord_totW(
     "      clock_mj_get_global_min_max_coord_totW", false);
-  Clock clock_main_loop_inner("      clock_main_loop_inner", false);
-  Clock clock_main_loop_inner2("      clock_main_loop_inner2", false);
+  Clock clock_kk_loop(
+    "      clock_kk_loop", false);
+  Clock clock_main_loop_inner("        clock_main_loop_inner", false);
+  Clock clock_main_loop_inner2("        clock_main_loop_inner2", false);
   Clock clock_mj_get_initial_cut_coords_target_weights(
-    "      clock_mj_get_initial_cut_coords_target_weights", false);
+    "        clock_mj_get_initial_cut_coords_target_weights", false);
   Clock clock_set_initial_coordinate_parts(
-    "      clock_set_initial_coordinate_parts", false);
+    "        clock_set_initial_coordinate_parts", false);
+  Clock clock_clear_kk(
+    "        clear_kk", false);
+  Clock clock_read_singles(
+    "        clock_read_singles", false);
 
   Clock clock_mj_1D_part("      clock_mj_1D_part", false);
 
@@ -8449,6 +8455,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         mj_part_t concurrent_part_cut_shift = 0;
         mj_part_t concurrent_part_part_shift = 0;
 
+        clock_kk_loop.start();
+
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
 
@@ -8542,6 +8550,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             clock_mj_get_initial_cut_coords_target_weights.stop();
 
+            clock_read_singles.start();
+
             // TODO: refactor clean up
             mj_lno_t coordinate_end_index;
             Kokkos::parallel_reduce("Read single", 1,
@@ -8558,13 +8568,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 local_kokkos_part_xadj(concurrent_current_part_index -1);
             }, coordinate_begin_index);
 
+            clock_read_singles.stop();
+
+            clock_set_initial_coordinate_parts.start();
+
             // get the initial estimated part assignments of the
             // coordinates.
             this->mj_env->timerStart(MACRO_TIMERS,
               "MultiJagged - Problem_Partitioning_" + istring +
               " set_initial_coordinate_parts()");
-
-            clock_set_initial_coordinate_parts.start();
 
             this->set_initial_coordinate_parts(
               max_coordinate,
@@ -8584,6 +8596,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           else {
             // e.g., if have fewer coordinates than parts, don't need to do
             // next dim.
+            clock_clear_kk.start();
+
             auto local_kokkos_my_incomplete_cut_count =
               this->kokkos_my_incomplete_cut_count;
             Kokkos::parallel_for(
@@ -8591,10 +8605,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 (0, 1), KOKKOS_LAMBDA (const int dummy) {
                 local_kokkos_my_incomplete_cut_count(kk) = 0;
             });
+
+            clock_clear_kk.stop();
           }
             
           obtained_part_index += partition_count;
         }
+        clock_kk_loop.stop();
+
+        clock_mj_1D_part.start();
 
         // used imbalance, it is always 0, as it is difficult to
         // estimate a range.
@@ -8602,8 +8621,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         // Determine cut lines for all concurrent parts parts here.
         this->mj_env->timerStart(MACRO_TIMERS,
           "MultiJagged - Problem_Partitioning mj_1D_part()");
-
-        clock_mj_1D_part.start();
 
         this->mj_1D_part(
           kokkos_mj_current_dim_coords,
@@ -8919,10 +8936,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_main_loop_setup.print();
   clock_mj_get_local_min_max_coord_totW.print();
   clock_mj_get_global_min_max_coord_totW.print();
+  clock_kk_loop.print();
   clock_main_loop_inner.print();
   clock_main_loop_inner2.print();
   clock_mj_get_initial_cut_coords_target_weights.print();
+  clock_read_singles.print();
   clock_set_initial_coordinate_parts.print();
+  clock_clear_kk.print();
 
   clock_mj_1D_part.print();
 
