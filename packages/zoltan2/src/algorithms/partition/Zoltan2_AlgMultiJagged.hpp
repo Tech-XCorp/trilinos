@@ -86,16 +86,16 @@ class Clock {
       }
     }
     void reset() {
-      time_sum = 0;
+      time_sum_us = 0;
       counter_start = 0;
       counter_stop = 0;
     }
-    double time() const {
+    int time() const {
       if(counter_start != counter_stop) {
         printf("Clock %s bad counters for time!\n", name.c_str());
         throw std::logic_error("bad timer counters for time!\n");
       }
-      return time_sum;
+      return time_sum_us;
     }
     void start() {
       if(counter_start != counter_stop) {
@@ -112,20 +112,21 @@ class Clock {
       }
       ++counter_stop;
       clock_t now_time = std::chrono::steady_clock::now();
-      time_sum += std::chrono::duration_cast<std::chrono::duration<double> >(now_time - start_time).count();
+      time_sum_us += static_cast<int>(std::chrono::duration_cast<std::chrono::microseconds>(now_time - start_time).count());
+
       if(bPrint) {
         print();
       }
     }
     void print() {
-      printf("%s: %.2f ms    Count: %d\n", name.c_str(), (float)(time() * 1000.0), counter_stop);
+      printf("%s: %d us    Count: %d\n", name.c_str(), time(), counter_stop);
     }
   private:
     std::string name;
     int counter_start;
     int counter_stop;
     clock_t start_time;
-    double time_sum;
+    int time_sum_us;
 };
 
 // TODO: Also delete all of this temp profiling code
