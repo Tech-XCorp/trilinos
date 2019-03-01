@@ -3606,28 +3606,33 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     clock_mj_combine_rightleft_and_weights.stop();
     clock_write_globals.start();
 
-    // Rewrite as single TODO
-    Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
-      //now sum up the results of mpi processors.
-      if(!bSingleProcess){
-        // TODO: Ignore this code for cuda right now - not worrying about
-        // parallel build yet
-        #ifndef KOKKOS_ENABLE_CUDA
-        // TODO: Remove use of data() - refactor in progress
-        reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
-          view_total_reduction_size(0),
-          this->total_part_weight_left_right_closests.data(),
-          this->global_total_part_weight_left_right_closests.data());
-        #endif
-      }
-      else {
+    //now sum up the results of mpi processors.
+    if(!bSingleProcess){
+      // TODO: Ignore this code for cuda right now - not worrying about
+      // parallel build yet
+      #ifndef KOKKOS_ENABLE_CUDA
+      // TODO: Remove use of data() - refactor in progress
+      reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
+        view_total_reduction_size(0),
+        this->total_part_weight_left_right_closests.data(),
+        this->global_total_part_weight_left_right_closests.data());
+      #endif
+    }
+    else {
+      // just map it instead of looping - is this ok?
+      local_global_total_part_weight_left_right_closests =
+        local_total_part_weight_left_right_closests;
+        
+      /* OLD FORM TODO Delete
+      Kokkos::parallel_for(1, KOKKOS_LAMBDA(int i) {
         // TODO: Optimize and fix this c cast - clean up use of the view
         for(int n = 0; n < (int) view_total_reduction_size(0); ++n) {
           local_global_total_part_weight_left_right_closests(n) =
             local_total_part_weight_left_right_closests(n);
         }
       }
-    });
+      */
+    }
 
     clock_write_globals.stop();
 
