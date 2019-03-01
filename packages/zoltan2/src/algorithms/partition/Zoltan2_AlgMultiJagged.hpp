@@ -3859,30 +3859,30 @@ struct ArrayType {
 };
 
 template<class policy_t, class scalar_t, class part_t>
-struct ArraySumReducer {
+struct ArrayCombinationReducer {
 
-  typedef ArraySumReducer reducer;
+  typedef ArrayCombinationReducer reducer;
   typedef ArrayType<scalar_t> value_type;
   scalar_t max_scalar;
   value_type * value;
 #ifdef MERGE_THE_KERNELS
   size_t value_count_rightleft;
 #endif
-  size_t value_count;
+  size_t value_count_weights;
 
-  KOKKOS_INLINE_FUNCTION ArraySumReducer(
+  KOKKOS_INLINE_FUNCTION ArrayCombinationReducer(
     scalar_t mj_max_scalar,
     value_type &val,
 #ifdef MERGE_THE_KERNELS
     const size_t & mj_value_count_rightleft,
 #endif
-    const size_t & count) :
+    const size_t & mj_value_count_weights) :
       max_scalar(mj_max_scalar),
       value(&val),
 #ifdef MERGE_THE_KERNELS
       value_count_rightleft(mj_value_count_rightleft),
 #endif
-      value_count(count)
+      value_count_weights(mj_value_count_weights)
   {}
 
   KOKKOS_INLINE_FUNCTION
@@ -3892,12 +3892,12 @@ struct ArraySumReducer {
 
   KOKKOS_INLINE_FUNCTION
   void join(value_type& dst, const value_type& src)  const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst.ptr[n] += src.ptr[n];
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
       if(src.ptr[n] > dst.ptr[n]) {
         dst.ptr[n] = src.ptr[n];
       }
@@ -3910,12 +3910,12 @@ struct ArraySumReducer {
 
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type& dst, const volatile value_type& src) const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst.ptr[n] += src.ptr[n];
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
       if(src.ptr[n] > dst.ptr[n]) {
         dst.ptr[n] = src.ptr[n];
       }
@@ -3927,12 +3927,12 @@ struct ArraySumReducer {
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst.ptr[n] = 0;
     }
     
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
       dst.ptr[n]   = -max_scalar;
       dst.ptr[n+1] =  max_scalar;
     }
@@ -4102,6 +4102,7 @@ struct ReduceWeightsFunctor {
 #ifdef MERGE_THE_KERNELS
   int value_count_rightleft;
 #endif
+  int value_count_weights;
   int value_count;
   Kokkos::View<index_t*, device_t> permutations;
   Kokkos::View<scalar_t *, device_t> coordinates;
@@ -4161,7 +4162,12 @@ struct ReduceWeightsFunctor {
 #ifdef MERGE_THE_KERNELS
       value_count_rightleft(mj_left_right_array_size), 
 #endif
-      value_count(mj_weight_array_size),
+      value_count_weights(mj_weight_array_size),
+#ifdef MERGE_THE_KERNELS
+      value_count(mj_weight_array_size+mj_left_right_array_size),
+#else
+
+#endif
       permutations(mj_permutations),
       coordinates(mj_coordinates),
       weights(mj_weights),
@@ -4184,9 +4190,9 @@ struct ReduceWeightsFunctor {
   size_t team_shmem_size (int team_size) const {
 #ifdef MERGE_THE_KERNELS
     // weight and scalar_r must be the same for MERGE_THE_KERNELS
-    return sizeof(scalar_t) * (value_count + value_count_rightleft) * team_size;
+    return sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * team_size;
 #else
-    return sizeof(weight_t) * value_count * team_size;
+    return sizeof(weight_t) * value_count_weights * team_size;
 #endif
   }
 
@@ -4249,9 +4255,9 @@ struct ReduceWeightsFunctor {
 
     // create the team shared data - each thread gets one of the arrays
 #ifndef MERGE_THE_KERNELS
-    size_t sh_mem_size = sizeof(weight_t) * value_count * teamMember.team_size();
+    size_t sh_mem_size = sizeof(weight_t) * value_count_weights * teamMember.team_size();
 #else
-    size_t sh_mem_size = sizeof(weight_t) * (value_count + value_count_rightleft) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(weight_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 #endif
 
     weight_t * shared_ptr = (weight_t *) teamMember.team_shmem().get_shmem(
@@ -4260,18 +4266,18 @@ struct ReduceWeightsFunctor {
     // select the array for this thread
     ArrayType<weight_t>
 #ifndef MERGE_THE_KERNELS
-      array(&shared_ptr[teamMember.team_rank() * (value_count)]);
+      array(&shared_ptr[teamMember.team_rank() * (value_count_weights)]);
 #else
-      array(&shared_ptr[teamMember.team_rank() * (value_count + value_count_rightleft)]);
+      array(&shared_ptr[teamMember.team_rank() * (value_count_weights + value_count_rightleft)]);
 #endif
 
     // create reducer which handles the ArrayType class
-    ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
+    ArrayCombinationReducer<policy_t, weight_t, part_t> arraySumReducer(
       max_scalar, array,
 #ifdef MERGE_THE_KERNELS
       value_count_rightleft,
 #endif
-      value_count);
+      value_count_weights);
 
     // This is the setup if we want to use an inner functor instead of
     // of a lambda - probably will delete later unless performance suggests
@@ -4339,7 +4345,7 @@ struct ReduceWeightsFunctor {
 
   #ifdef MERGE_THE_KERNELS
         // for the left/right closest part calculation
-        scalar_t * p1 = &threadSum.ptr[2+value_count];
+        scalar_t * p1 = &threadSum.ptr[2+value_count_weights];
   #endif
   
         // now check each part and it's right cut
@@ -4394,12 +4400,12 @@ struct ReduceWeightsFunctor {
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
-      for(int n = 0; n < value_count; ++n) {
+      for(int n = 0; n < value_count_weights; ++n) {
         teamSum[n] += array.ptr[n];
       }
       
   #ifdef MERGE_THE_KERNELS
-      for(int n = 2 + value_count; n < value_count + value_count_rightleft - 2; n += 2) {
+      for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
         }
@@ -4414,12 +4420,12 @@ struct ReduceWeightsFunctor {
   
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst[n] += src[n];
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
@@ -4432,12 +4438,12 @@ struct ReduceWeightsFunctor {
 
   KOKKOS_INLINE_FUNCTION
   void join (volatile value_type dst, const volatile value_type src) const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst[n] += src[n];
     }
 
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
       if(src[n] > dst[n]) {
         dst[n] = src[n];
       }
@@ -4445,19 +4451,16 @@ struct ReduceWeightsFunctor {
         dst[n+1] = src[n+1];
       }
     }
-    for(int n = 0; n < value_count + value_count_rightleft; ++n) {
-      dst[n] = 101.0;
-    }
 #endif
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
-    for(int n = 0; n < value_count; ++n) {
+    for(int n = 0; n < value_count_weights; ++n) {
       dst[n] = 0;
     }
     
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count; n < value_count + value_count_rightleft; n += 2) {
+    for(int n = value_count_weights; n < value_count_weights + value_count_rightleft; n += 2) {
       dst[n]   = -max_scalar;
       dst[n+1] =  max_scalar;
     }
