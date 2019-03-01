@@ -8896,8 +8896,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   printf("-------------------------------------------------------\n");
   clock_multi_jagged_part.print();
-  clock_multi_jagged_part_init_begin.print();
   clock_multi_jagged_part_init.print();
+  clock_multi_jagged_part_init_begin.print();
   clock_set_part_specifications.print();
   clock_allocate_set_work_memory.print();
 
