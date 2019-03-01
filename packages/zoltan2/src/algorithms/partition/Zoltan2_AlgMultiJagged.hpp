@@ -3863,13 +3863,13 @@ struct ArraySumReducer {
 
   typedef ArraySumReducer reducer;
   typedef ArrayType<scalar_t> value_type;
+  scalar_t max_scalar;
   value_type * value;
 #ifdef MERGE_THE_KERNELS
   size_t value_count_rightleft;
 #endif
   size_t value_count;
-  scalar_t max_scalar;
-    
+
   KOKKOS_INLINE_FUNCTION ArraySumReducer(
     scalar_t mj_max_scalar,
     value_type &val,
@@ -4129,7 +4129,10 @@ struct ReduceWeightsFunctor {
 #endif
     part_t mj_current_work_part,
     part_t mj_current_concurrent_num_parts,
-    const int & mj_weight_array_size,
+#ifdef MERGE_THE_KERNELS
+    part_t mj_left_right_array_size,
+#endif
+    part_t mj_weight_array_size,
     Kokkos::View<index_t*, device_t> mj_permutations,
     Kokkos::View<scalar_t *, device_t> mj_coordinates,
     Kokkos::View<scalar_t**, device_t> mj_weights,
@@ -4156,7 +4159,7 @@ struct ReduceWeightsFunctor {
       current_work_part(mj_current_work_part),
       current_concurrent_num_parts(mj_current_concurrent_num_parts),
 #ifdef MERGE_THE_KERNELS
-      value_count_rightleft((mj_num_cuts+2)*2), // won't work for merge chunks - TODO   
+      value_count_rightleft(mj_left_right_array_size), 
 #endif
       value_count(mj_weight_array_size),
       permutations(mj_permutations),
@@ -4256,7 +4259,11 @@ struct ReduceWeightsFunctor {
 
     // select the array for this thread
     ArrayType<weight_t>
-      array(&shared_ptr[teamMember.team_rank() * value_count]);
+#ifndef MERGE_THE_KERNELS
+      array(&shared_ptr[teamMember.team_rank() * (value_count)]);
+#else
+      array(&shared_ptr[teamMember.team_rank() * (value_count + value_count_rightleft)]);
+#endif
 
     // create reducer which handles the ArrayType class
     ArraySumReducer<policy_t, weight_t, part_t> arraySumReducer(
@@ -4311,11 +4318,6 @@ struct ReduceWeightsFunctor {
       scalar_t coord = coordinates(i);
       scalar_t w = bUniformWeights ? 1 : weights(i,0);
 
-  #ifdef MERGE_THE_KERNELS
-      // now handle the left/right closest part
-      scalar_t * p1 = &threadSum.ptr[2+value_count];
-  #endif
-
   #ifndef TURN_OFF_MERGE_CHUNKS // ACTION
       part_t concurrent_current_part = info(i);
       int kk = concurrent_current_part - current_work_part;
@@ -4333,13 +4335,18 @@ struct ReduceWeightsFunctor {
 
   #endif
 
-        scalar_t b = -99999999.9; // TODO: Clean up bounds
+        scalar_t b = -max_scalar;
 
+  #ifdef MERGE_THE_KERNELS
+        // for the left/right closest part calculation
+        scalar_t * p1 = &threadSum.ptr[2+value_count];
+  #endif
+  
         // now check each part and it's right cut
         for(index_t part = 0; part <= num_cuts; ++part) {
         
           scalar_t a = b;
-          b = (part == num_cuts) ? 99999999.9 : // TODO: Clean up bounds
+          b = (part == num_cuts) ? max_scalar :
   #ifdef TURN_OFF_MERGE_CHUNKS
             cut_coordinates(part);
   #else
@@ -4390,6 +4397,18 @@ struct ReduceWeightsFunctor {
       for(int n = 0; n < value_count; ++n) {
         teamSum[n] += array.ptr[n];
       }
+      
+  #ifdef MERGE_THE_KERNELS
+      for(int n = 2 + value_count; n < value_count + value_count_rightleft - 2; n += 2) {
+        if(array.ptr[n] > teamSum[n]) {
+          teamSum[n] = array.ptr[n];
+        }
+        if(array.ptr[n+1] < teamSum[n+1]) {
+          teamSum[n+1] = array.ptr[n+1];
+        }
+      }
+  #endif
+    
     });
   }
   
@@ -4426,6 +4445,9 @@ struct ReduceWeightsFunctor {
         dst[n+1] = src[n+1];
       }
     }
+    for(int n = 0; n < value_count + value_count_rightleft; ++n) {
+      dst[n] = 101.0;
+    }
 #endif
   }
 
@@ -4435,7 +4457,7 @@ struct ReduceWeightsFunctor {
     }
     
 #ifdef MERGE_THE_KERNELS
-    for(int n = value_count + 2; n < value_count + value_count_rightleft - 2; n += 2) {
+    for(int n = value_count; n < value_count + value_count_rightleft; n += 2) {
       dst[n]   = -max_scalar;
       dst[n+1] =  max_scalar;
     }
@@ -4601,6 +4623,7 @@ struct RightLeftClosestFunctor {
         p1 += 2;
       }
     }, arrayMinMaxReducer);
+    teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
@@ -4777,14 +4800,12 @@ clock_weights_new_to_optimize.start();
     vector_num_partitioning_in_current_dim[current_work_part + kk];
   mj_part_t num_cuts = num_parts - 1;
   mj_part_t total_part_count = num_parts + num_cuts;
-  mj_part_t array_length = num_cuts + num_parts;
+  mj_part_t weight_array_length = num_cuts + num_parts;
   
 #ifdef MERGE_THE_KERNELS
-  int base_weight_length = array_length;
-  array_length += (num_cuts + 2) * 2; // for right/left closest + buffer cut on either side
+  mj_part_t right_left_array_length = (num_cuts + 2) * 2; // for right/left closest + buffer cut on either side
 #endif
 
-  
   mj_part_t incomplete = host_kokkos_my_incomplete_cut_count(kk);
   if(incomplete == 0) {
     total_part_shift += total_part_count;
@@ -4794,7 +4815,7 @@ clock_weights_new_to_optimize.start();
 
 clock_weights_new_to_optimize.stop();
 
-#endif
+#endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
     policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
@@ -4804,7 +4825,12 @@ clock_weights_new_to_optimize.stop();
   // TODO: Probably just delete this and remoeve weight_t everywhere
   // Added to experiment with costs for float versus double
   typedef mj_scalar_t weight_t;
-  weight_t * part_weights = new weight_t[static_cast<size_t>(array_length)];
+  weight_t * part_weights = new weight_t[static_cast<size_t>(
+#ifdef MERGE_THE_KERNELS
+    weight_array_length + right_left_array_length)];
+#else
+    weight_array_length)];
+#endif
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
     typename mj_node_t::device_type, weight_t>
@@ -4816,7 +4842,10 @@ clock_weights_new_to_optimize.stop();
 #endif
       current_work_part,
       current_concurrent_num_parts,
-      array_length,
+#ifdef MERGE_THE_KERNELS
+      right_left_array_length,
+#endif
+      weight_array_length,
       kokkos_coordinate_permutations,
       kokkos_mj_current_dim_coords,
       kokkos_mj_weights,
@@ -4839,6 +4868,10 @@ clock_weights_new_to_optimize.stop();
 
   Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
     teamFunctor, part_weights);
+
+  for(int n = 0; n < weight_array_length + right_left_array_length; ++n) {
+    printf("%d: %.2f\n", (int) n, part_weights[n]);
+  }
 
   clock_functor_weights.stop();
 
@@ -4871,43 +4904,43 @@ clock_weights_new_to_optimize.stop();
       }
 
       Kokkos::deep_copy(kokkos_my_current_part_weights, hostArray);
+
+#ifdef MERGE_THE_KERNELS
+      // Move it from global memory to device memory
+      // TODO: Need to figure out how we can better manage this
+      int offset_cuts = 0;
+      for(int kk2 = 0; kk2 < kk; ++kk2) {
+        offset_cuts +=
+          vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
+      }
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
+        Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
+        std::pair<mj_lno_t, mj_lno_t>(
+          offset_cuts,
+          local_kokkos_thread_cut_left_closest_point.size()));
+      Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
+        Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
+          std::pair<mj_lno_t, mj_lno_t>(
+            offset_cuts,
+            local_kokkos_thread_cut_right_closest_point.size()));
+      typename decltype(kokkos_my_current_left_closest)::HostMirror
+        hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
+      typename decltype(kokkos_my_current_right_closest)::HostMirror
+        hostRightArray =
+          Kokkos::create_mirror_view(kokkos_my_current_right_closest);
+      for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
+        // when reading shift right 1 due to the buffer at beginning and end
+        hostLeftArray(cut)  = part_weights[weight_array_length+(cut+1)*2+0];
+        hostRightArray(cut) = part_weights[weight_array_length+(cut+1)*2+1];
+      }
+      Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
+      Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
+#endif
       
 #ifndef TURN_OFF_MERGE_CHUNKS // Action 5
     }
     total_part_shift += total_part_count;
   }
-#endif
-
-#ifdef MERGE_THE_KERNELS
-  // Move it from global memory to device memory
-  // TODO: Need to figure out how we can better manage this
-  int offset_cuts = 0;
-  for(int kk2 = 0; kk2 < kk; ++kk2) {
-    offset_cuts +=
-      vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
-  }
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_left_closest =
-    Kokkos::subview(local_kokkos_thread_cut_left_closest_point,
-    std::pair<mj_lno_t, mj_lno_t>(
-      offset_cuts,
-      local_kokkos_thread_cut_left_closest_point.size()));
-  Kokkos::View<mj_scalar_t *, device_t> kokkos_my_current_right_closest =
-    Kokkos::subview(local_kokkos_thread_cut_right_closest_point,
-      std::pair<mj_lno_t, mj_lno_t>(
-        offset_cuts,
-        local_kokkos_thread_cut_right_closest_point.size()));
-  typename decltype(kokkos_my_current_left_closest)::HostMirror
-    hostLeftArray = Kokkos::create_mirror_view(kokkos_my_current_left_closest);
-  typename decltype(kokkos_my_current_right_closest)::HostMirror
-    hostRightArray =
-      Kokkos::create_mirror_view(kokkos_my_current_right_closest);
-  for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
-    // when reading shift right 1 due to the buffer at beginning and end
-    hostLeftArray(cut)  = part_weights[base_weight_length+(cut+1)*2+0];
-    hostRightArray(cut) = part_weights[base_weight_length+(cut+1)*2+1];
-  }
-  Kokkos::deep_copy(kokkos_my_current_left_closest, hostLeftArray);
-  Kokkos::deep_copy(kokkos_my_current_right_closest, hostRightArray);
 #endif
 
   delete [] part_weights;
@@ -4919,49 +4952,6 @@ clock_weights_new_to_optimize.stop();
   concurrent_cut_shifts += num_cuts;
   } // for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
 #endif
-
-  clock_weights4.start();
-
-#ifdef TURN_OFF_MERGE_CHUNKS // can probably organize this better to avoid this declaration here
-  auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
-#endif
-  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
-    mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
-    mj_part_t num_cuts = num_parts - 1;
-    mj_part_t total_part_count = num_parts + num_cuts;
-    
-    if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
-      // get the prefix sum
-      // This is an inefficiency but not sure if it matters much
-      size_t offset = 0;
-      for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
-        offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
-      }
-      
-      for (mj_part_t i = 1; i < total_part_count; ++i){
-        // check for cuts sharing the same position; all cuts sharing a position
-        // have the same weight == total weight for all cuts sharing the position.
-        // don't want to accumulate that total weight more than once.
-        if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
-          ZOLTAN2_ABS(local_kokkos_temp_cut_coords(kk * num_cuts + i / 2) -
-            local_kokkos_temp_cut_coords(kk * num_cuts + i /2 - 1))
-            < local_sEpsilon){
-          // i % 2 = 0 when part i represents the cut coordinate.
-          // if it is a cut, and if next cut also has the same coordinate, then
-          // dont addup.
-          local_kokkos_thread_part_weights(offset + i)
-            = local_kokkos_thread_part_weights(offset + i-2);
-          continue;
-        }
-
-        //otherwise do the prefix sum.
-        local_kokkos_thread_part_weights(offset + i) +=
-          local_kokkos_thread_part_weights(offset + i-1);
-      }
-    }
-  });
-
-  clock_weights4.stop();
   
 #ifndef MERGE_THE_KERNELS
 
@@ -5044,6 +5034,8 @@ clock_weights_new_to_optimize.stop();
       // when reading shift right 1 due to the buffer at beginning and end
       hostLeftArray(cut)  = left_max_right_min_values[(cut+1)*2+0];
       hostRightArray(cut) = left_max_right_min_values[(cut+1)*2+1];
+      
+      printf("Results for cut %d: %.2f %.2f\n", cut, (float) hostLeftArray(cut), (float) hostRightArray(cut));
     }
 
     delete [] left_max_right_min_values;
@@ -5055,6 +5047,50 @@ clock_weights_new_to_optimize.stop();
   }
 #endif // #ifndef MERGE_THE_KERNELS
 
+  clock_weights4.start();
+
+#ifdef TURN_OFF_MERGE_CHUNKS // can probably organize this better to avoid this declaration here
+  auto local_kokkos_temp_cut_coords = kokkos_temp_cut_coords;
+#endif
+
+  Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
+    mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
+    mj_part_t num_cuts = num_parts - 1;
+    mj_part_t total_part_count = num_parts + num_cuts;
+    
+    if(local_kokkos_my_incomplete_cut_count(kk) > 0) {
+      // get the prefix sum
+      // This is an inefficiency but not sure if it matters much
+      size_t offset = 0;
+      for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
+        offset += view_num_partitioning_in_current_dim(current_work_part + kk2) * 2 - 1;
+      }
+      
+      for (mj_part_t i = 1; i < total_part_count; ++i){
+        // check for cuts sharing the same position; all cuts sharing a position
+        // have the same weight == total weight for all cuts sharing the position.
+        // don't want to accumulate that total weight more than once.
+        if(i % 2 == 0 && i > 1 && i < total_part_count - 1 &&
+          ZOLTAN2_ABS(local_kokkos_temp_cut_coords(kk * num_cuts + i / 2) -
+            local_kokkos_temp_cut_coords(kk * num_cuts + i /2 - 1))
+            < local_sEpsilon){
+          // i % 2 = 0 when part i represents the cut coordinate.
+          // if it is a cut, and if next cut also has the same coordinate, then
+          // dont addup.
+          local_kokkos_thread_part_weights(offset + i)
+            = local_kokkos_thread_part_weights(offset + i-2);
+          continue;
+        }
+
+        //otherwise do the prefix sum.
+        local_kokkos_thread_part_weights(offset + i) +=
+          local_kokkos_thread_part_weights(offset + i-1);
+      }
+    }
+  });
+
+  clock_weights4.stop();
+  
 }
 
 /*! \brief Function that reduces the result of multiple threads
