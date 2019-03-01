@@ -5134,7 +5134,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     for(mj_part_t i = 0; i < current_concurrent_num_parts; ++i) {
 
       mj_part_t num_parts_in_part =
-        vector_num_partitioning_in_current_dim[current_work_part + i];
+        view_num_partitioning_in_current_dim[current_work_part + i];
       mj_part_t num_cuts_in_part =
       num_parts_in_part - 1;
       size_t num_total_part_in_part =
