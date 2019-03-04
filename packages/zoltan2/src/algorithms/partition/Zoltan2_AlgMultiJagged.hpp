@@ -64,15 +64,18 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-// TODO: This is a temporary setting to be removed and calculated based on
-// conditions of the system and the algorithm.
-#define SET_NUM_TEAMS_ReduceWeightsFunctor 60
-#define SET_NUM_TEAMS_RightLeftClosestFunctor 30 // tuned to my local machine - needs work
-#define SET_NUM_TEAMS_mj_create_new_partitions_clock 500
-#define SET_MAX_TEAMS 200 // to do - optimize
-
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define MERGE_THE_KERNELS // for debugging - will be removed
+
+// TODO: This is a temporary setting to be removed and calculated based on
+// conditions of the system and the algorithm.
+#define SET_NUM_TEAMS_MainFunctorLoop 60
+#define SET_NUM_TEAMS_mj_create_new_partitions 500
+#define SET_NUM_TEAMS_mj_get_local_min_max_coord_totW 200 // to do - optimize
+
+#ifndef MERGE_THE_KERNELS
+#define SET_NUM_TEAMS_RightLeftClosestFunctor 30 // tuned to my local machine - needs work
+#endif
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -3054,7 +3057,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       ++num_teams; 
     }
 
-    const int max_teams = SET_MAX_TEAMS;
+    const int max_teams = SET_NUM_TEAMS_mj_get_local_min_max_coord_totW;
     if(num_teams > max_teams) {
       num_teams = max_teams;
       stride = num_working_points / num_teams;
@@ -4790,7 +4793,7 @@ clock_weights_new_to_optimize.stop();
 #endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
-    policy_t(SET_NUM_TEAMS_ReduceWeightsFunctor, Kokkos::AUTO);
+    policy_t(SET_NUM_TEAMS_MainFunctorLoop, Kokkos::AUTO);
 
   clock_weights3.start();
 
@@ -5340,7 +5343,7 @@ mj_create_new_partitions(
   // fails if we have a range such as (25, 25), or (999,25).
   // So to correct I'll clamp the max teams - probably doesn't make sense to
   // have teams run less than a warp anyways.
-  int num_teams = SET_NUM_TEAMS_mj_create_new_partitions_clock;
+  int num_teams = SET_NUM_TEAMS_mj_create_new_partitions;
   // TODO: need to check the system warp size - doesn't really matter
   // since this is just relevant for low coordinate count cases
   if(num_teams > num_working_points/32) {
