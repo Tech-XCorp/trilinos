@@ -4664,7 +4664,7 @@ clock_weights_new_to_optimize.stop();
     new mj_scalar_t[static_cast<size_t>(total_array_length)];
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
-    typename mj_node_t::execution_space>
+    typename mj_node_t::device_type>
     teamFunctor(
       std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
