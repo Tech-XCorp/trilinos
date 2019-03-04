@@ -3948,157 +3948,12 @@ struct ArrayCombinationReducer {
   }
 };
 
-/*
-template<class scalar_t, class part_t, class index_t, class device_t, class weight_t>
-struct ReduceWeightsFunctorInnerLoop {
-
-#ifdef TURN_OFF_MERGE_CHUNKS
-  part_t concurrent_current_part;
-  part_t num_cuts;
-#endif
-  part_t current_work_part;
-  part_t current_concurrent_num_parts;
-  Kokkos::View<index_t*, device_t> permutations;
-  Kokkos::View<scalar_t *, device_t> coordinates;
-  Kokkos::View<scalar_t**, device_t> weights;
-  Kokkos::View<part_t*, device_t> parts;
-#ifndef TURN_OFF_MERGE_CHUNKS
-  Kokkos::View<part_t*, device_t> info;
-#endif
-  Kokkos::View<scalar_t *, device_t> cut_coordinates;
-  bool bUniformWeights;
-  scalar_t sEpsilon;
-  Kokkos::View<index_t *, device_t> part_xadj;
-  Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
-  Kokkos::View<part_t*, device_t> my_incomplete_cut_count;
-  
-#ifndef TURN_OFF_MERGE_CHUNKS
-  Kokkos::View<part_t*, device_t> prefix_sum_num_cuts;
-#endif
-
-  KOKKOS_INLINE_FUNCTION
-  ReduceWeightsFunctorInnerLoop(
-#ifdef TURN_OFF_MERGE_CHUNKS
-    part_t mj_concurrent_current_part,
-    part_t mj_num_cuts,
-#endif
-    part_t mj_current_work_part,
-    part_t mj_current_concurrent_num_parts,
-    Kokkos::View<index_t*, device_t> mj_permutations,
-    Kokkos::View<scalar_t *, device_t> mj_coordinates,
-    Kokkos::View<scalar_t**, device_t> mj_weights,
-    Kokkos::View<part_t*, device_t> mj_parts,
-#ifndef TURN_OFF_MERGE_CHUNKS
-    Kokkos::View<part_t*, device_t> mj_info,
-#endif
-    Kokkos::View<scalar_t *, device_t> mj_cut_coordinates,
-    bool mj_bUniformWeights,
-    scalar_t mj_sEpsilon,
-    Kokkos::View<index_t *, device_t> mj_part_xadj,
-    Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
-    Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
-#ifndef TURN_OFF_MERGE_CHUNKS
-    , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
-#endif
-    ) :
-#ifdef TURN_OFF_MERGE_CHUNKS
-      concurrent_current_part(mj_concurrent_current_part),
-      num_cuts(mj_num_cuts),
-#endif
-      current_work_part(mj_current_work_part),
-      current_concurrent_num_parts(mj_current_concurrent_num_parts),
-      permutations(mj_permutations),
-      coordinates(mj_coordinates),
-      weights(mj_weights),
-      parts(mj_parts),
-#ifndef TURN_OFF_MERGE_CHUNKS
-      info(mj_info),
-#endif
-      cut_coordinates(mj_cut_coordinates),
-      bUniformWeights(mj_bUniformWeights),
-      sEpsilon(mj_sEpsilon),
-      part_xadj(mj_part_xadj),
-      view_num_partitioning_in_current_dim(
-        mj_view_num_partitioning_in_current_dim),
-      my_incomplete_cut_count(mj_my_incomplete_cut_count)
-#ifndef TURN_OFF_MERGE_CHUNKS
-      , prefix_sum_num_cuts(mj_prefix_sum_num_cuts)
-#endif
-  {
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const size_t ii, ArrayType<weight_t>& threadSum) const {
-  
-    int i = permutations(ii);
-    scalar_t coord = coordinates(i);
-    scalar_t w = bUniformWeights ? 1 : weights(i,0);
-
-#ifndef TURN_OFF_MERGE_CHUNKS // ACTION
-    part_t concurrent_current_part = info(i);
-    int kk = concurrent_current_part - current_work_part;
-
-    if(my_incomplete_cut_count(kk) > 0) {
-    
-      part_t concurrent_cut_shifts =
-        prefix_sum_num_cuts(kk);
-        
-      part_t total_part_shift =
-        concurrent_cut_shifts * 2 + kk;
-        
-      part_t num_cuts = view_num_partitioning_in_current_dim(
-        concurrent_current_part) - 1;
-
-#endif
-
-      scalar_t b = -99999999.9; // TODO: Clean up bounds
-
-      // now check each part and it's right cut
-      for(index_t part = 0; part <= num_cuts; ++part) {
-      
-        scalar_t a = b;
-        b = (part == num_cuts) ? 99999999.9 : // TODO: Clean up bounds
-#ifdef TURN_OFF_MERGE_CHUNKS
-          cut_coordinates(part);
-#else
-          cut_coordinates(concurrent_cut_shifts+part);
-#endif
-
-        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-#ifdef TURN_OFF_MERGE_CHUNKS
-          threadSum.ptr[part*2] += w;
-#else
-          threadSum.ptr[total_part_shift+part*2] += w;
-#endif
-          parts(i) = part*2;
-        }
-
-        if(part != num_cuts) {
-          if(coord < b + sEpsilon && coord > b - sEpsilon) {
-#ifdef TURN_OFF_MERGE_CHUNKS
-            threadSum.ptr[part*2+1] += w;
-#else
-            threadSum.ptr[total_part_shift+part*2+1] += w;
-#endif
-            parts(i) = part*2+1;
-          }
-        }        
-      }
-      
-#ifndef TURN_OFF_MERGE_CHUNKS
-    }
-#endif
-
-  }
-};
-*/
-
-template<class policy_t, class scalar_t, class part_t,
-  class index_t, class device_t, class weight_t>
+template<class policy_t, class scalar_t, class part_t, class index_t,
+  class device_t>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
-  typedef weight_t value_type[];
+  typedef scalar_t value_type[];
   scalar_t max_scalar;
   
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4200,7 +4055,7 @@ struct ReduceWeightsFunctor {
     // weight and scalar_r must be the same for MERGE_THE_KERNELS
     return sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * team_size;
 #else
-    return sizeof(weight_t) * value_count_weights * team_size;
+    return sizeof(scalar_t) * value_count_weights * team_size;
 #endif
   }
 
@@ -4263,16 +4118,16 @@ struct ReduceWeightsFunctor {
 
     // create the team shared data - each thread gets one of the arrays
 #ifndef MERGE_THE_KERNELS
-    size_t sh_mem_size = sizeof(weight_t) * value_count_weights * teamMember.team_size();
+    size_t sh_mem_size = sizeof(scalar_t) * value_count_weights * teamMember.team_size();
 #else
-    size_t sh_mem_size = sizeof(weight_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 #endif
 
-    weight_t * shared_ptr = (weight_t *) teamMember.team_shmem().get_shmem(
+    scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
 
     // select the array for this thread
-    ArrayType<weight_t>
+    ArrayType<scalar_t>
 #ifndef MERGE_THE_KERNELS
       array(&shared_ptr[teamMember.team_rank() * (value_count_weights)]);
 #else
@@ -4280,7 +4135,7 @@ struct ReduceWeightsFunctor {
 #endif
 
     // create reducer which handles the ArrayType class
-    ArrayCombinationReducer<policy_t, weight_t, part_t> arraySumReducer(
+    ArrayCombinationReducer<policy_t, scalar_t, part_t> arraySumReducer(
       max_scalar, array,
 #ifdef MERGE_THE_KERNELS
       value_count_rightleft,
@@ -4797,10 +4652,7 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights3.start();
 
-  // TODO: Probably just delete this and remoeve weight_t everywhere
-  // Added to experiment with costs for float versus double
-  typedef mj_scalar_t weight_t;
-  weight_t * part_weights = new weight_t[static_cast<size_t>(
+  mj_scalar_t * part_weights = new mj_scalar_t[static_cast<size_t>(
 #ifdef MERGE_THE_KERNELS
     weight_array_length + right_left_array_length)];
 #else
@@ -4808,7 +4660,7 @@ clock_weights_new_to_optimize.stop();
 #endif
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
-    typename mj_node_t::device_type, weight_t>
+    typename mj_node_t::execution_space>
     teamFunctor(
       std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
