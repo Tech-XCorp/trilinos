@@ -4284,42 +4284,6 @@ struct ReduceWeightsFunctor {
 #endif
       value_count_weights);
 
-    // This is the setup if we want to use an inner functor instead of
-    // of a lambda - probably will delete later unless performance suggests
-    // we need this form.
-/*
-    // call the reduce
-    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
-      index_t, device_t, weight_t> inner_functor(
-#ifdef TURN_OFF_MERGE_CHUNKS
-      concurrent_current_part,
-      num_cuts,
-#endif
-      current_work_part,
-      current_concurrent_num_parts,
-      permutations,
-      coordinates,
-      weights,
-      parts,
-#ifndef TURN_OFF_MERGE_CHUNKS
-      info,
-#endif
-      cut_coordinates,
-      bUniformWeights,
-      sEpsilon,
-      part_xadj,
-      view_num_partitioning_in_current_dim,
-      my_incomplete_cut_count
-#ifndef TURN_OFF_MERGE_CHUNKS
-      ,prefix_sum_num_cuts
-#endif
-    );
-
-    Kokkos::parallel_reduce(
-      Kokkos::TeamThreadRange(teamMember, begin, end),
-      inner_functor, arraySumReducer);
-*/
-
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
@@ -5153,7 +5117,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
           // store the left and right closes points.
           local_total_part_weight_left_right_closests(
-            num_total_part_in_part + next) = left_closest_in_process;
+            num_total_part_in_part + next) =
+            left_closest_in_process;
 
           local_total_part_weight_left_right_closests(
             num_total_part_in_part + num_cuts_in_part + next) =
