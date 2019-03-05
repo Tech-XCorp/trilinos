@@ -1355,6 +1355,7 @@ void print_usage(char *executable){
     std::cout << "\nUsage:" << std::endl;
     std::cout << executable << " arglist" << std::endl;
     std::cout << "arglist:" << std::endl;
+    std::cout << "\tT=numTeams: numTeams > 0" << std::endl;
     std::cout << "\tC=numParts: numParts > 0" << std::endl;
     std::cout << "\tP=MultiJaggedPart: Example: P=512,512" << std::endl;
     std::cout << "\tI=imbalance: Example I=1.03 (ignored for now.)" << std::endl;
