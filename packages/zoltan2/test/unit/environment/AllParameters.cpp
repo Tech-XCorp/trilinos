@@ -109,7 +109,9 @@ static string strParams[NUMSTR][3]={
   {"mj_enable_rcb", "true", "invalid_bool_setting"},           // BoolParameterEntryValidator - accepts true/false/"true"/"false"
   {"mj_keep_part_boxes", "true", "invalid_bool_setting"},      // BoolParameterEntryValidator - accepts true/false/"true"/"false"
   {"num_global_parts", "1", "invalid_value"},                  // EnhancedNumberValidator
-  {"num_teams", "0", "invalid_value"},                         // EnhancedNumberValidator
+  {"num_teams_0", "0", "invalid_value"},                         // EnhancedNumberValidator
+  {"num_teams_1", "0", "invalid_value"},                         // EnhancedNumberValidator
+  {"num_teams_2", "0", "invalid_value"},                         // EnhancedNumberValidator
   {"num_local_parts", "0", "invalid_value"},                   // EnhancedNumberValidator
   {"mj_premigration_option", "1", "invalid_value"},               // EnhancedNumberValidator
   {"mj_migration_option", "2", "invalid_value"},               // EnhancedNumberValidator
