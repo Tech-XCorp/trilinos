@@ -672,6 +672,8 @@ private:
   // if the coordinates have uniform weights
   Kokkos::View<bool *, device_t> mj_uniform_weights; 
 
+  int num_teams; // the number of teams
+  
   size_t num_global_parts; // the targeted number of parts
 
   // vector of all boxes for all parts, constructed if mj_keep_part_boxes true
@@ -1552,6 +1554,7 @@ public:
     const RCP<const Environment> &env,
     RCP<const Comm<int> > &problemComm,
     double imbalance_tolerance,
+    int num_teams,
     size_t num_global_parts,
     Kokkos::View<mj_part_t*, device_t> part_no_array,
     int recursion_depth,
@@ -4649,7 +4652,7 @@ clock_weights_new_to_optimize.stop();
 #endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
-    policy_t(SET_NUM_TEAMS_MainFunctorLoop, Kokkos::AUTO);
+    policy_t(num_teams, Kokkos::AUTO);
 
   clock_weights3.start();
 
@@ -7943,6 +7946,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   const RCP<const Environment> &env,
   RCP<const Comm<int> > &problemComm,
   double imbalance_tolerance_,
+  int num_teams_,
   size_t num_global_parts_,
   Kokkos::View<mj_part_t*, device_t> part_no_array_,
   int recursion_depth_,
@@ -8012,6 +8016,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
   this->mj_env->debug(3, "In MultiJagged Jagged");
   this->imbalance_tolerance = imbalance_tolerance_;
+  this->num_teams = num_teams_;
   this->num_global_parts = num_global_parts_;
   this->part_no_array = part_no_array_;
   this->recursion_depth = recursion_depth_;
@@ -8908,6 +8913,9 @@ public:
 
   // PARAMETERS
   double imbalance_tolerance; // input imbalance tolerance.
+    
+  int num_teams; // how many teams to run main loop with
+  
   size_t num_global_parts; // the targeted number of parts
 
   // input part array specifying num part to divide along each dim.
@@ -9010,6 +9018,7 @@ public:
       mj_problemComm(problemComm),
       mj_coords(coords),
       imbalance_tolerance(0),
+      num_teams(SET_NUM_TEAMS_MainFunctorLoop),
       num_global_parts(1),
       recursion_depth(0),
       coord_dim(0),
@@ -9076,6 +9085,14 @@ public:
 
     pl.set("mj_recursion_depth", -1, "Recursion depth for MJ: Must be "
       "greater than 0.", Environment::getAnyIntValidator());
+
+    RCP<Teuchos::EnhancedNumberValidator<int>>
+      mj_num_teams_validator =
+      Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(
+      0, Teuchos::EnhancedNumberTraits<int>::max()) );
+    pl.set("num_teams", 0,
+      "How many teams for the main kernel loop"
+      , mj_num_teams_validator);
 
     RCP<Teuchos::EnhancedNumberValidator<int>>
       mj_premigration_option_validator =
@@ -9389,6 +9406,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         this->mj_env,
         result_problemComm, //this->mj_problemComm,
         this->imbalance_tolerance,
+        this->num_teams,
         this->num_global_parts,
         this->part_no_array,
         this->recursion_depth,
@@ -9670,6 +9688,10 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   // the length of the input partitioning array.
   this->recursion_depth = 0;
 
+  if (pl.getPtr<int>("num_teams")) {
+    this->num_teams = pl.get<int>("num_teams");
+  }
+  
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
     auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
     int mj_parts_size = static_cast<int>(mj_parts.size());

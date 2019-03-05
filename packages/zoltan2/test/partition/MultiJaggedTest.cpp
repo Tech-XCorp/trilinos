@@ -690,7 +690,7 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
 
 template<class bv_use_node_t>
 int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
-        int numParts, float imbalance,
+        int numTeams, int numParts, float imbalance,
         std::string paramFile, std::string pqParts,
         std::string pfname,
         int k,
@@ -789,6 +789,9 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 
     if(pqParts != "")
         params->set("mj_parts", pqParts);
+    if(numTeams > 0) {
+        params->set("num_teams", numTeams);
+    }
     if(numParts > 0)
         params->set("num_global_parts", numParts);
     if (k > 0)
@@ -854,6 +857,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 template<class bv_use_node_t>
 int testFromDataFile(
         RCP<const Teuchos::Comm<int> > &comm,
+        int numTeams,
         int numParts,
         float imbalance,
         std::string fname,
@@ -990,6 +994,7 @@ void getCoords(zscalar_t **&coords, zlno_t &numLocal, int &dim, string fileName)
 
 int testFromSeparateDataFiles(
         RCP<const Teuchos::Comm<int> > &comm,
+        int numTeams,
         int numParts,
         float imbalance,
         std::string fname,
@@ -1076,6 +1081,9 @@ int testFromSeparateDataFiles(
     params->set("mj_premigration_option", mj_premigration_option);
     if(pqParts != ""){
         params->set("mj_parts", pqParts);
+    }
+    if(numTeams > 0){
+        params->set("num_teams", numTeams);
     }
     if(numParts > 0){
         params->set("num_global_parts", numParts);
@@ -1178,6 +1186,7 @@ bool getArgumentValue(string &argumentid, double &argumentValue, string argument
 void getArgVals(
         int narg,
         char **arg,
+        int &numTeams,
         int &numParts,
         float &imbalance ,
         string &pqParts,
@@ -1196,6 +1205,7 @@ void getArgVals(
 	int &mj_coordinate_cutoff 
 )
 {
+    bool isTset = false;
     bool isCset = false;
     bool isPset = false;
     bool isFset = false;
@@ -1208,7 +1218,14 @@ void getArgVals(
         if(!getArgumentValue(identifier, fval, tmp)) continue;
         value = (long long int) (fval);
 
-        if(identifier == "C"){
+        if(identifier == "T"){
+            if(value > 0){
+                numTeams=value;
+                isTset = true;
+            } else {
+                throw  "Invalid argument at " + tmp;
+            }
+        } else if(identifier == "C"){
             if(value > 0){
                 numParts=value;
                 isCset = true;
@@ -1362,6 +1379,8 @@ int main(int narg, char *arg[])
 
     int rank = tcomm->getRank();
 
+    int numTeams = 0; // will use default if not set
+
     int numParts = -10;
     float imbalance = -1.03;
     int k = -1;
@@ -1393,6 +1412,7 @@ int main(int narg, char *arg[])
             getArgVals(
                     narg,
                     arg,
+                    numTeams,
                     numParts,
                     imbalance ,
                     pqParts,
@@ -1428,7 +1448,7 @@ int main(int narg, char *arg[])
 
         case 0:
 
-            ierr = testFromDataFile<znode_t>(tcomm,numParts, imbalance,fname,
+            ierr = testFromDataFile<znode_t>(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
@@ -1439,7 +1459,7 @@ int main(int narg, char *arg[])
 	    // TODO: Temporary setup to run UVM on and off at same time
 
 #ifdef RUN_UVM_OFF_TEST
-            ierr = testFromDataFile<uvm_off_node_t>(tcomm,numParts, imbalance,fname,
+            ierr = testFromDataFile<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
@@ -1451,7 +1471,7 @@ int main(int narg, char *arg[])
 
 #ifdef hopper_separate_test
         case 1:
-            ierr = testFromSeparateDataFiles(tcomm,numParts, imbalance,fname,
+            ierr = testFromSeparateDataFiles(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
@@ -1461,7 +1481,7 @@ int main(int narg, char *arg[])
             break;
 #endif
         default:
-            ierr = GeometricGenInterface<znode_t>(tcomm, numParts, imbalance, fname,
+            ierr = GeometricGenInterface<znode_t>(tcomm, numTeams, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
