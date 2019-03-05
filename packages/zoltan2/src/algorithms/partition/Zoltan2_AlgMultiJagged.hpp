@@ -8796,8 +8796,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_multi_jagged_part_finish.print();
   
   printf("-------------------------------------------------------\n");
-  clock_multi_jagged_part.print(); // 2nd print for easy access
-  clock_functor_weights.print(); // 2nd print for each access
+  clock_multi_jagged_part.print();                // 2nd print for easy access
+  clock_functor_weights.print();                  // 2nd print for easy access
+  clock_mj_create_new_partitions.print();         // 2nd print for easy access 
+  clock_mj_get_local_min_max_coord_totW.print();  // 2nd print for easy access
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
