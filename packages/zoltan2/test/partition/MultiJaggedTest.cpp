@@ -1205,7 +1205,6 @@ void getArgVals(
 	int &mj_coordinate_cutoff 
 )
 {
-    bool isTset = false;
     bool isCset = false;
     bool isPset = false;
     bool isFset = false;
@@ -1221,7 +1220,6 @@ void getArgVals(
         if(identifier == "T"){
             if(value > 0){
                 numTeams=value;
-                isTset = true;
             } else {
                 throw  "Invalid argument at " + tmp;
             }
@@ -1490,7 +1488,7 @@ int main(int narg, char *arg[])
                     migration_processor_assignment_type,
                     migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option);
 #ifdef RUN_UVM_OFF_TEST
-            ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numParts, imbalance, fname,
+            ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
