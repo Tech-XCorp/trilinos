@@ -672,7 +672,7 @@ private:
   // if the coordinates have uniform weights
   Kokkos::View<bool *, device_t> mj_uniform_weights; 
 
-  int num_teams; // the number of teams
+  int mj_num_teams; // the number of teams
   
   size_t num_global_parts; // the targeted number of parts
 
@@ -4652,7 +4652,7 @@ clock_weights_new_to_optimize.stop();
 #endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
-    policy_t(num_teams, Kokkos::AUTO);
+    policy_t(mj_num_teams, Kokkos::AUTO);
 
   clock_weights3.start();
 
@@ -8016,7 +8016,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Total");
   this->mj_env->debug(3, "In MultiJagged Jagged");
   this->imbalance_tolerance = imbalance_tolerance_;
-  this->num_teams = num_teams_;
+  this->mj_num_teams = num_teams_;
   this->num_global_parts = num_global_parts_;
   this->part_no_array = part_no_array_;
   this->recursion_depth = recursion_depth_;
