@@ -69,13 +69,9 @@
 
 // TODO: This is a temporary setting to be removed and calculated based on
 // conditions of the system and the algorithm.
-#define DefaultTeams_MainFunctorLoop 100 // 60
-#define DefaultTeams_mj_create_new_partitions 500
-#define DefaultTeams_mj_get_local_min_max_coord_totW 200 // to do - optimize
-
-#ifndef MERGE_THE_KERNELS
-#define SET_NUM_TEAMS_RightLeftClosestFunctor 30 // tuned to my local machine - needs work
-#endif
+#define DefaultTeams_MainFunctorLoop 60
+#define DefaultTeams_mj_create_new_partitions 80
+#define DefaultTeams_RightLeftClosestFunctor 60
 
 // TODO: Delete all clock stuff. There were temporary timers for profiling.
 class Clock {
@@ -3041,44 +3037,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_lno_t coordinate_end_index =
       host_part_xadj(concurrent_current_part);
     // total points to be processed by all teams
-    mj_lno_t num_working_points =
-      coordinate_end_index - coordinate_begin_index;
 
-    // determine a stride for each team
-    // TODO: How to best determine this and should we be concerned if teams
-    // get smaller coord counts than their warp sizes?
-    const int min_coords_per_team = 32; // abrbitrary ... TODO
-    int stride = min_coords_per_team;
-    if(stride > num_working_points) {
-      stride = num_working_points;
-    }
-
-    int num_teams = num_working_points / stride;
-    if((num_working_points % stride) > 0) {
-      // guarantees no team has no work and the last team has equal or
-      // less work than all the others
-      ++num_teams; 
-    }
-
-    const int max_teams = mj_num_teams[2]; // TODO: Clean up - remove this option or make good indexing
-    if(num_teams > max_teams) {
-      num_teams = max_teams;
-      stride = num_working_points / num_teams;
-      if((num_working_points % num_teams) > 0) {
-        stride += 1; // make sure we have coverage for the final points
-      }
-    }
-
-    mj_scalar_t my_thread_min_coord = 0;
-    mj_scalar_t my_thread_max_coord = 0;
+    mj_scalar_t my_min_coord = 0;
+    mj_scalar_t my_max_coord = 0;
     mj_scalar_t my_total_weight;
 
     //if the part is empty.
     //set the min and max coordinates as reverse.
     if(coordinate_begin_index >= coordinate_end_index)
     {
-      my_thread_min_coord = std::numeric_limits<mj_scalar_t>::max();
-      my_thread_max_coord = -std::numeric_limits<mj_scalar_t>::max();
+      my_min_coord = std::numeric_limits<mj_scalar_t>::max();
+      my_max_coord = -std::numeric_limits<mj_scalar_t>::max();
       my_total_weight = 0;
     }
     else {
@@ -3090,7 +3059,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           local_coordinate_permutations(j + coordinate_begin_index);
         if(mj_current_dim_coords(i) < running_min)
           running_min = mj_current_dim_coords(i);
-      }, Kokkos::Min<mj_scalar_t>(my_thread_min_coord));
+      }, Kokkos::Min<mj_scalar_t>(my_min_coord));
       // get max
       Kokkos::parallel_reduce("get max",
         coordinate_end_index - coordinate_begin_index,
@@ -3099,7 +3068,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           local_coordinate_permutations(j + coordinate_begin_index);
         if(mj_current_dim_coords(i) > running_max)
           running_max = mj_current_dim_coords(i);
-      }, Kokkos::Max<mj_scalar_t>(my_thread_max_coord));
+      }, Kokkos::Max<mj_scalar_t>(my_max_coord));
 
       if(bUniformWeights) {
         my_total_weight = coordinate_end_index - coordinate_begin_index;
@@ -3123,9 +3092,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member)
     {
       local_process_local_min_max_coord_total_weight(kk) =
-        my_thread_min_coord;
+        my_min_coord;
       local_process_local_min_max_coord_total_weight(
-        kk + current_concurrent_num_parts) = my_thread_max_coord;
+        kk + current_concurrent_num_parts) = my_max_coord;
       local_process_local_min_max_coord_total_weight(
         kk + 2*current_concurrent_num_parts) = my_total_weight;
     });
@@ -4846,7 +4815,7 @@ clock_weights_new_to_optimize.stop();
     clock_functor_rightleft_closest.start();
 
     auto policy_RightLeftClosestFunctor =
-      policy_t(SET_NUM_TEAMS_RightLeftClosestFunctor, Kokkos::AUTO);
+      policy_t(mj_num_teams[2], Kokkos::AUTO);
    
     Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
       rightLeftClosestFunctor, left_max_right_min_values);
@@ -9020,7 +8989,9 @@ public:
       mj_problemComm(problemComm),
       mj_coords(coords),
       imbalance_tolerance(0),
-      num_teams({DefaultTeams_MainFunctorLoop, DefaultTeams_mj_create_new_partitions, DefaultTeams_mj_get_local_min_max_coord_totW}),
+      num_teams({DefaultTeams_MainFunctorLoop,
+                 DefaultTeams_mj_create_new_partitions,
+                 DefaultTeams_RightLeftClosestFunctor}),
       num_global_parts(1),
       recursion_depth(0),
       coord_dim(0),
