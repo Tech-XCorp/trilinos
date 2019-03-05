@@ -69,7 +69,7 @@
 
 // TODO: This is a temporary setting to be removed and calculated based on
 // conditions of the system and the algorithm.
-#define SET_NUM_TEAMS_MainFunctorLoop 60
+#define SET_NUM_TEAMS_MainFunctorLoop 100 // 60
 #define SET_NUM_TEAMS_mj_create_new_partitions 500
 #define SET_NUM_TEAMS_mj_get_local_min_max_coord_totW 200 // to do - optimize
 
