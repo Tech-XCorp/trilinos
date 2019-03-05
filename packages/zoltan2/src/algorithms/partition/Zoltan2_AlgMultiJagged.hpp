@@ -2940,8 +2940,22 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
     //global max coords
     mj_scalar_t *gmaxs = allocMemory<mj_scalar_t>(this->coord_dim);
 
+Clock check_min_max_box_calc("clock_check_min_max_box_calc", true);
+
     auto local_mj_coordinates = this->mj_coordinates;
+
+    // If we are only doing 2 parts then we don't need these values
+    // for y and z. Init them all to 0 first
     for (int i = 0; i < this->coord_dim; ++i){
+      mins[i] = 0;
+      maxs[i] = 0;
+    }
+ 
+
+printf("Loop over %d    with rec depth: %d and coord dim: %d\n",
+  (int) std::min(this->recursion_depth, this->coord_dim), (int) this->recursion_depth, (int) this->coord_dim);
+ 
+    for (int i = 0; i < std::min(this->recursion_depth, this->coord_dim); ++i){
       Kokkos::parallel_reduce("MinReduce", this->num_local_coords,
         KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_min) {
         if(local_mj_coordinates(j,i) < running_min) {
@@ -2955,6 +2969,8 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
         }
       }, Kokkos::Max<mj_scalar_t>(maxs[i]));
     }
+
+check_min_max_box_calc.stop(true);
 
     reduceAll<int, mj_scalar_t>(*this->comm, Teuchos::REDUCE_MIN,
             this->coord_dim, mins, gmins
@@ -8029,18 +8045,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t output_part_begin_index = 0;
   mj_part_t future_num_parts = this->total_num_part;
   bool is_data_ever_migrated = false;
+
   std::vector<mj_part_t> *future_num_part_in_parts =
     new std::vector<mj_part_t> ();
   std::vector<mj_part_t> *next_future_num_parts_in_parts =
     new std::vector<mj_part_t> ();
+
   next_future_num_parts_in_parts->push_back(this->num_global_parts);
-  RCP<mj_partBoxVector_t> input_part_boxes(new mj_partBoxVector_t(), true) ;
-  RCP<mj_partBoxVector_t> output_part_boxes(new mj_partBoxVector_t(), true);
-  compute_global_box();
+
+  RCP<mj_partBoxVector_t> input_part_boxes;
+  RCP<mj_partBoxVector_t> output_part_boxes;
+
   if(this->mj_keep_part_boxes){
+    input_part_boxes = RCP<mj_partBoxVector_t>(new mj_partBoxVector_t(), true) ;
+    output_part_boxes = RCP<mj_partBoxVector_t>(new mj_partBoxVector_t(), true);
+    compute_global_box();
     this->init_part_boxes(output_part_boxes);
   }
-    
+
   auto local_part_xadj = this->part_xadj;
 
   // Need a device counter - how best to allocate?
@@ -8051,6 +8073,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     view_total_reduction_size("view_total_reduction_size", 1);
 
   clock_multi_jagged_part_init_finish.stop();
+
+
   clock_multi_jagged_part_init.stop();
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
 
