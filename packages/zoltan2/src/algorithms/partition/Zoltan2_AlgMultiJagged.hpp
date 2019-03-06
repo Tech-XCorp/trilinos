@@ -5213,49 +5213,16 @@ Clock clock5("clock5", true);
 clock5.stop(true);
 Clock clock5b("clock5b", true);
 
-  mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
-
-  // Found the loops below with atomics won't work properly if they run a team
-  // over an index range of 0. So if num_teams is more than points this code
-  // fails if we have a range such as (25, 25), or (999,25).
-  // So to correct I'll clamp the max teams - probably doesn't make sense to
-  // have teams run less than a warp anyways.
-  int num_teams = mj_num_teams[1]; // TODO: Clean up this option or make proper indexing system
-  // TODO: need to check the system warp size - doesn't really matter
-  // since this is just relevant for low coordinate count cases
-  if(num_teams > num_working_points/32) {
-    num_teams = num_working_points/32;
-  }
-  if(num_teams == 0) {
-    num_teams = 1;
-  }
-
-  int stride = num_working_points / num_teams;
-  if((num_working_points % num_teams) > 0) {
-    stride += 1; // make sure we have coverage for the final points
-  }
-
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space>
-    policy(num_teams, Kokkos::AUTO());
-
-  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-    mj_lno_t team_begin_index =
-      coordinate_begin_index + stride * team_member.league_rank();
-    mj_lno_t team_end_index = team_begin_index + stride;
-    if(team_end_index > coordinate_end_index) {
-      // the last team may have less work than the other teams
-      team_end_index = coordinate_end_index;
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+    coordinate_begin_index, coordinate_end_index),
+    KOKKOS_LAMBDA (const int ii) {
+    mj_lno_t coordinate_index = local_coordinate_permutations(ii);
+    mj_part_t coordinate_assigned_place =
+      local_assigned_part_ids(coordinate_index);
+    if(coordinate_assigned_place % 2 == 1) {
+      Kokkos::atomic_add(&record_total_on_cut(0), 1);
     }
-
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member,
-      team_begin_index, team_end_index), [=] (mj_lno_t & ii) {
-      mj_lno_t coordinate_index = local_coordinate_permutations(ii);
-      mj_part_t coordinate_assigned_place =
-        local_assigned_part_ids(coordinate_index);
-      if(coordinate_assigned_place % 2 == 1) {
-        Kokkos::atomic_add(&record_total_on_cut(0), 1);
-      }
-    });
   });
 
 clock5b.stop(true);
