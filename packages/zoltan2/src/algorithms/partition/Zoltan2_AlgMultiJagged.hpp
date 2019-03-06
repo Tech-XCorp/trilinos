@@ -3767,12 +3767,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       cut_shift += num_cuts;
       tlr_shift += (num_total_part + 2 * num_cuts);
 
-      // if we refactor this loop a bit we might make this a single host copy
-      // TODO: Optimize
-      Kokkos::parallel_reduce("Read incomplete cut count", 1,
-        KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-        set_single = local_my_incomplete_cut_count(kk);
-      }, kk_my_incomplete_cut_count);
+      // Pull the values for incomplete cut cout
+      Kokkos::deep_copy(host_my_incomplete_cut_count,
+        my_incomplete_cut_count);
+
+      kk_my_incomplete_cut_count = host_my_incomplete_cut_count(kk);
 
       mj_part_t iteration_complete_cut_count =
         initial_incomplete_cut_count - kk_my_incomplete_cut_count;
