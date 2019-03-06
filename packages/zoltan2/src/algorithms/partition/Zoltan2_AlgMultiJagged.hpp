@@ -2264,8 +2264,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->new_coordinate_permutations;
     this->new_coordinate_permutations = tmp;
     this->part_xadj = this->new_part_xadj;
-    // must update host mirror view? Or can we skip this ...
-//    this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+    // We changed the source view to a same type - do we need to update Mirror?
+    // this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
 
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
   }
@@ -3060,7 +3060,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       host_part_xadj(concurrent_current_part - 1);
     mj_lno_t coordinate_end_index =
       host_part_xadj(concurrent_current_part);
-    // total points to be processed by all teams
 
     mj_scalar_t my_min_coord = 0;
     mj_scalar_t my_max_coord = 0;
@@ -8359,23 +8358,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             clock_read_singles.start();
 
-/*
-            // TODO: refactor clean up
-            mj_lno_t coordinate_end_index;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single =
-                local_part_xadj(concurrent_current_part_index);
-            }, coordinate_end_index);
-
-            // TODO: refactor clean up
-            mj_lno_t coordinate_begin_index;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single = concurrent_current_part_index==0 ? 0 :
-                local_part_xadj(concurrent_current_part_index -1);
-            }, coordinate_begin_index);
-*/
             mj_lno_t coordinate_end_index = host_part_xadj(
               concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
@@ -8571,22 +8553,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               current_concurrent_work_part==0 ? 0 : host_part_xadj(
               current_concurrent_work_part - 1);
 
-/*
-            // This should all get simplified into device code
-            mj_lno_t coordinate_end;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single =
-                local_part_xadj[current_concurrent_work_part];;
-            }, coordinate_end);
-
-            mj_lno_t coordinate_begin;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single = current_concurrent_work_part==0 ? 0 :
-                local_part_xadj(current_concurrent_work_part -1);
-            }, coordinate_begin);
-*/
             // if this part is partitioned into 1 then just copy
             // the old values.
             mj_lno_t part_size = coordinate_end - coordinate_begin;
@@ -8713,7 +8679,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->part_xadj = this->new_part_xadj;
       local_part_xadj = this->new_part_xadj;
 
-      // must update host mirror view. Or do we have to?
+      // We changed the source view to a same type - do we need to update Mirror?
       this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
 
       this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
