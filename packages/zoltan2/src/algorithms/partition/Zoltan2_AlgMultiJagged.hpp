@@ -3639,6 +3639,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     // how much the concantaneted array will be shifted for the next part
     // in concurrent part calculation.
     size_t tlr_shift = 0;
+
+    // TODO might want to precache space for this
+    std::vector<mj_part_t> save_initial_incomplete_cut_count(current_concurrent_num_parts);
+
     for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
 
       clock_mj_get_new_cut_coordinates_init.start();
@@ -3707,7 +3711,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
             cut_shift,
             local_process_cut_line_weight_to_put_left.size()));
 
-      mj_part_t initial_incomplete_cut_count =
+      save_initial_incomplete_cut_count[kk] =
         kk_my_incomplete_cut_count;
 
       Kokkos::View<mj_scalar_t *, device_t>
@@ -3762,23 +3766,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         view_rectilinear_cut_count);
   
       clock_mj_get_new_cut_coordinates.stop();
-      clock_mj_get_new_cut_coordinates_end.start();
 
       cut_shift += num_cuts;
       tlr_shift += (num_total_part + 2 * num_cuts);
+    } // end of kk loop
 
-      // Pull the values for incomplete cut cout
-      Kokkos::deep_copy(host_my_incomplete_cut_count,
-        my_incomplete_cut_count);
+    clock_mj_get_new_cut_coordinates_end.start();
 
-      kk_my_incomplete_cut_count = host_my_incomplete_cut_count(kk);
+    // Pull the values for incomplete cut cout
+    Kokkos::deep_copy(host_my_incomplete_cut_count,
+      my_incomplete_cut_count);
 
+    for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
       mj_part_t iteration_complete_cut_count =
-        initial_incomplete_cut_count - kk_my_incomplete_cut_count;
+        save_initial_incomplete_cut_count[kk] - host_my_incomplete_cut_count(kk);
       total_incomplete_cut_count -= iteration_complete_cut_count;
-
-      clock_mj_get_new_cut_coordinates_end.stop();
     }
+    clock_mj_get_new_cut_coordinates_end.stop();
 
     { //This unnecessary bracket works around a compiler bug in NVCC when
       // compiling with OpenMP enabled.
