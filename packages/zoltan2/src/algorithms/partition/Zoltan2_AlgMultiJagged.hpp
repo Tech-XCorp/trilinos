@@ -3776,8 +3776,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
       mj_part_t iteration_complete_cut_count =
         initial_incomplete_cut_count - kk_my_incomplete_cut_count;
-      Kokkos::atomic_add(&total_incomplete_cut_count,
-        -iteration_complete_cut_count);
+      total_incomplete_cut_count -= iteration_complete_cut_count;
 
       clock_mj_get_new_cut_coordinates_end.stop();
     }
@@ -5105,6 +5104,8 @@ mj_create_new_partitions(
   
   clock_mj_create_new_partitions.start();
 
+Clock clock1("clock1", true);
+
   auto local_part_xadj = this->part_xadj;
 
   mj_part_t num_cuts = num_parts - 1;
@@ -5137,6 +5138,9 @@ mj_create_new_partitions(
     });
   }
 
+clock1.stop(true);
+Clock clock2("clock2", true);
+
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
 
@@ -5161,14 +5165,22 @@ mj_create_new_partitions(
     });
   }
 
+clock2.stop(true);
+Clock clock3("clock3", true);
+
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & i) {
     local_thread_point_counts(i) = 0;
   });
 
+clock3.stop(true);
+Clock clock4("clock4", true);
+
   Kokkos::View<mj_lno_t *, device_t> record_total_on_cut(
     "track_on_cuts", 1);
+clock4.stop(true);
+Clock clock5("clock5", true);
 
   mj_lno_t coordinate_begin_index;
   Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
@@ -5184,6 +5196,8 @@ mj_create_new_partitions(
     set_single = local_part_xadj(current_concurrent_work_part);;
   }, coordinate_end_index);
 
+clock5.stop(true);
+Clock clock5b("clock5b", true);
 
   mj_lno_t num_working_points = coordinate_end_index - coordinate_begin_index;
 
@@ -5230,6 +5244,9 @@ mj_create_new_partitions(
     });
   });
 
+clock5b.stop(true);
+Clock clock6("clock6", true);
+
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Read single", 1,
     KOKKOS_LAMBDA(int dummy, int & set_single) {
@@ -5237,8 +5254,14 @@ mj_create_new_partitions(
     record_total_on_cut(0) = 0;
   }, total_on_cut);
 
+clock6.stop(true);
+Clock clock7("clock7", true);
+
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
     "track_on_cuts", total_on_cut);
+
+clock7.stop(true);
+Clock clock8("clock8", true);
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
     mj_lno_t team_begin_index =
@@ -5272,6 +5295,8 @@ mj_create_new_partitions(
     });
   });
 
+clock8.stop(true);
+Clock clock9("clock9", true);
  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
@@ -5370,17 +5395,26 @@ mj_create_new_partitions(
     }
   });
 
+clock9.stop(true);
+Clock clock10("clock10", true);
+
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     out_part_xadj(j) = local_thread_point_counts(j);
   });
 
+clock10.stop(true);
+Clock clock11("clock11", true);
+
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     local_thread_point_counts(j) = 0;
   });
+
+clock11.stop(true);
+Clock clock12("clock12", true);
 
   // TODO: How do we efficiently parallelize this form? 
   // Copy first?
@@ -5390,6 +5424,9 @@ mj_create_new_partitions(
       local_thread_point_counts(j) += out_part_xadj(j - 1);
     }
   });
+
+clock12.stop(true);
+Clock clock13("clock13", true);
 
   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
     mj_lno_t team_begin_index =
@@ -5415,6 +5452,8 @@ mj_create_new_partitions(
           coordinate_begin_index + idx) = i;
     });
   });
+
+clock13.stop(true);
 
   clock_mj_create_new_partitions.stop();
 }
@@ -7722,7 +7761,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
 
     if(current_num_parts == 2) {
-      // this is much master than the following loop
+      // this is much faster than the following loop
       // maybe do a special case for 3 as well
       auto local_num_local_coords = this->num_local_coords;
       Kokkos::parallel_for(
