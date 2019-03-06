@@ -3149,7 +3149,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_lno_t coordinate_end_index =
       local_part_xadj(current_work_part_in_concurrent_parts);
     mj_lno_t coordinate_begin_index =
-      local_part_xadj(current_work_part_in_concurrent_parts-1);
+      (current_work_part_in_concurrent_parts != 0) ?
+      local_part_xadj(current_work_part_in_concurrent_parts-1) : 0;
 
     mj_scalar_t my_thread_min_coord = 0;
     mj_scalar_t my_thread_max_coord = 0;
