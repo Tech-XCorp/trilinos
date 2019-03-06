@@ -68,9 +68,9 @@ static string fnParams[NUMFN][3]={
 
 // Value is a particular string
 #ifdef HAVE_ZOLTAN2_PULP
-#define NUMSTR 36
+#define NUMSTR 39
 #else
-#define NUMSTR 34
+#define NUMSTR 37
 #endif
 
 static string strParams[NUMSTR][3]={
