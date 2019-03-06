@@ -1663,7 +1663,11 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
   max_num_total_part_along_dim(0),
   total_dim_num_reduce_all(0),
   last_dim_num_part(0),
-  num_global_parts(1), kept_boxes(), global_box(),
+  mj_num_teams({DefaultTeams_MainFunctorLoop, // TODO: This woud be set by
+    DefaultTeams_mj_create_new_partitions,    // Zoltan2_AlgMJ parameters but
+    DefaultTeams_RightLeftClosestFunctor}),   // taskMapper bypasses all that.
+  num_global_parts(1),
+  kept_boxes(), global_box(),
   myRank(0), myActualRank(0), 
   divide_to_prime_first(false)
 {
