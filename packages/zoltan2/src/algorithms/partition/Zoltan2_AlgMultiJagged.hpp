@@ -5277,37 +5277,29 @@ Clock clock7("clock7", true);
 clock7.stop(true);
 Clock clock8("clock8", true);
 
-  Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) {
-    mj_lno_t team_begin_index =
-      coordinate_begin_index + stride * team_member.league_rank();
-    mj_lno_t team_end_index = team_begin_index + stride;
-    if(team_end_index > coordinate_end_index) {
-      // the last team may have less work than the other teams
-      team_end_index = coordinate_end_index;
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+    coordinate_begin_index, coordinate_end_index),
+    KOKKOS_LAMBDA (const int ii) {
+    mj_lno_t coordinate_index = local_coordinate_permutations(ii);
+    mj_part_t coordinate_assigned_place =
+      local_assigned_part_ids(coordinate_index);
+    mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
+    if(coordinate_assigned_place % 2 == 0) {
+      Kokkos::atomic_add(
+        &local_thread_point_counts(coordinate_assigned_part), 1);
+      local_assigned_part_ids(coordinate_index) =
+        coordinate_assigned_part;
     }
-
-    // First collect the number of assignments in our block for each part
-    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member,
-      team_begin_index, team_end_index), [=] (mj_lno_t & ii) {
-      mj_lno_t coordinate_index = local_coordinate_permutations(ii);
-      mj_part_t coordinate_assigned_place =
-        local_assigned_part_ids(coordinate_index);
-      mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
-      if(coordinate_assigned_place % 2 == 0) {
-        Kokkos::atomic_add(
-          &local_thread_point_counts(coordinate_assigned_part), 1);
-        local_assigned_part_ids(coordinate_index) =
-          coordinate_assigned_part;
-      }
-      else {
-        // fill a tracking array so we can process these slower points
-        // in next cycle
-        mj_lno_t set_index =
-          Kokkos::atomic_fetch_add(&record_total_on_cut(0), 1);
-        track_on_cuts(set_index) = ii;
-      }
-    });
+    else {
+      // fill a tracking array so we can process these slower points
+      // in next cycle
+      mj_lno_t set_index =
+        Kokkos::atomic_fetch_add(&record_total_on_cut(0), 1);
+      track_on_cuts(set_index) = ii;
+    }
   });
+
 
 clock8.stop(true);
 Clock clock9("clock9", true);
