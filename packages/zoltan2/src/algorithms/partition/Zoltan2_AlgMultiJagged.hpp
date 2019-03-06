@@ -765,6 +765,9 @@ private:
   // Need a quick accessor for this on host
   typename decltype (my_incomplete_cut_count)::HostMirror
       host_my_incomplete_cut_count;
+      
+  // Need a quick accessor for this on host
+  typename decltype (part_xadj)::HostMirror host_part_xadj;
 
   // used to optimize kernel - sums 
 #ifndef TURN_OFF_MERGE_CHUNKS
@@ -2881,6 +2884,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->host_my_incomplete_cut_count =
     Kokkos::create_mirror_view(my_incomplete_cut_count);
       
+  // we'll copy to host sometimes so we can access things quickly
+  this->host_part_xadj =
+    Kokkos::create_mirror_view(part_xadj);
+      
 #ifndef TURN_OFF_MERGE_CHUNKS
   this->prefix_sum_num_cuts =  Kokkos::View<mj_part_t *, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("prefix_sum_num_cuts"),
@@ -3033,10 +3040,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_mj_uniform_weights = this->mj_uniform_weights;
 
   // pull part_xadj to host
-  // TODO: Design
-  typename decltype(part_xadj)::HostMirror
-    host_part_xadj =
-    Kokkos::create_mirror_view(part_xadj);
   Kokkos::deep_copy(host_part_xadj, part_xadj);
 
   // pull mj_uniform_weights to host
@@ -5185,19 +5188,13 @@ Clock clock4("clock4", true);
 clock4.stop(true);
 Clock clock5("clock5", true);
 
-  mj_lno_t coordinate_begin_index;
-  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single =
-      current_concurrent_work_part == 0 ? 0 :
-        local_part_xadj(current_concurrent_work_part - 1);
-  }, coordinate_begin_index);
-
-  mj_lno_t coordinate_end_index;
-  Kokkos::parallel_reduce("Read coordinate_end_index", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_part_xadj(current_concurrent_work_part);;
-  }, coordinate_end_index);
+  Kokkos::deep_copy(host_part_xadj, part_xadj);
+  
+  mj_lno_t coordinate_begin_index =
+    current_concurrent_work_part == 0 ? 0 : host_part_xadj(
+      local_part_xadj(current_concurrent_work_part - 1));
+  mj_lno_t coordinate_end_index = host_part_xadj(
+    current_concurrent_work_part);
 
 clock5.stop(true);
 Clock clock5b("clock5b", true);
@@ -8251,6 +8248,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     clock_loopA.stop();
     clock_main_loop.start();
 
+    Kokkos::deep_copy(host_part_xadj, part_xadj);
+   
     // run for all available parts.
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
@@ -8404,21 +8403,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             clock_read_singles.start();
 
-            // TODO: refactor clean up
-            mj_lno_t coordinate_end_index;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single =
-                local_part_xadj(concurrent_current_part_index);
-            }, coordinate_end_index);
-
-            // TODO: refactor clean up
-            mj_lno_t coordinate_begin_index;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single = concurrent_current_part_index==0 ? 0 :
-                local_part_xadj(concurrent_current_part_index -1);
-            }, coordinate_begin_index);
+            mj_lno_t coordinate_end_index = host_part_xadj(
+              concurrent_current_part_index);
+            mj_lno_t coordinate_begin_index =
+              concurrent_current_part_index==0 ? 0 : host_part_xadj(
+              concurrent_current_part_index - 1);
 
             clock_read_singles.stop();
 
@@ -8602,20 +8591,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               this->new_coordinate_permutations);
           }
           else {
-            // This should all get simplified into device code
-            mj_lno_t coordinate_end;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single =
-                local_part_xadj[current_concurrent_work_part];;
-            }, coordinate_end);
-
-            mj_lno_t coordinate_begin;
-            Kokkos::parallel_reduce("Read single", 1,
-              KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-              set_single = current_concurrent_work_part==0 ? 0 :
-                local_part_xadj(current_concurrent_work_part -1);
-            }, coordinate_begin);
+            mj_lno_t coordinate_end = host_part_xadj(
+              current_concurrent_work_part);
+            mj_lno_t coordinate_begin =
+              current_concurrent_work_part==0 ? 0 : host_part_xadj(
+              current_concurrent_work_part - 1);
 
             // if this part is partitioned into 1 then just copy
             // the old values.
@@ -8666,6 +8646,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           });
     
           // increase the previous count by current end.
+          
+          // TODO: Change this to a host copy outside the kk loop
           mj_part_t temp_get;
           Kokkos::parallel_reduce("Read single", 1,
             KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
