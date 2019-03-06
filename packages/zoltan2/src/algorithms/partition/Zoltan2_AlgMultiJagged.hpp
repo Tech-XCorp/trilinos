@@ -2264,6 +2264,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->new_coordinate_permutations;
     this->new_coordinate_permutations = tmp;
     this->part_xadj = this->new_part_xadj;
+    // must update host mirror view
+    this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+    Kokkos::deep_copy(this->host_part_xadj, this->part_xadj);
+
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
   }
 
@@ -8349,6 +8353,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             clock_mj_get_initial_cut_coords_target_weights.stop();
 
             clock_read_singles.start();
+    Kokkos::deep_copy(host_part_xadj, part_xadj);
 
             mj_lno_t coordinate_end_index = host_part_xadj(
               concurrent_current_part_index);
@@ -8538,6 +8543,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               this->new_coordinate_permutations);
           }
           else {
+
+    Kokkos::deep_copy(host_part_xadj, part_xadj);
+
             mj_lno_t coordinate_end = host_part_xadj(
               current_concurrent_work_part);
             mj_lno_t coordinate_begin =
@@ -8666,8 +8674,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
 
     {
+      
       this->part_xadj = this->new_part_xadj;
       local_part_xadj = this->new_part_xadj;
+
+      // must update host mirror view
+      this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+      Kokkos::deep_copy(this->host_part_xadj, this->part_xadj);
 
       this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
       this->mj_env->timerStop(MACRO_TIMERS,
