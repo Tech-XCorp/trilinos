@@ -5127,27 +5127,29 @@ Clock clock2("clock2", true);
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
       KOKKOS_LAMBDA(int dummy) {
 
-      for(int i = 0; i < num_cuts; ++i) {
-        mj_scalar_t left_weight = used_local_cut_line_weight_to_left(i);
-        if(left_weight > local_sEpsilon) {
-          // the weight of thread ii on cut.
-          mj_scalar_t thread_ii_weight_on_cut =
-            used_thread_part_weight_work(i * 2 + 1) -
-            used_thread_part_weight_work(i * 2);
+      if (local_distribute_points_on_cut_lines) {
+        for(int i = 0; i < num_cuts; ++i) {
+          mj_scalar_t left_weight = used_local_cut_line_weight_to_left(i);
+          if(left_weight > local_sEpsilon) {
+            // the weight of thread ii on cut.
+            mj_scalar_t thread_ii_weight_on_cut =
+              used_thread_part_weight_work(i * 2 + 1) -
+              used_thread_part_weight_work(i * 2);
 
-          if(thread_ii_weight_on_cut < left_weight) {
-            // if left weight is bigger than threads weight on cut.
-            local_thread_cut_line_weight_to_put_left(i) =
-              thread_ii_weight_on_cut;
+            if(thread_ii_weight_on_cut < left_weight) {
+              // if left weight is bigger than threads weight on cut.
+              local_thread_cut_line_weight_to_put_left(i) =
+                thread_ii_weight_on_cut;
+            }
+            else {
+              // if thread's weight is bigger than space, then put only a portion.
+              local_thread_cut_line_weight_to_put_left(i) = left_weight;
+            }
+            left_weight -= thread_ii_weight_on_cut;
           }
           else {
-            // if thread's weight is bigger than space, then put only a portion.
-            local_thread_cut_line_weight_to_put_left(i) = left_weight;
+            local_thread_cut_line_weight_to_put_left(i) = 0;
           }
-          left_weight -= thread_ii_weight_on_cut;
-        }
-        else {
-          local_thread_cut_line_weight_to_put_left(i) = 0;
         }
       }
 
