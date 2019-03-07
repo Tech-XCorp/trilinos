@@ -690,7 +690,7 @@ int compareWithBasicVectorAdapterTest(RCP<const Teuchos::Comm<int> > &comm,
 
 template<class bv_use_node_t>
 int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
-        const std::vector<int> & numTeams, int numParts, float imbalance,
+        int numTeams, int numParts, float imbalance,
         std::string paramFile, std::string pqParts,
         std::string pfname,
         int k,
@@ -789,14 +789,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 
     if(pqParts != "")
         params->set("mj_parts", pqParts);
-    if(numTeams[0] > 0) {
-        params->set("num_teams_0", numTeams[0]);
-    }
-    if(numTeams[1] > 0) {
-        params->set("num_teams_1", numTeams[1]);
-    }
-    if(numTeams[2] > 0) {
-        params->set("num_teams_2", numTeams[2]);
+    if(numTeams > 0) {
+        params->set("num_teams", numTeams);
     }
     if(numParts > 0)
         params->set("num_global_parts", numParts);
@@ -863,7 +857,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 template<class bv_use_node_t>
 int testFromDataFile(
         RCP<const Teuchos::Comm<int> > &comm,
-        const std::vector<int> & numTeams,
+        int numTeams,
         int numParts,
         float imbalance,
         std::string fname,
@@ -1000,7 +994,7 @@ void getCoords(zscalar_t **&coords, zlno_t &numLocal, int &dim, string fileName)
 
 int testFromSeparateDataFiles(
         RCP<const Teuchos::Comm<int> > &comm,
-        const std::vector<int> & numTeams,
+        int numTeams,
         int numParts,
         float imbalance,
         std::string fname,
@@ -1088,14 +1082,8 @@ int testFromSeparateDataFiles(
     if(pqParts != ""){
         params->set("mj_parts", pqParts);
     }
-    if(numTeams[0] > 0){
-        params->set("num_teams_0", numTeams[0]);
-    }
-    if(numTeams[1] > 0){
-        params->set("num_teams_1", numTeams[1]);
-    }
-    if(numTeams[2] > 0){
-        params->set("num_teams_2", numTeams[2]);
+    if(numTeams > 0){
+        params->set("num_teams", numTeams);
     }
     
     if(numParts > 0){
@@ -1199,7 +1187,7 @@ bool getArgumentValue(string &argumentid, double &argumentValue, string argument
 void getArgVals(
         int narg,
         char **arg,
-        std::vector<int> &numTeams,
+        int &numTeams,
         int &numParts,
         float &imbalance ,
         string &pqParts,
@@ -1230,21 +1218,9 @@ void getArgVals(
         if(!getArgumentValue(identifier, fval, tmp)) continue;
         value = (long long int) (fval);
 
-        if(identifier == "T0"){
+        if(identifier == "T"){
             if(value > 0){
-                numTeams[0]=value;
-            } else {
-                throw  "Invalid argument at " + tmp;
-            }
-        } else if(identifier == "T1"){
-            if(value > 0){
-                numTeams[1]=value;
-            } else {
-                throw  "Invalid argument at " + tmp;
-            }
-        } else if(identifier == "T2"){
-            if(value > 0){
-                numTeams[2]=value;
+                numTeams=value;
             } else {
                 throw  "Invalid argument at " + tmp;
             }
@@ -1403,8 +1379,7 @@ int main(int narg, char *arg[])
 
     int rank = tcomm->getRank();
 
-    std::vector<int> numTeams(3,0); // will use default if not set
-
+    int numTeams = 0; // will use default if not set
     int numParts = -10;
     float imbalance = -1.03;
     int k = -1;

@@ -65,15 +65,10 @@
 #include <vector>
 
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
-#define MERGE_THE_KERNELS // for debugging - will be removed
+#define MERGE_THE_KERNELS     // for debugging - will be removed
+#define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 
-// TODO: This is a temporary setting to be removed and calculated based on
-// conditions of the system and the algorithm.
-#define DefaultTeams_MainFunctorLoop 60
-#define DefaultTeams_mj_create_new_partitions 80
-#define DefaultTeams_RightLeftClosestFunctor 60
-
-// TODO: Delete all clock stuff. There were temporary timers for profiling.
+// TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
   typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
   public:
@@ -668,7 +663,7 @@ private:
   // if the coordinates have uniform weights
   Kokkos::View<bool *, device_t> mj_uniform_weights; 
 
-  std::vector<int> mj_num_teams; // the number of teams
+  int mj_num_teams; // the number of teams
   
   size_t num_global_parts; // the targeted number of parts
 
@@ -1553,7 +1548,7 @@ public:
     const RCP<const Environment> &env,
     RCP<const Comm<int> > &problemComm,
     double imbalance_tolerance,
-    std::vector<int> num_teams, // TODO: Probably a temp option for optimizing
+    int num_teams,
     size_t num_global_parts,
     Kokkos::View<mj_part_t*, device_t> part_no_array,
     int recursion_depth,
@@ -1666,9 +1661,7 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
   max_num_total_part_along_dim(0),
   total_dim_num_reduce_all(0),
   last_dim_num_part(0),
-  mj_num_teams({DefaultTeams_MainFunctorLoop, // TODO: This woud be set by
-    DefaultTeams_mj_create_new_partitions,    // Zoltan2_AlgMJ parameters but
-    DefaultTeams_RightLeftClosestFunctor}),   // taskMapper bypasses all that.
+  mj_num_teams(DEFAULT_NUM_TEAMS),
   num_global_parts(1),
   kept_boxes(), global_box(),
   myRank(0), myActualRank(0), 
@@ -4647,7 +4640,7 @@ clock_weights_new_to_optimize.stop();
 #endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
-    policy_t(mj_num_teams[0], Kokkos::AUTO);
+    policy_t(mj_num_teams, Kokkos::AUTO);
 
   clock_weights3.start();
 
@@ -4841,7 +4834,7 @@ clock_weights_new_to_optimize.stop();
     clock_functor_rightleft_closest.start();
 
     auto policy_RightLeftClosestFunctor =
-      policy_t(mj_num_teams[2], Kokkos::AUTO);
+      policy_t(DEFAULT_NUM_TEAMS, Kokkos::AUTO);
    
     Kokkos::parallel_reduce(policy_RightLeftClosestFunctor,
       rightLeftClosestFunctor, left_max_right_min_values);
@@ -7930,7 +7923,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   const RCP<const Environment> &env,
   RCP<const Comm<int> > &problemComm,
   double imbalance_tolerance_,
-  std::vector<int> num_teams_,
+  int num_teams_,
   size_t num_global_parts_,
   Kokkos::View<mj_part_t*, device_t> part_no_array_,
   int recursion_depth_,
@@ -8900,7 +8893,7 @@ public:
   // PARAMETERS
   double imbalance_tolerance; // input imbalance tolerance.
     
-  std::vector<int> num_teams; // how many teams to run main loop with
+  int num_teams; // how many teams to run main loop with
   
   size_t num_global_parts; // the targeted number of parts
 
@@ -9004,9 +8997,7 @@ public:
       mj_problemComm(problemComm),
       mj_coords(coords),
       imbalance_tolerance(0),
-      num_teams({DefaultTeams_MainFunctorLoop,
-                 DefaultTeams_mj_create_new_partitions,
-                 DefaultTeams_RightLeftClosestFunctor}),
+      num_teams(DEFAULT_NUM_TEAMS),
       num_global_parts(1),
       recursion_depth(0),
       coord_dim(0),
@@ -9077,15 +9068,9 @@ public:
     RCP<Teuchos::EnhancedNumberValidator<int>>
       mj_num_teams_validator =
       Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(
-      0, Teuchos::EnhancedNumberTraits<int>::max()) );
-    pl.set("num_teams_0", 0,
+      1, Teuchos::EnhancedNumberTraits<int>::max()) );
+    pl.set("num_teams", DEFAULT_NUM_TEAMS,
       "How many teams for the main kernel loop"
-      , mj_num_teams_validator);
-    pl.set("num_teams_1", 0,
-      "How many teams for mj_create_new_partitions"
-      , mj_num_teams_validator);
-    pl.set("num_teams_2", 0,
-      "How many teams for get_local_min_max_coord_totW"
       , mj_num_teams_validator);
 
     RCP<Teuchos::EnhancedNumberValidator<int>>
@@ -9682,14 +9667,8 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   // the length of the input partitioning array.
   this->recursion_depth = 0;
 
-  if (pl.getPtr<int>("num_teams_0")) {
-    this->num_teams[0] = pl.get<int>("num_teams_0");
-  }
-  if (pl.getPtr<int>("num_teams_1")) {
-    this->num_teams[1] = pl.get<int>("num_teams_1");
-  }
-  if (pl.getPtr<int>("num_teams_2")) {
-    this->num_teams[2] = pl.get<int>("num_teams_2");
+  if (pl.getPtr<Array <int> >("num_teams")) {
+    this->num_teams = pl.get<int>("num_teams");
   }
   
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
