@@ -4636,7 +4636,7 @@ clock_weights_new_to_optimize.start();
   }
 
 clock_weights_new_to_optimize.stop();
-
+ 
 #endif // TURN_OFF_MERGE_CHUNKS
 
   auto policy_ReduceWeightsFunctor =
@@ -9667,7 +9667,7 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   // the length of the input partitioning array.
   this->recursion_depth = 0;
 
-  if (pl.getPtr<Array <int> >("num_teams")) {
+  if (pl.getPtr<int>("num_teams")) {
     this->num_teams = pl.get<int>("num_teams");
   }
   
