@@ -5156,14 +5156,9 @@ Clock clock1("clock1", true);
 clock1.stop(true);
 Clock clock2("clock2", true);
 
-  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
-    member_type member_type;
-
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_single(1, 1);
-
-  if(num_cuts > 0) {
-
-    Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+      KOKKOS_LAMBDA(int dummy) {
       // this is a special case. If cutlines share the same coordinate,
       // their weights are equal. We need to adjust the ratio for that.
       for (mj_part_t i = num_cuts - 1; i > 0 ; --i) {
@@ -5177,19 +5172,14 @@ Clock clock2("clock2", true);
           LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
           mj_scalar_t(SIGNIFICANCE_MUL);
       }
+
+      for(mj_part_t i = 0; i < num_parts; ++i) {
+        local_thread_point_counts(i) = 0;
+      }
     });
-  }
 
 clock2.stop(true);
-Clock clock3("clock3", true);
 
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-      (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & i) {
-    local_thread_point_counts(i) = 0;
-  });
-
-clock3.stop(true);
 Clock clock4("clock4", true);
 
   Kokkos::View<mj_lno_t *, device_t> record_total_on_cut(
