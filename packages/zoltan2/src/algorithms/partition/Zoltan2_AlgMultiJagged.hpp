@@ -5376,18 +5376,11 @@ Clock clock10("clock10", true);
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
       (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     out_part_xadj(j) = local_thread_point_counts(j);
-  });
-
-clock10.stop(true);
-Clock clock11("clock11", true);
-
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-      (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
     local_thread_point_counts(j) = 0;
   });
 
-clock11.stop(true);
+clock10.stop(true);
+
 Clock clock12("clock12", true);
 
   // TODO: How do we efficiently parallelize this form? 
