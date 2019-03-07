@@ -67,53 +67,68 @@
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define MERGE_THE_KERNELS     // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
+#define DISABLE_CLOCKS false
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
   typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
   public:
-    Clock(std::string clock_name, bool bStart) :
-      name(clock_name) {
-      reset();
-      if(bStart) {
-        start();
+    Clock(std::string clock_name, bool bStart, bool bAlwaysOnIn = false) :
+      name(clock_name), bAlwaysOn(bAlwaysOnIn) {
+      if(!DISABLE_CLOCKS || bAlwaysOnIn) {
+        reset();
+        if(bStart) {
+          start();
+        }
       }
     }
     void reset() {
-      time_sum_ns = 0;
-      counter_start = 0;
-      counter_stop = 0;
+      if(!DISABLE_CLOCKS || bAlwaysOn) {
+        time_sum_ns = 0;
+        counter_start = 0;
+        counter_stop = 0;
+      }
     }
     int time() const {
-      if(counter_start != counter_stop) {
-        printf("Clock %s bad counters for time!\n", name.c_str());
-        throw std::logic_error("bad timer counters for time!\n");
+      if(!DISABLE_CLOCKS || bAlwaysOn) {
+        if(counter_start != counter_stop) {
+          printf("Clock %s bad counters for time!\n", name.c_str());
+          throw std::logic_error("bad timer counters for time!\n");
+        }
+        return time_sum_ns;
+      } else {
+        return 0.0;
       }
-      return time_sum_ns;
     }
     void start() {
-      if(counter_start != counter_stop) {
-        printf("Clock %s bad counters for start!\n", name.c_str());
-        throw std::logic_error("bad timer counters for start!\n");
+      if(!DISABLE_CLOCKS || bAlwaysOn) {
+        if(counter_start != counter_stop) {
+          printf("Clock %s bad counters for start!\n", name.c_str());
+          throw std::logic_error("bad timer counters for start!\n");
+        }
+        ++counter_start;
+        start_time = std::chrono::steady_clock::now();
       }
-      ++counter_start;
-      start_time = std::chrono::steady_clock::now();
     }
     void stop(bool bPrint = false) {
-      if(counter_start-1 != counter_stop) {
-        printf("Clock %s bad counters for stop!\n", name.c_str());
-        throw std::logic_error("bad timer counters for stop!\n");
-      }
-      ++counter_stop;
-      clock_t now_time = std::chrono::steady_clock::now();
-      time_sum_ns += static_cast<int>(std::chrono::duration_cast<std::chrono::nanoseconds>(now_time - start_time).count());
+      if(!DISABLE_CLOCKS || bAlwaysOn) {
+        if(counter_start-1 != counter_stop) {
+          printf("Clock %s bad counters for stop!\n", name.c_str());
+          throw std::logic_error("bad timer counters for stop!\n");
+        }
+        ++counter_stop;
+        clock_t now_time = std::chrono::steady_clock::now();
+        time_sum_ns += static_cast<int>(std::chrono::duration_cast<std::chrono::nanoseconds>(now_time - start_time).count());
 
-      if(bPrint) {
-        print();
+        if(bPrint) {
+          print();
+        }
       }
     }
     void print() {
-      printf("%s: %d us    Count: %d\n", name.c_str(), time()/1000, counter_stop);
+      if(!DISABLE_CLOCKS || bAlwaysOn) {
+        printf("%s: %d us    Count: %d\n", name.c_str(), time()/1000, counter_stop);
+      }
     }
   private:
     std::string name;
@@ -121,6 +136,7 @@ class Clock {
     int counter_stop;
     clock_t start_time;
     int time_sum_ns;
+    bool bAlwaysOn;
 };
 
 // TODO: Also delete all of this temp profiling code
@@ -7974,7 +7990,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_write_globals.reset();
   clock_mj_1D_part_end.reset();
   
-  Clock clock_multi_jagged_part("clock_multi_jagged_part", true);
+  Clock clock_multi_jagged_part("clock_multi_jagged_part", true, true);
   Clock clock_multi_jagged_part_init("  clock_multi_jagged_part_init", true);
   Clock clock_multi_jagged_part_init_begin(
     "    clock_multi_jagged_part_init_begin", true);
