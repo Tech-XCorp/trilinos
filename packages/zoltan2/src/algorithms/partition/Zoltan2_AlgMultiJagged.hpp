@@ -5190,31 +5190,22 @@ Clock clock5("clock5", true);
     host_part_xadj(current_concurrent_work_part);
 
 clock5.stop(true);
-Clock clock5b("clock5b", true);
 
-  Kokkos::parallel_for(
+Clock clock5b("clock5b", true);
+  mj_lno_t total_on_cut;
+  Kokkos::parallel_reduce("Get total_on_cut",
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const int ii) {
+    KOKKOS_LAMBDA(int ii, mj_lno_t & val) {
     mj_lno_t coordinate_index = local_coordinate_permutations(ii);
     mj_part_t coordinate_assigned_place =
       local_assigned_part_ids(coordinate_index);
     if(coordinate_assigned_place % 2 == 1) {
-      Kokkos::atomic_add(&record_total_on_cut(0), 1);
+      val += 1;
     }
-  });
-
-clock5b.stop(true);
-Clock clock6("clock6", true);
-
-  mj_lno_t total_on_cut;
-  Kokkos::parallel_reduce("Read single", 1,
-    KOKKOS_LAMBDA(int dummy, int & set_single) {
-    set_single = record_total_on_cut(0);
-    record_total_on_cut(0) = 0;
   }, total_on_cut);
+clock5b.stop(true);
 
-clock6.stop(true);
 Clock clock7("clock7", true);
 
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
