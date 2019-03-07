@@ -5367,32 +5367,21 @@ Clock clock9("clock9", true);
           coordinate_assigned_part;
       }
     }
+
+    for(int j = 0; j < num_parts; ++j) {
+      out_part_xadj(j) = local_thread_point_counts(j);
+      local_thread_point_counts(j) = 0;
+      
+      if(j != 0) {
+        out_part_xadj(j) += out_part_xadj(j - 1);
+        local_thread_point_counts(j) += out_part_xadj(j - 1);
+      }
+    }
+
   });
 
 clock9.stop(true);
-Clock clock10("clock10", true);
 
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-      (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & j) {
-    out_part_xadj(j) = local_thread_point_counts(j);
-    local_thread_point_counts(j) = 0;
-  });
-
-clock10.stop(true);
-
-Clock clock12("clock12", true);
-
-  // TODO: How do we efficiently parallelize this form? 
-  // Copy first?
-  Kokkos::parallel_for (policy_single, KOKKOS_LAMBDA(member_type team_member) {
-    for(mj_part_t j = 1; j < num_parts; ++j) {
-      out_part_xadj(j) += out_part_xadj(j - 1);
-      local_thread_point_counts(j) += out_part_xadj(j - 1);
-    }
-  });
-
-clock12.stop(true);
 Clock clock13("clock13", true);
 
   Kokkos::parallel_for(
