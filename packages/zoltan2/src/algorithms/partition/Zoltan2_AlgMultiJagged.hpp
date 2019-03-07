@@ -5196,20 +5196,14 @@ Clock clock4("clock4", true);
     "track_on_cuts", 1);
 clock4.stop(true);
 Clock clock5("clock5", true);
+  
+  Kokkos::deep_copy(host_part_xadj, part_xadj);
 
-  mj_lno_t coordinate_begin_index;
-  Kokkos::parallel_reduce("Read coordinate_begin_index", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single =
-      current_concurrent_work_part == 0 ? 0 :
-        local_part_xadj(current_concurrent_work_part - 1);
-  }, coordinate_begin_index);
-
-  mj_lno_t coordinate_end_index;
-  Kokkos::parallel_reduce("Read coordinate_end_index", 1,
-    KOKKOS_LAMBDA(int dummy, mj_lno_t & set_single) {
-    set_single = local_part_xadj(current_concurrent_work_part);;
-  }, coordinate_end_index);
+  mj_lno_t coordinate_begin_index = 
+    current_concurrent_work_part == 0 ? 0 :
+    host_part_xadj(current_concurrent_work_part - 1);
+  mj_lno_t coordinate_end_index =
+    host_part_xadj(current_concurrent_work_part);
 
 clock5.stop(true);
 Clock clock5b("clock5b", true);
