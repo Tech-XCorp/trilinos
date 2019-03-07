@@ -2273,9 +2273,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->new_coordinate_permutations;
     this->new_coordinate_permutations = tmp;
     this->part_xadj = this->new_part_xadj;
-    // We changed the source view to a same type - do we need to update Mirror?
-    // this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
-
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
   }
 
@@ -2788,6 +2785,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       // the end of the initial partition is the end of coordinates.
       local_part_xadj(0) = static_cast<mj_lno_t>(local_num_local_coords);
   });
+  host_part_xadj(0) = num_local_coords; // keep in sync
 
   // the ends points of the output, this is allocated later.
   this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
@@ -3049,8 +3047,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->process_local_min_max_coord_total_weight;
   auto local_mj_weights = this->mj_weights;
   auto local_mj_uniform_weights = this->mj_uniform_weights;
-
-  Kokkos::deep_copy(host_part_xadj, part_xadj);
 
   // pull mj_uniform_weights to host
   // TODO: Design
@@ -5115,17 +5111,13 @@ mj_create_new_partitions(
   Kokkos::View<mj_lno_t*, device_t>
     local_new_coordinate_permutations)
 {
-
-  
   clock_mj_create_new_partitions.start();
 
-Clock clock2("clock2", true);
+  mj_part_t num_cuts = num_parts - 1;
 
-    mj_part_t num_cuts = num_parts - 1;
-
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-      KOKKOS_LAMBDA(int dummy) {
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+    KOKKOS_LAMBDA(int dummy) {
 
       if (local_distribute_points_on_cut_lines) {
         for(int i = 0; i < num_cuts; ++i) {
@@ -5170,23 +5162,13 @@ Clock clock2("clock2", true);
       for(mj_part_t i = 0; i < num_parts; ++i) {
         local_thread_point_counts(i) = 0;
       }
-    });
-
-clock2.stop(true);
-
-Clock clock5("clock5", true);
-  
-  Kokkos::deep_copy(host_part_xadj, part_xadj);
+  });
 
   mj_lno_t coordinate_begin_index = 
     current_concurrent_work_part == 0 ? 0 :
     host_part_xadj(current_concurrent_work_part - 1);
   mj_lno_t coordinate_end_index =
     host_part_xadj(current_concurrent_work_part);
-
-clock5.stop(true);
-
-Clock clock5b("clock5b", true);
 
   // TODO: This could be a bit faster as a double nested reduce I think
   mj_lno_t total_on_cut;
@@ -5201,17 +5183,10 @@ Clock clock5b("clock5b", true);
       val += 1;
     }
   }, total_on_cut);
-clock5b.stop(true);
-
-Clock clock7("clock7", true);
 
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
     "track_on_cuts", // would do WithoutInitialization but need last init to 0
     total_on_cut + 1); // extra index to use for tracking
-
-clock7.stop(true);
-
-Clock clock8("clock8", true);
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
@@ -5236,10 +5211,6 @@ Clock clock8("clock8", true);
     }
   });
 
-
-clock8.stop(true);
-Clock clock9("clock9", true);
- 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
     KOKKOS_LAMBDA (const int & dummy) {
@@ -5348,10 +5319,6 @@ Clock clock9("clock9", true);
 
   });
 
-clock9.stop(true);
-
-Clock clock13("clock13", true);
-
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -5366,8 +5333,6 @@ Clock clock13("clock13", true);
     local_new_coordinate_permutations(
       coordinate_begin_index + idx) = i;
   });
-
-clock13.stop(true);
 
   clock_mj_create_new_partitions.stop();
 }
@@ -8162,8 +8127,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     clock_loopA.stop();
     clock_main_loop.start();
 
-    Kokkos::deep_copy(host_part_xadj, part_xadj);
-   
     // run for all available parts.
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
@@ -8637,9 +8600,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       
       this->part_xadj = this->new_part_xadj;
       local_part_xadj = this->new_part_xadj;
-
-      // We changed the source view to a same type - do we need to update Mirror?
       this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+      Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
 
       this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
       this->mj_env->timerStop(MACRO_TIMERS,
