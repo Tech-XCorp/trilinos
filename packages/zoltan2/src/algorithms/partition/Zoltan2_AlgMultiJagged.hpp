@@ -5174,11 +5174,6 @@ Clock clock2("clock2", true);
 
 clock2.stop(true);
 
-Clock clock4("clock4", true);
-
-  Kokkos::View<mj_lno_t *, device_t> record_total_on_cut(
-    "track_on_cuts", 1);
-clock4.stop(true);
 Clock clock5("clock5", true);
   
   Kokkos::deep_copy(host_part_xadj, part_xadj);
@@ -5192,6 +5187,8 @@ Clock clock5("clock5", true);
 clock5.stop(true);
 
 Clock clock5b("clock5b", true);
+
+  // TODO: This could be a bit faster as a double nested reduce I think
   mj_lno_t total_on_cut;
   Kokkos::parallel_reduce("Get total_on_cut",
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
@@ -5209,9 +5206,11 @@ clock5b.stop(true);
 Clock clock7("clock7", true);
 
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
-    "track_on_cuts", total_on_cut);
+    "track_on_cuts", // would do WithoutInitialization but need last init to 0
+    total_on_cut + 1); // extra index to use for tracking
 
 clock7.stop(true);
+
 Clock clock8("clock8", true);
 
   Kokkos::parallel_for(
@@ -5232,7 +5231,7 @@ Clock clock8("clock8", true);
       // fill a tracking array so we can process these slower points
       // in next cycle
       mj_lno_t set_index =
-        Kokkos::atomic_fetch_add(&record_total_on_cut(0), 1);
+        Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
       track_on_cuts(set_index) = ii;
     }
   });
