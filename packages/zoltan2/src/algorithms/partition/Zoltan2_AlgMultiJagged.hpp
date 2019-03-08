@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
 
@@ -4132,8 +4132,12 @@ struct ReduceWeightsFunctor {
         scalar_t b = -max_scalar;
 
         // for the left/right closest part calculation
+  #ifdef TURN_OFF_MERGE_CHUNKS
         scalar_t * p1 = &threadSum.ptr[2+value_count_weights];
-  
+  #else
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts*2)+2];
+  #endif
+
         // now check each part and it's right cut
         for(index_t part = 0; part <= num_cuts; ++part) {
         
@@ -4341,12 +4345,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
 #ifndef TURN_OFF_MERGE_CHUNKS // ACTION 1
   // We need to establish the total working array size
-  mj_part_t array_length = 0;
+  mj_part_t weight_array_length = 0;
+  mj_part_t right_left_array_length = 0;
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
     mj_part_t num_parts =
       vector_num_partitioning_in_current_dim[current_work_part + kk];
     mj_part_t num_cuts = num_parts - 1;
-    array_length += num_cuts + num_parts;
+    weight_array_length += num_cuts + num_parts;
+    right_left_array_length += (num_cuts + 2) * 2; // currently adding a buffer on either side - but can simplify this
   }
 #endif
    
