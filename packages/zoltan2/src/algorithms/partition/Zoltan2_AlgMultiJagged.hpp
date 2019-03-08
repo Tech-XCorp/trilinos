@@ -4133,9 +4133,9 @@ struct ReduceWeightsFunctor {
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
-        scalar_t * p1 = &threadSum.ptr[2+value_count_weights];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2];
   #else
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts*2)+2];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2];
   #endif
 
         // now check each part and it's right cut
@@ -4490,8 +4490,12 @@ clock_weights_new_to_optimize.stop();
           Kokkos::create_mirror_view(my_current_right_closest);
       for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
         // when reading shift right 1 due to the buffer at beginning and end
-        hostLeftArray(cut)  = reduce_array[weight_array_length+(cut+1)*2+0];
-        hostRightArray(cut) = reduce_array[weight_array_length+(cut+1)*2+1];
+        mj_part_t read_offset = 0;
+#ifndef TURN_OFF_MERGE_CHUNKS
+        read_offset += (offset_cuts * 2) + kk * 4;
+#endif
+        hostLeftArray(cut)  = reduce_array[weight_array_length + read_offset + (cut+1)*2+0];
+        hostRightArray(cut) = reduce_array[weight_array_length + read_offset + (cut+1)*2+1];
       }
       Kokkos::deep_copy(my_current_left_closest, hostLeftArray);
       Kokkos::deep_copy(my_current_right_closest, hostRightArray);
