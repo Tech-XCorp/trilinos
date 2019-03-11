@@ -1036,7 +1036,7 @@ private:
    * the closest points to the cut lines from right for the calling thread.
    * \param partIds is the array that holds the part ids of the coordinates
    */
-  void mj_1D_part_get_thread_part_weights(
+  void mj_1D_part_get_part_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_concurrent_num_parts,
     mj_part_t current_work_part,
@@ -3564,10 +3564,39 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         ++next;
       }
     }
+    
+#ifndef TURN_OFF_MERGE_CHUNKS
+    for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+      mj_part_t sum_num_cuts = 0;
+      for(int kk2 = 0; kk2 < kk; ++kk2) {
+        mj_part_t num_parts =
+          view_num_partitioning_in_current_dim(current_work_part + kk2);
+        sum_num_cuts += num_parts - 1;
+      }
+      prefix_sum_num_cuts(kk) = sum_num_cuts; 
+    }
+#endif
   });
 
   clock_mj_1D_part_init2.stop();
   clock_mj_1D_part_while_loop.start();
+
+#ifndef TURN_OFF_MERGE_CHUNKS
+  auto local_coordinate_permutations =
+    this->coordinate_permutations;
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, this->num_local_coords),
+    KOKKOS_LAMBDA(int ii) {    
+      int i = local_coordinate_permutations(ii);
+      for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+        auto current_concurrent_work_part = current_work_part + kk;
+        if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
+          info(i) = current_concurrent_work_part;
+          break;
+        }
+      }
+    });
+#endif
 
   while (total_incomplete_cut_count != 0) {
     clock_host_copies.start();
@@ -3580,7 +3609,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     clock_mj_1D_part_get_weights.start();
 
-    this->mj_1D_part_get_thread_part_weights(
+    this->mj_1D_part_get_part_weights(
       view_num_partitioning_in_current_dim,
       current_concurrent_num_parts,
       current_work_part,
@@ -4059,34 +4088,6 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
-#ifndef TURN_OFF_MERGE_CHUNKS
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(teamMember, current_concurrent_num_parts),
-      [=] (const int & kk) {
-      part_t sum_num_cuts = 0;
-      for(int kk2 = 0; kk2 < kk; ++kk2) {
-        part_t num_parts =
-          view_num_partitioning_in_current_dim(current_work_part + kk2);
-        sum_num_cuts += num_parts - 1;
-      }
-      prefix_sum_num_cuts(kk) = sum_num_cuts;      
-    });
-    
-    Kokkos::parallel_for(
-      Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const int & ii) {
-      int i = permutations(ii);
-      
-      for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-        auto current_concurrent_work_part = current_work_part + kk;
-        if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
-          info(i) = current_concurrent_work_part;
-          break;
-        }
-      }
-    });
-#endif
-
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
@@ -4278,7 +4279,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
   mj_part_t, mj_node_t>::
-  mj_1D_part_get_thread_part_weights(
+  mj_1D_part_get_part_weights(
   Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_concurrent_num_parts,
   mj_part_t current_work_part,
