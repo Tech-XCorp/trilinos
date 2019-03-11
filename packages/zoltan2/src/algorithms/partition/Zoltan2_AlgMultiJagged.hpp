@@ -3570,14 +3570,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     
 #ifndef TURN_OFF_MERGE_CHUNKS
 
-    for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-      mj_part_t sum_num_cuts = 0;
-      for(int kk2 = 0; kk2 < kk; ++kk2) {
-        mj_part_t num_parts =
-          view_num_partitioning_in_current_dim(current_work_part + kk2);
-        sum_num_cuts += num_parts - 1;
-      }
-      local_prefix_sum_num_cuts(kk) = sum_num_cuts; 
+    local_prefix_sum_num_cuts(0) = 0;
+    for(int kk = 1; kk < current_concurrent_num_parts; ++kk) {
+      local_prefix_sum_num_cuts(kk) = local_prefix_sum_num_cuts(kk-1);
+      local_prefix_sum_num_cuts(kk) +=
+        view_num_partitioning_in_current_dim(kk-1);
     }
 #endif
   });
