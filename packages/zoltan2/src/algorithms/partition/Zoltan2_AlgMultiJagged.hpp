@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_INNER_FUNCTOR
+// #define USE_INNER_FUNCTOR
 // #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -1037,6 +1037,9 @@ private:
    * the closest points to the cut lines from right for the calling thread.
    * \param partIds is the array that holds the part ids of the coordinates
    */
+#ifndef TURN_OFF_MERGE_CHUNKS
+  template<int uniform_part_sizes>
+#endif
   void mj_1D_part_get_part_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_concurrent_num_parts,
@@ -3580,7 +3583,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 #endif
   });
   
-  
+  // if uniform_part_sizes becomes positive it means all concurrent sets
+  // have the same number of parts - otherwise it is not uniform
+  int uniform_part_sizes = -1;
+  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
+    if(uniform_part_sizes == -1) {
+      uniform_part_sizes = vector_num_partitioning_in_current_dim[kk]; // set it
+    }
+    else if(vector_num_partitioning_in_current_dim[kk] != uniform_part_sizes) {
+      uniform_part_sizes = -2; // clear it - we do not have a uniform set
+    }
+  }
 
   clock_mj_1D_part_init2.stop();
   clock_mj_1D_part_while_loop.start();
@@ -3613,12 +3626,31 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     clock_mj_1D_part_get_weights.start();
 
-    this->mj_1D_part_get_part_weights(
-      view_num_partitioning_in_current_dim,
-      current_concurrent_num_parts,
-      current_work_part,
+    
+    #define CALL_METHOD(n)                     \
+    this->mj_1D_part_get_part_weights<n>(      \
+      view_num_partitioning_in_current_dim,    \
+      current_concurrent_num_parts,            \
+      current_work_part,                       \
       mj_current_dim_coords);
 
+    // Prototyping an idea to avoid slow for loop in the kernel
+    // We prescan and if all are the same we can do a templated method to
+    // avoid reading the num parts in the kernel. If we do read it, even if
+    // they are all the same, the compiler won't know that and the loop won't
+    // be optimized.
+    switch(uniform_part_sizes) {
+      case 1: CALL_METHOD(1); break;
+      case 2: CALL_METHOD(2); break;
+      case 3: CALL_METHOD(3); break;
+      case 4: CALL_METHOD(4); break;
+      case 5: CALL_METHOD(5); break;
+      default:
+        printf("Not supporting uniform part sizes above 5 yet ... TODO.\n");
+        std::abort();
+        break;
+    }
+    
     clock_mj_1D_part_get_weights.stop();
 
     clock_mj_combine_rightleft_and_weights.start();
@@ -3966,7 +3998,11 @@ struct ArrayCombinationReducer {
   }
 };
 
-template<class scalar_t, class part_t, class index_t, class device_t>
+template<class scalar_t, class part_t, class index_t, class device_t
+#ifndef TURN_OFF_MERGE_CHUNKS
+, int FIXED_NUM_PARTS
+#endif
+>
 struct ReduceWeightsFunctorInnerLoop {
   scalar_t max_scalar;
   int value_count_weights;
@@ -4068,8 +4104,11 @@ struct ReduceWeightsFunctorInnerLoop {
         part_t total_part_shift =
           concurrent_cut_shifts * 2 + kk;
           
-        part_t num_cuts = view_num_partitioning_in_current_dim(
-          concurrent_current_part) - 1;
+        // Use the templated fixed count - if we read view_num_partitioning_in_current_dim
+        // the the compiler has to assume they can be different and our for loop
+        // performance on the GPU will be trashed.
+        part_t num_cuts = FIXED_NUM_PARTS - 1;
+        // view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
 
   #endif
 
@@ -4139,7 +4178,11 @@ struct ReduceWeightsFunctorInnerLoop {
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t,
-  class device_t>
+  class device_t
+#ifndef TURN_OFF_MERGE_CHUNKS
+, int FIXED_NUM_PARTS
+#endif
+>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
@@ -4334,8 +4377,8 @@ struct ReduceWeightsFunctor {
         part_t total_part_shift =
           concurrent_cut_shifts * 2 + kk;
           
-        part_t num_cuts = view_num_partitioning_in_current_dim(
-          concurrent_current_part) - 1;
+        part_t num_cuts = FIXED_NUM_PARTS - 1;
+        // view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
 
   #endif
 
@@ -4496,8 +4539,10 @@ struct ReduceWeightsFunctor {
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
-void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
-  mj_part_t, mj_node_t>::
+#ifndef TURN_OFF_MERGE_CHUNKS 
+  template<int uniform_part_sizes>
+#endif  
+void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   mj_1D_part_get_part_weights(
   Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_concurrent_num_parts,
@@ -4619,8 +4664,11 @@ clock_weights_new_to_optimize.stop();
   mj_scalar_t * reduce_array =
     new mj_scalar_t[static_cast<size_t>(total_array_length)];
 
-  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
-    typename mj_node_t::device_type>
+  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type
+#ifndef TURN_OFF_MERGE_CHUNKS  
+  , uniform_part_sizes
+#endif 
+  >
     teamFunctor(
       std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
