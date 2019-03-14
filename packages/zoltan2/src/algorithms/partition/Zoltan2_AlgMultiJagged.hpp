@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-// #define USE_INNER_FUNCTOR
+#define USE_INNER_FUNCTOR
 // #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4010,7 +4010,7 @@ struct ReduceWeightsFunctorInnerLoop {
 
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
-    int uniform_part_sizes,
+    int mj_uniform_part_sizes,
     scalar_t mj_max_scalar,
     int mj_value_count_weights,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4036,6 +4036,7 @@ struct ReduceWeightsFunctorInnerLoop {
     , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
 #endif
     ) :
+      uniform_part_sizes(mj_uniform_part_sizes),
       value_count_weights(mj_value_count_weights),
       max_scalar(mj_max_scalar),
 #ifdef TURN_OFF_MERGE_CHUNKS
