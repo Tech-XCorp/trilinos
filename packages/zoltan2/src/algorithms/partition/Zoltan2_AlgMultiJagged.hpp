@@ -64,6 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
+#define USE_INNER_FUNCTOR
 // #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -3962,6 +3963,178 @@ struct ArrayCombinationReducer {
   }
 };
 
+template<class scalar_t, class part_t, class index_t, class device_t>
+struct ReduceWeightsFunctorInnerLoop {
+  scalar_t max_scalar;
+  int value_count_weights;
+#ifdef TURN_OFF_MERGE_CHUNKS
+  part_t concurrent_current_part;
+  part_t num_cuts;
+#endif
+  part_t current_work_part;
+  part_t current_concurrent_num_parts;
+  Kokkos::View<index_t*, device_t> permutations;
+  Kokkos::View<scalar_t *, device_t> coordinates;
+  Kokkos::View<scalar_t**, device_t> weights;
+  Kokkos::View<part_t*, device_t> parts;
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> info;
+#endif
+  Kokkos::View<scalar_t *, device_t> cut_coordinates;
+  bool bUniformWeights;
+  scalar_t sEpsilon;
+  Kokkos::View<index_t *, device_t> part_xadj;
+  Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
+  Kokkos::View<part_t*, device_t> my_incomplete_cut_count;
+  
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> prefix_sum_num_cuts;
+#endif
+
+  KOKKOS_INLINE_FUNCTION
+  ReduceWeightsFunctorInnerLoop(
+    scalar_t mj_max_scalar,
+    int mj_value_count_weights,
+#ifdef TURN_OFF_MERGE_CHUNKS
+    part_t mj_concurrent_current_part,
+    part_t mj_num_cuts,
+#endif
+    part_t mj_current_work_part,
+    part_t mj_current_concurrent_num_parts,
+    Kokkos::View<index_t*, device_t> mj_permutations,
+    Kokkos::View<scalar_t *, device_t> mj_coordinates,
+    Kokkos::View<scalar_t**, device_t> mj_weights,
+    Kokkos::View<part_t*, device_t> mj_parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
+    Kokkos::View<part_t*, device_t> mj_info,
+#endif
+    Kokkos::View<scalar_t *, device_t> mj_cut_coordinates,
+    bool mj_bUniformWeights,
+    scalar_t mj_sEpsilon,
+    Kokkos::View<index_t *, device_t> mj_part_xadj,
+    Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
+    Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+    , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
+#endif
+    ) :
+      value_count_weights(mj_value_count_weights),
+      max_scalar(mj_max_scalar),
+#ifdef TURN_OFF_MERGE_CHUNKS
+      concurrent_current_part(mj_concurrent_current_part),
+      num_cuts(mj_num_cuts),
+#endif
+      current_work_part(mj_current_work_part),
+      current_concurrent_num_parts(mj_current_concurrent_num_parts),
+      permutations(mj_permutations),
+      coordinates(mj_coordinates),
+      weights(mj_weights),
+      parts(mj_parts),
+#ifndef TURN_OFF_MERGE_CHUNKS
+      info(mj_info),
+#endif
+      cut_coordinates(mj_cut_coordinates),
+      bUniformWeights(mj_bUniformWeights),
+      sEpsilon(mj_sEpsilon),
+      part_xadj(mj_part_xadj),
+      view_num_partitioning_in_current_dim(
+        mj_view_num_partitioning_in_current_dim),
+      my_incomplete_cut_count(mj_my_incomplete_cut_count)
+#ifndef TURN_OFF_MERGE_CHUNKS
+      , prefix_sum_num_cuts(mj_prefix_sum_num_cuts)
+#endif
+  {
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const size_t ii, ArrayType<scalar_t>& threadSum) const {
+  
+      int i = permutations(ii);
+      scalar_t coord = coordinates(i);
+      scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+  #ifndef TURN_OFF_MERGE_CHUNKS
+      part_t concurrent_current_part = info(i);
+      int kk = concurrent_current_part - current_work_part;
+
+      if(my_incomplete_cut_count(kk) > 0) {
+      
+        part_t concurrent_cut_shifts =
+          prefix_sum_num_cuts(kk);
+          
+        part_t total_part_shift =
+          concurrent_cut_shifts * 2 + kk;
+          
+        part_t num_cuts = view_num_partitioning_in_current_dim(
+          concurrent_current_part) - 1;
+
+  #endif
+
+        scalar_t a;
+        scalar_t b = -max_scalar;
+
+        // for the left/right closest part calculation
+  #ifdef TURN_OFF_MERGE_CHUNKS
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2];
+  #else
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2];
+  #endif
+
+        // now check each part and it's right cut
+        for(index_t part = 0; part < num_cuts; ++part) {
+        
+          a = b;
+  #ifdef TURN_OFF_MERGE_CHUNKS
+          b = cut_coordinates(part);
+  #else
+          b = cut_coordinates(concurrent_cut_shifts+part);
+  #endif
+
+          if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+  #ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2] += w;
+  #else
+            threadSum.ptr[total_part_shift+part*2] += w;
+  #endif
+            parts(i) = part*2;
+          }
+
+          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2+1] += w;
+#else
+            threadSum.ptr[total_part_shift+part*2+1] += w;
+#endif
+            parts(i) = part*2+1;
+          }
+
+          // now handle the left/right closest part
+          if(coord > b && coord < *(p1+1)) {
+            *(p1+1) = coord;
+          }
+          if(coord < b && coord > *p1) {
+            *p1 = coord;
+          }
+          p1 += 2;     
+        }
+        
+        // and do last part
+        if(coord >= b + sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+          threadSum.ptr[num_cuts*2] += w;
+#else
+          threadSum.ptr[total_part_shift+num_cuts*2] += w;
+#endif
+          parts(i) = num_cuts*2;
+        }
+        
+  #ifndef TURN_OFF_MERGE_CHUNKS
+      }
+  #endif
+
+  }
+};
+
 template<class policy_t, class scalar_t, class part_t, class index_t,
   class device_t>
 struct ReduceWeightsFunctor {
@@ -4104,10 +4277,43 @@ struct ReduceWeightsFunctor {
       value_count_rightleft,
       value_count_weights);
 
+    // call the reduce
+#ifdef USE_INNER_FUNCTOR
+    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
+      index_t, device_t> inner_functor(
+      max_scalar,
+      value_count_weights,
+#ifdef TURN_OFF_MERGE_CHUNKS
+      concurrent_current_part,
+      num_cuts,
+#endif
+      current_work_part,
+      current_concurrent_num_parts,
+      permutations,
+      coordinates,
+      weights,
+      parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
+      info,
+#endif
+      cut_coordinates,
+      bUniformWeights,
+      sEpsilon,
+      part_xadj,
+      view_num_partitioning_in_current_dim,
+      my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+      ,prefix_sum_num_cuts
+#endif
+    );
+
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      inner_functor, arraySumReducer);
+#else // USE_INNER_FUNCTOR
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
-      
       
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4130,6 +4336,7 @@ struct ReduceWeightsFunctor {
 
   #endif
 
+        scalar_t a;
         scalar_t b = -max_scalar;
 
         // for the left/right closest part calculation
@@ -4140,14 +4347,13 @@ struct ReduceWeightsFunctor {
   #endif
 
         // now check each part and it's right cut
-        for(index_t part = 0; part <= num_cuts; ++part) {
+        for(index_t part = 0; part < num_cuts; ++part) {
         
-          scalar_t a = b;
-          b = (part == num_cuts) ? max_scalar :
+          a = b;
   #ifdef TURN_OFF_MERGE_CHUNKS
-            cut_coordinates(part);
+          b = cut_coordinates(part);
   #else
-            cut_coordinates(concurrent_cut_shifts+part);
+          b = cut_coordinates(concurrent_cut_shifts+part);
   #endif
 
           if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
@@ -4159,31 +4365,41 @@ struct ReduceWeightsFunctor {
             parts(i) = part*2;
           }
 
-          if(part != num_cuts) {
-            if(coord < b + sEpsilon && coord > b - sEpsilon) {
-  #ifdef TURN_OFF_MERGE_CHUNKS
-              threadSum.ptr[part*2+1] += w;
-  #else
-              threadSum.ptr[total_part_shift+part*2+1] += w;
-  #endif
-              parts(i) = part*2+1;
-            }
+          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2+1] += w;
+#else
+            threadSum.ptr[total_part_shift+part*2+1] += w;
+#endif
+            parts(i) = part*2+1;
+          }
 
-            // now handle the left/right closest part
-            if(coord > b && coord < *(p1+1)) {
-              *(p1+1) = coord;
-            }
-            if(coord < b && coord > *p1) {
-              *p1 = coord;
-            }
-            p1 += 2;
-          }        
+          // now handle the left/right closest part
+          if(coord > b && coord < *(p1+1)) {
+            *(p1+1) = coord;
+          }
+          if(coord < b && coord > *p1) {
+            *p1 = coord;
+          }
+          p1 += 2;     
+        }
+        
+        // and do last part
+        if(coord >= b + sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+          threadSum.ptr[num_cuts*2] += w;
+#else
+          threadSum.ptr[total_part_shift+num_cuts*2] += w;
+#endif
+          parts(i) = num_cuts*2;
         }
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
-  #endif      
+  #endif
+      
     }, arraySumReducer);
+#endif // USE_INNER_FUNCTOR
 
     teamMember.team_barrier();
 
