@@ -1037,14 +1037,12 @@ private:
    * the closest points to the cut lines from right for the calling thread.
    * \param partIds is the array that holds the part ids of the coordinates
    */
-#ifndef TURN_OFF_MERGE_CHUNKS
-  template<int uniform_part_sizes>
-#endif
   void mj_1D_part_get_part_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_concurrent_num_parts,
     mj_part_t current_work_part,
-    Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords);
+    Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
+    int uniform_part_sizes);
 
   /*! \brief Function that reduces the result of multiple threads for
    * left and right closest points and part weights in a single mpi process.
@@ -3627,29 +3625,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     clock_mj_1D_part_get_weights.start();
 
     
-    #define CALL_METHOD(n)                     \
-    this->mj_1D_part_get_part_weights<n>(      \
-      view_num_partitioning_in_current_dim,    \
-      current_concurrent_num_parts,            \
-      current_work_part,                       \
-      mj_current_dim_coords);
-
-    // Prototyping an idea to avoid slow for loop in the kernel
-    // We prescan and if all are the same we can do a templated method to
-    // avoid reading the num parts in the kernel. If we do read it, even if
-    // they are all the same, the compiler won't know that and the loop won't
-    // be optimized.
-    switch(uniform_part_sizes) {
-      case 1: CALL_METHOD(1); break;
-      case 2: CALL_METHOD(2); break;
-      case 3: CALL_METHOD(3); break;
-      case 4: CALL_METHOD(4); break;
-      case 5: CALL_METHOD(5); break;
-      default:
-        printf("Not supporting uniform part sizes above 5 yet ... TODO.\n");
-        std::abort();
-        break;
-    }
+    this->mj_1D_part_get_part_weights(      
+      view_num_partitioning_in_current_dim,    
+      current_concurrent_num_parts,            
+      current_work_part,                       
+      mj_current_dim_coords,
+      uniform_part_sizes);
     
     clock_mj_1D_part_get_weights.stop();
 
@@ -3998,12 +3979,9 @@ struct ArrayCombinationReducer {
   }
 };
 
-template<class scalar_t, class part_t, class index_t, class device_t
-#ifndef TURN_OFF_MERGE_CHUNKS
-, int FIXED_NUM_PARTS
-#endif
->
+template<class scalar_t, class part_t, class index_t, class device_t>
 struct ReduceWeightsFunctorInnerLoop {
+  int uniform_part_sizes;
   scalar_t max_scalar;
   int value_count_weights;
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4032,6 +4010,7 @@ struct ReduceWeightsFunctorInnerLoop {
 
   KOKKOS_INLINE_FUNCTION
   ReduceWeightsFunctorInnerLoop(
+    int uniform_part_sizes,
     scalar_t mj_max_scalar,
     int mj_value_count_weights,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4107,7 +4086,185 @@ struct ReduceWeightsFunctorInnerLoop {
         // Use the templated fixed count - if we read view_num_partitioning_in_current_dim
         // the the compiler has to assume they can be different and our for loop
         // performance on the GPU will be trashed.
-        part_t num_cuts = FIXED_NUM_PARTS - 1;
+        part_t num_cuts =
+          view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
+
+  #endif
+
+        scalar_t a;
+        scalar_t b = -max_scalar;
+
+        // for the left/right closest part calculation
+  #ifdef TURN_OFF_MERGE_CHUNKS
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2];
+  #else
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2];
+  #endif
+
+        // now check each part and it's right cut
+        for(index_t part = 0; part < num_cuts; ++part) {
+        
+          a = b;
+  #ifdef TURN_OFF_MERGE_CHUNKS
+          b = cut_coordinates(part);
+  #else
+          b = cut_coordinates(concurrent_cut_shifts+part);
+  #endif
+
+          if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+  #ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2] += w;
+  #else
+            threadSum.ptr[total_part_shift+part*2] += w;
+  #endif
+            parts(i) = part*2;
+          }
+
+          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+            threadSum.ptr[part*2+1] += w;
+#else
+            threadSum.ptr[total_part_shift+part*2+1] += w;
+#endif
+            parts(i) = part*2+1;
+          }
+
+          // now handle the left/right closest part
+          if(coord > b && coord < *(p1+1)) {
+            *(p1+1) = coord;
+          }
+          if(coord < b && coord > *p1) {
+            *p1 = coord;
+          }
+          p1 += 2;     
+        }
+        
+        // and do last part
+        if(coord >= b + sEpsilon) {
+#ifdef TURN_OFF_MERGE_CHUNKS
+          threadSum.ptr[num_cuts*2] += w;
+#else
+          threadSum.ptr[total_part_shift+num_cuts*2] += w;
+#endif
+          parts(i) = num_cuts*2;
+        }
+        
+  #ifndef TURN_OFF_MERGE_CHUNKS
+      }
+  #endif
+
+  }
+};
+
+template<class scalar_t, class part_t, class index_t, class device_t>
+struct ReduceWeightsFunctorInnerLoopUniform {
+  int uniform_part_sizes;
+  scalar_t max_scalar;
+  int value_count_weights;
+#ifdef TURN_OFF_MERGE_CHUNKS
+  part_t concurrent_current_part;
+  part_t num_cuts;
+#endif
+  part_t current_work_part;
+  part_t current_concurrent_num_parts;
+  Kokkos::View<index_t*, device_t> permutations;
+  Kokkos::View<scalar_t *, device_t> coordinates;
+  Kokkos::View<scalar_t**, device_t> weights;
+  Kokkos::View<part_t*, device_t> parts;
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> info;
+#endif
+  Kokkos::View<scalar_t *, device_t> cut_coordinates;
+  bool bUniformWeights;
+  scalar_t sEpsilon;
+  Kokkos::View<index_t *, device_t> part_xadj;
+  Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
+  Kokkos::View<part_t*, device_t> my_incomplete_cut_count;
+  
+#ifndef TURN_OFF_MERGE_CHUNKS
+  Kokkos::View<part_t*, device_t> prefix_sum_num_cuts;
+#endif
+
+  KOKKOS_INLINE_FUNCTION
+  ReduceWeightsFunctorInnerLoopUniform(
+    int mj_uniform_part_sizes,
+    scalar_t mj_max_scalar,
+    int mj_value_count_weights,
+#ifdef TURN_OFF_MERGE_CHUNKS
+    part_t mj_concurrent_current_part,
+    part_t mj_num_cuts,
+#endif
+    part_t mj_current_work_part,
+    part_t mj_current_concurrent_num_parts,
+    Kokkos::View<index_t*, device_t> mj_permutations,
+    Kokkos::View<scalar_t *, device_t> mj_coordinates,
+    Kokkos::View<scalar_t**, device_t> mj_weights,
+    Kokkos::View<part_t*, device_t> mj_parts,
+#ifndef TURN_OFF_MERGE_CHUNKS
+    Kokkos::View<part_t*, device_t> mj_info,
+#endif
+    Kokkos::View<scalar_t *, device_t> mj_cut_coordinates,
+    bool mj_bUniformWeights,
+    scalar_t mj_sEpsilon,
+    Kokkos::View<index_t *, device_t> mj_part_xadj,
+    Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
+    Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
+#ifndef TURN_OFF_MERGE_CHUNKS
+    , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
+#endif
+    ) :
+      uniform_part_sizes(mj_uniform_part_sizes),
+      value_count_weights(mj_value_count_weights),
+      max_scalar(mj_max_scalar),
+#ifdef TURN_OFF_MERGE_CHUNKS
+      concurrent_current_part(mj_concurrent_current_part),
+      num_cuts(mj_num_cuts),
+#endif
+      current_work_part(mj_current_work_part),
+      current_concurrent_num_parts(mj_current_concurrent_num_parts),
+      permutations(mj_permutations),
+      coordinates(mj_coordinates),
+      weights(mj_weights),
+      parts(mj_parts),
+#ifndef TURN_OFF_MERGE_CHUNKS
+      info(mj_info),
+#endif
+      cut_coordinates(mj_cut_coordinates),
+      bUniformWeights(mj_bUniformWeights),
+      sEpsilon(mj_sEpsilon),
+      part_xadj(mj_part_xadj),
+      view_num_partitioning_in_current_dim(
+        mj_view_num_partitioning_in_current_dim),
+      my_incomplete_cut_count(mj_my_incomplete_cut_count)
+#ifndef TURN_OFF_MERGE_CHUNKS
+      , prefix_sum_num_cuts(mj_prefix_sum_num_cuts)
+#endif
+  {
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const size_t ii, ArrayType<scalar_t>& threadSum) const {
+  
+      int i = permutations(ii);
+      scalar_t coord = coordinates(i);
+      scalar_t w = bUniformWeights ? 1 : weights(i,0);
+
+  #ifndef TURN_OFF_MERGE_CHUNKS
+      part_t concurrent_current_part = info(i);
+      int kk = concurrent_current_part - current_work_part;
+
+      if(my_incomplete_cut_count(kk) > 0) {
+      
+        part_t concurrent_cut_shifts =
+          prefix_sum_num_cuts(kk);
+          
+        part_t total_part_shift =
+          concurrent_cut_shifts * 2 + kk;
+          
+        // Use the templated fixed count - if we read view_num_partitioning_in_current_dim
+        // the the compiler has to assume they can be different and our for loop
+        // performance on the GPU will be trashed.
+        part_t num_cuts = uniform_part_sizes - 1;
         // view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
 
   #endif
@@ -4177,16 +4334,13 @@ struct ReduceWeightsFunctorInnerLoop {
   }
 };
 
-template<class policy_t, class scalar_t, class part_t, class index_t,
-  class device_t
-#ifndef TURN_OFF_MERGE_CHUNKS
-, int FIXED_NUM_PARTS
-#endif
->
+template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
+  
+  int uniform_part_sizes;
   scalar_t max_scalar;
   
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4217,6 +4371,7 @@ struct ReduceWeightsFunctor {
 #endif
 
   ReduceWeightsFunctor(
+    int mj_uniform_part_sizes,
     scalar_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
@@ -4244,6 +4399,7 @@ struct ReduceWeightsFunctor {
     , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
 #endif
     ) :
+      uniform_part_sizes(mj_uniform_part_sizes),
       max_scalar(mj_max_scalar),
 #ifdef TURN_OFF_MERGE_CHUNKS
       concurrent_current_part(mj_concurrent_current_part),
@@ -4325,8 +4481,9 @@ struct ReduceWeightsFunctor {
 
     // call the reduce
 #ifdef USE_INNER_FUNCTOR
-    ReduceWeightsFunctorInnerLoop<scalar_t, part_t,
+    ReduceWeightsFunctorInnerLoopUniform<scalar_t, part_t,
       index_t, device_t> inner_functor(
+      uniform_part_sizes,
       max_scalar,
       value_count_weights,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4377,8 +4534,9 @@ struct ReduceWeightsFunctor {
         part_t total_part_shift =
           concurrent_cut_shifts * 2 + kk;
           
-        part_t num_cuts = FIXED_NUM_PARTS - 1;
-        // view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
+        // TODO: If we make a uniform version this should use uniform_part_sizes
+        part_t num_cuts =
+          view_num_partitioning_in_current_dim(concurrent_current_part) - 1;
 
   #endif
 
@@ -4538,16 +4696,14 @@ struct ReduceWeightsFunctor {
  * \param partIds is the array that holds the part ids of the coordinates
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
-  typename mj_part_t, typename mj_node_t>
-#ifndef TURN_OFF_MERGE_CHUNKS 
-  template<int uniform_part_sizes>
-#endif  
+  typename mj_part_t, typename mj_node_t> 
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   mj_1D_part_get_part_weights(
   Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_concurrent_num_parts,
   mj_part_t current_work_part,
-  Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords)
+  Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
+  int uniform_part_sizes)
 {
   clock_mj_1D_part_get_weights_setup.start();
         
@@ -4664,12 +4820,9 @@ clock_weights_new_to_optimize.stop();
   mj_scalar_t * reduce_array =
     new mj_scalar_t[static_cast<size_t>(total_array_length)];
 
-  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type
-#ifndef TURN_OFF_MERGE_CHUNKS  
-  , uniform_part_sizes
-#endif 
-  >
+  ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
     teamFunctor(
+      uniform_part_sizes,
       std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
       current_work_part + kk,
