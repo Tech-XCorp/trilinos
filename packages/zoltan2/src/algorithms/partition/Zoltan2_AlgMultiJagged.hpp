@@ -3524,6 +3524,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     global_rectilinear_cut_weight;
   auto local_process_rectilinear_cut_weight =
     process_rectilinear_cut_weight;
+  auto local_prefix_sum_num_cuts =
+    prefix_sum_num_cuts;
+  auto local_info = info;
 
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
@@ -3567,14 +3570,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     }
     
 #ifndef TURN_OFF_MERGE_CHUNKS
-    for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-      mj_part_t sum_num_cuts = 0;
-      for(int kk2 = 0; kk2 < kk; ++kk2) {
-        mj_part_t num_parts =
-          view_num_partitioning_in_current_dim(current_work_part + kk2);
-        sum_num_cuts += num_parts - 1;
-      }
-      prefix_sum_num_cuts(kk) = sum_num_cuts; 
+
+    local_prefix_sum_num_cuts(0) = 0;
+    for(int kk = 1; kk < current_concurrent_num_parts; ++kk) {
+      local_prefix_sum_num_cuts(kk) = local_prefix_sum_num_cuts(kk-1);
+      local_prefix_sum_num_cuts(kk) +=
+        view_num_partitioning_in_current_dim(kk-1);
     }
 #endif
   });
@@ -3591,8 +3592,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       int i = local_coordinate_permutations(ii);
       for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
         auto current_concurrent_work_part = current_work_part + kk;
-        if(ii >= ((current_concurrent_work_part == 0) ? 0 : part_xadj(current_concurrent_work_part-1)) && ii < part_xadj(current_concurrent_work_part)) {
-          info(i) = current_concurrent_work_part;
+        if(ii >= ((current_concurrent_work_part == 0) ? 0 : local_part_xadj(current_concurrent_work_part-1)) && ii < local_part_xadj(current_concurrent_work_part)) {
+          local_info(i) = current_concurrent_work_part;
           break;
         }
       }
