@@ -4560,7 +4560,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
 
   clock_weights1.stop();
 
-#ifndef TURN_OFF_MERGE_CHUNKS // ACTION 1
+#ifndef TURN_OFF_MERGE_CHUNKS
   // We need to establish the total working array size
   mj_part_t weight_array_length = 0;
   mj_part_t right_left_array_length = 0;
@@ -4575,7 +4575,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,
    
   mj_part_t total_part_shift = 0;
 
-#ifdef TURN_OFF_MERGE_CHUNKS // ACTION 2
+#ifdef TURN_OFF_MERGE_CHUNKS
   mj_part_t concurrent_cut_shifts = 0;
   for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
            
@@ -4727,7 +4727,7 @@ clock_weights_new_to_optimize.stop();
 
   clock_weights3.stop();
   
-#ifdef TURN_OFF_MERGE_CHUNKS // ACTION 6
+#ifdef TURN_OFF_MERGE_CHUNKS
   total_part_shift += total_part_count;
   concurrent_cut_shifts += num_cuts;
   } // for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
