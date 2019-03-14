@@ -3575,10 +3575,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     for(int kk = 1; kk < current_concurrent_num_parts; ++kk) {
       local_prefix_sum_num_cuts(kk) = local_prefix_sum_num_cuts(kk-1);
       local_prefix_sum_num_cuts(kk) +=
-        view_num_partitioning_in_current_dim(kk-1);
+        view_num_partitioning_in_current_dim(kk-1) - 1;
     }
 #endif
   });
+  
+  
 
   clock_mj_1D_part_init2.stop();
   clock_mj_1D_part_while_loop.start();
