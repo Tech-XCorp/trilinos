@@ -4554,13 +4554,14 @@ struct ReduceWeightsFunctor {
   #endif
 
         // now check each part and it's right cut
-        for(index_t part = 0; part < num_cuts; ++part) {
+        for(index_t part = 0; part <= num_cuts; ++part) {
         
           a = b;
+          b = (part == num_cuts) ? max_scalar :
   #ifdef TURN_OFF_MERGE_CHUNKS
-          b = cut_coordinates(part);
+            cut_coordinates(part);
   #else
-          b = cut_coordinates(concurrent_cut_shifts+part);
+            cut_coordinates(concurrent_cut_shifts+part);
   #endif
 
           if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
@@ -4572,6 +4573,7 @@ struct ReduceWeightsFunctor {
             parts(i) = part*2;
           }
 
+          if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef TURN_OFF_MERGE_CHUNKS
             threadSum.ptr[part*2+1] += w;
@@ -4589,8 +4591,9 @@ struct ReduceWeightsFunctor {
             *p1 = coord;
           }
           p1 += 2;     
+          }
         }
-        
+/*        
         // and do last part
         if(coord >= b + sEpsilon) {
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4600,6 +4603,7 @@ struct ReduceWeightsFunctor {
 #endif
           parts(i) = num_cuts*2;
         }
+*/
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
