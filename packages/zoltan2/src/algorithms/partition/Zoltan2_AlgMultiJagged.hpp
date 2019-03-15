@@ -4574,36 +4574,25 @@ struct ReduceWeightsFunctor {
           }
 
           if(part != num_cuts) {
-          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+            if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef TURN_OFF_MERGE_CHUNKS
-            threadSum.ptr[part*2+1] += w;
+              threadSum.ptr[part*2+1] += w;
 #else
-            threadSum.ptr[total_part_shift+part*2+1] += w;
+              threadSum.ptr[total_part_shift+part*2+1] += w;
 #endif
-            parts(i) = part*2+1;
-          }
+              parts(i) = part*2+1;
+            }
 
-          // now handle the left/right closest part
-          if(coord > b && coord < *(p1+1)) {
-            *(p1+1) = coord;
-          }
-          if(coord < b && coord > *p1) {
-            *p1 = coord;
-          }
-          p1 += 2;     
+            // now handle the left/right closest part
+            if(coord > b && coord < *(p1+1)) {
+              *(p1+1) = coord;
+            }
+            if(coord < b && coord > *p1) {
+              *p1 = coord;
+            }
+            p1 += 2;     
           }
         }
-/*        
-        // and do last part
-        if(coord >= b + sEpsilon) {
-#ifdef TURN_OFF_MERGE_CHUNKS
-          threadSum.ptr[num_cuts*2] += w;
-#else
-          threadSum.ptr[total_part_shift+num_cuts*2] += w;
-#endif
-          parts(i) = num_cuts*2;
-        }
-*/
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
