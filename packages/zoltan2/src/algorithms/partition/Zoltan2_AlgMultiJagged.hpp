@@ -4773,6 +4773,8 @@ struct ReduceWeightsFunctorInit {
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
+  
+  /*
     bool bUniformWeights = uniform_weights(0);
 
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4953,6 +4955,7 @@ struct ReduceWeightsFunctorInit {
       }
     
     });
+*/
   }
   
   KOKKOS_INLINE_FUNCTION
@@ -5191,7 +5194,8 @@ clock_weights_new_to_optimize.stop();
     clock_functor_weights_first_pass.stop();
     clock_functor_weights.stop();
   }
-  else {
+  // else 
+  {
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
         uniform_part_sizes,
