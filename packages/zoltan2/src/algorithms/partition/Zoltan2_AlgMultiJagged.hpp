@@ -4549,19 +4549,36 @@ struct ReduceWeightsFunctor {
 
   #endif
 
+        auto last_part = parts(i)/2;
+
+        if(last_part == 0) {
+          last_part = 1;
+        }
+        if(last_part + 1 >= num_cuts) {
+          last_part = num_cuts - 1;
+        }
+        if(last_part == 0) {
+          last_part = 1;
+        }
+
         scalar_t a;
-        scalar_t b = -max_scalar;
+
+        // last_part is our guess for correct answer so we try before and after
+        // if last_part is 1 then first guess is part 0 with no left cut
+        // otherwise the left cut is index last_part-2
+        scalar_t b = (last_part == 1) ? -max_scalar : cut_coordinates(last_part-2);
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + (last_part - 1) * 2];
   #else
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + (last_part - 1) * 2];
   #endif
 
-        // now check each part and it's right cut
-        for(index_t part = 0; part <= num_cuts; ++part) {
-        
+        // now check my current part, to left and to right
+        for(int part = last_part - 1; part <= last_part + 1; ++part) {
+          if(part > num_cuts) break;
+ 
           a = b;
           b = (part == num_cuts) ? max_scalar :
   #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4774,7 +4791,6 @@ struct ReduceWeightsFunctorInit {
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
   
-  /*
     bool bUniformWeights = uniform_weights(0);
 
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4955,7 +4971,6 @@ struct ReduceWeightsFunctorInit {
       }
     
     });
-*/
   }
   
   KOKKOS_INLINE_FUNCTION
@@ -5194,7 +5209,7 @@ clock_weights_new_to_optimize.stop();
     clock_functor_weights_first_pass.stop();
     clock_functor_weights.stop();
   }
-  // else 
+  else 
   {
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
