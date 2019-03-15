@@ -4344,7 +4344,7 @@ struct ReduceWeightsFunctorInnerLoopUniform {
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
-struct ReduceWeightsFunctor {
+struct ReduceWeightsFunctorBroken {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
@@ -4379,7 +4379,7 @@ struct ReduceWeightsFunctor {
   Kokkos::View<part_t*, device_t> prefix_sum_num_cuts;
 #endif
 
-  ReduceWeightsFunctor(
+  ReduceWeightsFunctorBroken(
     int mj_uniform_part_sizes,
     scalar_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4550,33 +4550,31 @@ struct ReduceWeightsFunctor {
   #endif
 
         auto last_part = parts(i)/2;
+auto orig_part = parts(i);
+int scan_range = 10;
 
-        if(last_part == 0) {
-          last_part = 1;
+        if(last_part + scan_range >= num_cuts) {
+          last_part = num_cuts - scan_range;
         }
-        if(last_part + 1 >= num_cuts) {
-          last_part = num_cuts - 1;
-        }
-        if(last_part == 0) {
-          last_part = 1;
+        if(last_part < scan_range) {
+          last_part = scan_range;
         }
 
         scalar_t a;
 
-        // last_part is our guess for correct answer so we try before and after
-        // if last_part is 1 then first guess is part 0 with no left cut
-        // otherwise the left cut is index last_part-2
-        scalar_t b = (last_part == 1) ? -max_scalar : cut_coordinates(last_part-2);
+        scalar_t b = (last_part == scan_range) ? -max_scalar : cut_coordinates(last_part-scan_range);
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + (last_part - 1) * 2];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + (last_part - scan_range) * 2];
   #else
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + (last_part - 1) * 2];
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + (last_part - scan_range) * 2];
   #endif
 
+bool bMatched = false;
+
         // now check my current part, to left and to right
-        for(int part = last_part - 1; part <= last_part + 1; ++part) {
+        for(int part = last_part - scan_range; part <= last_part + scan_range; ++part) {
           if(part > num_cuts) break;
  
           a = b;
@@ -4594,6 +4592,8 @@ struct ReduceWeightsFunctor {
             threadSum.ptr[total_part_shift+part*2] += w;
   #endif
             parts(i) = part*2;
+
+bMatched = true;
           }
 
           if(part != num_cuts) {
@@ -4604,6 +4604,7 @@ struct ReduceWeightsFunctor {
               threadSum.ptr[total_part_shift+part*2+1] += w;
 #endif
               parts(i) = part*2+1;
+bMatched = true;
             }
 
             // now handle the left/right closest part
@@ -4616,6 +4617,16 @@ struct ReduceWeightsFunctor {
             p1 += 2;     
           }
         }
+
+if(!bMatched) {
+  printf("FAILURE to MATCH!!!!!!!\n");
+}
+if(orig_part > parts(i) + 2) {
+  printf("%d SHIFTED TO %d\n", (int) orig_part, (int) parts(i));
+}
+if(orig_part < parts(i) - 2) {
+  printf("%d SHIFTED TO %d\n", (int) orig_part, (int) parts(i));
+}
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
@@ -4689,7 +4700,7 @@ struct ReduceWeightsFunctor {
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
-struct ReduceWeightsFunctorInit {
+struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
@@ -4724,7 +4735,7 @@ struct ReduceWeightsFunctorInit {
   Kokkos::View<part_t*, device_t> prefix_sum_num_cuts;
 #endif
 
-  ReduceWeightsFunctorInit(
+  ReduceWeightsFunctor(
     int mj_uniform_part_sizes,
     scalar_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4898,17 +4909,32 @@ struct ReduceWeightsFunctorInit {
         scalar_t a;
         scalar_t b = -max_scalar;
 
-        // for the left/right closest part calculation
-  #ifdef TURN_OFF_MERGE_CHUNKS
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2];
-  #else
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2];
-  #endif
+bool bMatch = false;
+
+        part_t lower = 0;
+        part_t upper = num_cuts;
+
+        part_t part = parts(i) / 2;
+
+        for(int binarySearch = 0; binarySearch < 20; ++binarySearch) {
 
         // now check each part and it's right cut
-        for(index_t part = 0; part <= num_cuts; ++part) {
+        //for(index_t part = 0; part <= num_cuts; ++part) {
+        // for the left/right closest part calculation
+  #ifdef TURN_OFF_MERGE_CHUNKS
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + (part)*2];
+  #else
+        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + (part) * 2];
+  #endif
+
+
         
-          a = b;
+          a = (part == 0) ? -max_scalar :
+  #ifdef TURN_OFF_MERGE_CHUNKS
+            cut_coordinates(part-1);
+  #else
+            cut_coordinates(concurrent_cut_shifts+part-1);
+  #endif
           b = (part == num_cuts) ? max_scalar :
   #ifdef TURN_OFF_MERGE_CHUNKS
             cut_coordinates(part);
@@ -4923,6 +4949,8 @@ struct ReduceWeightsFunctorInit {
             threadSum.ptr[total_part_shift+part*2] += w;
   #endif
             parts(i) = part*2;
+
+bMatch = true;
           }
 
           if(part != num_cuts) {
@@ -4933,6 +4961,9 @@ struct ReduceWeightsFunctorInit {
               threadSum.ptr[total_part_shift+part*2+1] += w;
 #endif
               parts(i) = part*2+1;
+
+bMatch = true;
+
             }
 
             // now handle the left/right closest part
@@ -4944,7 +4975,39 @@ struct ReduceWeightsFunctorInit {
             }
             p1 += 2;     
           }
+
+          
+
+if(bMatch) break;
+
+if(coord > b) {
+  ++part;
+}
+else { 
+  --part;
+}
+
+/*
+            if(part == lower + 1) {
+              part = lower;
+            }
+            else {
+              upper = part - 1;
+              part -= (part - lower) / 2;
+              
+            }
+          }
+          else if(part == upper - 1) {
+            part = upper;
+          }
+          else {
+            lower = part + 1;
+            part += (upper - part) / 2;
+          }
+*/
         }
+
+if(!bMatch) printf("Match failed\n");
         
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
@@ -5170,7 +5233,7 @@ clock_weights_new_to_optimize.stop();
     new mj_scalar_t[static_cast<size_t>(total_array_length)];
 
   if(bFirstPass) {
-    ReduceWeightsFunctorInit<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
+    ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
         uniform_part_sizes,
         std::numeric_limits<mj_scalar_t>::max(),
