@@ -64,8 +64,8 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_INNER_FUNCTOR
-// #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
+// #define USE_INNER_FUNCTOR
+#define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
 
@@ -3525,9 +3525,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     global_rectilinear_cut_weight;
   auto local_process_rectilinear_cut_weight =
     process_rectilinear_cut_weight;
+#ifndef TURN_OFF_MERGE_CHUNKS
   auto local_prefix_sum_num_cuts =
     prefix_sum_num_cuts;
   auto local_info = info;
+#endif
 
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
