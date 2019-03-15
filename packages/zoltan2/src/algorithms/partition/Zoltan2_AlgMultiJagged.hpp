@@ -4549,11 +4549,6 @@ struct ReduceWeightsFunctor {
           part = num_cuts / 2;
         }
 
-for(int qq = 1; qq < cut_coordinates.size(); ++qq) {
-  if(cut_coordinates(qq-1) > cut_coordinates(qq)) {
-    std::abort();
-  }
-}
         int upper = num_cuts;
         int lower = 0;
         for(int binarySearch = 0; binarySearch < 20; ++binarySearch) {
@@ -4631,10 +4626,20 @@ for(int qq = 1; qq < cut_coordinates.size(); ++qq) {
           }
           
           if(coord < b) {
-            --part;
+            if(part == lower + 1) {
+              part = lower;
+            }
+            else {
+              upper = part - 1;
+              part -= (part - lower)/2;
+            }
+          }
+          else if(part == upper - 1) {
+            part = upper;
           }
           else {
-            ++part;
+            lower = part + 1;
+            part += (upper - part)/2;
           }
         }
   #ifndef TURN_OFF_MERGE_CHUNKS
