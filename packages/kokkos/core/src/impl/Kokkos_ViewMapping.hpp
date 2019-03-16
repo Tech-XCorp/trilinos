@@ -2355,7 +2355,12 @@ struct ViewDataHandle< Traits ,
                           )>::type >
 {
   typedef typename Traits::value_type  value_type ;
+#ifndef _MSC_VER
   typedef typename Traits::value_type * KOKKOS_ALIGN_PTR(KOKKOS_ALIGN_SIZE) handle_type ;
+#else
+  typedef KOKKOS_ALIGN(KOKKOS_ALIGN_SIZE) typename Traits::value_type aligned_handle_type ;
+  typedef aligned_handle_type * handle_type ;
+#endif
   typedef typename Traits::value_type & return_type ;
   typedef Kokkos::Impl::SharedAllocationTracker  track_type  ;
 
@@ -2398,7 +2403,12 @@ struct ViewDataHandle< Traits ,
                           )>::type >
 {
   typedef typename Traits::value_type  value_type ;
+#ifndef _MSC_VER
   typedef typename Traits::value_type * KOKKOS_RESTRICT KOKKOS_ALIGN_PTR(KOKKOS_ALIGN_SIZE) handle_type ;
+#else
+  typedef KOKKOS_RESTRICT KOKKOS_ALIGN(KOKKOS_ALIGN_SIZE) typename Traits::value_type aligned_handle_type ;
+  typedef aligned_handle_type * handle_type ;
+#endif
   typedef typename Traits::value_type & return_type ;
   typedef Kokkos::Impl::SharedAllocationTracker  track_type  ;
 
@@ -2569,9 +2579,9 @@ class ViewMapping< Traits ,
   typename std::enable_if<(
     std::is_same< typename Traits::specialize , void >::value
     &&
-    ViewOffset< typename Traits::dimension
+    std::is_same<typename ViewOffset< typename Traits::dimension
               , typename Traits::array_layout
-              , void >::is_mapping_plugin::value
+              , void >::is_mapping_plugin, std::true_type>::value
   )>::type >
 {
 private:

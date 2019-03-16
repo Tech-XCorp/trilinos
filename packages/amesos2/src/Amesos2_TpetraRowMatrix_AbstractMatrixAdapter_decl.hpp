@@ -52,6 +52,7 @@
 
 #include "Amesos2_AbstractConcreteMatrixAdapter.hpp"
 #include "Amesos2_Util.hpp"
+#include "Amesos2_MatrixAdapter_decl.hpp"
 
 namespace Amesos2 {
 
@@ -174,11 +175,11 @@ namespace Amesos2 {
     // hands off implementation to the adapter for the subclass
     RCP<const super_t> get_impl(const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > map, EDistribution distribution = ROOTED) const;
 
-    typename super_t::spmtx_ptr_t  getSparseRowPtr() const;
+    typename MatrixTraits<DerivedMat>::sparse_ptr_type getSparseRowPtr() const;
 
-    typename super_t::spmtx_idx_t  getSparseColInd() const;
+    typename MatrixTraits<DerivedMat>::sparse_idx_type getSparseColInd() const;
 
-    typename super_t::spmtx_vals_t getSparseValues() const;
+    typename MatrixTraits<DerivedMat>::sparse_values_type getSparseValues() const;
 
   };
 

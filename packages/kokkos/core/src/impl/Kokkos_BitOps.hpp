@@ -91,7 +91,7 @@ int bit_scan_forward( unsigned i )
 #else
   unsigned t = 1u;
   int r = 0;
-  while ( i && ( i & t == 0 ) )
+  while ( i && ( (i & t) == 0 ) )
   {
     t = t << 1;
     ++r;
@@ -115,7 +115,7 @@ int bit_scan_reverse( unsigned i )
 #else
   unsigned t = 1u << shift;
   int r = 0;
-  while ( i && ( i & t == 0 ) )
+  while ( i && ( (i & t) == 0 ) )
   {
     t = t >> 1;
     ++r;

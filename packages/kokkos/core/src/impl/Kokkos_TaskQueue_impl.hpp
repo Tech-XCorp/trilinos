@@ -98,7 +98,7 @@ TaskQueue< ExecSpace >::~TaskQueue()
 template< typename ExecSpace >
 KOKKOS_FUNCTION
 void TaskQueue< ExecSpace >::decrement
-  ( TaskQueue< ExecSpace >::task_root_type * task )
+  ( typename TaskQueue< ExecSpace >::task_root_type * task )
 {
   const int count = Kokkos::atomic_fetch_add(&(task->m_ref_count),-1);
 
@@ -161,8 +161,8 @@ void TaskQueue< ExecSpace >::deallocate( void * p , size_t n )
 template< typename ExecSpace >
 KOKKOS_FUNCTION
 bool TaskQueue< ExecSpace >::push_task
-  ( TaskQueue< ExecSpace >::task_root_type * volatile * const queue
-  , TaskQueue< ExecSpace >::task_root_type * const task
+  ( typename TaskQueue< ExecSpace >::task_root_type * volatile * const queue
+  , typename TaskQueue< ExecSpace >::task_root_type * const task
   )
 {
   // Push task into a concurrently pushed and popped queue.
@@ -225,7 +225,7 @@ template< typename ExecSpace >
 KOKKOS_FUNCTION
 typename TaskQueue< ExecSpace >::task_root_type *
 TaskQueue< ExecSpace >::pop_ready_task
-  ( TaskQueue< ExecSpace >::task_root_type * volatile * const queue )
+  ( typename TaskQueue< ExecSpace >::task_root_type * volatile * const queue )
 {
   // Pop task from a concurrently pushed and popped ready task queue.
   // The queue is a linked list where 'task->m_next' form the links.
@@ -297,7 +297,7 @@ TaskQueue< ExecSpace >::pop_ready_task
 template< typename ExecSpace >
 KOKKOS_FUNCTION
 void TaskQueue< ExecSpace >::schedule_runnable
-  ( TaskQueue< ExecSpace >::task_root_type * const task )
+  ( typename TaskQueue< ExecSpace >::task_root_type * const task )
 {
   // Schedule a runnable task upon construction / spawn
   // and upon completion of other tasks that 'task' is waiting on.
@@ -420,7 +420,7 @@ void TaskQueue< ExecSpace >::schedule_runnable
 template< typename ExecSpace >
 KOKKOS_FUNCTION
 void TaskQueue< ExecSpace >::schedule_aggregate
-  ( TaskQueue< ExecSpace >::task_root_type * const task )
+  ( typename TaskQueue< ExecSpace >::task_root_type * const task )
 {
   // Schedule an aggregate task upon construction
   // and upon completion of other tasks that 'task' is waiting on.
@@ -564,7 +564,7 @@ void TaskQueue< ExecSpace >::reschedule( task_root_type * task )
 template< typename ExecSpace >
 KOKKOS_FUNCTION
 void TaskQueue< ExecSpace >::complete
-  ( TaskQueue< ExecSpace >::task_root_type * task )
+  ( typename TaskQueue< ExecSpace >::task_root_type * task )
 {
   // Complete a runnable task that has finished executing
   // or a when_all task when all of its dependeneces are complete.

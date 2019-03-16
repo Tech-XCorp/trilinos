@@ -227,10 +227,7 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
-  typename 
-  AbstractConcreteMatrixAdapter<
-    Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
-    ::super_t::spmtx_ptr_t
+  typename MatrixTraits<DerivedMat>::sparse_ptr_type
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
                       LocalOrdinal,
@@ -247,10 +244,7 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
-  typename 
-  AbstractConcreteMatrixAdapter<
-    Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
-    ::super_t::spmtx_idx_t
+  typename MatrixTraits<DerivedMat>::sparse_idx_type
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
                       LocalOrdinal,
@@ -267,10 +261,7 @@ namespace Amesos2 {
             typename GlobalOrdinal,
             typename Node,
             class DerivedMat>
-  typename 
-  AbstractConcreteMatrixAdapter<
-    Tpetra::RowMatrix<Scalar, LocalOrdinal, GlobalOrdinal, Node>, DerivedMat>
-    ::super_t::spmtx_vals_t
+  typename MatrixTraits<DerivedMat>::sparse_values_type
   AbstractConcreteMatrixAdapter<
     Tpetra::RowMatrix<Scalar,
                       LocalOrdinal,

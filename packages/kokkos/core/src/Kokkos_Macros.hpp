@@ -374,6 +374,14 @@
 #endif
 
 //----------------------------------------------------------------------------
+// MSVC compiler macros
+
+#ifdef _MSC_VER
+  #define KOKKOS_ALIGN(size) __declspec(align(size))
+  #define KOKKOS_ALIGN_PTR(size) __declspec(align(size))
+#endif
+
+//----------------------------------------------------------------------------
 // Define function marking macros if compiler specific macros are undefined:
 
 #if !defined( KOKKOS_FORCEINLINE_FUNCTION )

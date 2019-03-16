@@ -299,11 +299,11 @@ private:
   //----------------------------------------
   // parallel_reduce join operator
 
-  template< class F , INTERFACE >
+  template< class F , typename INTERFACE_TYPE >
   struct has_join_function ;
 
   template< class F >
-  struct has_join_function< F , NO_TAG_NOT_ARRAY >
+  struct has_join_function< F , std::integral_constant<INTERFACE, NO_TAG_NOT_ARRAY> >
     {
       typedef volatile       ValueType & vref_type ;
       typedef volatile const ValueType & cvref_type ;
@@ -322,7 +322,7 @@ private:
     };
 
   template< class F >
-  struct has_join_function< F , NO_TAG_IS_ARRAY >
+  struct has_join_function< F , std::integral_constant<INTERFACE, NO_TAG_IS_ARRAY> >
     {
       typedef volatile       ValueType * vref_type ;
       typedef volatile const ValueType * cvref_type ;
@@ -341,7 +341,7 @@ private:
     };
 
   template< class F >
-  struct has_join_function< F , HAS_TAG_NOT_ARRAY >
+  struct has_join_function< F , std::integral_constant<INTERFACE, HAS_TAG_NOT_ARRAY> >
     {
       typedef volatile       ValueType & vref_type ;
       typedef volatile const ValueType & cvref_type ;
@@ -366,7 +366,7 @@ private:
     };
 
   template< class F >
-  struct has_join_function< F , HAS_TAG_IS_ARRAY >
+  struct has_join_function< F , std::integral_constant<INTERFACE, HAS_TAG_IS_ARRAY> >
     {
       typedef volatile       ValueType * vref_type ;
       typedef volatile const ValueType * cvref_type ;
@@ -392,7 +392,7 @@ private:
 
 
   template< class F   = Functor
-          , INTERFACE = DEDUCED
+          , typename INTERFACE_TYPE = std::integral_constant<INTERFACE, DEDUCED>
           , typename  = void >
   struct DeduceJoin
     {
@@ -409,7 +409,7 @@ private:
     };
 
   template< class F >
-  struct DeduceJoin< F , DISABLE , void >
+  struct DeduceJoin< F , std::integral_constant<INTERFACE, DISABLE> , void >
     {
       enum { value = false };
 
@@ -419,19 +419,19 @@ private:
                , ValueType volatile const * ) {}
     };
 
-  template< class F , INTERFACE I >
-  struct DeduceJoin< F , I ,
-    decltype( has_join_function<F,I>::enable_if( & F::join ) ) >
-    : public has_join_function<F,I>
+  template< class F , typename INTERFACE_I >
+  struct DeduceJoin< F , INTERFACE_I ,
+    decltype( has_join_function<F,INTERFACE_I>::enable_if( & F::join ) ) >
+    : public has_join_function<F,INTERFACE_I>
     { enum { value = true }; };
 
   //----------------------------------------
 
-  template< class , INTERFACE >
+  template< class , typename INTERFACE_TYPE >
   struct has_init_function ;
 
   template< class F >
-  struct has_init_function< F , NO_TAG_NOT_ARRAY >
+  struct has_init_function< F , std::integral_constant<INTERFACE, NO_TAG_NOT_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( ValueType & ) const );
@@ -445,7 +445,7 @@ private:
     };
 
   template< class F >
-  struct has_init_function< F , NO_TAG_IS_ARRAY >
+  struct has_init_function< F , std::integral_constant<INTERFACE, NO_TAG_IS_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( ValueType * ) const );
@@ -459,7 +459,7 @@ private:
     };
 
   template< class F >
-  struct has_init_function< F , HAS_TAG_NOT_ARRAY >
+  struct has_init_function< F , std::integral_constant<INTERFACE, HAS_TAG_NOT_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( WTag , ValueType & ) const );
@@ -479,7 +479,7 @@ private:
     };
 
   template< class F >
-  struct has_init_function< F , HAS_TAG_IS_ARRAY >
+  struct has_init_function< F , std::integral_constant<INTERFACE, HAS_TAG_IS_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( WTag , ValueType * ) const );
@@ -499,7 +499,7 @@ private:
     };
 
   template< class F   = Functor
-          , INTERFACE = DEDUCED
+          , typename INTERFACE_TYPE = std::integral_constant<INTERFACE, DEDUCED>
           , typename  = void >
   struct DeduceInit
     {
@@ -510,7 +510,7 @@ private:
     };
 
   template< class F >
-  struct DeduceInit< F , DISABLE , void >
+  struct DeduceInit< F , std::integral_constant<INTERFACE, DISABLE> , void >
     {
       enum { value = false };
 
@@ -518,20 +518,20 @@ private:
       void init( F const * const , ValueType * ) {}
     };
 
-  template< class F , INTERFACE I >
-  struct DeduceInit< F , I ,
-    decltype( has_init_function<F,I>::enable_if( & F::init ) ) >
-    : public has_init_function<F,I>
+  template< class F , typename INTERFACE_I >
+  struct DeduceInit< F , INTERFACE_I ,
+    decltype( has_init_function<F,INTERFACE_I>::enable_if( & F::init ) ) >
+    : public has_init_function<F,INTERFACE_I>
     { enum { value = true }; };
 
   //----------------------------------------
 
-  template< class , INTERFACE >
+  template< class , typename INTERFACE_TYPE >
   struct has_final_function ;
 
   // No tag, not array
   template< class F >
-  struct has_final_function< F , NO_TAG_NOT_ARRAY >
+  struct has_final_function< F , std::integral_constant<INTERFACE, NO_TAG_NOT_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( ValueType & ) const );
@@ -546,7 +546,7 @@ private:
 
   // No tag, is array
   template< class F >
-  struct has_final_function< F , NO_TAG_IS_ARRAY >
+  struct has_final_function< F , std::integral_constant<INTERFACE, NO_TAG_IS_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( ValueType * ) const );
@@ -561,7 +561,7 @@ private:
 
   // Has tag, not array
   template< class F >
-  struct has_final_function< F , HAS_TAG_NOT_ARRAY >
+  struct has_final_function< F , std::integral_constant<INTERFACE, HAS_TAG_NOT_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( WTag , ValueType & ) const );
@@ -582,7 +582,7 @@ private:
 
   // Has tag, is array
   template< class F >
-  struct has_final_function< F , HAS_TAG_IS_ARRAY >
+  struct has_final_function< F , std::integral_constant<INTERFACE, HAS_TAG_IS_ARRAY> >
     {
       KOKKOS_INLINE_FUNCTION static
       void enable_if( void (F::*)( WTag , ValueType * ) const );
@@ -602,7 +602,7 @@ private:
     };
 
   template< class F   = Functor
-          , INTERFACE = DEDUCED
+          , typename INTERFACE_TYPE = std::integral_constant<INTERFACE, DEDUCED>
           , typename  = void >
   struct DeduceFinal
     {
@@ -612,10 +612,10 @@ private:
       static void final( F const * const , ValueType * ) {}
     };
 
-  template< class F , INTERFACE I >
-  struct DeduceFinal< F , I ,
-    decltype( has_final_function<F,I>::enable_if( & F::final ) ) >
-    : public has_final_function<F,I>
+  template< class F , typename INTERFACE_I >
+  struct DeduceFinal< F , INTERFACE_I ,
+    decltype( has_final_function<F,INTERFACE_I>::enable_if( & F::final ) ) >
+    : public has_final_function<F,INTERFACE_I>
     { enum { value = true }; };
 
   //----------------------------------------
@@ -671,12 +671,12 @@ public:
 
     template< bool IsArray >
     KOKKOS_INLINE_FUNCTION constexpr
-    typename std::enable_if< IsArray , FunctorAnalysis::ValueType * >::type
+    typename std::enable_if< IsArray , typename FunctorAnalysis::ValueType * >::type
     ref() const noexcept { return m_result ; }
 
     template< bool IsArray >
     KOKKOS_INLINE_FUNCTION constexpr
-    typename std::enable_if< ! IsArray , FunctorAnalysis::ValueType & >::type
+    typename std::enable_if< ! IsArray , typename FunctorAnalysis::ValueType & >::type
     ref() const noexcept { return *m_result ; }
 
     template< bool IsArray >
@@ -692,9 +692,9 @@ public:
   public:
 
     using reducer        = Reducer ;
-    using value_type     = FunctorAnalysis::value_type ;
+    using value_type     = typename FunctorAnalysis::value_type ;
     using memory_space   = MemorySpace ;
-    using reference_type = FunctorAnalysis::reference_type ;
+    using reference_type = typename FunctorAnalysis::reference_type ;
     using functor_type   = Functor ; // Adapts a functor
 
     KOKKOS_INLINE_FUNCTION constexpr

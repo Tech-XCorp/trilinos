@@ -214,6 +214,7 @@ namespace Kokkos {
       T newval = assume++;
       oldval = atomic_compare_exchange(dest, assume, newval);
     } while (assume != oldval);
+    return *dest;
   }
 
   template< typename T >
@@ -225,6 +226,7 @@ namespace Kokkos {
       T newval = assume--;
       oldval = atomic_compare_exchange(dest, assume, newval);
     } while (assume != oldval);
+    return *dest;
   }
 
 }
