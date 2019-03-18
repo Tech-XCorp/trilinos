@@ -4544,14 +4544,14 @@ struct ReduceWeightsFunctor {
   #endif
 
         // now check each part and it's right cut
-        index_t part = parts(i);
+        index_t part = parts(i)/2;
         if(part < 0 || part > num_cuts) {
           part = num_cuts / 2;
         }
 
         int upper = num_cuts;
         int lower = 0;
-        for(int binarySearch = 0; binarySearch < 6; ++binarySearch) {
+        for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
