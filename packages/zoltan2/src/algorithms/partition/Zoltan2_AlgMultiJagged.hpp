@@ -9124,6 +9124,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_functor_weights0.print();
   clock_functor_weights1.print();
   clock_functor_weightsN.print();
+
+  printf("Total kernels: %.4fms\n", (float) (clock_functor_weights0.time() + clock_functor_weights1.time() + clock_functor_weightsN.time()) / 1000000.0f);
   clock_weights4.print();
 
   clock_mj_combine_rightleft_and_weights.print();
