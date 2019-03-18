@@ -4830,6 +4830,7 @@ struct ReduceWeightsFunctorN {
         for(int single_step_search = 0; single_step_search < 3; ++single_step_search) {
 
           if(part < 0 || part > num_cuts) {
+            part += (single_step_search == 0) ? 1 : -2;
             continue; // bad for GPU - TODO: Can we improve it?
           }
   
