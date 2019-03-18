@@ -151,7 +151,10 @@ static Clock clock_weights1("            clock_weights1", false);
 static Clock clock_weights_new_to_optimize("              clock_weights_new_to_optimize", false);
 static Clock clock_weights2("            clock_weights2", false);
 static Clock clock_weights3("            clock_weights3", false);
-static Clock clock_functor_weights("              clock_functor_weights", false);
+static Clock clock_functor_weights0("              clock_functor_weights0", false);
+static Clock clock_functor_weights1("              clock_functor_weights1", false);
+static Clock clock_functor_weightsN("              clock_functor_weightsN", false);
+
 static Clock clock_weights4("            clock_weights4", false);
 static Clock clock_mj_combine_rightleft_and_weights("          clock_mj_combine_rightleft_and_weights", false);
 static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
@@ -5118,10 +5121,10 @@ clock_weights_new_to_optimize.stop();
   mj_scalar_t * reduce_array =
     new mj_scalar_t[static_cast<size_t>(total_array_length)];
 
-
-  clock_functor_weights.start();
-  
   if(iteration == 0) {
+
+    clock_functor_weights0.start();
+
     ReduceWeightsFunctor0<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
         iteration,
@@ -5154,8 +5157,14 @@ clock_weights_new_to_optimize.stop();
         );
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
+
+    clock_functor_weights0.stop();
+
   }
   else if(iteration == 1) {
+ 
+    clock_functor_weights1.start();
+ 
     ReduceWeightsFunctor1<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
         iteration,
@@ -5188,8 +5197,14 @@ clock_weights_new_to_optimize.stop();
         );
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
+
+    clock_functor_weights1.stop();
+
   }
   else {
+
+    clock_functor_weightsN.start();
+
     ReduceWeightsFunctorN<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
       teamFunctor(
         iteration,
@@ -5222,9 +5237,11 @@ clock_weights_new_to_optimize.stop();
         );
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
+
+    clock_functor_weightsN.stop();
+
   }
 
-  clock_functor_weights.stop();
 
 #ifndef TURN_OFF_MERGE_CHUNKS
   for (mj_part_t kk = 0; kk < current_concurrent_num_parts; ++kk) {
@@ -8321,7 +8338,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights_new_to_optimize.reset();
   clock_weights2.reset();
   clock_weights3.reset();
-  clock_functor_weights.reset();
+  clock_functor_weights0.reset();
+  clock_functor_weights1.reset();
+  clock_functor_weightsN.reset();
+
+
   clock_weights4.reset();
 
   clock_mj_combine_rightleft_and_weights.reset();
@@ -9099,7 +9120,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_weights_new_to_optimize.print();
   clock_weights2.print();
   clock_weights3.print();
-  clock_functor_weights.print();
+  clock_functor_weights0.print();
+  clock_functor_weights1.print();
+  clock_functor_weightsN.print();
   clock_weights4.print();
 
   clock_mj_combine_rightleft_and_weights.print();
@@ -9121,7 +9144,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   
   printf("-------------------------------------------------------\n");
   clock_multi_jagged_part.print();                // 2nd print for easy access
-  clock_functor_weights.print();                  // 2nd print for easy access
+
+  clock_functor_weights0.print();                  // 2nd print for easy access
+  clock_functor_weights1.print();                  // 2nd print for easy access
+  clock_functor_weightsN.print();                  // 2nd print for easy access
+
   clock_mj_create_new_partitions.print();         // 2nd print for easy access 
   clock_mj_get_local_min_max_coord_totW.print();  // 2nd print for easy access
 }
