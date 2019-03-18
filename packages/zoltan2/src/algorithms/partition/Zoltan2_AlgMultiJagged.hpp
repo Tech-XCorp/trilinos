@@ -64,6 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
+#define USE_FLOAT_SCALAR
 #define TURN_OFF_MERGE_CHUNKS // for debugging - will be removed
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -3993,15 +3994,15 @@ struct ArrayCombinationReducer {
   }
 };
 
-template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
+template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor0 {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
-  typedef scalar_t value_type[];
+  typedef array_t value_type[];
   
   int iteration;
   int uniform_part_sizes;
-  scalar_t max_scalar;
+  array_t max_scalar;
   
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
@@ -4033,7 +4034,7 @@ struct ReduceWeightsFunctor0 {
   ReduceWeightsFunctor0(
     int mj_iteration,
     int mj_uniform_part_sizes,
-    scalar_t mj_max_scalar,
+    array_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
     part_t mj_num_cuts,
@@ -4092,7 +4093,7 @@ struct ReduceWeightsFunctor0 {
   }
 
   size_t team_shmem_size (int team_size) const {
-    return sizeof(scalar_t) * (value_count_weights + value_count_rightleft)
+    return sizeof(array_t) * (value_count_weights + value_count_rightleft)
       * team_size;
   }
 
@@ -4128,15 +4129,15 @@ struct ReduceWeightsFunctor0 {
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
-    scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
+    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
 
     // select the array for this thread
-    ArrayType<scalar_t>
+    ArrayType<array_t>
       array(&shared_ptr[teamMember.team_rank() * (value_count_weights + value_count_rightleft)]);
 
     // create reducer which handles the ArrayType class
-    ArrayCombinationReducer<policy_t, scalar_t, part_t> arraySumReducer(
+    ArrayCombinationReducer<policy_t, array_t, part_t> arraySumReducer(
       max_scalar, array,
       value_count_rightleft,
       value_count_weights);
@@ -4144,7 +4145,7 @@ struct ReduceWeightsFunctor0 {
     // call the reduce
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
       
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4180,9 +4181,9 @@ struct ReduceWeightsFunctor0 {
   #endif
 
   #ifdef TURN_OFF_MERGE_CHUNKS
-          scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + part_cut_shift - 2];
+          array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part_cut_shift - 2];
   #else
-          scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part_cut_shift - 2];
+          array_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part_cut_shift - 2];
   #endif
   
         // now update cut right left - different if part or cut
@@ -4301,15 +4302,15 @@ struct ReduceWeightsFunctor0 {
   }
 };
 
-template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
+template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor1 {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
-  typedef scalar_t value_type[];
+  typedef array_t value_type[];
   
   int iteration;
   int uniform_part_sizes;
-  scalar_t max_scalar;
+  array_t max_scalar;
   
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
@@ -4341,7 +4342,7 @@ struct ReduceWeightsFunctor1 {
   ReduceWeightsFunctor1(
     int mj_iteration,
     int mj_uniform_part_sizes,
-    scalar_t mj_max_scalar,
+    array_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
     part_t mj_concurrent_current_part,
     part_t mj_num_cuts,
@@ -4400,7 +4401,7 @@ struct ReduceWeightsFunctor1 {
   }
 
   size_t team_shmem_size (int team_size) const {
-    return sizeof(scalar_t) * (value_count_weights + value_count_rightleft)
+    return sizeof(array_t) * (value_count_weights + value_count_rightleft)
       * team_size;
   }
 
@@ -4436,22 +4437,22 @@ struct ReduceWeightsFunctor1 {
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
-    scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
+    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
 
     // select the array for this thread
-    ArrayType<scalar_t>
+    ArrayType<array_t>
       array(&shared_ptr[teamMember.team_rank() * (value_count_weights + value_count_rightleft)]);
 
     // create reducer which handles the ArrayType class
-    ArrayCombinationReducer<policy_t, scalar_t, part_t> arraySumReducer(
+    ArrayCombinationReducer<policy_t, array_t, part_t> arraySumReducer(
       max_scalar, array,
       value_count_rightleft,
       value_count_weights);
 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
       
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4486,9 +4487,9 @@ struct ReduceWeightsFunctor1 {
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
+        array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
   #else
-        scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part * 2 - 2];
+        array_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part * 2 - 2];
   #endif
   
           scalar_t a = (part == 0) ? -max_scalar :
@@ -4646,15 +4647,15 @@ if(save_old != parts(i)) {
   }
 };
 
-template<class policy_t, class scalar_t, class part_t, class index_t, class device_t>
+template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctorN {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
-  typedef scalar_t value_type[];
+  typedef array_t value_type[];
   
   int iteration;
   int uniform_part_sizes;
-  scalar_t max_scalar;
+  array_t max_scalar;
   
 #ifdef TURN_OFF_MERGE_CHUNKS
   part_t concurrent_current_part;
@@ -4745,7 +4746,7 @@ struct ReduceWeightsFunctorN {
   }
 
   size_t team_shmem_size (int team_size) const {
-    return sizeof(scalar_t) * (value_count_weights + value_count_rightleft)
+    return sizeof(array_t) * (value_count_weights + value_count_rightleft)
       * team_size;
   }
 
@@ -4781,15 +4782,15 @@ struct ReduceWeightsFunctorN {
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
-    scalar_t * shared_ptr = (scalar_t *) teamMember.team_shmem().get_shmem(
+    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
 
     // select the array for this thread
-    ArrayType<scalar_t>
+    ArrayType<array_t>
       array(&shared_ptr[teamMember.team_rank() * (value_count_weights + value_count_rightleft)]);
 
     // create reducer which handles the ArrayType class
-    ArrayCombinationReducer<policy_t, scalar_t, part_t> arraySumReducer(
+    ArrayCombinationReducer<policy_t, array_t, part_t> arraySumReducer(
       max_scalar, array,
       value_count_rightleft,
       value_count_weights);
@@ -4797,7 +4798,7 @@ struct ReduceWeightsFunctorN {
     // call the reduce
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<scalar_t>& threadSum) {
+      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
       
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4836,9 +4837,9 @@ struct ReduceWeightsFunctorN {
   
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
-          scalar_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
+          array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
   #else
-          scalar_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part * 2 - 2];
+          array_t * p1 = &threadSum.ptr[value_count_weights + (concurrent_cut_shifts * 2) + kk * 4 + 2 + part * 2 - 2];
   #endif
   
           scalar_t a = (part == 0) ? -max_scalar :
@@ -5119,18 +5120,20 @@ clock_weights_new_to_optimize.stop();
   int total_array_length =
     weight_array_length + right_left_array_length;
 
-  mj_scalar_t * reduce_array =
-    new mj_scalar_t[static_cast<size_t>(total_array_length)];
+  typedef float array_t;
+  
+  array_t * reduce_array =
+    new array_t[static_cast<size_t>(total_array_length)];
 
   if(iteration == 0) {
 
     clock_functor_weights0.start();
 
-    ReduceWeightsFunctor0<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
+    ReduceWeightsFunctor0<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         iteration,
         uniform_part_sizes,
-        std::numeric_limits<mj_scalar_t>::max(),
+        std::numeric_limits<array_t>::max(),
   #ifdef TURN_OFF_MERGE_CHUNKS
         current_work_part + kk,
         num_cuts,
@@ -5166,11 +5169,11 @@ clock_weights_new_to_optimize.stop();
  
     clock_functor_weights1.start();
  
-    ReduceWeightsFunctor1<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
+    ReduceWeightsFunctor1<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         iteration,
         uniform_part_sizes,
-        std::numeric_limits<mj_scalar_t>::max(),
+        std::numeric_limits<array_t>::max(),
   #ifdef TURN_OFF_MERGE_CHUNKS
         current_work_part + kk,
         num_cuts,
@@ -5206,11 +5209,11 @@ clock_weights_new_to_optimize.stop();
 
     clock_functor_weightsN.start();
 
-    ReduceWeightsFunctorN<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
+    ReduceWeightsFunctorN<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         iteration,
         uniform_part_sizes,
-        std::numeric_limits<mj_scalar_t>::max(),
+        std::numeric_limits<array_t>::max(),
   #ifdef TURN_OFF_MERGE_CHUNKS
         current_work_part + kk,
         num_cuts,
