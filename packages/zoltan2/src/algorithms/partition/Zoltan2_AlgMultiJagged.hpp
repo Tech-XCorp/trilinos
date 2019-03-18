@@ -4127,7 +4127,7 @@ struct ReduceWeightsFunctor0 {
     }
 
     // create the team shared data - each thread gets one of the arrays
-    size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(array_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
@@ -4435,7 +4435,7 @@ struct ReduceWeightsFunctor1 {
     }
 
     // create the team shared data - each thread gets one of the arrays
-    size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(array_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
@@ -4478,8 +4478,6 @@ struct ReduceWeightsFunctor1 {
 
         // now check each part and it's right cut
         index_t part = parts(i)/2;
-
-// auto save_old = parts(i);
 
         int upper = num_cuts;
         int lower = 0;
@@ -4562,21 +4560,7 @@ struct ReduceWeightsFunctor1 {
             part += (upper - part)/2;
           }
         }
-        
-/*
-if(save_old != parts(i)) {
-  if(iteration == 0) {
-    printf("UNEXPECTED bad init part. Changed %d to %d\n", (int) save_old, (int) parts(i));
-  }
-  else if(iteration != 1) {
-    int delta = (int) save_old - (int) parts(i);
-   // if(delta > 2 || delta < -2) {
-      printf("iteration: %d  Step: %d.\n", iteration, delta);
-   // }
-  }
-}
-*/
-
+  
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
   #endif
@@ -4780,7 +4764,7 @@ struct ReduceWeightsFunctorN {
     }
 
     // create the team shared data - each thread gets one of the arrays
-    size_t sh_mem_size = sizeof(scalar_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
+    size_t sh_mem_size = sizeof(array_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
