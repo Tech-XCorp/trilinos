@@ -4842,17 +4842,10 @@ struct ReduceWeightsFunctorN {
             parts(i) = part*2;
             
             // now handle the left/right closest part
-            if(coord > a && coord < *(p1+1)) {
+            if(coord < *(p1+1)) {
               *(p1+1) = coord;
-            }
-            if(coord < a && coord > *p1) {
-              *p1 = coord;
-            }
-            
-            if(coord > b && coord < *(p1+3)) {
-              *(p1+3) = coord;
-            }
-            if(coord < b && coord > *(p1+2)) {
+            }            
+            if(coord > *(p1+2)) {
               *(p1+2) = coord;
             }
             break;
