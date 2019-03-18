@@ -4806,18 +4806,11 @@ struct ReduceWeightsFunctorN {
 
   #endif
 
-        // in this case we assume we will move just one step
-        // if we were on a cut then we assume we'll be in same cut or neighboring parts (3 options)
-        // if we were on a part then we could be in neighboring parts or neighboring cuts (5 options)
-        // since most are on parts we set up the loop for that which covers the cut cast
+        // try our current part and if it's not correct shift one part
         index_t part = parts(i) / 2;
         
-        for(int single_step_search = 0; single_step_search < 3; ++single_step_search) {
+        for(int single_step_search = 0; single_step_search < 2; ++single_step_search) {
 
-          if(part < 0 || part > num_cuts) {
-            part += (single_step_search == 0) ? 1 : -2;
-            continue; // bad for GPU - TODO: Can we improve it?
-          }
   
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4879,10 +4872,13 @@ struct ReduceWeightsFunctorN {
             }
           }
           
-          // we want to search shifts of 0, +1, -1 where 0 means the original guess
-          // which is likely to be right. So 2nd pass go up 1 then third pass 
-          // shift down 2.
-          part += (single_step_search == 0) ? 1 : -2;
+          // nudge part
+          if(coord < b) {
+            --part;
+          }
+          else {
+            ++part;
+          }
         }
         
   #ifndef TURN_OFF_MERGE_CHUNKS
