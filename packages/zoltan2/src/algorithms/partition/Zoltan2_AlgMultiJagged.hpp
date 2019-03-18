@@ -4187,37 +4187,14 @@ struct ReduceWeightsFunctor0 {
   #endif
   
         // now update cut right left - different if part or cut
-        if(part_cut_shift % 2 == 0) { // it's a part
-          index_t part = part_cut_shift/2;
-
-          scalar_t a = (part == 0) ? -max_scalar :
-  #ifdef TURN_OFF_MERGE_CHUNKS
-            cut_coordinates(part-1);
-  #else
-            cut_coordinates(concurrent_cut_shifts+part-1);
-  #endif
-  
-          scalar_t b = (part == num_cuts) ? max_scalar :
-  #ifdef TURN_OFF_MERGE_CHUNKS
-            cut_coordinates(part);
-  #else
-            cut_coordinates(concurrent_cut_shifts+part);
-  #endif
-  
-            // now handle the left/right closest part
-            if(coord > a && coord < *(p1+1)) {
-              *(p1+1) = coord;
-            }
-            if(coord < a && coord > *p1) {
-              *p1 = coord;
-            }
-            
-            if(coord > b && coord < *(p1+3)) {
-              *(p1+3) = coord;
-            }
-            if(coord < b && coord > *(p1+2)) {
-              *(p1+2) = coord;
-            }
+        if(part_cut_shift % 2 == 0) { // it's a part 
+          // now handle the left/right closest part
+          if(coord > *p1) {
+            *p1 = coord;
+          }
+          if(coord < *(p1+3)) {
+            *(p1+3) = coord;
+          }
         }
         else {
           index_t cut = part_cut_shift/2;
@@ -4513,18 +4490,11 @@ struct ReduceWeightsFunctor1 {
             parts(i) = part*2;
             
             // now handle the left/right closest part
-            if(coord > a && coord < *(p1+1)) {
-              *(p1+1) = coord;
-            }
-            if(coord < a && coord > *p1) {
+            if(coord > *p1) {
               *p1 = coord;
             }
-            
-            if(coord > b && coord < *(p1+3)) {
+            if(coord < *(p1+3)) {
               *(p1+3) = coord;
-            }
-            if(coord < b && coord > *(p1+2)) {
-              *(p1+2) = coord;
             }
             break;
           }
@@ -4811,7 +4781,6 @@ struct ReduceWeightsFunctorN {
         
         for(int single_step_search = 0; single_step_search < 2; ++single_step_search) {
 
-  
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
           array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
