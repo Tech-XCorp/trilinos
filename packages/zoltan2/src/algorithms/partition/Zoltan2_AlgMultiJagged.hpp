@@ -1038,6 +1038,7 @@ private:
    * \param partIds is the array that holds the part ids of the coordinates
    */
   void mj_1D_part_get_part_weights(
+    int iteration,
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
     mj_part_t current_concurrent_num_parts,
     mj_part_t current_work_part,
@@ -3418,6 +3419,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   else {
     //otherwise estimate an initial part for each coordinate.
     //assuming uniform distribution of points.
+    
+    // small error shift to avoid having this place the very last coord into
+    // an invalid part.
     mj_scalar_t slice = coordinate_range / partition_count;
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space,
@@ -3426,6 +3430,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       mj_lno_t iii = mj_current_coordinate_permutations[ii];
       mj_part_t pp =
         mj_part_t((mj_current_dim_coords[iii] - min_coordinate) / slice);
+      if(pp >= partition_count) {
+        pp = partition_count - 1; // TODO: We don't want the last coord in an invalid part but can we avoid this without an if in this kernel...
+      }
       mj_part_ids[iii] = 2 * pp;
     });
   }
@@ -3615,6 +3622,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     });
 #endif
 
+  int interation = 0;
   while (total_incomplete_cut_count != 0) {
     clock_host_copies.start();
 
@@ -3627,12 +3635,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     clock_mj_1D_part_get_weights.start();
 
     
-    this->mj_1D_part_get_part_weights(      
+    this->mj_1D_part_get_part_weights( 
+      interation,     
       view_num_partitioning_in_current_dim,    
       current_concurrent_num_parts,            
       current_work_part,                       
       mj_current_dim_coords,
       uniform_part_sizes);
+    ++interation;
     
     clock_mj_1D_part_get_weights.stop();
 
@@ -4343,6 +4353,7 @@ struct ReduceWeightsFunctor {
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   typedef scalar_t value_type[];
   
+  int iteration;
   int uniform_part_sizes;
   scalar_t max_scalar;
   
@@ -4374,6 +4385,7 @@ struct ReduceWeightsFunctor {
 #endif
 
   ReduceWeightsFunctor(
+    int mj_iteration,
     int mj_uniform_part_sizes,
     scalar_t mj_max_scalar,
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4402,6 +4414,7 @@ struct ReduceWeightsFunctor {
     , Kokkos::View<part_t *, device_t> mj_prefix_sum_num_cuts
 #endif
     ) :
+      iteration(mj_iteration),
       uniform_part_sizes(mj_uniform_part_sizes),
       max_scalar(mj_max_scalar),
 #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4549,6 +4562,8 @@ struct ReduceWeightsFunctor {
           part = num_cuts / 2;
         }
 
+// auto save_old = parts(i);
+
         int upper = num_cuts;
         int lower = 0;
         for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
@@ -4609,22 +4624,6 @@ struct ReduceWeightsFunctor {
   
               *(p1+2) = b;
               *(p1+3) = b;           
-/* 
-              // now handle the left/right closest part
-              if(coord > a && coord < *(p1+1)) {
-                *(p1+1) = coord;
-              }
-              if(coord < a && coord > *p1) {
-                *p1 = coord;
-              }
-              
-              if(coord > b && coord < *(p1+3)) {
-                *(p1+3) = coord;
-              }
-              if(coord < b && coord > *(p1+2)) {
-                *(p1+2) = coord;
-              }
-*/
               break;
             }
           }
@@ -4646,6 +4645,21 @@ struct ReduceWeightsFunctor {
             part += (upper - part)/2;
           }
         }
+        
+/*
+if(save_old != parts(i)) {
+  if(iteration == 0) {
+    printf("UNEXPECTED bad init part. Changed %d to %d\n", (int) save_old, (int) parts(i));
+  }
+  else if(iteration != 1) {
+    int delta = (int) save_old - (int) parts(i);
+   // if(delta > 2 || delta < -2) {
+      printf("iteration: %d  Step: %d.\n", iteration, delta);
+   // }
+  }
+}
+*/
+
   #ifndef TURN_OFF_MERGE_CHUNKS
       }
   #endif
@@ -4747,6 +4761,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t> 
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   mj_1D_part_get_part_weights(
+  int iteration,
   Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
   mj_part_t current_concurrent_num_parts,
   mj_part_t current_work_part,
@@ -4870,6 +4885,7 @@ clock_weights_new_to_optimize.stop();
 
   ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type>
     teamFunctor(
+      iteration,
       uniform_part_sizes,
       std::numeric_limits<mj_scalar_t>::max(),
 #ifdef TURN_OFF_MERGE_CHUNKS
