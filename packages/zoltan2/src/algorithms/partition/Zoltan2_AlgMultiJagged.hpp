@@ -4551,7 +4551,7 @@ struct ReduceWeightsFunctor {
 
         int upper = num_cuts;
         int lower = 0;
-        for(int binarySearch = 0; binarySearch < 20; ++binarySearch) {
+        for(int binarySearch = 0; binarySearch < 6; ++binarySearch) {
 
         // for the left/right closest part calculation
   #ifdef TURN_OFF_MERGE_CHUNKS
@@ -4606,7 +4606,10 @@ struct ReduceWeightsFunctor {
               threadSum.ptr[total_part_shift+part*2+1] += w;
 #endif
               parts(i) = part*2+1;
-              
+  
+              *(p1+2) = b;
+              *(p1+3) = b;           
+/* 
               // now handle the left/right closest part
               if(coord > a && coord < *(p1+1)) {
                 *(p1+1) = coord;
@@ -4621,6 +4624,7 @@ struct ReduceWeightsFunctor {
               if(coord < b && coord > *(p1+2)) {
                 *(p1+2) = coord;
               }
+*/
               break;
             }
           }
