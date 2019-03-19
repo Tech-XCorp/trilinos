@@ -4189,11 +4189,11 @@ struct ReduceWeightsFunctor0 {
         // now update cut right left - different if part or cut
         if(part_cut_shift % 2 == 0) { // it's a part 
           // now handle the left/right closest part
-          if(coord > *p1) {
-            *p1 = coord;
+          if(coord < *(p1+1)) {
+            *(p1+1) = coord;
           }
-          if(coord < *(p1+3)) {
-            *(p1+3) = coord;
+          if(coord > *(p1+2)) {
+            *(p1+2) = coord;
           }
         }
         else {
@@ -4490,11 +4490,11 @@ struct ReduceWeightsFunctor1 {
             parts(i) = part*2;
             
             // now handle the left/right closest part
-            if(coord > *p1) {
-              *p1 = coord;
+            if(coord < *(p1+1)) {
+              *(p1+1) = coord;
             }
-            if(coord < *(p1+3)) {
-              *(p1+3) = coord;
+            if(coord > *(p1+2)) {
+              *(p1+2) = coord;
             }
             break;
           }
