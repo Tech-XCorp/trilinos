@@ -5076,7 +5076,7 @@ clock_weights_new_to_optimize.stop();
     // cuts but the ReduceWeightsFunctorN which checks one neighbor is not
     // much more expensive. TODO: Delete ReduceWeightsFunctor0 if we decide we
     // can never use it.
-    ReduceWeightsFunctorN<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
+    ReduceWeightsFunctor1<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         iteration,
         uniform_part_sizes,
@@ -5156,7 +5156,7 @@ clock_weights_new_to_optimize.stop();
 
     clock_functor_weightsN.start();
 
-    ReduceWeightsFunctorN<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
+    ReduceWeightsFunctor1<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         iteration,
         uniform_part_sizes,
