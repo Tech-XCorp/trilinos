@@ -314,13 +314,13 @@ namespace Xpetra {
 
       for(size_t r = 0; r < rangeMapExtractor->NumMaps(); ++r) {
         RCP<const XpMap> map = rangeMapExtractor->getMap(r);
-        XpIO::Write("subRangeMap_" + fileName + XpIO::toString<size_t>(r) + ".m", *map);
+        XpIO::Write("subRangeMap_" + fileName + XpIO::template toString<size_t>(r) + ".m", *map);
       }
       XpIO::Write("fullRangeMap_" + fileName +".m",*(rangeMapExtractor->getFullMap()));
 
       for(size_t c = 0; c < domainMapExtractor->NumMaps(); ++c) {
         RCP<const XpMap> map = domainMapExtractor->getMap(c);
-        XpIO::Write("subDomainMap_" + fileName + XpIO::toString<size_t>(c) + ".m", *map);
+        XpIO::Write("subDomainMap_" + fileName + XpIO::template toString<size_t>(c) + ".m", *map);
       }
       XpIO::Write("fullDomainMap_" + fileName+ ".m",*(domainMapExtractor->getFullMap()));
     } //WriteBlockCrsMatrix
@@ -610,14 +610,14 @@ namespace Xpetra {
 
       std::vector<RCP<const XpMap> > rgMapVec;
       for(size_t r = 0; r < numBlocks; ++r) {
-        RCP<const XpMap> map = XpIO::ReadMap("subRangeMap_" + fileName + XpIO::toString<size_t>(r) + ".m", lib, comm);
+        RCP<const XpMap> map = XpIO::ReadMap("subRangeMap_" + fileName + XpIO::template toString<size_t>(r) + ".m", lib, comm);
         rgMapVec.push_back(map);
       }
       RCP<const XpMap> fullRangeMap = XpIO::ReadMap("fullRangeMap_" + fileName + ".m", lib, comm);
 
       std::vector<RCP<const XpMap> > doMapVec;
       for(size_t c = 0; c < numBlocks; ++c) {
-        RCP<const XpMap> map = XpIO::ReadMap("subDomainMap_" + fileName + XpIO::toString<size_t>(c) + ".m", lib, comm);
+        RCP<const XpMap> map = XpIO::ReadMap("subDomainMap_" + fileName + XpIO::template toString<size_t>(c) + ".m", lib, comm);
         doMapVec.push_back(map);
       }
       RCP<const XpMap> fullDomainMap = XpIO::ReadMap("fullDomainMap_" + fileName + ".m", lib, comm);
@@ -663,11 +663,11 @@ namespace Xpetra {
       // write all matrices with their maps
       for (size_t r = 0; r < numBlocks; ++r) {
         for (size_t c = 0; c < numBlocks; ++c) {
-          RCP<const XpMap> rowSubMap = XpIO::ReadMap("rowmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> colSubMap = XpIO::ReadMap("colmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> domSubMap = XpIO::ReadMap("domainmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> ranSubMap = XpIO::ReadMap("rangemap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<XpMat> mat = XpIO::Read(fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", rowSubMap, colSubMap, domSubMap, ranSubMap);
+          RCP<const XpMap> rowSubMap = XpIO::ReadMap("rowmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> colSubMap = XpIO::ReadMap("colmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> domSubMap = XpIO::ReadMap("domainmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> ranSubMap = XpIO::ReadMap("rangemap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<XpMat> mat = XpIO::Read(fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", rowSubMap, colSubMap, domSubMap, ranSubMap);
           //RCP<XpCrsMatWrap> cmat = Teuchos::rcp_dynamic_cast<XpCrsMatWrap>(mat);
           bOp->setMatrix(r, c, mat);
         }
@@ -866,13 +866,13 @@ namespace Xpetra {
 
       for(size_t r = 0; r < rangeMapExtractor->NumMaps(); ++r) {
         RCP<const XpMap> map = rangeMapExtractor->getMap(r);
-        XpIO::Write("subRangeMap_" + fileName + XpIO::toString<size_t>(r) + ".m", *map);
+        XpIO::Write("subRangeMap_" + fileName + XpIO::template toString<size_t>(r) + ".m", *map);
       }
       XpIO::Write("fullRangeMap_" + fileName +".m",*(rangeMapExtractor->getFullMap()));
 
       for(size_t c = 0; c < domainMapExtractor->NumMaps(); ++c) {
         RCP<const XpMap> map = domainMapExtractor->getMap(c);
-        XpIO::Write("subDomainMap_" + fileName + XpIO::toString<size_t>(c) + ".m", *map);
+        XpIO::Write("subDomainMap_" + fileName + XpIO::template toString<size_t>(c) + ".m", *map);
       }
       XpIO::Write("fullDomainMap_" + fileName+ ".m",*(domainMapExtractor->getFullMap()));
     } //WriteBlockCrsMatrix
@@ -1203,14 +1203,14 @@ namespace Xpetra {
 
       std::vector<RCP<const XpMap> > rgMapVec;
       for(size_t r = 0; r < numBlocks; ++r) {
-        RCP<const XpMap> map = XpIO::ReadMap("subRangeMap_" + fileName + XpIO::toString<size_t>(r) + ".m", lib, comm);
+        RCP<const XpMap> map = XpIO::ReadMap("subRangeMap_" + fileName + XpIO::template toString<size_t>(r) + ".m", lib, comm);
         rgMapVec.push_back(map);
       }
       RCP<const XpMap> fullRangeMap = XpIO::ReadMap("fullRangeMap_" + fileName + ".m", lib, comm);
 
       std::vector<RCP<const XpMap> > doMapVec;
       for(size_t c = 0; c < numBlocks; ++c) {
-        RCP<const XpMap> map = XpIO::ReadMap("subDomainMap_" + fileName + XpIO::toString<size_t>(c) + ".m", lib, comm);
+        RCP<const XpMap> map = XpIO::ReadMap("subDomainMap_" + fileName + XpIO::template toString<size_t>(c) + ".m", lib, comm);
         doMapVec.push_back(map);
       }
       RCP<const XpMap> fullDomainMap = XpIO::ReadMap("fullDomainMap_" + fileName + ".m", lib, comm);
@@ -1254,11 +1254,11 @@ namespace Xpetra {
       // write all matrices with their maps
       for (size_t r = 0; r < numBlocks; ++r) {
         for (size_t c = 0; c < numBlocks; ++c) {
-          RCP<const XpMap> rowSubMap = XpIO::ReadMap("rowmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> colSubMap = XpIO::ReadMap("colmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> domSubMap = XpIO::ReadMap("domainmap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<const XpMap> ranSubMap = XpIO::ReadMap("rangemap_" + fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", lib, comm);
-          RCP<XpMat> mat = XpIO::Read(fileName + XpIO::toString<size_t>(r) + XpIO::toString<size_t>(c) + ".m", rowSubMap, colSubMap, domSubMap, ranSubMap);
+          RCP<const XpMap> rowSubMap = XpIO::ReadMap("rowmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> colSubMap = XpIO::ReadMap("colmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> domSubMap = XpIO::ReadMap("domainmap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<const XpMap> ranSubMap = XpIO::ReadMap("rangemap_" + fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", lib, comm);
+          RCP<XpMat> mat = XpIO::Read(fileName + XpIO::template toString<size_t>(r) + XpIO::template toString<size_t>(c) + ".m", rowSubMap, colSubMap, domSubMap, ranSubMap);
           //RCP<XpCrsMatWrap> cmat = Teuchos::rcp_dynamic_cast<XpCrsMatWrap>(mat);
           bOp->setMatrix(r, c, mat);
         }

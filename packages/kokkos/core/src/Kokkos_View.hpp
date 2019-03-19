@@ -768,10 +768,9 @@ public:
   typename std::enable_if<
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::specialize , void >::value
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::array_layout,
-                       Kokkos::LayoutLeft >::value
-      && ( ViewTraits< DataType , Properties ... >::rank_dynamic == 0 )
+      && is_default_map
+      && is_layout_left
+      && ( traits::rank_dynamic == 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
@@ -787,9 +786,9 @@ public:
   typename std::enable_if<
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::specialize , void >::value
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::array_layout, Kokkos::LayoutLeft >::value
-      && ( ViewTraits< DataType , Properties ... >::rank_dynamic != 0 )
+      && is_default_map
+      && is_layout_left
+      && ( traits::rank_dynamic != 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
@@ -804,10 +803,9 @@ public:
   typename std::enable_if<
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::specialize , void >::value
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::array_layout,
-                       Kokkos::LayoutRight >::value
-      && ( ViewTraits< DataType , Properties ... >::rank_dynamic == 0 )
+      && is_default_map
+      && View< DataType , Properties ... >::is_layout_right
+      && ( traits::rank_dynamic == 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
@@ -823,8 +821,8 @@ public:
   typename std::enable_if<
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::specialize , void >::value
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::array_layout, Kokkos::LayoutRight >::value
+      && is_default_map
+      && is_layout_right
       && ( traits::rank_dynamic != 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
@@ -840,9 +838,8 @@ public:
   typename std::enable_if<
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::specialize , void >::value
-      && std::is_same< typename ViewTraits< DataType , Properties ... >::array_layout
-                                   , Kokkos::LayoutStride >::value
+      && is_default_map
+      && is_layout_stride
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
