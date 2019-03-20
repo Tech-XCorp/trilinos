@@ -535,10 +535,10 @@ public:
 
   //! Return the diagonal entries of the ILU factorization.
   // const Tpetra::Vector<scalar_type,local_ordinal_type,global_ordinal_type,node_type>&
-  const Tpetra::Vector<typename RILUK<MatrixType>::scalar_type,
-                       typename RILUK<MatrixType>::local_ordinal_type,
-                       typename RILUK<MatrixType>::global_ordinal_type,
-                       typename RILUK<MatrixType>::node_type>&
+  const Tpetra::Vector<typename MatrixType::scalar_type,
+                       typename MatrixType::local_ordinal_type,
+                       typename MatrixType::global_ordinal_type,
+                       typename MatrixType::node_type>&
   getD () const;
 
   //! Return the U factor of the ILU factorization.

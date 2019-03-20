@@ -196,7 +196,7 @@ namespace MueLu {
       //      that level
       //   3. For each level, we call Keep(name, factory) for each keep_
       for (int i = 0; i < numDesiredLevel_; i++) {
-        std::map<int, std::vector<keep_pair> >::const_iterator it = keep_.find(i);
+        typename std::map<int, std::vector<keep_pair> >::const_iterator it = keep_.find(i);
         if (it != keep_.end()) {
           RCP<Level> l = H.GetLevel(i);
           const std::vector<keep_pair>& keeps = it->second;

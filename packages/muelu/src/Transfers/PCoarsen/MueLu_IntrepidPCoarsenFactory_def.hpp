@@ -50,6 +50,7 @@
 #include <Xpetra_IO.hpp>
 #include <sstream>
 #include <algorithm>
+#include <cctype>
 
 #include "MueLu_IntrepidPCoarsenFactory_decl.hpp"
 
