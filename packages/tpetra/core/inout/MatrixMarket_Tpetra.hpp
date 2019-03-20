@@ -4492,7 +4492,7 @@ namespace Tpetra {
         }
 
         // Make a multivector X owned entirely by Proc 0.
-        RCP<MV> X = createMultiVector<ST, LO, GO, NT> (proc0Map, numCols);
+        RCP<MV> X = Tpetra::createMultiVector<ST, LO, GO, NT, NT::classic> (proc0Map, numCols);
 
         //
         // On Proc 0, read the Matrix Market data from the input
@@ -4716,7 +4716,7 @@ namespace Tpetra {
         }
 
         // Make a multivector Y with the distributed map pMap.
-        RCP<MV> Y = createMultiVector<ST, LO, GO, NT> (map, numCols);
+        RCP<MV> Y = createMultiVector<ST, LO, GO, NT, NT::classic> (map, numCols);
 
         if (debug) {
           *err << myRank << ": readDenseImpl: Creating Export" << endl;

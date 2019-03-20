@@ -612,6 +612,13 @@ private:
       std::is_same< typename traits::specialize , void >::value &&
       ( is_layout_left || is_layout_right || is_layout_stride )
   };
+  
+  static_assert(!(is_layout_left && is_layout_right),
+                "is_layout_left && is_layout_right!");
+  static_assert(!(is_layout_left && is_layout_stride),
+                "is_layout_left && is_layout_stride!");
+  static_assert(!(is_layout_right && is_layout_stride),
+                "is_layout_right && is_layout_stride!");
 
   template< class Space , bool = Kokkos::Impl::MemorySpaceAccess< Space , typename traits::memory_space >::accessible > struct verify_space
     { KOKKOS_FORCEINLINE_FUNCTION static void check() {} };
@@ -766,10 +773,10 @@ public:
           , class ... Args >
   KOKKOS_FORCEINLINE_FUNCTION
   typename std::enable_if<
-    ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
+    ( is_layout_left
+      && Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
       && is_default_map
-      && is_layout_left
       && ( traits::rank_dynamic == 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
@@ -784,10 +791,10 @@ public:
           , class ... Args >
   KOKKOS_FORCEINLINE_FUNCTION
   typename std::enable_if<
-    ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
+    ( is_layout_left
+      && Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
       && is_default_map
-      && is_layout_left
       && ( traits::rank_dynamic != 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
@@ -804,13 +811,12 @@ public:
     ( Kokkos::Impl::are_integral<I0,I1,Args...>::value
       && ( 2 == Rank )
       && is_default_map
-      && View< DataType , Properties ... >::is_layout_right
+      && is_layout_right
       && ( traits::rank_dynamic == 0 )
     ), reference_type >::type
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
     {
-      static_assert(is_layout_stride);
       KOKKOS_IMPL_VIEW_OPERATOR_VERIFY( (m_track,m_map,i0,i1,args...) )
       return m_map.m_handle[ i1 + m_map.m_offset.m_dim.N1 * i0 ];
     }
