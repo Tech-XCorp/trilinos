@@ -782,7 +782,6 @@ public:
   operator()( const I0 & i0 , const I1 & i1
             , Args ... args ) const
     {
-      static_assert(is_layout_left);
       KOKKOS_IMPL_VIEW_OPERATOR_VERIFY( (m_track,m_map,i0,i1,args...) )
       return m_map.m_handle[ i0 + m_map.m_offset.m_dim.N0 * i1 ];
     }
