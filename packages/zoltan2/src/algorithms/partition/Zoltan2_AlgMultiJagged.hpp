@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_ATOMIC_KERNEL
+// #define USE_ATOMIC_KERNEL
 #define USE_FLOAT_SCALAR
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4103,8 +4103,7 @@ struct ReduceWeightsFunctor {
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
 #ifdef USE_ATOMIC_KERNEL
-          shared_ptr[part*2] += w;
-     //     Kokkos::atomic_add(&shared_ptr[part*2], (array_t)w);
+          Kokkos::atomic_add(&shared_ptr[part*2], (array_t)w);
 #else
           threadSum.ptr[part*2] += w;
 #endif
@@ -4122,8 +4121,7 @@ struct ReduceWeightsFunctor {
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef USE_ATOMIC_KERNEL
-            shared_ptr[part*2+1] += w;
-          //  Kokkos::atomic_add(&shared_ptr[part*2+1], (array_t)w);
+            Kokkos::atomic_add(&shared_ptr[part*2+1], (array_t)w);
 #else
             threadSum.ptr[part*2+1] += w;
 #endif
