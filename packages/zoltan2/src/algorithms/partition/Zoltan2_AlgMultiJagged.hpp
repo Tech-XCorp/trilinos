@@ -64,6 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
+#define USE_ATOMIC_KERNEL
 #define USE_FLOAT_SCALAR
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4006,8 +4007,12 @@ struct ReduceWeightsFunctor {
   }
 
   size_t team_shmem_size (int team_size) const {
+#ifdef USE_ATOMIC_KERNEL
+    return sizeof(array_t) * (value_count_weights + value_count_rightleft);
+#else
     return sizeof(array_t) * (value_count_weights + value_count_rightleft)
       * team_size;
+#endif
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4032,100 +4037,158 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
-    // create the team shared data - each thread gets one of the arrays
-    size_t sh_mem_size = sizeof(array_t) * (value_count_weights + value_count_rightleft) * teamMember.team_size();
+#ifdef USE_ATOMIC_KERNEL
+    size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
+      value_count_rightleft);
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
+      
+    // init the shared array to 0
+    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
+      for(int n = 0; n < value_count_weights; ++n) {
+        shared_ptr[n] = 0;
+      }
+      
+      for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
+        shared_ptr[n]   = -max_scalar;
+        shared_ptr[n+1] =  max_scalar;
+      }
+    });
+      
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const size_t ii) {
+#else // USE_ATOMIC_KERNEL
+    // create the team shared data - each thread gets one of the arrays
+    size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
+      value_count_rightleft) * teamMember.team_size();
 
+    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
+      sh_mem_size);
+      
     // select the array for this thread
-    ArrayType<array_t>
-      array(&shared_ptr[teamMember.team_rank() * (value_count_weights + value_count_rightleft)]);
+    ArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
+        (value_count_weights + value_count_rightleft)]);
 
     // create reducer which handles the ArrayType class
     ArrayCombinationReducer<policy_t, array_t, part_t> arraySumReducer(
       max_scalar, array,
       value_count_rightleft,
       value_count_weights);
-
+      
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<array_t>& threadSum) {
-      
+#endif // USE_ATOMIC_KERNEL
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
       scalar_t w = bUniformWeights ? 1 : weights(i,0);
 
-        // now check each part and it's right cut
-        index_t part = parts(i)/2;
+      // now check each part and it's right cut
+      index_t part = parts(i)/2;
 
-        int upper = num_cuts;
-        int lower = 0;
-        for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
+      int upper = num_cuts;
+      int lower = 0;
 
+      for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
         // for the left/right closest part calculation
+#ifdef USE_ATOMIC_KERNEL
+        array_t * p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
+#else
         array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
-  
+#endif
         scalar_t a = (part == 0) ? -max_scalar : cut_coordinates(part-1);
         scalar_t b = (part == num_cuts) ? max_scalar : cut_coordinates(part);
 
-          if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-            threadSum.ptr[part*2] += w;
-            parts(i) = part*2;
-            
-            // now handle the left/right closest part
-            if(coord < *(p1+1)) {
-              *(p1+1) = coord;
-            }
-            if(coord > *(p1+2)) {
-              *(p1+2) = coord;
-            }
+        if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
+#ifdef USE_ATOMIC_KERNEL
+          shared_ptr[part*2] += w;
+     //     Kokkos::atomic_add(&shared_ptr[part*2], (array_t)w);
+#else
+          threadSum.ptr[part*2] += w;
+#endif
+          parts(i) = part*2;
+          
+          // now handle the left/right closest part
+          if(coord < *(p1+1)) {
+            *(p1+1) = coord;
+          }
+          if(coord > *(p1+2)) {
+            *(p1+2) = coord;
+          }
+          break;
+        }
+        else if(part != num_cuts) {
+          if(coord < b + sEpsilon && coord > b - sEpsilon) {
+#ifdef USE_ATOMIC_KERNEL
+            shared_ptr[part*2+1] += w;
+          //  Kokkos::atomic_add(&shared_ptr[part*2+1], (array_t)w);
+#else
+            threadSum.ptr[part*2+1] += w;
+#endif
+
+            parts(i) = part*2+1;
+
+            *(p1+2) = b;
+            *(p1+3) = b;           
             break;
           }
-          else if(part != num_cuts) {
-            if(coord < b + sEpsilon && coord > b - sEpsilon) {
-              threadSum.ptr[part*2+1] += w;
-              parts(i) = part*2+1;
-  
-              *(p1+2) = b;
-              *(p1+3) = b;           
-              break;
-            }
-          }
-          
-          if(coord < b) {
-            if(part == lower + 1) {
-              part = lower;
-            }
-            else {
-              upper = part - 1;
-              part -= (part - lower)/2;
-            }
-          }
-          else if(part == upper - 1) {
-            part = upper;
+        }
+        
+        if(coord < b) {
+          if(part == lower + 1) {
+            part = lower;
           }
           else {
-            lower = part + 1;
-            part += (upper - part)/2;
+            upper = part - 1;
+            part -= (part - lower)/2;
           }
-        }      
+        }
+        else if(part == upper - 1) {
+          part = upper;
+        }
+        else {
+          lower = part + 1;
+          part += (upper - part)/2;
+        }
+      }
+#ifdef USE_ATOMIC_KERNEL
+    });
+#else // USE_ATOMIC_KERNEL
     }, arraySumReducer);
+#endif // USE_ATOMIC_KERNEL
 
     teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
+#ifdef USE_ATOMIC_KERNEL
+        teamSum[n] += shared_ptr[n];
+#else
         teamSum[n] += array.ptr[n];
+#endif
       }
       
       for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
+
+#ifdef USE_ATOMIC_KERNEL
+        if(shared_ptr[n] > teamSum[n]) {
+          teamSum[n] = shared_ptr[n];
+#else
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
+#endif
         }
+
+#ifdef USE_ATOMIC_KERNEL
+        if(shared_ptr[n+1] < teamSum[n+1]) {
+          teamSum[n+1] = shared_ptr[n+1];
+#else
         if(array.ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = array.ptr[n+1];
+#endif
         }
       }
     
