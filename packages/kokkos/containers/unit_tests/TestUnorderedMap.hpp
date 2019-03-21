@@ -193,7 +193,7 @@ struct TestInsert
 
 
 template <typename Device>
-void test_insert( uint32_t num_nodes , uint32_t num_inserts , uint32_t num_duplicates , bool near )
+void test_insert( uint32_t num_nodes , uint32_t num_inserts , uint32_t num_duplicates , bool nearv )
 {
   typedef Kokkos::UnorderedMap<uint32_t,uint32_t, Device> map_type;
   typedef Kokkos::UnorderedMap<const uint32_t,const uint32_t, Device> const_map_type;
@@ -203,7 +203,7 @@ void test_insert( uint32_t num_nodes , uint32_t num_inserts , uint32_t num_dupli
   map_type map;
   map.rehash(num_nodes,false);
 
-  if (near) {
+  if (nearv) {
     Impl::TestInsert<map_type,true> test_insert(map, num_inserts, num_duplicates);
     test_insert.testit();
   } else

@@ -46,9 +46,10 @@ using namespace Galeri;
 // defines the label for this aggregation scheme //
 // ============================================= //
 
-char*UserLabel()
+char* UserLabel()
 {
-  return("Linear");
+  char label[7] = "Linear";
+  return label;
 }
 
 // ================================ //

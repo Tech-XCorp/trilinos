@@ -56,9 +56,9 @@ namespace Test {
 // Reduction   : result = dot( Q(:,j) , Q(:,j) );
 // PostProcess : R(j,j) = result ; inv = 1 / result ;
 template< class VectorView , class ValueView  >
-struct InvNorm2 : public Kokkos::DotSingle< VectorView > {
+struct InvNorm2 : public Kokkos::DotSingle< VectorView, typename VectorView::execution_space > {
 
-  typedef typename Kokkos::DotSingle< VectorView >::value_type value_type ;
+  typedef typename Kokkos::DotSingle< VectorView, typename VectorView::execution_space >::value_type value_type ;
 
   ValueView  Rjj ;
   ValueView  inv ;
@@ -66,7 +66,7 @@ struct InvNorm2 : public Kokkos::DotSingle< VectorView > {
   InvNorm2( const VectorView & argX ,
             const ValueView  & argR ,
             const ValueView  & argInv )
-    : Kokkos::DotSingle< VectorView >( argX )
+    : Kokkos::DotSingle< VectorView, typename VectorView::execution_space >( argX )
     , Rjj( argR )
     , inv( argInv )
     {}
@@ -91,9 +91,9 @@ void invnorm2( const VectorView & x ,
 
 // PostProcess : tmp = - ( R(j,k) = result );
 template< class VectorView , class ValueView  >
-struct DotM : public Kokkos::Dot< VectorView > {
+struct DotM : public Kokkos::Dot< VectorView, typename VectorView::execution_space > {
 
-  typedef typename Kokkos::Dot< VectorView >::value_type value_type ;
+  typedef typename Kokkos::Dot< VectorView, typename VectorView::execution_space >::value_type value_type ;
 
   ValueView  Rjk ;
   ValueView  tmp ;
@@ -102,7 +102,7 @@ struct DotM : public Kokkos::Dot< VectorView > {
         const VectorView & argY ,
         const ValueView & argR ,
         const ValueView & argTmp )
-    : Kokkos::Dot< VectorView >( argX , argY )
+    : Kokkos::Dot< VectorView, typename VectorView::execution_space >( argX , argY )
     , Rjk( argR )
     , tmp( argTmp )
     {}

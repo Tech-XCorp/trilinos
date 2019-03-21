@@ -43,10 +43,10 @@ void random_distribution_1D(
 
   std::vector<itype> myGlobalElements(1.2 * (nrows / np) + 1);
   int nMyRows = 0;
-  srandom(1);
+  std::srand(1);
   double denom = (double) RAND_MAX + 1.;
   for (itype i = 0; i < nrows; i++) {
-    int p = (int) ((double) np * (double) random() / denom);
+    int p = (int) ((double) np * (double) std::rand() / denom);
     if (p == me) {
       if (nMyRows >= myGlobalElements.size())
         myGlobalElements.resize(1.5*myGlobalElements.size());
@@ -86,12 +86,12 @@ void random_distribution_2D(
   std::vector<itype> myGlobalRowElements(1.2 * nrows / npRows + 1);
   std::vector<itype> myGlobalColElements(1.2 * nrows / npCols + 1);
 
-  srandom(1);
+  std::srand(1);
   double denom = (double) RAND_MAX + 1.;
 
   for (itype i = 0; i < nrows; i++) {
     // Compute rank to receive the vector entry i
-    int p = (int) ((double) np * (double) random() / denom);
+    int p = (int) ((double) np * (double) std::rand() / denom);
 
     if (p == me) {
       // Add entry i to my vector map

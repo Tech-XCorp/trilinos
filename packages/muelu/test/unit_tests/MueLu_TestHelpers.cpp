@@ -60,6 +60,7 @@ namespace MueLuTests {
     ArrayRCP<std::string> GetFileList(const std::string& dirPath, const std::string& filter) {
       RCP<std::vector<std::string> > files = rcp(new std::vector<std::string>());
 
+#ifndef _WIN32
       DIR *dir = opendir(dirPath.c_str());
       TEUCHOS_TEST_FOR_EXCEPTION(dir == NULL, MueLu::Exceptions::RuntimeError, "GetFileList(\"" + dirPath + "\") : " + strerror(errno));
 
@@ -73,6 +74,7 @@ namespace MueLuTests {
       }
 
       closedir(dir);
+#endif
 
       return arcp(files);
     }

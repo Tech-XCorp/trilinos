@@ -63,7 +63,11 @@ namespace {
 
   TEUCHOS_STATIC_SETUP()
   {
+#ifndef _WIN32
     setenv(TEST_VAR_SET.c_str(), TEST_VAR_SET.c_str(), 1);
+#else
+    _putenv_s(TEST_VAR_SET.c_str(), TEST_VAR_SET.c_str());
+#endif
   }
 
   //

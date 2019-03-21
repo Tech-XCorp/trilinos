@@ -80,6 +80,14 @@
 #include <BelosMueLuAdapter.hpp>      // => This header defines Belos::MueLuOp
 #endif
 
+// Fix for Windows
+#ifdef _MSC_VER
+#include <io.h>
+#define STDOUT_FILENO 1
+#define dup _dup
+#define dup2 _dup2
+#endif
+
 template<class Scalar, class LocalOrdinal, class GlobalOrdinal, class Node>
 int main_(Teuchos::CommandLineProcessor &clp, Xpetra::UnderlyingLib lib, int argc, char *argv[]) {
 #include <MueLu_UseShortNames.hpp>

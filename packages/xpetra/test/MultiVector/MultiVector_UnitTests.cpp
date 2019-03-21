@@ -534,8 +534,8 @@ namespace {
 #ifdef HAVE_XPETRA_TPETRA
     if(mylib==Xpetra::UseTpetra) {
       RCP<const Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal,Node> > tmap = Teuchos::rcp_dynamic_cast<const Xpetra::TpetraMap<LocalOrdinal,GlobalOrdinal,Node> >(map);
-      RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > mvec = Tpetra::createMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tmap->getTpetra_Map(),numVecs);
-      RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >   vec = Tpetra::createVector<Scalar,LocalOrdinal,GlobalOrdinal,Node>(tmap->getTpetra_Map());
+      RCP<Tpetra::MultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node> > mvec = Tpetra::createMultiVector<Scalar,LocalOrdinal,GlobalOrdinal,Node,Node::classic>(tmap->getTpetra_Map(),numVecs);
+      RCP<Tpetra::Vector<Scalar,LocalOrdinal,GlobalOrdinal,Node> >   vec = Tpetra::createVector<Scalar,LocalOrdinal,GlobalOrdinal,Node,Node::classic>(tmap->getTpetra_Map());
       TEST_EQUALITY(mvec->getNumVectors(), numVecs);
       TEST_EQUALITY_CONST(vec->getNumVectors(), 1);
       RCP<const MV> xmv = Teuchos::rcp_dynamic_cast<const MV>(Xpetra::toXpetra<Scalar,LocalOrdinal,GlobalOrdinal,Node>(mvec));

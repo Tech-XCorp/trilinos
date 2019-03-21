@@ -180,7 +180,7 @@ namespace {
 
     // Create a MultiVector, and make sure that it has the right
     // number of vectors (columns).
-    RCP<MV> mvec = Tpetra::createMultiVector<Scalar>(map,numVecs);
+    RCP<MV> mvec = Tpetra::createMultiVector<Scalar, LO, GO, Node, Node::classic>(map,numVecs);
     TEST_EQUALITY(mvec->getNumVectors(), numVecs);
 
     // Create a Vector, and make sure that it has exactly one vector

@@ -40,7 +40,9 @@
 //@HEADER
 */
 
+#ifndef _WIN32
 #include <sys/resource.h>
+#endif
 #include "Ifpack_ConfigDefs.h"
 
 #ifdef HAVE_MPI
@@ -208,12 +210,14 @@ int main(int argc, char *argv[])
 
   // test the preconditioner
   int TestPassed = true;
+#ifndef _WIN32
   struct rusage usage;
   //int ret;
   //ret = getrusage(who, &usage);
   struct timeval ru_utime;
   //  struct timeval ru_stime;
   ru_utime = usage.ru_utime;
+#endif
   
 
   // ================================== //
@@ -224,33 +228,39 @@ int main(int argc, char *argv[])
     ComparePointAndBlock("Jacobi",A,10);
   if(verbose) printf(" Jacobi Finished \n");
 
+#ifndef _WIN32
   //ret = getrusage(who, &usage);
   int sec =  usage.ru_utime.tv_sec -ru_utime.tv_sec;
   int usec = usage.ru_utime.tv_usec -ru_utime.tv_usec;
   double tt = (double)sec + 1e-6*(double)usec;
   ru_utime = usage.ru_utime;
   if(verbose) printf(" Jacobi time %f \n",tt);
+#endif
 
   TestPassed = TestPassed && 
     ComparePointAndBlock("symmetric Gauss-Seidel",A,10);
   if(verbose) printf(" sGS finished \n");
 
+#ifndef _WIN32
   //ret = getrusage(who, &usage);
   sec =  usage.ru_utime.tv_sec -ru_utime.tv_sec;
   usec = usage.ru_utime.tv_usec -ru_utime.tv_usec;
   tt = (double)sec + 1e-6*(double)usec;
   ru_utime = usage.ru_utime;
   if(verbose) printf(" sGS time %f \n",tt);
+#endif
 
   if (!SymmetricGallery) {
     TestPassed = TestPassed && 
       ComparePointAndBlock("Gauss-Seidel",A,10);
+#ifndef _WIN32
     //ret = getrusage(who, &usage);
     sec =  usage.ru_utime.tv_sec -ru_utime.tv_sec;
     usec = usage.ru_utime.tv_usec -ru_utime.tv_usec; 
     tt = (double)sec + 1e-6*(double)usec;
     ru_utime = usage.ru_utime;
     if(verbose) printf(" GS time %f \n",tt);
+#endif
     if(verbose) printf(" GS Finished \n");
   }
 

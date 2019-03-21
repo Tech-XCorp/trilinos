@@ -341,10 +341,10 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, gaussSeidelSerial, LocalOrdinalTyp
   // Gauss-Seidel in the domain / range Map.
 
   RCP<const map_type> colMap = graph->getColMap ();
-  RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
+  RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
   RCP<multivector_type> X = X_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> X_exact = X_exact_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> B = B_colMap->offsetViewNonConst (rangeMap, 0);
@@ -718,10 +718,10 @@ TEUCHOS_UNIT_TEST_TEMPLATE_4_DECL( CrsMatrix, reorderedGaussSeidelSerial, LocalO
   // Gauss-Seidel in the domain / range Map.
 
   RCP<const map_type> colMap = graph->getColMap ();
-  RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
-  RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT> (colMap, 1);
+  RCP<multivector_type> X_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> X_exact_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> B_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
+  RCP<multivector_type> R_colMap = createMultiVector<ST, LO, GO, NT, NT::classic> (colMap, 1);
   RCP<multivector_type> X = X_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> X_exact = X_exact_colMap->offsetViewNonConst (domainMap, 0);
   RCP<multivector_type> B = B_colMap->offsetViewNonConst (rangeMap, 0);
