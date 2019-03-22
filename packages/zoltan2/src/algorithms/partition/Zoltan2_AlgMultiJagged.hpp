@@ -1182,7 +1182,7 @@ private:
       used_thread_part_weight_work,
     Kokkos::View<mj_lno_t *, device_t> out_part_xadj,
     Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
-      local_thread_point_counts,
+      local_point_counts,
     bool local_distribute_points_on_cut_lines,
     Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
       local_thread_cut_line_weight_to_put_left,
@@ -4641,6 +4641,169 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   new_cut_position = coordinate_range * required_shift + cut_lower_bound;
 }
 
+template<class policy_t, class scalar_t>
+struct ArrayReducer {
+
+  typedef ArrayReducer reducer;
+  typedef ArrayType<scalar_t> value_type;
+  value_type * value;
+  size_t value_count;
+
+  KOKKOS_INLINE_FUNCTION ArrayReducer(
+    value_type &val,
+    const size_t & mj_value_count) :
+      value(&val),
+      value_count(mj_value_count)
+  {}
+
+  KOKKOS_INLINE_FUNCTION
+  value_type& reference() const {
+    return *value;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type& dst, const value_type& src)  const {
+    for(int n = 0; n < value_count; ++n) {
+      dst.ptr[n] += src.ptr[n];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join (volatile value_type& dst, const volatile value_type& src) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst.ptr[n] += src.ptr[n];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst.ptr[n] = 0;
+    }
+  }
+};
+
+template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
+struct ReduceArrayFunctor {
+  typedef typename policy_t::member_type member_type;
+  typedef Kokkos::View<scalar_t*> scalar_view_t;
+  typedef array_t value_type[];
+  
+  part_t concurrent_current_part;
+  int value_count;
+  Kokkos::View<index_t*, device_t> permutations;
+  Kokkos::View<scalar_t *, device_t> coordinates;
+  Kokkos::View<part_t*, device_t> parts;
+  Kokkos::View<index_t *, device_t> part_xadj;
+  Kokkos::View<index_t *, device_t> track_on_cuts;
+
+  ReduceArrayFunctor(
+    part_t mj_concurrent_current_part,
+    part_t mj_weight_array_size,
+    Kokkos::View<index_t*, device_t> mj_permutations,
+    Kokkos::View<scalar_t *, device_t> mj_coordinates,
+    Kokkos::View<part_t*, device_t> mj_parts,
+    Kokkos::View<index_t *, device_t> mj_part_xadj,
+    Kokkos::View<index_t *, device_t> mj_track_on_cuts
+    ) :
+      concurrent_current_part(mj_concurrent_current_part),
+      value_count(mj_weight_array_size),
+      permutations(mj_permutations),
+      coordinates(mj_coordinates),
+      parts(mj_parts),
+      part_xadj(mj_part_xadj),
+      track_on_cuts(mj_track_on_cuts)
+  {
+  }
+
+  size_t team_shmem_size (int team_size) const {
+    return sizeof(array_t) * (value_count) * team_size;
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const member_type & teamMember, value_type teamSum) const {
+
+    index_t all_begin = (concurrent_current_part == 0) ? 0 :
+      part_xadj(concurrent_current_part - 1);
+    index_t all_end = part_xadj(concurrent_current_part);
+
+    index_t num_working_points = all_end - all_begin;
+    int num_teams = teamMember.league_size();
+    
+    index_t stride = num_working_points / num_teams;
+    if((num_working_points % num_teams) > 0) {
+      stride += 1; // make sure we have coverage for the final points
+    }
+        
+    index_t begin = all_begin + stride * teamMember.league_rank();
+    index_t end = begin + stride;
+    if(end > all_end) {
+      end = all_end; // the last team may have less work than the other teams
+    }
+
+    // create the team shared data - each thread gets one of the arrays
+    size_t sh_mem_size = sizeof(array_t) * (value_count) * teamMember.team_size();
+
+    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
+      sh_mem_size);
+      
+    // select the array for this thread
+    ArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
+        (value_count)]);
+
+    // create reducer which handles the ArrayType class
+    ArrayReducer<policy_t, array_t> arrayReducer(array, value_count);
+      
+    Kokkos::parallel_reduce(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
+      
+      index_t coordinate_index = permutations(ii);
+      part_t place = parts(coordinate_index);
+      part_t part = place / 2;
+      if(place % 2 == 0) {
+        threadSum.ptr[part] += 1;
+        parts(coordinate_index) = part;
+      }
+      else {
+        // fill a tracking array so we can process these slower points
+        // in next cycle
+        index_t set_index =
+          Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
+        track_on_cuts(set_index) = ii;
+      }
+    }, arrayReducer);
+
+    teamMember.team_barrier();
+
+    // collect all the team's results
+    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
+      for(int n = 0; n < value_count; ++n) {
+        teamSum[n] += array.ptr[n];
+      }
+    });
+  }
+  
+  KOKKOS_INLINE_FUNCTION
+  void join(value_type dst, const value_type src)  const {
+    for(int n = 0; n < value_count; ++n) {
+      dst[n] += src[n];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  void join (volatile value_type dst, const volatile value_type src) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst[n] += src[n];
+    }
+  }
+
+  KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
+    for(int n = 0; n < value_count; ++n) {
+      dst[n] = 0;
+    }
+  }
+};
+
 /*! \brief Function that determines the permutation indices of the coordinates.
  * \param num_parts is the number of parts.
  * \param mj_current_dim_coords is 1 dimensional array holding the
@@ -4676,7 +4839,7 @@ mj_create_new_partitions(
   Kokkos::View<mj_lno_t *, device_t>
     out_part_xadj,
   Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
-    local_thread_point_counts,
+    local_point_counts,
   bool local_distribute_points_on_cut_lines,
   Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
     local_thread_cut_line_weight_to_put_left,
@@ -4743,7 +4906,7 @@ mj_create_new_partitions(
       }
 
       for(mj_part_t i = 0; i < num_parts; ++i) {
-        local_thread_point_counts(i) = 0;
+        local_point_counts(i) = 0;
       }
   });
 
@@ -4780,6 +4943,48 @@ mj_create_new_partitions(
   clock_mj_create_new_partitions_3.stop();
   clock_mj_create_new_partitions_4.start();
   
+  // here we need to parallel reduce an array to count coords in each part
+  // atomically adding, especially for low part count would kill us
+  // in the original setup we kept arrays allocated for each thread but for
+  // the cuda version we'd like to avoid allocating N arrays for the number
+  // of teams/threads which would be complicated based on running openmp or
+  // cuda.
+  typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
+  auto policy_ReduceFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
+  typedef int array_t;
+  
+  // just need parts - on the cuts will be handled in a separate serial
+  // call after this.
+  array_t * reduce_array = new array_t[static_cast<size_t>(num_parts)];
+
+  ReduceArrayFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t,
+    typename mj_node_t::device_type, array_t>teamFunctor(
+      current_concurrent_work_part,
+      num_parts,
+      coordinate_permutations,
+      mj_current_dim_coords,
+      assigned_part_ids,
+      part_xadj,
+      track_on_cuts
+      );
+  Kokkos::parallel_reduce(policy_ReduceFunctor,
+    teamFunctor, reduce_array);
+      
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space>
+    policy (mj_num_teams, Kokkos::AUTO());
+
+  // Move it from global memory to device memory
+  // TODO: Need to figure out how we can better manage this
+  typename decltype(local_point_counts)::HostMirror host_part_count =
+      Kokkos::create_mirror_view(local_point_counts);
+  for(mj_part_t part = 0; part < num_parts; ++part) {
+    host_part_count(part) = reduce_array[part];
+  }
+  Kokkos::deep_copy(local_point_counts, host_part_count);
+    
+  delete [] reduce_array;
+
+/*
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -4790,7 +4995,7 @@ mj_create_new_partitions(
     mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
     if(coordinate_assigned_place % 2 == 0) {
       Kokkos::atomic_add(
-        &local_thread_point_counts(coordinate_assigned_part), 1);
+        &local_point_counts(coordinate_assigned_part), 1);
       local_assigned_part_ids(coordinate_index) =
         coordinate_assigned_part;
     }
@@ -4802,7 +5007,8 @@ mj_create_new_partitions(
       track_on_cuts(set_index) = ii;
     }
   });
-  
+*/
+
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
 
@@ -4843,7 +5049,7 @@ mj_create_new_partitions(
             local_thread_cut_line_weight_to_put_left(
             coordinate_assigned_part);
         }
-        ++local_thread_point_counts(coordinate_assigned_part);
+        ++local_point_counts(coordinate_assigned_part);
         local_assigned_part_ids(coordinate_index) =
           coordinate_assigned_part;
       }
@@ -4896,26 +5102,26 @@ mj_create_new_partitions(
           }
           ++coordinate_assigned_part;
         }
-        local_thread_point_counts(coordinate_assigned_part) += 1;
+        local_point_counts(coordinate_assigned_part) += 1;
         local_assigned_part_ids(coordinate_index) =
           coordinate_assigned_part;
       }
     }
 
     for(int j = 0; j < num_parts; ++j) {
-      out_part_xadj(j) = local_thread_point_counts(j);
-      local_thread_point_counts(j) = 0;
+      out_part_xadj(j) = local_point_counts(j);
+      local_point_counts(j) = 0;
       
       if(j != 0) {
         out_part_xadj(j) += out_part_xadj(j - 1);
-        local_thread_point_counts(j) += out_part_xadj(j - 1);
+        local_point_counts(j) += out_part_xadj(j - 1);
       }
     }
   });
   
   clock_mj_create_new_partitions_5.stop();
   clock_mj_create_new_partitions_6.start();
-
+  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -4925,7 +5131,7 @@ mj_create_new_partitions(
 
     // We need to atomically read and then increment the write index
     mj_lno_t idx =
-      Kokkos::atomic_fetch_add(&local_thread_point_counts(p), 1);
+      Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
     // The actual write is to a single slot so needs no atomic
     local_new_coordinate_permutations(
       coordinate_begin_index + idx) = i;
