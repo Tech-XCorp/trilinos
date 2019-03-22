@@ -2679,7 +2679,7 @@ Clock partA("partA", true);
   }
 
   // this optmization should/could be eliminated once the alternative code is working better
-  if(vector_num_partitioning_in_current_dim.size() != view_num_partitioning_in_current_dim.size() == 1) {
+  if(vector_num_partitioning_in_current_dim.size() != view_num_partitioning_in_current_dim.size()) {
     Kokkos::resize(view_num_partitioning_in_current_dim, vector_num_partitioning_in_current_dim.size());
   }
 
@@ -3880,14 +3880,14 @@ struct ArrayCombinationReducer {
   typedef ArrayType<scalar_t> value_type;
   scalar_t max_scalar;
   value_type * value;
-  size_t value_count_rightleft;
-  size_t value_count_weights;
+  int value_count_rightleft;
+  int value_count_weights;
 
   KOKKOS_INLINE_FUNCTION ArrayCombinationReducer(
     scalar_t mj_max_scalar,
     value_type &val,
-    const size_t & mj_value_count_rightleft,
-    const size_t & mj_value_count_weights) :
+    int mj_value_count_rightleft,
+    int mj_value_count_weights) :
       max_scalar(mj_max_scalar),
       value(&val),
       value_count_rightleft(mj_value_count_rightleft),
@@ -4647,11 +4647,11 @@ struct ArrayReducer {
   typedef ArrayReducer reducer;
   typedef ArrayType<scalar_t> value_type;
   value_type * value;
-  size_t value_count;
+  int value_count;
 
   KOKKOS_INLINE_FUNCTION ArrayReducer(
     value_type &val,
-    const size_t & mj_value_count) :
+    int mj_value_count) :
       value(&val),
       value_count(mj_value_count)
   {}
