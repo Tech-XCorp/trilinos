@@ -161,6 +161,12 @@ static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cu
 static Clock clock_write_globals("          clock_write_globals", false);
 static Clock clock_mj_1D_part_end("        clock_mj_1D_part_end", false);
 static Clock clock_mj_create_new_partitions("         clock_mj_create_new_partitions", false);
+static Clock clock_mj_create_new_partitions_1("           clock_mj_create_new_partitions_1", false);
+static Clock clock_mj_create_new_partitions_2("           clock_mj_create_new_partitions_2", false);
+static Clock clock_mj_create_new_partitions_3("           clock_mj_create_new_partitions_3", false);
+static Clock clock_mj_create_new_partitions_4("           clock_mj_create_new_partitions_4", false);
+static Clock clock_mj_create_new_partitions_5("           clock_mj_create_new_partitions_5", false);
+static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_partitions_6", false);
 
 #if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
@@ -4690,6 +4696,8 @@ mj_create_new_partitions(
 
   mj_part_t num_cuts = num_parts - 1;
 
+  clock_mj_create_new_partitions_1.start();
+  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
     KOKKOS_LAMBDA(int dummy) {
@@ -4739,6 +4747,9 @@ mj_create_new_partitions(
       }
   });
 
+  clock_mj_create_new_partitions_1.stop();
+  clock_mj_create_new_partitions_2.start();
+  
   mj_lno_t coordinate_begin_index = 
     current_concurrent_work_part == 0 ? 0 :
     host_part_xadj(current_concurrent_work_part - 1);
@@ -4759,10 +4770,16 @@ mj_create_new_partitions(
     }
   }, total_on_cut);
 
+  clock_mj_create_new_partitions_2.stop();
+  clock_mj_create_new_partitions_3.start();
+  
   Kokkos::View<mj_lno_t *, device_t> track_on_cuts(
     "track_on_cuts", // would do WithoutInitialization but need last init to 0
     total_on_cut + 1); // extra index to use for tracking
 
+  clock_mj_create_new_partitions_3.stop();
+  clock_mj_create_new_partitions_4.start();
+  
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -4785,6 +4802,9 @@ mj_create_new_partitions(
       track_on_cuts(set_index) = ii;
     }
   });
+  
+  clock_mj_create_new_partitions_4.stop();
+  clock_mj_create_new_partitions_5.start();
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
@@ -4891,8 +4911,10 @@ mj_create_new_partitions(
         local_thread_point_counts(j) += out_part_xadj(j - 1);
       }
     }
-
   });
+  
+  clock_mj_create_new_partitions_5.stop();
+  clock_mj_create_new_partitions_6.start();
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
@@ -4908,6 +4930,8 @@ mj_create_new_partitions(
     local_new_coordinate_permutations(
       coordinate_begin_index + idx) = i;
   });
+  
+  clock_mj_create_new_partitions_6.stop();
 
   clock_mj_create_new_partitions.stop();
 }
@@ -7453,6 +7477,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     << "  Execution Space: " << mj_node_t::execution_space::name() << std::endl;
       
   clock_mj_create_new_partitions.reset();
+  clock_mj_create_new_partitions_1.reset();
+  clock_mj_create_new_partitions_2.reset();
+  clock_mj_create_new_partitions_3.reset();
+  clock_mj_create_new_partitions_4.reset();
+  clock_mj_create_new_partitions_5.reset();
+  clock_mj_create_new_partitions_6.reset();
   clock_mj_1D_part_while_loop.reset();
   clock_host_copies.reset();
   clock_swap.reset();
@@ -8259,6 +8289,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_new_part_chunks.print();
   clock_mj_create_new_partitions.print();
+  clock_mj_create_new_partitions_1.print();
+  clock_mj_create_new_partitions_2.print();
+  clock_mj_create_new_partitions_3.print();
+  clock_mj_create_new_partitions_4.print();
+  clock_mj_create_new_partitions_5.print();
+  clock_mj_create_new_partitions_6.print();
   clock_loopB.print();
 
   clock_multi_jagged_part_finish.print();
