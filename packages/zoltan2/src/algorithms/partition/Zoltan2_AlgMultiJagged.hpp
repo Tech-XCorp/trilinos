@@ -4984,31 +4984,6 @@ mj_create_new_partitions(
     
   delete [] reduce_array;
 
-/*
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-    coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const int ii) {
-    mj_lno_t coordinate_index = local_coordinate_permutations(ii);
-    mj_part_t coordinate_assigned_place =
-      local_assigned_part_ids(coordinate_index);
-    mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
-    if(coordinate_assigned_place % 2 == 0) {
-      Kokkos::atomic_add(
-        &local_point_counts(coordinate_assigned_part), 1);
-      local_assigned_part_ids(coordinate_index) =
-        coordinate_assigned_part;
-    }
-    else {
-      // fill a tracking array so we can process these slower points
-      // in next cycle
-      mj_lno_t set_index =
-        Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
-      track_on_cuts(set_index) = ii;
-    }
-  });
-*/
-
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
 
