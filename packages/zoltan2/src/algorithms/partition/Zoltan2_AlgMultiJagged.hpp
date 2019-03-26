@@ -4184,7 +4184,7 @@ struct ReduceWeightsFunctor {
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
 #ifdef USE_ATOMIC_KERNEL
-        teamSum[n] += shared_ptr[n];
+        Kokkos::atomic_add(&teamSum[n], shared_ptr[n]);
 #else
         teamSum[n] += array.ptr[n];
 #endif
