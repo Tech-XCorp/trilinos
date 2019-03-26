@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-// #define USE_ATOMIC_KERNEL
+#define USE_ATOMIC_KERNEL
 #define USE_FLOAT_SCALAR
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4116,12 +4116,23 @@ struct ReduceWeightsFunctor {
           parts(i) = part*2;
           
           // now handle the left/right closest part
+#ifdef USE_ATOMIC_KERNEL
           if(coord < *(p1+1)) {
             *(p1+1) = coord;
           }
           if(coord > *(p1+2)) {
             *(p1+2) = coord;
           }
+#else
+          array_t prev_value = *(p1+1);
+          while(coord < prev_value) {
+            Kokkos::atomic_exchange_weak(*(p1+1), coord);
+          }
+          prev_value = *(p1+2);
+          while(coord > prev_value) {
+            Kokkos::atomic_exchange_weak(*(p1+2), coord);
+          }
+#endif
           break;
         }
         else if(part != num_cuts) {
@@ -4978,7 +4989,7 @@ mj_create_new_partitions(
   typename decltype(local_point_counts)::HostMirror host_part_count =
       Kokkos::create_mirror_view(local_point_counts);
   for(mj_part_t part = 0; part < num_parts; ++part) {
-    host_part_count(part) = reduce_array[part];
+    host_part_count(part) = reduce_array[part]; // TODO - assign ptr to unmanaged view - then deep_copy
   }
   Kokkos::deep_copy(local_point_counts, host_part_count);
     
@@ -5078,8 +5089,7 @@ mj_create_new_partitions(
           ++coordinate_assigned_part;
         }
         local_point_counts(coordinate_assigned_part) += 1;
-        local_assigned_part_ids(coordinate_index) =
-          coordinate_assigned_part;
+        local_assigned_part_ids(coordinate_index) = coordinate_assigned_part;
       }
     }
 
@@ -5103,13 +5113,8 @@ mj_create_new_partitions(
     KOKKOS_LAMBDA (const int ii) {
     mj_lno_t i = local_coordinate_permutations(ii);
     mj_part_t p = local_assigned_part_ids(i);
-
-    // We need to atomically read and then increment the write index
-    mj_lno_t idx =
-      Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
-    // The actual write is to a single slot so needs no atomic
-    local_new_coordinate_permutations(
-      coordinate_begin_index + idx) = i;
+    mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
+    local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
   });
   
   clock_mj_create_new_partitions_6.stop();
