@@ -4089,7 +4089,7 @@ struct ReduceWeightsFunctor {
 #endif // USE_ATOMIC_KERNEL
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
-      scalar_t w = bUniformWeights ? 1 : weights(i,0);
+      array_t w = bUniformWeights ? 1 : (array_t) weights(i,0);
 
       // now check each part and it's right cut
       index_t part = parts(i)/2;
@@ -4109,7 +4109,7 @@ struct ReduceWeightsFunctor {
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
 #ifdef USE_ATOMIC_KERNEL
-          Kokkos::atomic_add(&shared_ptr[part*2], (array_t)w);
+          Kokkos::atomic_add(&shared_ptr[part*2], w);
 #else
           threadSum.ptr[part*2] += w;
 #endif
@@ -4117,9 +4117,10 @@ struct ReduceWeightsFunctor {
           
           // now handle the left/right closest part
 #ifdef USE_ATOMIC_KERNEL
+          array_t new_value = (array_t) coord;
+
           array_t * dst = p1 + 1;
           array_t prev_value = *dst;
-          array_t new_value = (array_t) coord;
           while(new_value < prev_value) {
             prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
           }
@@ -4141,7 +4142,7 @@ struct ReduceWeightsFunctor {
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef USE_ATOMIC_KERNEL
-            Kokkos::atomic_add(&shared_ptr[part*2+1], (array_t)w);
+            Kokkos::atomic_add(&shared_ptr[part*2+1], w);
 #else
             threadSum.ptr[part*2+1] += w;
 #endif
