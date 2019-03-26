@@ -4051,9 +4051,6 @@ struct ReduceWeightsFunctor {
       sh_mem_size);
       
     // init the shared array to 0
-
-teamMember.team_barrier();
-
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
         shared_ptr[n] = 0;
@@ -4064,8 +4061,7 @@ teamMember.team_barrier();
         shared_ptr[n+1] =  max_scalar;
       }
     });
-
-teamMember.team_barrier();
+    teamMember.team_barrier();
       
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
@@ -4190,7 +4186,6 @@ teamMember.team_barrier();
       for(int n = 0; n < value_count_weights; ++n) {
 #ifdef USE_ATOMIC_KERNEL
         teamSum[n] += shared_ptr[n];
-//        Kokkos::atomic_add(&teamSum[n], shared_ptr[n]);
 #else
         teamSum[n] += array.ptr[n];
 #endif
@@ -4204,21 +4199,6 @@ teamMember.team_barrier();
         if(shared_ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = shared_ptr[n+1];
         }
-/*
-        array_t new_value = shared_ptr[n];
-        array_t * dst = &teamSum[n];
-        array_t prev_value = *dst;
-        while(new_value < prev_value) {
-          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
-        }
-        
-        new_value = shared_ptr[n+1];
-        dst = &teamSum[n+1];
-        prev_value = *dst;
-        while(new_value > prev_value) {
-          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
-        }
-*/
 #else
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
@@ -4434,8 +4414,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
         view_num_partitioning_in_current_dim,
         local_my_incomplete_cut_count
         );
+
+printf("Begin functor...\n");
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
+printf("End functor\n");
 
     clock_functor_weights.stop();
 
@@ -4816,6 +4799,8 @@ struct ReduceArrayFunctor {
         teamSum[n] += array.ptr[n];
       }
     });
+
+    teamMember.team_barrier();
   }
   
   KOKKOS_INLINE_FUNCTION
