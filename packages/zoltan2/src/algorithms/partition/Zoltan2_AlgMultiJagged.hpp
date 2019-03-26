@@ -4117,20 +4117,23 @@ struct ReduceWeightsFunctor {
           
           // now handle the left/right closest part
 #ifdef USE_ATOMIC_KERNEL
+          array_t * dst = p1 + 1;
+          array_t prev_value = *dst;
+          array_t new_value = (array_t) coord;
+          while(new_value < prev_value) {
+            prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+          }
+          dst = p1 + 2;
+          prev_value = *dst;
+          while(new_value > prev_value) {
+            prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+          }
+#else
           if(coord < *(p1+1)) {
             *(p1+1) = coord;
           }
           if(coord > *(p1+2)) {
             *(p1+2) = coord;
-          }
-#else
-          array_t prev_value = *(p1+1);
-          while(coord < prev_value) {
-            Kokkos::atomic_exchange_weak(*(p1+1), coord);
-          }
-          prev_value = *(p1+2);
-          while(coord > prev_value) {
-            Kokkos::atomic_exchange_weak(*(p1+2), coord);
           }
 #endif
           break;
