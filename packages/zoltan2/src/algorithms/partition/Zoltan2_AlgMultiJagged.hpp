@@ -4051,6 +4051,9 @@ struct ReduceWeightsFunctor {
       sh_mem_size);
       
     // init the shared array to 0
+
+teamMember.team_barrier();
+
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
         shared_ptr[n] = 0;
@@ -4061,6 +4064,8 @@ struct ReduceWeightsFunctor {
         shared_ptr[n+1] =  max_scalar;
       }
     });
+
+teamMember.team_barrier();
       
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
@@ -4184,34 +4189,49 @@ struct ReduceWeightsFunctor {
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
 #ifdef USE_ATOMIC_KERNEL
-        Kokkos::atomic_add(&teamSum[n], shared_ptr[n]);
+        teamSum[n] += shared_ptr[n];
+//        Kokkos::atomic_add(&teamSum[n], shared_ptr[n]);
 #else
         teamSum[n] += array.ptr[n];
 #endif
       }
-      
-      for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
 
+      for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
 #ifdef USE_ATOMIC_KERNEL
         if(shared_ptr[n] > teamSum[n]) {
           teamSum[n] = shared_ptr[n];
+        }
+        if(shared_ptr[n+1] < teamSum[n+1]) {
+          teamSum[n+1] = shared_ptr[n+1];
+        }
+/*
+        array_t new_value = shared_ptr[n];
+        array_t * dst = &teamSum[n];
+        array_t prev_value = *dst;
+        while(new_value < prev_value) {
+          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+        }
+        
+        new_value = shared_ptr[n+1];
+        dst = &teamSum[n+1];
+        prev_value = *dst;
+        while(new_value > prev_value) {
+          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+        }
+*/
 #else
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
-#endif
         }
-
-#ifdef USE_ATOMIC_KERNEL
-        if(shared_ptr[n+1] < teamSum[n+1]) {
-          teamSum[n+1] = shared_ptr[n+1];
-#else
         if(array.ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = array.ptr[n+1];
-#endif
         }
+#endif
       }
     
     });
+
+    teamMember.team_barrier();    
   }
   
   KOKKOS_INLINE_FUNCTION
