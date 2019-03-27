@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_ATOMIC_KERNEL
+// #define USE_ATOMIC_KERNEL
 #define USE_FLOAT_SCALAR
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4771,6 +4771,8 @@ struct ReduceArrayFunctor {
     // create reducer which handles the ArrayType class
     ArrayReducer<policy_t, array_t> arrayReducer(array, value_count);
       
+    int track_on_cuts_insert_index = track_on_cuts.size()-1;
+ 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, ArrayType<array_t>& threadSum) {
@@ -4786,7 +4788,7 @@ struct ReduceArrayFunctor {
         // fill a tracking array so we can process these slower points
         // in next cycle
         index_t set_index =
-          Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
+          Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts_insert_index), 1);
         track_on_cuts(set_index) = ii;
       }
     }, arrayReducer);
@@ -4987,6 +4989,8 @@ mj_create_new_partitions(
       part_xadj,
       track_on_cuts
       );
+
+/*
   Kokkos::parallel_reduce(policy_ReduceFunctor,
     teamFunctor, reduce_array);
       
@@ -5003,6 +5007,30 @@ mj_create_new_partitions(
   Kokkos::deep_copy(local_point_counts, host_part_count);
     
   delete [] reduce_array;
+*/
+
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+    coordinate_begin_index, coordinate_end_index),
+    KOKKOS_LAMBDA (const int ii) {
+    mj_lno_t coordinate_index = local_coordinate_permutations(ii);
+    mj_part_t coordinate_assigned_place =
+      local_assigned_part_ids(coordinate_index);
+    mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
+    if(coordinate_assigned_place % 2 == 0) {
+      Kokkos::atomic_add(
+        &local_point_counts(coordinate_assigned_part), 1);
+      local_assigned_part_ids(coordinate_index) =
+        coordinate_assigned_part;
+    }
+    else {
+      // fill a tracking array so we can process these slower points
+      // in next cycle
+      mj_lno_t set_index =
+        Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
+      track_on_cuts(set_index) = ii;
+    }
+  });
 
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
@@ -5010,6 +5038,7 @@ mj_create_new_partitions(
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
     KOKKOS_LAMBDA (const int & dummy) {
+
     for(int j = 0; j < total_on_cut; ++j) {
       int ii = track_on_cuts(j);
       mj_lno_t coordinate_index = local_coordinate_permutations(ii);
