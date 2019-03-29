@@ -65,9 +65,12 @@
 #include <vector>
 
 #define USE_ATOMIC_KERNEL
-#define USE_FLOAT_SCALAR
+#define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
+
+typedef float test_t; // temp
+const int test_array_size = 9;
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
@@ -3944,94 +3947,6 @@ struct ArrayCombinationReducer {
 };
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
-struct TestFunctor {
-  typedef typename policy_t::member_type member_type;
-  typedef array_t value_type[];
-  int value_count;
-
-  TestFunctor() : value_count(9) {
-  }
-
-  size_t team_shmem_size (int team_size) const {
-    return sizeof(array_t) * 9;
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void operator() (const member_type & teamMember, value_type teamSum) const {
-    size_t sh_mem_size = sizeof(array_t) * (9);
-
-    array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
-      sh_mem_size);
-
-    // init the shared array to 0
-    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
-      printf("teamSum before: %.2f\n", (float) teamSum[0]);
-
-      for(int n = 0; n < 3; ++n) {
-        shared_ptr[n] = 0;
-      }
-
-      for(int n = 3 + 2; n < 3 + 6 - 2; n += 2) {
-        shared_ptr[n]   = -1.0;
-        shared_ptr[n+1] =  1.0;
-      }
-
-      printf("teamSum after: %.2f %.2f %.2f\n", (float) teamSum[0], (float) teamSum[1], (float) teamSum[2]);
-
-    });
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void join(value_type dst, const value_type src)  const {
-/*
-    for(int n = 0; n < value_count_weights; ++n) {
-      dst[n] += src[n];
-    }
-
-    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
-      if(src[n] > dst[n]) {
-        dst[n] = src[n];
-      }
-      if(src[n+1] < dst[n+1]) {
-        dst[n+1] = src[n+1];
-      }
-    }
-*/
-  }
-
-  KOKKOS_INLINE_FUNCTION
-  void join (volatile value_type dst, const volatile value_type src) const {
-/*
-    for(int n = 0; n < value_count_weights; ++n) {
-      dst[n] += src[n];
-    }
-
-    for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
-      if(src[n] > dst[n]) {
-        dst[n] = src[n];
-      }
-      if(src[n+1] < dst[n+1]) {
-        dst[n+1] = src[n+1];
-      }
-    }
-*/
-  }
-
-  KOKKOS_INLINE_FUNCTION void init (value_type dst) const {
-    for(int n = 0; n < 3; ++n) {
-      dst[n] = 0;
-    }
-
-    for(int n = 3; n < 3 + 6; n += 2) {
-      dst[n]   = -1.0;
-      dst[n+1] =  1.0;
-    }
-  }
-};
-
-
-
-template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
@@ -4102,11 +4017,17 @@ struct ReduceWeightsFunctor {
 
   size_t team_shmem_size (int team_size) const {
 #ifdef USE_ATOMIC_KERNEL
-    return sizeof(array_t) * (value_count_weights + value_count_rightleft); // HACK - why need to pad this
+    int result = sizeof(array_t) * (value_count_weights + value_count_rightleft);
 #else
-    return sizeof(array_t) * (value_count_weights + value_count_rightleft) /* HACK TRIAL */
-      * team_size; 
+    int result = sizeof(array_t) * (value_count_weights + value_count_rightleft) * team_size; 
 #endif
+
+    // pad this to a multiple of 8 or it will run corrupt
+    int remainder = result % 8;
+    if(remainder != 0) {
+      result += 8 - remainder;
+    }
+    return result;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4474,18 +4395,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     int total_array_length =
       weight_array_length + right_left_array_length;
 
+#ifdef USE_FLOAT_ARRAY
     typedef float array_t;
-    
+#else
+    typedef double array_t;
+#endif
+
     array_t * reduce_array =
       new array_t[static_cast<size_t>(total_array_length)];
 
     clock_functor_weights.start();
-
-    TestFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
-      testFunctor();
-
-    Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
-      testFunctor, reduce_array);
 
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
@@ -4825,7 +4744,13 @@ struct ReduceArrayFunctor {
   }
 
   size_t team_shmem_size (int team_size) const {
-    return sizeof(array_t) * (value_count) * team_size;
+    // pad this to a multiple of 8 or it will run corrupt
+    int result = sizeof(array_t) * (value_count) * team_size;
+    int remainder = result % 8;
+    if(remainder != 0) {
+      result += 8 - remainder;
+    }
+    return result;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -5062,6 +4987,7 @@ mj_create_new_partitions(
   // the cuda version we'd like to avoid allocating N arrays for the number
   // of teams/threads which would be complicated based on running openmp or
   // cuda.
+/*
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
   auto policy_ReduceFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
   typedef int array_t;
@@ -5081,7 +5007,6 @@ mj_create_new_partitions(
       track_on_cuts
       );
 
-/*
   Kokkos::parallel_reduce(policy_ReduceFunctor,
     teamFunctor, reduce_array);
       
