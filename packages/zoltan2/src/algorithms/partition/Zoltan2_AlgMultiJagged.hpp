@@ -69,9 +69,6 @@
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
 
-typedef float test_t; // temp
-const int test_array_size = 9;
-
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
   typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
@@ -4987,9 +4984,24 @@ mj_create_new_partitions(
   // the cuda version we'd like to avoid allocating N arrays for the number
   // of teams/threads which would be complicated based on running openmp or
   // cuda.
-/*
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
-  auto policy_ReduceFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
+
+
+  // running threads with no work seems to cause an issue
+  // I didn't figure this out exactly but I remember having a similar problem
+  // before where the kernel had atomics and this only seemed to be a problem
+  // when the kernel had atomics. Not doing this check would be fine for all
+  // large tests but for a small number of coords we would see test failures.
+  int use_num_teams = mj_num_teams;
+  mj_lno_t range = coordinate_end_index - coordinate_begin_index;
+  if(use_num_teams > range/32) {
+    use_num_teams = range/32;
+  }
+  if(use_num_teams < 1) {
+    use_num_teams = 1;
+  }
+
+  auto policy_ReduceFunctor = policy_t(use_num_teams, Kokkos::AUTO);
   typedef int array_t;
   
   // just need parts - on the cuts will be handled in a separate serial
@@ -5009,9 +5021,6 @@ mj_create_new_partitions(
 
   Kokkos::parallel_reduce(policy_ReduceFunctor,
     teamFunctor, reduce_array);
-      
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space>
-    policy (mj_num_teams, Kokkos::AUTO());
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
@@ -5023,8 +5032,8 @@ mj_create_new_partitions(
   Kokkos::deep_copy(local_point_counts, host_part_count);
     
   delete [] reduce_array;
-*/
 
+/*
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -5047,6 +5056,7 @@ mj_create_new_partitions(
       track_on_cuts(set_index) = ii;
     }
   });
+*/
 
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
