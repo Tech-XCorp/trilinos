@@ -64,8 +64,8 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-// #define USE_ATOMIC_KERNEL
-#define USE_FLOAT_SCALAR
+#define USE_ATOMIC_KERNEL
+#define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
 
@@ -4014,15 +4014,22 @@ struct ReduceWeightsFunctor {
 
   size_t team_shmem_size (int team_size) const {
 #ifdef USE_ATOMIC_KERNEL
-    return sizeof(array_t) * (value_count_weights + value_count_rightleft);
+    int result = sizeof(array_t) * (value_count_weights + value_count_rightleft);
 #else
-    return sizeof(array_t) * (value_count_weights + value_count_rightleft)
-      * team_size;
+    int result = sizeof(array_t) * (value_count_weights + value_count_rightleft) * team_size; 
 #endif
+
+    // pad this to a multiple of 8 or it will run corrupt
+    int remainder = result % 8;
+    if(remainder != 0) {
+      result += 8 - remainder;
+    }
+    return result;
   }
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const member_type & teamMember, value_type teamSum) const {
+
     bool bUniformWeights = uniform_weights(0);
 
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
@@ -4049,20 +4056,19 @@ struct ReduceWeightsFunctor {
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
-      
+ 
     // init the shared array to 0
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
         shared_ptr[n] = 0;
       }
-      
       for(int n = value_count_weights + 2; n < value_count_weights + value_count_rightleft - 2; n += 2) {
         shared_ptr[n]   = -max_scalar;
         shared_ptr[n+1] =  max_scalar;
       }
     });
     teamMember.team_barrier();
-      
+
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii) {
@@ -4386,8 +4392,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     int total_array_length =
       weight_array_length + right_left_array_length;
 
+#ifdef USE_FLOAT_ARRAY
     typedef float array_t;
-    
+#else
+    typedef double array_t;
+#endif
+
     array_t * reduce_array =
       new array_t[static_cast<size_t>(total_array_length)];
 
@@ -4415,13 +4425,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
         local_my_incomplete_cut_count
         );
 
-printf("Begin functor...\n");
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
-printf("End functor\n");
 
     clock_functor_weights.stop();
-
 
     Kokkos::View<double *, device_t> my_current_part_weights =
       Kokkos::subview(local_thread_part_weights,
@@ -4734,7 +4741,13 @@ struct ReduceArrayFunctor {
   }
 
   size_t team_shmem_size (int team_size) const {
-    return sizeof(array_t) * (value_count) * team_size;
+    // pad this to a multiple of 8 or it will run corrupt
+    int result = sizeof(array_t) * (value_count) * team_size;
+    int remainder = result % 8;
+    if(remainder != 0) {
+      result += 8 - remainder;
+    }
+    return result;
   }
 
   KOKKOS_INLINE_FUNCTION
@@ -4972,7 +4985,23 @@ mj_create_new_partitions(
   // of teams/threads which would be complicated based on running openmp or
   // cuda.
   typedef Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy_t;
-  auto policy_ReduceFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
+
+
+  // running threads with no work seems to cause an issue
+  // I didn't figure this out exactly but I remember having a similar problem
+  // before where the kernel had atomics and this only seemed to be a problem
+  // when the kernel had atomics. Not doing this check would be fine for all
+  // large tests but for a small number of coords we would see test failures.
+  int use_num_teams = mj_num_teams;
+  mj_lno_t range = coordinate_end_index - coordinate_begin_index;
+  if(use_num_teams > range/32) {
+    use_num_teams = range/32;
+  }
+  if(use_num_teams < 1) {
+    use_num_teams = 1;
+  }
+
+  auto policy_ReduceFunctor = policy_t(use_num_teams, Kokkos::AUTO);
   typedef int array_t;
   
   // just need parts - on the cuts will be handled in a separate serial
@@ -4990,12 +5019,8 @@ mj_create_new_partitions(
       track_on_cuts
       );
 
-/*
   Kokkos::parallel_reduce(policy_ReduceFunctor,
     teamFunctor, reduce_array);
-      
-  Kokkos::TeamPolicy<typename mj_node_t::execution_space>
-    policy (mj_num_teams, Kokkos::AUTO());
 
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
@@ -5007,8 +5032,8 @@ mj_create_new_partitions(
   Kokkos::deep_copy(local_point_counts, host_part_count);
     
   delete [] reduce_array;
-*/
 
+/*
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
     coordinate_begin_index, coordinate_end_index),
@@ -5031,6 +5056,7 @@ mj_create_new_partitions(
       track_on_cuts(set_index) = ii;
     }
   });
+*/
 
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
