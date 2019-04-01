@@ -5145,14 +5145,117 @@ mj_create_new_partitions(
   clock_mj_create_new_partitions_5.stop();
   clock_mj_create_new_partitions_6.start();
   
+  // here we will determine insert indices for N teams
+  // then all the teams can fill 
+  
+// This part all needs to go away - but how do we properly poll Kokkos before
+// running a kernel for the state so I can determine the memory size to use?
+// TODO: Get ride of this!
+#ifdef KOKKOS_HAVE_CUDA
+  const int num_threads = Kokkos::WarpSize; // will fine tune
+#elif KOKKOS_HAVE_OPENMP
+  const int num_threads = 1;
+#else
+  const int num_threads = 1;
+#endif
+
+#ifdef KOKKOS_HAVE_CUDA
+  const int num_teams = 60; // will fine tune
+#elif KOKKOS_HAVE_OPENMP
+  const int num_teams = 8;
+#else
+  const int num_teams = 1;
+#endif
+
+  // allow init - we want all 0's first
+  Kokkos::View<mj_lno_t*, device_t>
+    point_counter("insert indices", num_teams * num_threads * num_parts);
+    
+  Kokkos::TeamPolicy<typename mj_node_t::execution_space>
+    block_policy(num_teams, Kokkos::AUTO());
+  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
+    member_type member_type;
+  mj_lno_t range = coordinate_end_index - coordinate_begin_index;
+  mj_lno_t block_size = range / num_teams + 1;
+  Kokkos::parallel_for (block_policy, KOKKOS_LAMBDA(member_type team_member) {
+    int team = team_member.league_rank();
+    int team_offset = team * num_threads * num_parts;
+    mj_lno_t begin = coordinate_begin_index + team * block_size;
+    mj_lno_t end = begin + block_size;
+    if(end > coordinate_end_index) {
+      end = coordinate_end_index;
+    }
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, begin, end),
+      [=] (int & ii) {
+      int thread = team_member.team_rank();
+      mj_lno_t i = local_coordinate_permutations(ii);
+      mj_part_t p = local_assigned_part_ids(i);
+      int index = team_offset + thread * num_parts + p;
+      ++point_counter(index);
+    });
+  });
+  printf("\n");
+  
+  // now prefix sum
+  // we currently have the counts in the slots
+  // we want the first counter for each part to be 0
+  // then the rest should be the sum of all the priors
   Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-    coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const int ii) {
-    mj_lno_t i = local_coordinate_permutations(ii);
-    mj_part_t p = local_assigned_part_ids(i);
-    mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
-    local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+    KOKKOS_LAMBDA (const int dummy) {
+    int num_sets = point_counter.size() / num_parts;
+    for(int set = num_sets - 1; set >= 1; set -=1) {
+      int base = set * num_parts;
+      for(int part = 0; part < num_parts; ++part) {
+        point_counter(base + part) = point_counter(base + part - num_parts);
+      }
+    }
+    
+    for(int part = 0; part < num_parts; ++part) {
+      point_counter(part) = 0;
+    }
+      
+    for(int set = 1; set < num_sets; ++set) {
+      int base = set * num_parts;
+      for(int part = 0; part < num_parts; ++part) {
+        point_counter(base + part) += point_counter(base + part - num_parts);
+      }
+    }
+  });
+  
+  // print counters after prefix sum
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
+    KOKKOS_LAMBDA (const int dummy) {
+    for(int team = 0; team < num_teams; ++team) {
+      int team_offset = team * num_threads * num_parts;
+      for(int thread = 0; thread < num_threads; ++thread) {
+        int thread_offset = team_offset + thread * num_parts;
+        for(int part = 0; part < num_parts; ++part) {
+          int part_offset = thread_offset + part;
+        }
+      }
+    }
+  });
+  
+  // now permute
+  Kokkos::parallel_for (block_policy, KOKKOS_LAMBDA(member_type team_member) {
+    int team = team_member.league_rank();
+    int team_offset = team * num_threads * num_parts;
+    mj_lno_t begin = coordinate_begin_index + team * block_size;
+    mj_lno_t end = begin + block_size;
+    if(end > coordinate_end_index) {
+      end = coordinate_end_index;
+    }
+    Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, begin, end),
+      [=] (int & ii) {
+      int thread = team_member.team_rank();
+      mj_lno_t i = local_coordinate_permutations(ii);
+      mj_part_t p = local_assigned_part_ids(i);
+      int index = team_offset + thread * num_parts + p;
+      int set_counter = (point_counter(index)++) + local_point_counts(p);
+      local_new_coordinate_permutations(set_counter) = i;
+    });
   });
   
   clock_mj_create_new_partitions_6.stop();
