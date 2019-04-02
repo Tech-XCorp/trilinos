@@ -5209,6 +5209,8 @@ mj_create_new_partitions(
   // here we will determine insert indices for N teams
   // then all the teams can fill 
   
+/*
+
 // This part all needs to go away - but how do we properly poll Kokkos before
 // running a kernel for the state so I can determine the memory size to use?
 // TODO: Get ride of this!
@@ -5303,6 +5305,18 @@ mj_create_new_partitions(
     });
   });
 
+*/
+
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+    coordinate_begin_index, coordinate_end_index),
+    KOKKOS_LAMBDA (const int ii) {
+    mj_lno_t i = local_coordinate_permutations(ii);
+    mj_part_t p = local_assigned_part_ids(i);
+    mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
+    local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
+  });
+  
   clock_mj_create_new_partitions_6.stop();
 
   clock_mj_create_new_partitions.stop();
