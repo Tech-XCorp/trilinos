@@ -65,6 +65,7 @@
 #include <vector>
 
 #define USE_ATOMIC_KERNEL
+#define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -3867,17 +3868,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 }
 
 template<class scalar_t>
-struct ArrayType {
+struct Zoltan2_MJArrayType {
   scalar_t * ptr;
   KOKKOS_INLINE_FUNCTION
-  ArrayType(scalar_t * pSetPtr) : ptr(pSetPtr) {};
+  Zoltan2_MJArrayType(scalar_t * pSetPtr) : ptr(pSetPtr) {};
 };
+
+#ifndef USE_ATOMIC_KERNEL
 
 template<class policy_t, class scalar_t, class part_t>
 struct ArrayCombinationReducer {
 
   typedef ArrayCombinationReducer reducer;
-  typedef ArrayType<scalar_t> value_type;
+  typedef Zoltan2_MJArrayType<scalar_t> value_type;
   scalar_t max_scalar;
   value_type * value;
   int value_count_rightleft;
@@ -3942,12 +3945,17 @@ struct ArrayCombinationReducer {
     }
   }
 };
+#endif // USE_ATOMIC_KERNEL
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
+  
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
   typedef array_t value_type[];
+#endif
+
   
   int uniform_part_sizes;
   array_t max_scalar;
@@ -3970,6 +3978,12 @@ struct ReduceWeightsFunctor {
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> my_incomplete_cut_count;
 
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+  Kokkos::View<double *, device_t> current_part_weights;
+  Kokkos::View<scalar_t *, device_t> current_left_closest;
+  Kokkos::View<scalar_t *, device_t> current_right_closest;
+#endif // USE_ATOMIC_ATOMIC_KERNEL
+
   ReduceWeightsFunctor(
     int mj_uniform_part_sizes,
     array_t mj_max_scalar,
@@ -3989,6 +4003,11 @@ struct ReduceWeightsFunctor {
     scalar_t mj_sEpsilon,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
     Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+    ,Kokkos::View<double *, device_t> mj_current_part_weights,
+    Kokkos::View<scalar_t *, device_t> mj_current_left_closest,
+    Kokkos::View<scalar_t *, device_t> mj_current_right_closest
+#endif // USE_ATOMIC_ATOMIC_KERNEL
     ) :
       uniform_part_sizes(mj_uniform_part_sizes),
       max_scalar(mj_max_scalar),
@@ -4009,6 +4028,11 @@ struct ReduceWeightsFunctor {
       sEpsilon(mj_sEpsilon),
       view_num_partitioning_in_current_dim(mj_view_num_partitioning_in_current_dim),
       my_incomplete_cut_count(mj_my_incomplete_cut_count)
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+      ,current_part_weights(mj_current_part_weights),
+      current_left_closest(mj_current_left_closest),
+      current_right_closest(mj_current_right_closest)
+#endif // USE_ATOMIC_ATOMIC_KERNEL
   {
   }
 
@@ -4028,8 +4052,11 @@ struct ReduceWeightsFunctor {
   }
 
   KOKKOS_INLINE_FUNCTION
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+  void operator() (const member_type & teamMember) const {
+#else
   void operator() (const member_type & teamMember, value_type teamSum) const {
-
+#endif
     bool bUniformWeights = uniform_weights(0);
 
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
@@ -4081,10 +4108,10 @@ struct ReduceWeightsFunctor {
       sh_mem_size);
       
     // select the array for this thread
-    ArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
+    Zoltan2_MJArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
         (value_count_weights + value_count_rightleft)]);
 
-    // create reducer which handles the ArrayType class
+    // create reducer which handles the Zoltan2_MJArrayType class
     ArrayCombinationReducer<policy_t, array_t, part_t> arraySumReducer(
       max_scalar, array,
       value_count_rightleft,
@@ -4092,7 +4119,7 @@ struct ReduceWeightsFunctor {
       
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
+      [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
 #endif // USE_ATOMIC_KERNEL
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4191,35 +4218,57 @@ struct ReduceWeightsFunctor {
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
 #ifdef USE_ATOMIC_KERNEL
-        teamSum[n] += shared_ptr[n];
+
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+        current_part_weights(n) += shared_ptr[n];
 #else
+        teamSum[n] += shared_ptr[n];
+#endif // USE_ATOMIC_ATOMIC_KERNEL
+
+#else // USE_ATOMIC_KERNEL
         teamSum[n] += array.ptr[n];
-#endif
+#endif // USE_ATOMIC_KERNEL
       }
+
 
       for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
 #ifdef USE_ATOMIC_KERNEL
+
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+        int insert_left = 0;
+        int insert_right = 0;
+        if(shared_ptr[n] > current_left_closest(insert_left)) {
+          current_left_closest(insert_left) = shared_ptr[n];
+        }
+        if(shared_ptr[n+1] > current_right_closest(insert_right)) {
+          current_right_closest(insert_right) = shared_ptr[n+1];
+        }
+        ++insert_left;
+        ++insert_right;
+#else
         if(shared_ptr[n] > teamSum[n]) {
           teamSum[n] = shared_ptr[n];
         }
         if(shared_ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = shared_ptr[n+1];
         }
-#else
+#endif
+
+#else // USE_ATOMIC_KERNEL
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
         }
         if(array.ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = array.ptr[n+1];
         }
-#endif
+#endif // USE_ATOMIC_KERNEL
       }
-    
     });
 
     teamMember.team_barrier();    
   }
   
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count_weights; ++n) {
@@ -4262,6 +4311,7 @@ struct ReduceWeightsFunctor {
       dst[n+1] =  max_scalar;
     }
   }
+#endif // USE_ATOMIC_ATOMIC_KERNEL
 };
 
 /*! \brief Function that calculates the weights of each part according to given
@@ -4384,8 +4434,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     clock_weights_new_to_optimize.stop();
 
-    auto policy_ReduceWeightsFunctor =
-      policy_t(mj_num_teams, Kokkos::AUTO);
+    auto policy_ReduceWeightsFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
 
     clock_weights3.start();
 
@@ -4398,11 +4447,35 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     typedef double array_t;
 #endif
 
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
     array_t * reduce_array =
       new array_t[static_cast<size_t>(total_array_length)];
+#endif // USE_ATOMIC_ATOMIC_KERNEL
 
     clock_functor_weights.start();
 
+    // Move it from global memory to device memory
+    // TODO: Need to figure out how we can better manage this
+    int offset_cuts = 0;
+    for(int kk2 = 0; kk2 < kk; ++kk2) {
+      offset_cuts +=
+        vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
+    }
+    Kokkos::View<double *, device_t> my_current_part_weights =
+      Kokkos::subview(local_thread_part_weights,
+        std::pair<mj_lno_t, mj_lno_t>(total_part_shift,
+         total_part_shift + total_part_count));
+    Kokkos::View<mj_scalar_t *, device_t> my_current_left_closest =
+      Kokkos::subview(local_thread_cut_left_closest_point,
+      std::pair<mj_lno_t, mj_lno_t>(
+        offset_cuts,
+        local_thread_cut_left_closest_point.size()));
+    Kokkos::View<mj_scalar_t *, device_t> my_current_right_closest =
+      Kokkos::subview(local_thread_cut_right_closest_point,
+        std::pair<mj_lno_t, mj_lno_t>(
+          offset_cuts,
+          local_thread_cut_right_closest_point.size()));
+          
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         uniform_part_sizes,
@@ -4423,17 +4496,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
         sEpsilon,
         view_num_partitioning_in_current_dim,
         local_my_incomplete_cut_count
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+        ,my_current_part_weights,
+        my_current_left_closest,
+        my_current_right_closest
+#endif
         );
 
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+    Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
+#else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
+#endif
 
     clock_functor_weights.stop();
 
-    Kokkos::View<double *, device_t> my_current_part_weights =
-      Kokkos::subview(local_thread_part_weights,
-        std::pair<mj_lno_t, mj_lno_t>(total_part_shift,
-         total_part_shift + total_part_count));
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
     // Move it from global memory to device memory
     // TODO: Need to figure out how we can better manage this
     typename decltype(my_current_part_weights)::HostMirror
@@ -4441,41 +4520,22 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
       hostArray(i) = reduce_array[i];
     }
-
     Kokkos::deep_copy(my_current_part_weights, hostArray);
 
-    // Move it from global memory to device memory
-    // TODO: Need to figure out how we can better manage this
-    int offset_cuts = 0;
-    for(int kk2 = 0; kk2 < kk; ++kk2) {
-      offset_cuts +=
-        vector_num_partitioning_in_current_dim[current_work_part + kk2] - 1;
-    }
-    Kokkos::View<mj_scalar_t *, device_t> my_current_left_closest =
-      Kokkos::subview(local_thread_cut_left_closest_point,
-      std::pair<mj_lno_t, mj_lno_t>(
-        offset_cuts,
-        local_thread_cut_left_closest_point.size()));
-    Kokkos::View<mj_scalar_t *, device_t> my_current_right_closest =
-      Kokkos::subview(local_thread_cut_right_closest_point,
-        std::pair<mj_lno_t, mj_lno_t>(
-          offset_cuts,
-          local_thread_cut_right_closest_point.size()));
     typename decltype(my_current_left_closest)::HostMirror
       hostLeftArray = Kokkos::create_mirror_view(my_current_left_closest);
     typename decltype(my_current_right_closest)::HostMirror
       hostRightArray =
         Kokkos::create_mirror_view(my_current_right_closest);
     for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
-      // when reading shift right 1 due to the buffer at beginning and end
-      mj_part_t read_offset = 0;
-      hostLeftArray(cut)  = reduce_array[weight_array_length + read_offset + (cut+1)*2+0];
-      hostRightArray(cut) = reduce_array[weight_array_length + read_offset + (cut+1)*2+1];
+      hostLeftArray(cut)  = reduce_array[weight_array_length + (cut+1)*2+0];
+      hostRightArray(cut) = reduce_array[weight_array_length + (cut+1)*2+1];
     }
     Kokkos::deep_copy(my_current_left_closest, hostLeftArray);
     Kokkos::deep_copy(my_current_right_closest, hostRightArray);
 
     delete [] reduce_array;
+#endif
 
     clock_weights3.stop();
     
@@ -4670,7 +4730,7 @@ template<class policy_t, class scalar_t>
 struct ArrayReducer {
 
   typedef ArrayReducer reducer;
-  typedef ArrayType<scalar_t> value_type;
+  typedef Zoltan2_MJArrayType<scalar_t> value_type;
   value_type * value;
   int value_count;
 
@@ -4778,17 +4838,17 @@ struct ReduceArrayFunctor {
       sh_mem_size);
       
     // select the array for this thread
-    ArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
+    Zoltan2_MJArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
         (value_count)]);
 
-    // create reducer which handles the ArrayType class
+    // create reducer which handles the Zoltan2_MJArrayType class
     ArrayReducer<policy_t, array_t> arrayReducer(array, value_count);
       
     int track_on_cuts_insert_index = track_on_cuts.size()-1;
  
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, ArrayType<array_t>& threadSum) {
+      [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
       
       index_t coordinate_index = permutations(ii);
       part_t place = parts(coordinate_index);
@@ -5033,31 +5093,6 @@ mj_create_new_partitions(
     
   delete [] reduce_array;
 
-/*
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-    coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const int ii) {
-    mj_lno_t coordinate_index = local_coordinate_permutations(ii);
-    mj_part_t coordinate_assigned_place =
-      local_assigned_part_ids(coordinate_index);
-    mj_part_t coordinate_assigned_part = coordinate_assigned_place / 2;
-    if(coordinate_assigned_place % 2 == 0) {
-      Kokkos::atomic_add(
-        &local_point_counts(coordinate_assigned_part), 1);
-      local_assigned_part_ids(coordinate_index) =
-        coordinate_assigned_part;
-    }
-    else {
-      // fill a tracking array so we can process these slower points
-      // in next cycle
-      mj_lno_t set_index =
-        Kokkos::atomic_fetch_add(&track_on_cuts(track_on_cuts.size()-1), 1);
-      track_on_cuts(set_index) = ii;
-    }
-  });
-*/
-
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
 
@@ -5178,7 +5213,7 @@ mj_create_new_partitions(
 // running a kernel for the state so I can determine the memory size to use?
 // TODO: Get ride of this!
 #ifdef KOKKOS_HAVE_CUDA
-  const int num_threads = Kokkos::WarpSize; // will fine tune
+  const int num_threads = 64; // will resolve - TODO
 #elif KOKKOS_HAVE_OPENMP
   const int num_threads = 1;
 #else
@@ -5188,7 +5223,7 @@ mj_create_new_partitions(
 #ifdef KOKKOS_HAVE_CUDA
   const int num_teams = 60; // will fine tune
 #elif KOKKOS_HAVE_OPENMP
-  const int num_teams = 8;
+  const int num_teams = 1;
 #else
   const int num_teams = 1;
 #endif
@@ -5198,10 +5233,9 @@ mj_create_new_partitions(
     point_counter("insert indices", num_teams * num_threads * num_parts);
     
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
-    block_policy(num_teams, Kokkos::AUTO());
+    block_policy(num_teams, 1); // Kokkos::AUTO());
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
-  mj_lno_t range = coordinate_end_index - coordinate_begin_index;
   mj_lno_t block_size = range / num_teams + 1;
   Kokkos::parallel_for (block_policy, KOKKOS_LAMBDA(member_type team_member) {
     int team = team_member.league_rank();
@@ -5211,6 +5245,7 @@ mj_create_new_partitions(
     if(end > coordinate_end_index) {
       end = coordinate_end_index;
     }
+    
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, begin, end),
       [=] (int & ii) {
       int thread = team_member.team_rank();
@@ -5220,8 +5255,7 @@ mj_create_new_partitions(
       ++point_counter(index);
     });
   });
-  printf("\n");
-  
+
   // now prefix sum
   // we currently have the counts in the slots
   // we want the first counter for each part to be 0
@@ -5248,22 +5282,7 @@ mj_create_new_partitions(
       }
     }
   });
-  
-  // print counters after prefix sum
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
-    KOKKOS_LAMBDA (const int dummy) {
-    for(int team = 0; team < num_teams; ++team) {
-      int team_offset = team * num_threads * num_parts;
-      for(int thread = 0; thread < num_threads; ++thread) {
-        int thread_offset = team_offset + thread * num_parts;
-        for(int part = 0; part < num_parts; ++part) {
-          int part_offset = thread_offset + part;
-        }
-      }
-    }
-  });
-  
+
   // now permute
   Kokkos::parallel_for (block_policy, KOKKOS_LAMBDA(member_type team_member) {
     int team = team_member.league_rank();
@@ -5280,10 +5299,10 @@ mj_create_new_partitions(
       mj_part_t p = local_assigned_part_ids(i);
       int index = team_offset + thread * num_parts + p;
       int set_counter = (point_counter(index)++) + local_point_counts(p);
-      local_new_coordinate_permutations(set_counter) = i;
+      local_new_coordinate_permutations(coordinate_begin_index + set_counter) = i;
     });
   });
-  
+
   clock_mj_create_new_partitions_6.stop();
 
   clock_mj_create_new_partitions.stop();
