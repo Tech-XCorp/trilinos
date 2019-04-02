@@ -65,7 +65,7 @@
 #include <vector>
 
 #define USE_ATOMIC_KERNEL
-#define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
+//#define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -5209,33 +5209,44 @@ mj_create_new_partitions(
   // here we will determine insert indices for N teams
   // then all the teams can fill 
   
-/*
-
-// This part all needs to go away - but how do we properly poll Kokkos before
-// running a kernel for the state so I can determine the memory size to use?
-// TODO: Get ride of this!
 #ifdef KOKKOS_HAVE_CUDA
-  const int num_threads = 64; // will resolve - TODO
-#elif KOKKOS_HAVE_OPENMP
-  const int num_threads = 1;
+
+  // This is the fastest so far - just straight atomic writes
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
+    coordinate_begin_index, coordinate_end_index),
+    KOKKOS_LAMBDA (const int ii) {
+    mj_lno_t i = local_coordinate_permutations(ii);
+    mj_part_t p = local_assigned_part_ids(i);
+    mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
+    local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
+  });
+
+#else // KOKKOS_HAVE_CUDA
+
+#ifdef KOKKOS_HAVE_OPENMP
+  // TODO: How do we poll Kokkos for this num threads?
+  // I don't really want to have this special case but Cuda and OpenMP
+  // run very differently for this algorithm. This is currently the only
+  // place in the MJ code where I differentiate Cuda and OpenMP and it
+  // would be better to merge this. OpenMP ran quite slowly using the
+  // above Cuda algorithm and Cuda does poorly with this. A key difference
+  // is that Cuda seems to handle atomic conflicts much more efficently.
+  const int num_threads = 8; // TODO: How do we read this? 
 #else
   const int num_threads = 1;
 #endif
 
-#ifdef KOKKOS_HAVE_CUDA
-  const int num_teams = 60; // will fine tune
-#elif KOKKOS_HAVE_OPENMP
-  const int num_teams = 1;
-#else
-  const int num_teams = 1;
-#endif
+  const int num_teams = 1; // cuda is handled above a different format
 
   // allow init - we want all 0's first
   Kokkos::View<mj_lno_t*, device_t>
     point_counter("insert indices", num_teams * num_threads * num_parts);
-    
+
+  // count how many coords per thread
+  // then we will fill each independently
   Kokkos::TeamPolicy<typename mj_node_t::execution_space>
-    block_policy(num_teams, 1); // Kokkos::AUTO());
+    block_policy(num_teams, num_threads);
   typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
     member_type member_type;
   mj_lno_t block_size = range / num_teams + 1;
@@ -5304,19 +5315,8 @@ mj_create_new_partitions(
       local_new_coordinate_permutations(coordinate_begin_index + set_counter) = i;
     });
   });
+#endif
 
-*/
-
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-    coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const int ii) {
-    mj_lno_t i = local_coordinate_permutations(ii);
-    mj_part_t p = local_assigned_part_ids(i);
-    mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
-    local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
-  });
-  
   clock_mj_create_new_partitions_6.stop();
 
   clock_mj_create_new_partitions.stop();
