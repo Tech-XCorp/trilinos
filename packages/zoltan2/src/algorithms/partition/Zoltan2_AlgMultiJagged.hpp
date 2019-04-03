@@ -64,7 +64,7 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_ATOMIC_KERNEL
+#define USE_ATOMIC_REDUCE_KERNEL
 #define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
@@ -3874,7 +3874,7 @@ struct Zoltan2_MJArrayType {
   Zoltan2_MJArrayType(scalar_t * pSetPtr) : ptr(pSetPtr) {};
 };
 
-#ifndef USE_ATOMIC_KERNEL
+#ifndef USE_ATOMIC_REDUCE_KERNEL
 
 template<class policy_t, class scalar_t, class part_t>
 struct ArrayCombinationReducer {
@@ -3945,7 +3945,7 @@ struct ArrayCombinationReducer {
     }
   }
 };
-#endif // USE_ATOMIC_KERNEL
+#endif // USE_ATOMIC_REDUCE_KERNEL
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor {
@@ -4037,7 +4037,7 @@ struct ReduceWeightsFunctor {
   }
 
   size_t team_shmem_size (int team_size) const {
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
     int result = sizeof(array_t) * (value_count_weights + value_count_rightleft);
 #else
     int result = sizeof(array_t) * (value_count_weights + value_count_rightleft) * team_size; 
@@ -4077,7 +4077,7 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
     size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
       value_count_rightleft);
 
@@ -4099,7 +4099,7 @@ struct ReduceWeightsFunctor {
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii) {
-#else // USE_ATOMIC_KERNEL
+#else // USE_ATOMIC_REDUCE_KERNEL
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
       value_count_rightleft) * teamMember.team_size();
@@ -4120,7 +4120,7 @@ struct ReduceWeightsFunctor {
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
-#endif // USE_ATOMIC_KERNEL
+#endif // USE_ATOMIC_REDUCE_KERNEL
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
       array_t w = bUniformWeights ? 1 : (array_t) weights(i,0);
@@ -4133,7 +4133,7 @@ struct ReduceWeightsFunctor {
 
       for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
         // for the left/right closest part calculation
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
         array_t * p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
 #else
         array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
@@ -4142,7 +4142,7 @@ struct ReduceWeightsFunctor {
         scalar_t b = (part == num_cuts) ? max_scalar : cut_coordinates(part);
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
           Kokkos::atomic_add(&shared_ptr[part*2], w);
 #else
           threadSum.ptr[part*2] += w;
@@ -4150,7 +4150,7 @@ struct ReduceWeightsFunctor {
           parts(i) = part*2;
           
           // now handle the left/right closest part
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
           array_t new_value = (array_t) coord;
 
           array_t * dst = p1 + 1;
@@ -4175,7 +4175,7 @@ struct ReduceWeightsFunctor {
         }
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
             Kokkos::atomic_add(&shared_ptr[part*2+1], w);
 #else
             threadSum.ptr[part*2+1] += w;
@@ -4206,18 +4206,18 @@ struct ReduceWeightsFunctor {
           part += (upper - part)/2;
         }
       }
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
     });
-#else // USE_ATOMIC_KERNEL
+#else // USE_ATOMIC_REDUCE_KERNEL
     }, arraySumReducer);
-#endif // USE_ATOMIC_KERNEL
+#endif // USE_ATOMIC_REDUCE_KERNEL
 
     teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
         // TODO if we keep this form we may want to abolish the array_t and make
@@ -4228,9 +4228,9 @@ struct ReduceWeightsFunctor {
         teamSum[n] += shared_ptr[n];
 #endif // USE_ATOMIC_ATOMIC_KERNEL
 
-#else // USE_ATOMIC_KERNEL
+#else // USE_ATOMIC_REDUCE_KERNEL
         teamSum[n] += array.ptr[n];
-#endif // USE_ATOMIC_KERNEL
+#endif // USE_ATOMIC_REDUCE_KERNEL
       }
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
@@ -4239,7 +4239,7 @@ struct ReduceWeightsFunctor {
 #endif
 
       for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
-#ifdef USE_ATOMIC_KERNEL
+#ifdef USE_ATOMIC_REDUCE_KERNEL
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
 
@@ -4268,14 +4268,14 @@ struct ReduceWeightsFunctor {
         }
 #endif
 
-#else // USE_ATOMIC_KERNEL
+#else // USE_ATOMIC_REDUCE_KERNEL
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
         }
         if(array.ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = array.ptr[n+1];
         }
-#endif // USE_ATOMIC_KERNEL
+#endif // USE_ATOMIC_REDUCE_KERNEL
       }
     });
 
