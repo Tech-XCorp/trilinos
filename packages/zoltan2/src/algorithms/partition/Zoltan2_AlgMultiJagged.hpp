@@ -4220,7 +4220,10 @@ struct ReduceWeightsFunctor {
 #ifdef USE_ATOMIC_KERNEL
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
-        current_part_weights(n) += shared_ptr[n];
+        // TODO if we keep this form we may want to abolish the array_t and make
+        // sure it's all double - no idea yet what the cost of the cast could be
+        // on GPU
+        Kokkos::atomic_add(&current_part_weights(n), (scalar_t)shared_ptr[n]);
 #else
         teamSum[n] += shared_ptr[n];
 #endif // USE_ATOMIC_ATOMIC_KERNEL
@@ -4261,7 +4264,7 @@ struct ReduceWeightsFunctor {
           teamSum[n] = shared_ptr[n];
         }
         if(shared_ptr[n+1] < teamSum[n+1]) {
-          teamSum[n+1] = shared_ptr[n+1];
+          teamSum[n+1] = shared_ptr[n+1];w
         }
 #endif
 
