@@ -64,8 +64,8 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-//#define USE_ATOMIC_KERNEL
-//#define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
+#define USE_ATOMIC_KERNEL
+#define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
 #define DISABLE_CLOCKS false
@@ -4094,10 +4094,6 @@ struct ReduceWeightsFunctor {
         shared_ptr[n+1] =  max_scalar;
       }
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
-      ,current_part_weights(mj_current_part_weights),
-      current_left_closest(mj_current_left_closest),
-      current_right_closest(mj_current_right_closest)
-      
       for(int n = 0; n < current_part_weights.size(); ++n) {
         current_part_weights(n) = 0;
       }
