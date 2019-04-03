@@ -4093,15 +4093,6 @@ struct ReduceWeightsFunctor {
         shared_ptr[n]   = -max_scalar;
         shared_ptr[n+1] =  max_scalar;
       }
-#ifdef USE_ATOMIC_ATOMIC_KERNEL
-      for(int n = 0; n < current_part_weights.size(); ++n) {
-        current_part_weights(n) = 0;
-      }
-      for(int n = 0; n < current_left_closest.size(); ++n) {
-        current_left_closest(n) = -min_scalar;
-        current_right_closest(n) = -min_scalar;
-      }
-#endif
     });
     teamMember.team_barrier();
 
@@ -4239,19 +4230,30 @@ struct ReduceWeightsFunctor {
 #endif // USE_ATOMIC_KERNEL
       }
 
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+      int insert_left = 0;
+      int insert_right = 0;
+#endif
 
       for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
 #ifdef USE_ATOMIC_KERNEL
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
-        int insert_left = 0;
-        int insert_right = 0;
-        if(shared_ptr[n] > current_left_closest(insert_left)) {
-          current_left_closest(insert_left) = shared_ptr[n];
+
+        scalar_t new_value = (scalar_t) shared_ptr[n+1];
+        scalar_t * dst = &current_right_closest(insert_right);
+        scalar_t prev_value = *dst;
+        while(new_value < prev_value) {
+          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
         }
-        if(shared_ptr[n+1] > current_right_closest(insert_right)) {
-          current_right_closest(insert_right) = shared_ptr[n+1];
+        
+        new_value = shared_ptr[n];
+        dst = &current_left_closest(insert_left);
+        prev_value = *dst;
+        while(new_value > prev_value) {
+          prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
         }
+        
         ++insert_left;
         ++insert_right;
 #else
@@ -4485,10 +4487,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
           offset_cuts,
           local_thread_cut_right_closest_point.size()));
           
+    array_t max_scalar = std::numeric_limits<array_t>::max();
+    
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
+    // Need to initialize this each time - maybe it's better to drop this in the
+    // functor's single ... to try - then we have repeated write but don't need
+    // to worry about atomics - would save us a kernel launch
+    Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
+      for(int n = 0; n < weight_array_length; ++n) {
+        my_current_part_weights(n) = 0;
+      }
+      for(int n = 0; n < num_cuts; ++n) {
+        my_current_left_closest(n) = -max_scalar;
+        my_current_right_closest(n) = max_scalar;
+      }
+    });
+#endif
+
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         uniform_part_sizes,
-        std::numeric_limits<array_t>::max(),
+        max_scalar,
         current_work_part + kk,
         num_cuts,
         current_work_part,
