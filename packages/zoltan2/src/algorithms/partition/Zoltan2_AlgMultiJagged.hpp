@@ -4516,8 +4516,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     }
 
     clock_weights_new_to_optimize.stop();
-
+#ifndef USE_ATOMIC_KERNEL
     auto policy_ReduceWeightsFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
+#endif
 
     clock_weights3.start();
 
@@ -4567,7 +4568,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     // Need to initialize this each time - maybe it's better to drop this in the
     // functor's single ... to try - then we have repeated write but don't need
     // to worry about atomics - would save us a kernel launch
-    Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
+    Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
       for(int n = 0; n < weight_array_length; ++n) {
         my_current_part_weights(n) = 0;
       }
@@ -4585,17 +4586,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
     printf("Inspection Before:\n");
     printf("  Weights: ");
-    for(int n = 0; n < my_current_part_weights.size(); ++n) {
+    for(int n = 0; n < (int) my_current_part_weights.size(); ++n) {
       printf("%.2f ", (float) my_current_part_weights(n));
     }
     printf("\n");
     printf("  Left: ");
-    for(int n = 0; n < my_current_left_closest.size(); ++n) {
+    for(int n = 0; n < (int) my_current_left_closest.size(); ++n) {
       printf("%.2f ", (float) my_current_left_closest(n));
     }
     printf("\n");
     printf("  Right: ");
-    for(int n = 0; n < my_current_right_closest.size(); ++n) {
+    for(int n = 0; n < (int) my_current_right_closest.size(); ++n) {
       printf("%.2f ", (float) my_current_right_closest(n));
     }
     printf("\n");
@@ -4679,17 +4680,17 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
     printf("Inspection After:\n");
     printf("  Weights: ");
-    for(int n = 0; n < my_current_part_weights.size(); ++n) {
+    for(int n = 0; n < (int) my_current_part_weights.size(); ++n) {
       printf("%.2f ", (float) my_current_part_weights(n));
     }
     printf("\n");
     printf("  Left: ");
-    for(int n = 0; n < my_current_left_closest.size(); ++n) {
+    for(int n = 0; n < (int) my_current_left_closest.size(); ++n) {
       printf("%.2f ", (float) my_current_left_closest(n));
     }
     printf("\n");
     printf("  Right: ");
-    for(int n = 0; n < my_current_right_closest.size(); ++n) {
+    for(int n = 0; n < (int) my_current_right_closest.size(); ++n) {
       printf("%.2f ", (float) my_current_right_closest(n));
     }
     printf("\n");
