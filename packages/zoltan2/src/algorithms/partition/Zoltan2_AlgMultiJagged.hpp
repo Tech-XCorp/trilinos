@@ -4581,6 +4581,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     mj_part_t concurrent_current_part =
       current_work_part + kk;
 
+#ifdef PRINT_LOOP_RESUTS
+  Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
+    printf("Inspection Before:\n");
+    printf("  Weights: ");
+    for(int n = 0; n < my_current_part_weights.size(); ++n) {
+      printf("%.2f ", (float) my_current_part_weights(n));
+    }
+    printf("\n");
+    printf("  Left: ");
+    for(int n = 0; n < my_current_left_closest.size(); ++n) {
+      printf("%.2f ", (float) my_current_left_closest(n));
+    }
+    printf("\n");
+    printf("  Right: ");
+    for(int n = 0; n < my_current_right_closest.size(); ++n) {
+      printf("%.2f ", (float) my_current_right_closest(n));
+    }
+    printf("\n");
+  });
+#endif
+
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
         uniform_part_sizes,
@@ -4656,7 +4677,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
 #ifdef PRINT_LOOP_RESUTS
   Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
-    printf("Inspection:\n");
+    printf("Inspection After:\n");
     printf("  Weights: ");
     for(int n = 0; n < my_current_part_weights.size(); ++n) {
       printf("%.2f ", (float) my_current_part_weights(n));
