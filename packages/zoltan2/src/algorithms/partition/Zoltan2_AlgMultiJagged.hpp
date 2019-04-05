@@ -4580,24 +4580,36 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
       current_work_part + kk;
 
 #ifdef PRINT_LOOP_RESUTS
-  Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
-    printf("Inspection Before:\n");
-    printf("  Weights: ");
-    for(int n = 0; n < my_current_part_weights.size(); ++n) {
-      printf("%.2f ", (float) my_current_part_weights(n));
-    }
-    printf("\n");
-    printf("  Left: ");
-    for(int n = 0; n < my_current_left_closest.size(); ++n) {
-      printf("%.2f ", (float) my_current_left_closest(n));
-    }
-    printf("\n");
-    printf("  Right: ");
-    for(int n = 0; n < my_current_right_closest.size(); ++n) {
-      printf("%.2f ", (float) my_current_right_closest(n));
-    }
-    printf("\n");
-  });
+  static bool bFirst = true;
+  if(bFirst) {
+    Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
+      printf("Inspection Before:\n");
+      printf("  parts: ");
+      int max_show_count = 20;
+      int show_count = assigned_part_ids.size() < max_show_count ?
+        assigned_part_ids.size() : max_show_count;
+      for(int n = 0; n < show_count; ++n) {
+        printf("%.2f ", (float) assigned_part_ids(n));
+      }
+      printf("\n");
+      printf("  Weights: ");
+      for(int n = 0; n < my_current_part_weights.size(); ++n) {
+        printf("%.2f ", (float) my_current_part_weights(n));
+      }
+      printf("\n");
+      printf("  Left: ");
+      for(int n = 0; n < my_current_left_closest.size(); ++n) {
+        printf("%.2f ", (float) my_current_left_closest(n));
+      }
+      printf("\n");
+      printf("  Right: ");
+      for(int n = 0; n < my_current_right_closest.size(); ++n) {
+        printf("%.2f ", (float) my_current_right_closest(n));
+      }
+      printf("\n");
+    });
+  }
+  bFirst = false;
 #endif
 
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
@@ -4674,8 +4686,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
 
 #ifdef PRINT_LOOP_RESUTS
-  Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) {
+  Kokkos::parallel_for (1, KOKKOS_LAMBDA(mj_part_t dummy) { 
     printf("Inspection After:\n");
+    printf("  parts: ");
+    int max_show_count = 20;
+    int show_count = assigned_part_ids.size() < max_show_count ?
+      assigned_part_ids.size() : max_show_count;
+    for(int n = 0; n < show_count; ++n) {
+      printf("%.2f ", (float) assigned_part_ids(n));
+    }
+    printf("\n");
     printf("  Weights: ");
     for(int n = 0; n < my_current_part_weights.size(); ++n) {
       printf("%.2f ", (float) my_current_part_weights(n));
