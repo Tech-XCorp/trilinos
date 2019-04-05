@@ -4521,8 +4521,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     clock_weights3.start();
 
+#ifndef USE_ATOMIC_KERNEL
     int total_array_length =
       weight_array_length + right_left_array_length;
+#endif
 
 #ifdef USE_FLOAT_ARRAY
     typedef float array_t;
