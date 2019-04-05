@@ -44,6 +44,9 @@
 #ifndef KOKKOS_TEST_EXPERIMENTAL_ERROR_REPORTER_HPP
 #define KOKKOS_TEST_EXPERIMENTAL_ERROR_REPORTER_HPP
 
+#if defined(_WIN32) && !defined(M_PI)
+#define M_PI 3.14159265358979323846
+#endif
 #include <gtest/gtest.h>
 #include <iostream>
 #include <Kokkos_Core.hpp>

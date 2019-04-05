@@ -62,6 +62,10 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <process.h>
+#endif
+
 //----------------------------------------------------------------------------
 
 enum { CMD_USE_THREADS = 0
@@ -340,7 +344,11 @@ int main( int argc , char ** argv )
 
   if ( cmdline[ CMD_VTUNE ] ) {
     std::stringstream cmd;
+#ifndef _WIN32
     pid_t my_os_pid=getpid();
+#else
+    int my_os_pid=_getpid();
+#endif
     const std::string vtune_loc =
       "/usr/local/intel/vtune_amplifier_xe_2013/bin64/amplxe-cl";
     const std::string output_dir = "./vtune/vtune.";

@@ -42,6 +42,10 @@
 */
 #include "gtest/gtest.h"
 
+#ifdef _WIN32
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 char *input_filename = NULL;
 int main(int argc, char **argv) {

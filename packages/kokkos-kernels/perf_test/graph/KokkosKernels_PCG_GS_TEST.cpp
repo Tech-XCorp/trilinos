@@ -48,6 +48,11 @@
 
 #define MAXVAL 1
 
+#ifdef _WIN32
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
+
 typedef size_t size_type;
 typedef int idx;
 typedef double wt;

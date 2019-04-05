@@ -105,7 +105,7 @@ namespace Kokkos {
     } tmp, newval;
     newval.t = val;
     _InterlockedCompareExchange128((LONGLONG*)dest, newval.i.upper, newval.i.lower, ((LONGLONG*)&compare));
-    tmp.t = dest;
+    tmp.t = *dest;
     return tmp.t;
   }
 
@@ -116,13 +116,15 @@ namespace Kokkos {
     return atomic_compare_exchange(dest,compare,val);
   }
 
+// fetch-op methods
+
   template< typename T >
-  T atomic_fetch_or(volatile T * const dest, const T val) {
+  T atomic_fetch_max(volatile T * const dest, const T val) {
     T oldval = *dest;
     T assume;
     do {
       assume = oldval;
-      T newval = val | oldval;
+      T newval = (val > oldval ? val : oldval);
       oldval = atomic_compare_exchange(dest, assume, newval);
     } while (assume != oldval);
 
@@ -130,12 +132,12 @@ namespace Kokkos {
   }
 
   template< typename T >
-  T atomic_fetch_and(volatile T * const dest, const T val) {
+  T atomic_fetch_min(volatile T * const dest, const T val) {
     T oldval = *dest;
     T assume;
     do {
       assume = oldval;
-      T newval = val & oldval;
+      T newval = (val < oldval ? val : oldval);
       oldval = atomic_compare_exchange(dest, assume, newval);
     } while (assume != oldval);
 
@@ -166,6 +168,216 @@ namespace Kokkos {
     } while (assume != oldval);
 
     return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_mul(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val * oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_div(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val / oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_mod(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val % oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_and(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val & oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_or(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val | oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_xor(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val ^ oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_lshift(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val << oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+  template< typename T >
+  T atomic_fetch_rshift(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume;
+    do {
+      assume = oldval;
+      T newval = val >> oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return oldval;
+  }
+
+// op-fetch methods
+
+  template< typename T >
+  T atomic_mul_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val * oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_div_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val / oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_and_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val & oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_or_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val | oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_xor_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val ^ oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_lshift_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val << oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_rshift_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val >> oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
+  }
+
+  template< typename T >
+  T atomic_mod_fetch(volatile T * const dest, const T val) {
+    T oldval = *dest;
+    T assume, newval;
+    do {
+      assume = oldval;
+      newval = val % oldval;
+      oldval = atomic_compare_exchange(dest, assume, newval);
+    } while (assume != oldval);
+
+    return newval;
   }
 
   template< typename T >

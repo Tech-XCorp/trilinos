@@ -45,6 +45,10 @@
 #include "KokkosKernels_IOUtils.hpp"
 #include <string.h>
 
+#ifdef _WIN32
+#define strncasecmp _strnicmp
+#define strcasecmp _stricmp
+#endif
 
 typedef int idx;
 typedef double wt;

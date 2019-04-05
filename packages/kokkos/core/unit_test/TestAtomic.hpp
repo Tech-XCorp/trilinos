@@ -471,9 +471,11 @@ TEST_F( TEST_CATEGORY, atomics )
   ASSERT_TRUE( ( TestAtomic::Loop< Kokkos::complex<double>, TEST_EXECSPACE >( 100, 2 ) ) );
   ASSERT_TRUE( ( TestAtomic::Loop< Kokkos::complex<double>, TEST_EXECSPACE >( 100, 3 ) ) );
 
+#ifndef _WIN32
   ASSERT_TRUE( ( TestAtomic::Loop< TestAtomic::SuperScalar<4>, TEST_EXECSPACE >( 100, 1 ) ) );
   ASSERT_TRUE( ( TestAtomic::Loop< TestAtomic::SuperScalar<4>, TEST_EXECSPACE >( 100, 2 ) ) );
   ASSERT_TRUE( ( TestAtomic::Loop< TestAtomic::SuperScalar<4>, TEST_EXECSPACE >( 100, 3 ) ) );
+#endif
 #endif
 }
 
