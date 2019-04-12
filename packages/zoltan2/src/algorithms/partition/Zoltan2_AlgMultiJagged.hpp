@@ -4181,16 +4181,16 @@ struct ReduceWeightsFunctor {
 #ifdef USE_ATOMIC_KERNEL
           scalar_t new_value = coord;
           if(part < num_cuts) {
-            int insert_right = part;
-            scalar_t * dst = &current_left_closest(insert_right);
+            int insert_left = part;
+            scalar_t * dst = &current_left_closest(insert_left);
             scalar_t prev_value = *dst;
             while(new_value > prev_value) {
               prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
             }
           }
           if(part > 0) {
-            int insert_left = part - 1;
-            scalar_t * dst = &current_right_closest(insert_left);
+            int insert_right = part - 1;
+            scalar_t * dst = &current_right_closest(insert_right);
             scalar_t prev_value = *dst;
             while(new_value < prev_value) {
               prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
@@ -4520,7 +4520,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     clock_weights3.start();
 
-#ifndef USE_ATOMIC_KERNEL
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
     int total_array_length =
       weight_array_length + right_left_array_length;
 #endif
