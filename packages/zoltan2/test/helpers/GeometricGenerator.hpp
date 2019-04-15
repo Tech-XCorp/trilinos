@@ -688,16 +688,18 @@ public:
     //pindex = 0; // not used in normal distribution.
     CoordinatePoint <T> p;
 
+    bool bReset = (pindex == 0);
+  
     for(int i = 0; i < this->dimension; ++i){
       switch(i){
       case 0:
-        p.x = normalDist(this->center.x, this->standartDevx, state);
+        p.x = normalDist(this->center.x, this->standartDevx, state, bReset);
         break;
       case 1:
-        p.y = normalDist(this->center.y, this->standartDevy, state);
+        p.y = normalDist(this->center.y, this->standartDevy, state, bReset);
         break;
       case 2:
-        p.z = normalDist(this->center.z, this->standartDevz, state);
+        p.z = normalDist(this->center.z, this->standartDevz, state, bReset);
         break;
       default:
         p.x = 0; p.y = 0; p.z = 0;  // TODO This is junk code for cuda need to setup error handling
@@ -709,11 +711,18 @@ public:
 
   virtual ~CoordinateNormalDistribution(){};
 private:
-  KOKKOS_INLINE_FUNCTION T normalDist(T center_, T sd, unsigned int & state) {
+
+  // Added reset as had multiple tests running in series and they happened to have
+  // odd count so they would end up with different results.
+  // Resetting first coordinate can resolve this.
+  // This need may be temporary for the debugging setup of the cuda refactor.
+  // TODO: Resolve this - remove bReset and don't use double test or perhaps
+  // remove this static.
+  KOKKOS_INLINE_FUNCTION T normalDist(T center_, T sd, unsigned int & state, bool bReset) {
     static bool derived=false;
     static T storedDerivation;
     T polarsqrt, normalsquared, normal1, normal2;
-    if (!derived) {
+    if (!derived || bReset) {
       do {
         normal1=2.0*( T(rand_r(&state))/T(RAND_MAX) ) - 1.0;
         normal2=2.0*( T(rand_r(&state))/T(RAND_MAX) ) - 1.0;
