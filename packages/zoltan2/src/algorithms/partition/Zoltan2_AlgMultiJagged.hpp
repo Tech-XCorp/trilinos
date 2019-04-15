@@ -2269,6 +2269,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->new_coordinate_permutations;
     this->new_coordinate_permutations = tmp;
     this->part_xadj = this->new_part_xadj;
+
+      this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+      Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
+
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
   }
 
@@ -4181,16 +4185,16 @@ struct ReduceWeightsFunctor {
 #ifdef USE_ATOMIC_KERNEL
           scalar_t new_value = coord;
           if(part < num_cuts) {
-            int insert_right = part;
-            scalar_t * dst = &current_left_closest(insert_right);
+            int insert_left = part;
+            scalar_t * dst = &current_left_closest(insert_left);
             scalar_t prev_value = *dst;
             while(new_value > prev_value) {
               prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
             }
           }
           if(part > 0) {
-            int insert_left = part - 1;
-            scalar_t * dst = &current_right_closest(insert_left);
+            int insert_right = part - 1;
+            scalar_t * dst = &current_right_closest(insert_right);
             scalar_t prev_value = *dst;
             while(new_value < prev_value) {
               prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
@@ -4244,10 +4248,42 @@ struct ReduceWeightsFunctor {
 
 #endif
             parts(i) = part*2+1;
+
+/*
+            // need to scan up for any other cuts of same coordinate
+            mj_part_t base_part = part;
+            mj_part_t base_b = b;
+            part += 1;
+            while(part < num_cuts) {
+              b = cut_coordinates(part);
+              scalar_t delta = b - baseb;
+              if(delta < 0) delta = -delta;
+              if(delta < sEpsilon) {
+                Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
+                current_right_closest(part) = b;
+                current_left_closest(part) = b;
+              }
+              else { break; }
+              ++part;
+            }
+            part = base_b - 1;
+            while(part >= 0) {
+              b = cut_coordinates(part);
+              scalar_t delta = b - baseb;
+              if(delta < 0) delta = -delta;
+              if(delta < sEpsilon) {
+                Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
+                current_right_closest(part) = b;
+                current_left_closest(part) = b;
+              }
+              else { break; }
+              --part;
+            }
+*/
             break;
           }
         }
-        
+
         if(coord < b) {
           if(part == lower + 1) {
             part = lower;
@@ -4520,7 +4556,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     clock_weights3.start();
 
-#ifndef USE_ATOMIC_KERNEL
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
     int total_array_length =
       weight_array_length + right_left_array_length;
 #endif
@@ -4651,7 +4687,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     delete [] reduce_array;
 #endif
-  
+
+/* 
+    Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t c) {
+      printf("N: %d(%d-%d) cut: %d left: %.2f  right: %.2f\n", (int)(coordinate_end_index - coordinate_begin_index),
+        (int) coordinate_begin_index, (int) coordinate_end_index, c, my_current_left_closest(c), my_current_right_closest(c));
+    });
+*/    
+ 
     clock_weights3.stop();
     
     total_part_shift += total_part_count;
