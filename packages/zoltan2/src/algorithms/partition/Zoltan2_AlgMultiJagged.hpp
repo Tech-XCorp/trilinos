@@ -64,12 +64,12 @@
 #include <Zoltan2_Util.hpp>
 #include <vector>
 
-#define USE_ATOMIC_KERNEL // - overrides below
+//#define USE_ATOMIC_KERNEL // - overrides below
 #define USE_ATOMIC_REDUCE_KERNEL
 #define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
-#define DISABLE_CLOCKS false
+#define DISABLE_CLOCKS true
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
