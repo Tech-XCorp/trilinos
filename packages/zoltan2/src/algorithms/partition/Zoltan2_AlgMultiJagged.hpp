@@ -69,7 +69,7 @@
 #define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
-#define DISABLE_CLOCKS true
+#define DISABLE_CLOCKS false
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
@@ -3337,7 +3337,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::parallel_for("Write num in parts", num_cuts,
       KOKKOS_LAMBDA(mj_part_t cut) {
         // set target part weight.
-        current_target_part_weights(cut) = cumulative * unit_part_weight;
+        current_target_part_weights(cut) = device_num_in_parts(cut) * unit_part_weight;
         initial_cut_coords(cut) = min_coord +
           (coord_range * device_num_in_parts(cut)) / total_future_part_count_in_part;
     });
