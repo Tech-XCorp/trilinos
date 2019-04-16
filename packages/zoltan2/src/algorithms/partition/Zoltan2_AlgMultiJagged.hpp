@@ -3313,27 +3313,34 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   }, part0);
 
   if(part0) {
+  
+    // copy the std::vector to device first
+    // TODO: Make these std::vectors all views? Not sure yet if that is better.
+    Kokkos::View<mj_part_t*, device_t> device_num_in_parts(
+      "device_num_in_parts", num_cuts);
+    typename decltype(device_num_in_parts)::HostMirror
+      host_num_in_parts = Kokkos::create_mirror_view(device_num_in_parts);
     mj_part_t cumulative = 0;
+    for(mj_part_t i = 0; i < num_cuts; ++i) {
+      cumulative += (*next_future_num_parts_in_parts)[i + obtained_part_index];
+      host_num_in_parts(i) = cumulative;
+    }
+    Kokkos::deep_copy(device_num_in_parts, host_num_in_parts);
+    
     // how many total future parts the part will be partitioned into.
     mj_scalar_t total_future_part_count_in_part =
       mj_scalar_t((*future_num_part_in_parts)[concurrent_current_part]);
     // how much each part should weigh in ideal case.
     mj_scalar_t unit_part_weight =
       global_weight / total_future_part_count_in_part;
-    for(mj_part_t i = 0; i < num_cuts; ++i) {
-      cumulative += (*next_future_num_parts_in_parts)[i + obtained_part_index];
-      // TODO: We want to refactor these loops
-      // For now do temp host to device write
-      Kokkos::parallel_for(
-        // dummy single loop - to refactor
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0,1),
-        KOKKOS_LAMBDA (const int dummy) {
+
+    Kokkos::parallel_for("Write num in parts", num_cuts,
+      KOKKOS_LAMBDA(mj_part_t cut) {
         // set target part weight.
-        current_target_part_weights[i] = cumulative * unit_part_weight;
-        initial_cut_coords(i) = min_coord +
-          (coord_range * cumulative) / total_future_part_count_in_part;
-      });
-    }
+        current_target_part_weights(cut) = cumulative * unit_part_weight;
+        initial_cut_coords(cut) = min_coord +
+          (coord_range * device_num_in_parts(cut)) / total_future_part_count_in_part;
+    });
 
     Kokkos::parallel_for(
       // dummy single loop - to refactor
