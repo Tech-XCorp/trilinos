@@ -7789,6 +7789,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+/* NOT WORKING TODO: DELETE
     if(current_num_parts == 2) {
       // this is much faster than the following loop
       // maybe do a special case for 3 as well
@@ -7803,6 +7804,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       });
     }
     else {
+*/
       Kokkos::TeamPolicy<typename mj_node_t::execution_space> policy(
         current_num_parts, Kokkos::AUTO());
       typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
@@ -7816,7 +7818,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           local_assigned_part_ids(k) = i + output_part_begin_index;
         });
       });
-    }
+  //  }
 
     //ArrayRCP<const mj_gno_t> gnoList;
     if(!is_data_ever_migrated){
