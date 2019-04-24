@@ -4281,7 +4281,7 @@ struct ReduceWeightsFunctor {
           }
         }
 
-        if(mj_loop_count != 0) {
+        if(loop_count != 0) {
           // subsequent loops can just step towards target
           if(coord < b) {
             part -= 1;
