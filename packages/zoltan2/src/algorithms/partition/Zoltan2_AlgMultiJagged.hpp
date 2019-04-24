@@ -1042,7 +1042,7 @@ private:
     mj_part_t current_concurrent_num_parts,
     mj_part_t current_work_part,
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
-    int uniform_part_sizes);
+    int loop_count);
 
   /*! \brief Function that reduces the result of multiple threads for
    * left and right closest points and part weights in a single mpi process.
@@ -3574,22 +3574,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       }
     }
   });
-  
-  // if uniform_part_sizes becomes positive it means all concurrent sets
-  // have the same number of parts - otherwise it is not uniform
-  int uniform_part_sizes = -1;
-  for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
-    if(uniform_part_sizes == -1) {
-      uniform_part_sizes = vector_num_partitioning_in_current_dim[kk]; // set it
-    }
-    else if(vector_num_partitioning_in_current_dim[kk] != uniform_part_sizes) {
-      uniform_part_sizes = -2; // clear it - we do not have a uniform set
-    }
-  }
 
   clock_mj_1D_part_init2.stop();
   clock_mj_1D_part_while_loop.start();
 
+  int loop_count = 0;
   while (total_incomplete_cut_count != 0) {
     clock_host_copies.start();
 
@@ -3607,7 +3596,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       current_concurrent_num_parts,            
       current_work_part,                       
       mj_current_dim_coords,
-      uniform_part_sizes);
+      loop_count);
+    ++loop_count;
     
     clock_mj_1D_part_get_weights.stop();
 
@@ -3968,7 +3958,7 @@ struct ReduceWeightsFunctor {
   typedef array_t value_type[];
 #endif
 
-  int uniform_part_sizes;
+  int loop_count;
   array_t max_scalar;
   
   part_t concurrent_current_part;
@@ -3996,7 +3986,7 @@ struct ReduceWeightsFunctor {
 #endif // USE_ATOMIC_ATOMIC_KERNEL
 
   ReduceWeightsFunctor(
-    int mj_uniform_part_sizes,
+    int mj_loop_count,
     array_t mj_max_scalar,
     part_t mj_concurrent_current_part,
     part_t mj_num_cuts,
@@ -4020,7 +4010,7 @@ struct ReduceWeightsFunctor {
     Kokkos::View<scalar_t *, device_t> mj_current_right_closest
 #endif // USE_ATOMIC_ATOMIC_KERNEL
     ) :
-      uniform_part_sizes(mj_uniform_part_sizes),
+      loop_count(mj_loop_count),
       max_scalar(mj_max_scalar),
       concurrent_current_part(mj_concurrent_current_part),
       num_cuts(mj_num_cuts),
@@ -4291,21 +4281,33 @@ struct ReduceWeightsFunctor {
           }
         }
 
-        if(coord < b) {
-          if(part == lower + 1) {
-            part = lower;
+        if(mj_loop_count != 0) {
+          // subsequent loops can just step towards target
+          if(coord < b) {
+            part -= 1;
           }
           else {
-            upper = part - 1;
-            part -= (part - lower)/2;
+            part += 1;
           }
         }
-        else if(part == upper - 1) {
-          part = upper;
-        }
         else {
-          lower = part + 1;
-          part += (upper - part)/2;
+          // initial loop binary search
+          if(coord < b) {
+            if(part == lower + 1) {
+              part = lower;
+            }
+            else {
+              upper = part - 1;
+              part -= (part - lower)/2;
+            }
+          }
+          else if(part == upper - 1) {
+            part = upper;
+          }
+          else {
+            lower = part + 1;
+            part += (upper - part)/2;
+          }
         }
       }
 #ifdef USE_ATOMIC_KERNEL
@@ -4472,7 +4474,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   mj_part_t current_concurrent_num_parts,
   mj_part_t current_work_part,
   Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
-  int uniform_part_sizes)
+  int loop_count)
 {
   clock_mj_1D_part_get_weights_setup.start();
         
@@ -4625,7 +4627,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     ReduceWeightsFunctor<policy_t, mj_scalar_t, mj_part_t, mj_lno_t, typename mj_node_t::device_type, array_t>
       teamFunctor(
-        uniform_part_sizes,
+        loop_count,
         max_scalar,
         concurrent_current_part,
         num_cuts,
@@ -7486,7 +7488,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
   }
-
+//XXX
   for(mj_part_t ii = 0; ii < num_parts; ++ii) {
     this->thread_point_counts(ii) = 0;
   }
