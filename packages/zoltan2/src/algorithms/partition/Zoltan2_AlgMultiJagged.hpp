@@ -2932,6 +2932,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::ViewAllocateWithoutInitializing("global_total_part_weight_left_right_closests"),
       (this->max_num_total_part_along_dim +
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
+      
+  this->current_mj_gnos =
+    Kokkos::View<mj_gno_t*, device_t>("gids", num_local_coords);
+
+  this->owner_of_coordinate = Kokkos::View<int *, device_t>
+    ("owner_of_coordinate", num_local_coords);
 }
 
 /* \brief compute the global bounding box
@@ -2960,10 +2966,6 @@ Clock check_min_max_box_calc("clock_check_min_max_box_calc", true);
       mins[i] = 0;
       maxs[i] = 0;
     }
- 
-
-printf("Loop over %d    with rec depth: %d and coord dim: %d\n",
-  (int) std::min(this->recursion_depth, this->coord_dim), (int) this->recursion_depth, (int) this->coord_dim);
  
     for (int i = 0; i < std::min(this->recursion_depth, this->coord_dim); ++i){
       Kokkos::parallel_reduce("MinReduce", this->num_local_coords,
@@ -4695,14 +4697,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     Kokkos::deep_copy(my_current_right_closest, hostRightArray);
 
     delete [] reduce_array;
-#endif
-
-/* 
-    Kokkos::parallel_for (num_cuts, KOKKOS_LAMBDA(mj_part_t c) {
-      printf("N: %d(%d-%d) cut: %d left: %.2f  right: %.2f\n", (int)(coordinate_end_index - coordinate_begin_index),
-        (int) coordinate_begin_index, (int) coordinate_end_index, c, my_current_left_closest(c), my_current_right_closest(c));
-    });
-*/    
+#endif 
  
     clock_weights3.stop();
     
@@ -6967,7 +6962,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     //migrate coordinates
     throw std::logic_error("Did not refactor zoltan code yet for kokkos.");
-
     // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
     /*
     for (int i = 0; i < this->coord_dim; ++i){
@@ -7000,7 +6994,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
       freeArray<mj_scalar_t>(weight);
     }
-
     // migrate owners.
     throw std::logic_error("migrate owners not implemented for kokkos yet.");
 
@@ -7061,7 +7054,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     this->mj_env->timerStart(MACRO_TIMERS,
       "MultiJagged - Migration DistributorMigration-" + iteration);
-
     {
       // migrate gnos.
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
@@ -7073,12 +7065,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       memcpy(this->current_mj_gnos.data(),
         received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
     }
-
     // migrate coordinates
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       temp_coordinates("mj_coordinates", num_incoming_gnos,
       this->coord_dim);
-
     for (int i = 0; i < this->coord_dim; ++i) {
       Kokkos::View<mj_scalar_t *, device_t> sent_subview_mj_coordinates
         = Kokkos::subview(this->mj_coordinates, Kokkos::ALL, i);
@@ -7092,7 +7082,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       memcpy(subview_mj_coordinates.data(),
         received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
     }
-
     this->mj_coordinates = temp_coordinates;
         
     // migrate weights.
@@ -7114,7 +7103,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         temp_weights(n,i) = received_weight[n];
       }
     }
-  
     this->mj_weights = temp_weights;
 
     {
@@ -7488,7 +7476,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
   }
-//XXX
+
   for(mj_part_t ii = 0; ii < num_parts; ++ii) {
     this->thread_point_counts(ii) = 0;
   }
@@ -7883,9 +7871,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     else
 #endif  // !ENABLE_ZOLTAN_MIGRATION
     {
-      throw std::logic_error("This code not refactored yet - not expected "
-        "to work - needs to be on device.");
-
       //if data is migrated, then send part numbers to the original owners.
       this->mj_env->timerStart(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanCreating");
