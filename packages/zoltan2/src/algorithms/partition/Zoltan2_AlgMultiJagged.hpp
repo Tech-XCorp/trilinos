@@ -3479,6 +3479,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   // and replaced with kokkos view view_num_partitioning_in_current_dim.
   // Now restore a std::vector here just for the reduction op which has not been
   // refactored yet.
+  std::vector<mj_part_t> temp(view_num_partitioning_in_current_dim.size());
   if(!bSingleProcess) {
     // This got ugly quickly .... but it's at least partly temporary as I
     // refactor and perhaps will remove reference type eventually.
@@ -3487,7 +3488,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       hostArray
       = Kokkos::create_mirror_view(view_num_partitioning_in_current_dim);
     Kokkos::deep_copy(hostArray, view_num_partitioning_in_current_dim);
-    std::vector<mj_part_t> temp(view_num_partitioning_in_current_dim.size());
     for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
       temp[n] = hostArray(n);
     }
