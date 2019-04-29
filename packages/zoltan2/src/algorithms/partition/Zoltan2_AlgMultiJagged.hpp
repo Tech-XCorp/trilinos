@@ -2938,6 +2938,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   this->owner_of_coordinate = Kokkos::View<int *, device_t>
     ("owner_of_coordinate", num_local_coords);
+  auto local_owner_of_coordinate = this->owner_of_coordinate;
+  auto local_current_mj_gnos = this->current_mj_gnos;
+  auto local_initial_mj_gnos = this->initial_mj_gnos;
+  auto local_myActualRank = this->myActualRank;
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+    (0, num_local_coords), KOKKOS_LAMBDA (int j) {
+    local_owner_of_coordinate(j) = local_myActualRank;
+    local_current_mj_gnos(j) = local_initial_mj_gnos(j);
+  });
 }
 
 /* \brief compute the global bounding box
