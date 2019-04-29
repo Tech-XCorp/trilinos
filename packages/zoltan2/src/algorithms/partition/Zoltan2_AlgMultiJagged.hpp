@@ -1987,23 +1987,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           });
         }
         else {
-          throw std::logic_error(
-            "Disabled this mj_taskmapper_get_local_min_max_coord_totW B call"
-            " for refactor. Need to implement device form.");
-
-          /*
           this->mj_taskmapper_get_local_min_max_coord_totW(
             current_work_part,
             current_concurrent_num_parts,
             kk,
-            mj_current_dim_coords,
-            this->process_local_min_max_coord_total_weight(kk),
-            this->process_local_min_max_coord_total_weight(
-              kk + current_concurrent_num_parts), // max coordinate
-            this->process_local_min_max_coord_total_weight(
-              kk + 2*current_concurrent_num_parts) // total weight);
+            mj_current_dim_coords
           );
-          */
         }
       }
 
