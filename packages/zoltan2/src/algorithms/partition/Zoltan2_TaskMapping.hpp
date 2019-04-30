@@ -1406,9 +1406,9 @@ public:
     // eventually this should be built from the start as a Kokkos::View but I'm
     // trying to restrict the scope of the refactoring so it can be done in steps.
     // Make the 2d kokkos view and manually copy in the pieces for now
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_tcoords("pcoords", used_num_procs, procdim);
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_tcoords("pcoords", this->no_tasks, procdim);
     for(int i = 0; i < procdim; ++i) {
-      for(int j = 0; j < used_num_procs; ++j) {
+      for(int j = 0; j < this->no_tasks; ++j) {
         make_kokkos_tcoords(j,i) = tcoords[i][j];
       }
     }
