@@ -69,7 +69,7 @@
 #define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
 #define DEFAULT_NUM_TEAMS 60  // default number of teams - param can set it
-#define DISABLE_CLOCKS false
+#define DISABLE_CLOCKS true
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
@@ -3492,12 +3492,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     for(size_t n = 0; n < view_num_partitioning_in_current_dim.size(); ++n) {
       temp[n] = hostArray(n);
     }
-
     reductionOp = new Teuchos::MultiJaggedCombinedReductionOp
-      <mj_part_t, mj_scalar_t>(
-        &temp,
-        current_work_part ,
-        current_concurrent_num_parts);
+        <mj_part_t, mj_scalar_t>(
+          &temp,
+          current_work_part ,
+          current_concurrent_num_parts);
   }
   
   // use locals to avoid capturing this for cuda  
@@ -3620,15 +3619,29 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 
     //now sum up the results of mpi processors.
     if(!bSingleProcess){
-      // TODO: Ignore this code for cuda right now - not worrying about
-      // parallel build yet
-      #ifndef KOKKOS_ENABLE_CUDA
-      // TODO: Remove use of data() - refactor in progress
+      // Not sure yet how we do device reduction with operator
+      // For initial test copy to host and do it there, then copy back
+      typename decltype(total_part_weight_left_right_closests)::HostMirror
+        host_total_part_weight_left_right_closests =
+        Kokkos::create_mirror_view(total_part_weight_left_right_closests);
+      typename decltype(global_total_part_weight_left_right_closests)::HostMirror
+        host_global_total_part_weight_left_right_closests =
+        Kokkos::create_mirror_view(global_total_part_weight_left_right_closests);
+
+      Kokkos::deep_copy(host_total_part_weight_left_right_closests, total_part_weight_left_right_closests);
+
+      size_t host_view_total_reduction_size;
+      Kokkos::parallel_reduce("Read single", 1,
+        KOKKOS_LAMBDA(int dummy, size_t & set_single) {
+        set_single = view_total_reduction_size(0);
+      }, host_view_total_reduction_size);
+
       reduceAll<int, mj_scalar_t>( *(this->comm), *reductionOp,
-        view_total_reduction_size(0),
-        this->total_part_weight_left_right_closests.data(),
-        this->global_total_part_weight_left_right_closests.data());
-      #endif
+        host_view_total_reduction_size,
+        host_total_part_weight_left_right_closests.data(),
+        host_global_total_part_weight_left_right_closests.data());
+
+      Kokkos::deep_copy(global_total_part_weight_left_right_closests, host_global_total_part_weight_left_right_closests);
     }
     else {
       // just map it instead of looping - is this ok?
@@ -4663,6 +4676,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 #else
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
+    mj_lno_t coordinate_begin_index = (concurrent_current_part == 0) ? 0 :
+      host_part_xadj(concurrent_current_part - 1);
+    mj_lno_t coordinate_end_index = host_part_xadj(concurrent_current_part);
+
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
@@ -6008,13 +6025,20 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     sizeof(mj_gno_t)*allocation_size);
 
   //write the number of coordinates in each part.
-  for (mj_part_t i = 0; i < num_parts; ++i) {
-    mj_lno_t part_begin_index = 0;
-    if (i > 0) {
-      part_begin_index = this->new_part_xadj(i - 1);
-    }
-    mj_lno_t part_end_index = this->new_part_xadj(i);
-    my_local_points_to_reduce_sum[i] = part_end_index - part_begin_index;
+  //
+  // TODO: I refactored this for device handling on GPU but we need to extend
+  // to all the data structures here, perhaps, to make it more streamlined.
+  auto local_new_part_xadj = this->new_part_xadj;
+  Kokkos::View<mj_gno_t *, typename mj_node_t::device_type> points_per_part(
+    Kokkos::ViewAllocateWithoutInitializing("points per part"), num_parts);
+  Kokkos::parallel_for("get vals on device", num_parts, KOKKOS_LAMBDA(mj_gno_t i) {
+    points_per_part(i) = local_new_part_xadj(i) - ((i == 0) ? 0 : local_new_part_xadj(i-1));
+  });
+  typename decltype(points_per_part)::HostMirror
+    host_points_per_part = Kokkos::create_mirror_view(points_per_part);
+  Kokkos::deep_copy(host_points_per_part, points_per_part);
+  for(int i = 0; i < num_parts; ++i) {
+    my_local_points_to_reduce_sum[i] = host_points_per_part(i);
   }
 
   // copy the local num parts to the last portion of array, so that this portion
@@ -6129,16 +6153,24 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_lno_t *send_count_to_each_proc,
   int *coordinate_destinations) {
 
+  typename decltype(this->new_part_xadj)::HostMirror
+    host_new_part_xadj = Kokkos::create_mirror_view(this->new_part_xadj);
+  deep_copy(host_new_part_xadj, this->new_part_xadj);
+
+  typename decltype(this->new_coordinate_permutations)::HostMirror
+    host_new_coordinate_permutations = Kokkos::create_mirror_view(this->new_coordinate_permutations);
+  deep_copy(host_new_coordinate_permutations, this->new_coordinate_permutations);
+
   for (mj_part_t p = 0; p < num_parts; ++p) {
     mj_lno_t part_begin = 0;
-    if (p > 0) part_begin = this->new_part_xadj(p - 1);
-    mj_lno_t part_end = this->new_part_xadj(p);
+    if (p > 0) part_begin = host_new_part_xadj(p - 1);
+    mj_lno_t part_end = host_new_part_xadj(p);
     // get the first part that current processor will send its part-p.
     mj_part_t proc_to_sent = part_assignment_proc_begin_indices[p];
     // initialize how many point I sent to this processor.
     mj_lno_t num_total_send = 0;
     for (mj_lno_t j=part_begin; j < part_end; j++) {
-      mj_lno_t local_ind = this->new_coordinate_permutations(j);
+      mj_lno_t local_ind = host_new_coordinate_permutations(j);
       while (num_total_send >= send_count_to_each_proc[proc_to_sent]) {
         // then get the next processor to send the points in part p.
         num_total_send = 0;
@@ -6367,7 +6399,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           break;
         }
       }
-    
+
       if(did_change_sign) {
         // resort the processors in the part for the rest of the processors that
         // is not assigned.
@@ -6559,7 +6591,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     processor_chains_in_parts,
     send_count_to_each_proc,
     coordinate_destinations);
-
   freeArray<mj_part_t>(part_assignment_proc_begin_indices);
   freeArray<mj_part_t>(processor_chains_in_parts);
   freeArray<mj_part_t>(processor_part_assignments);
@@ -6595,6 +6626,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 {
   mj_part_t part_shift_amount = output_part_numbering_begin_index;
   mj_part_t previous_processor = -1;
+
+  typename decltype(this->new_part_xadj)::HostMirror
+    local_new_part_xadj =
+    Kokkos::create_mirror_view(this->new_part_xadj);
+  Kokkos::deep_copy(local_new_part_xadj, this->new_part_xadj);
+
+  // TODO: This definitely hurts - need to refactor all of this
+  // for device.
+  typename decltype(this->new_part_xadj)::HostMirror
+    local_new_coordinate_permutations =
+    Kokkos::create_mirror_view(this->new_coordinate_permutations);
+  Kokkos::deep_copy(local_new_coordinate_permutations, this->new_coordinate_permutations);
+
   for(mj_part_t i = 0; i < num_parts; ++i){
     mj_part_t p = sort_item_part_to_proc_assignment[i].id;
 
@@ -6602,10 +6646,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_lno_t part_begin_index = 0;
 
     if (p > 0) {
-      part_begin_index = this->new_part_xadj(p - 1);
+      part_begin_index = local_new_part_xadj(p - 1);
     }
 
-    mj_lno_t part_end_index = this->new_part_xadj(p);
+    mj_lno_t part_end_index = local_new_part_xadj(p);
 
     mj_part_t assigned_proc = sort_item_part_to_proc_assignment[i].val;
     if (this->myRank == assigned_proc && previous_processor != assigned_proc) {
@@ -6615,7 +6659,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     part_shift_amount += (*next_future_num_parts_in_parts)[p];
 
     for (mj_lno_t j= part_begin_index; j < part_end_index; j++){
-      mj_lno_t localInd = this->new_coordinate_permutations(j);
+      mj_lno_t localInd = local_new_coordinate_permutations(j);
       coordinate_destinations[localInd] = assigned_proc;
     }
   }
@@ -6662,6 +6706,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     num_points_in_all_processor_parts + num_procs * num_parts;
   out_part_indices.clear();
 
+comm->barrier();
+printf("%d assign 1\n", comm->getRank());
+comm->barrier();
+
   // to sort the parts that is assigned to the processors.
   // id is the part number, sort value is the assigned processor id.
   uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment  =
@@ -6669,10 +6717,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   uSortItem<mj_part_t, mj_gno_t> * sort_item_num_points_of_proc_in_part_i =
     allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_procs);
 
+comm->barrier();
+printf("%d assign 2\n", comm->getRank());
+comm->barrier();
+
   // calculate the optimal number of coordinates that should be assigned
   // to each processor.
   mj_lno_t work_each =
     mj_lno_t (this->num_global_coords / (double (num_procs)) + 0.5f);
+
+comm->barrier();
+printf("%d assign 3\n", comm->getRank());
+comm->barrier();
 
   // to hold the left space as the number of coordinates to the optimal
   // number in each proc.
@@ -6683,6 +6739,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     space_in_each_processor[i] = work_each;
   }
 
+comm->barrier();
+printf("%d assign 4\n", comm->getRank());
+comm->barrier();
+
   // we keep track of how many parts each processor is assigned to.
   // because in some weird inputs, it might be possible that some
   // processors is not assigned to any part. Using these variables,
@@ -6691,10 +6751,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   memset(num_parts_proc_assigned, 0, sizeof(mj_part_t) * num_procs);
   int empty_proc_count = num_procs;
 
+comm->barrier();
+printf("%d assign 5\n", comm->getRank());
+comm->barrier();
+
   // to sort the parts with decreasing order of their coordiantes.
   // id are the part numbers, sort value is the number of points in each.
   uSortItem<mj_part_t, mj_gno_t> * sort_item_point_counts_in_parts =
     allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_parts);
+
+comm->barrier();
+printf("%d assign 6\n", comm->getRank());
+comm->barrier();
 
   // initially we will sort the parts according to the number of coordinates
   // they have, so that we will start assigning with the part that has the most
@@ -6704,6 +6772,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     sort_item_point_counts_in_parts[i].val = global_num_points_in_parts[i];
   }
 
+comm->barrier();
+printf("%d assign 7\n", comm->getRank());
+comm->barrier();
   // sort parts with increasing order of loads.
   uqsort<mj_part_t, mj_gno_t>(num_parts, sort_item_point_counts_in_parts);
 
@@ -6789,6 +6860,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       num_points_in_all_processor_parts[this->myRank * num_parts + i];
   }
 
+comm->barrier();
+printf("%d assign 8\n", comm->getRank());
+comm->barrier();
+
   freeArray<mj_part_t>(num_parts_proc_assigned);
   freeArray< uSortItem<mj_part_t, mj_gno_t> >
     (sort_item_num_points_of_proc_in_part_i);
@@ -6798,6 +6873,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // sort assignments with respect to the assigned processors.
   uqsort<mj_part_t, mj_part_t>(num_parts, sort_item_part_to_proc_assignment);
 
+comm->barrier();
+printf("%d assign 9\n", comm->getRank());
+comm->barrier();
+
   // fill sendBuf.
   this->assign_send_destinations2(
     num_parts,
@@ -6805,6 +6884,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     coordinate_destinations,
     output_part_numbering_begin_index,
     next_future_num_parts_in_parts);
+
+comm->barrier();
+printf("%d assign 10\n", comm->getRank());
+comm->barrier();
 
   freeArray<uSortItem<mj_part_t, mj_part_t> >
     (sort_item_part_to_proc_assignment);
@@ -6857,6 +6940,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // at the end each processor will have a single part,
     // but a part will be shared by a group of processors.
     mj_part_t out_part_index = 0;
+
     this->mj_assign_proc_to_parts(
       num_points_in_all_processor_parts,
       num_parts,
@@ -6874,6 +6958,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     out_part_indices.push_back(out_part_index);
   }
   else {
+
     // there are more parts than the processors.
     // therefore a processor will be assigned multiple parts,
     // the subcommunicators will only have a single processor.
@@ -6881,6 +6966,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // since there are more parts then procs,
     // assign multiple parts to processors.
+
     this->mj_assign_parts_to_procs(
       num_points_in_all_processor_parts,
       num_parts,
@@ -7050,19 +7136,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_lno_t num_incoming_gnos = distributor.createFromSends(destinations);
     this->mj_env->timerStop(MACRO_TIMERS,
       "MultiJagged - Migration DistributorPlanCreating-" + iteration);
-
     this->mj_env->timerStart(MACRO_TIMERS,
       "MultiJagged - Migration DistributorMigration-" + iteration);
     {
       // migrate gnos.
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
+      typename decltype(this->current_mj_gnos)::HostMirror
+        host_current_mj_gnos1 =
+        Kokkos::create_mirror_view(this->current_mj_gnos);
+
+      deep_copy(host_current_mj_gnos1, this->current_mj_gnos);
       ArrayView<mj_gno_t> sent_gnos(
-        this->current_mj_gnos.data(), this->num_local_coords);
+        host_current_mj_gnos1.data(), this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos =
         Kokkos::View<mj_gno_t*, device_t>("gids", num_incoming_gnos);
-      memcpy(this->current_mj_gnos.data(),
+      typename decltype(this->current_mj_gnos)::HostMirror
+        host_current_mj_gnos2 =
+        Kokkos::create_mirror_view(this->current_mj_gnos);
+
+      memcpy(host_current_mj_gnos2.data(),
         received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
+      deep_copy(this->current_mj_gnos, host_current_mj_gnos2);
     }
     // migrate coordinates
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
@@ -7071,54 +7166,79 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     for (int i = 0; i < this->coord_dim; ++i) {
       Kokkos::View<mj_scalar_t *, device_t> sent_subview_mj_coordinates
         = Kokkos::subview(this->mj_coordinates, Kokkos::ALL, i);
+      typename decltype(sent_subview_mj_coordinates)::HostMirror
+        host_sent_subview_mj_coordinates =
+        Kokkos::create_mirror_view(sent_subview_mj_coordinates);
+      deep_copy(host_sent_subview_mj_coordinates, sent_subview_mj_coordinates);
+
       ArrayView<mj_scalar_t> sent_coord(
-        sent_subview_mj_coordinates.data(), this->num_local_coords);
+        host_sent_subview_mj_coordinates.data(), this->num_local_coords);
       ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
       distributor.doPostsAndWaits<mj_scalar_t>(
         sent_coord, 1, received_coord());
       Kokkos::View<mj_scalar_t *, device_t> subview_mj_coordinates =
         Kokkos::subview(temp_coordinates, Kokkos::ALL, i);
-      memcpy(subview_mj_coordinates.data(),
+      typename decltype(subview_mj_coordinates)::HostMirror
+        host_subview_mj_coordinates =
+        Kokkos::create_mirror_view(subview_mj_coordinates);
+
+      memcpy(host_subview_mj_coordinates.data(),
         received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
+      deep_copy(subview_mj_coordinates, host_subview_mj_coordinates);
     }
     this->mj_coordinates = temp_coordinates;
-        
     // migrate weights.
     Kokkos::View<mj_scalar_t**, device_t> temp_weights(
      "mj_weights", num_incoming_gnos, this->num_weights_per_coord);
-
+    typename decltype(this->mj_weights)::HostMirror
+      host_mj_weights =
+      Kokkos::create_mirror_view(this->mj_weights);
+    Kokkos::deep_copy(host_mj_weights, this->mj_weights);
+    typename decltype(temp_weights)::HostMirror
+      host_temp_weights =
+      Kokkos::create_mirror_view(temp_weights);
     for (int i = 0; i < this->num_weights_per_coord; ++i) {
       // TODO: How to optimize this better to use layouts properly
       // I think we can flip the weight layout and then use subviews
       // but need to determine if this will cause problems elsewhere
       ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
       for(int n = 0; n < this->num_local_coords; ++n) {
-        sent_weight[n] = this->mj_weights(n,i);
+        sent_weight[n] = host_mj_weights(n,i);
       }
       ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
       distributor.doPostsAndWaits<mj_scalar_t>(
         sent_weight(), 1, received_weight());
       for(int n = 0; n < num_incoming_gnos; ++n) {
-        temp_weights(n,i) = received_weight[n];
+        host_temp_weights(n,i) = received_weight[n];
       }
     }
+    Kokkos::deep_copy(temp_weights, host_temp_weights);
     this->mj_weights = temp_weights;
-
     {
+      typename decltype(owner_of_coordinate)::HostMirror
+        host_owner_of_coordinate =
+        Kokkos::create_mirror_view(owner_of_coordinate);
+      Kokkos::deep_copy(host_owner_of_coordinate, owner_of_coordinate);
       ArrayView<int> sent_owners(
-        this->owner_of_coordinate.data(), this->num_local_coords);
+        host_owner_of_coordinate.data(), this->num_local_coords);
       ArrayRCP<int> received_owners(num_incoming_gnos);
       distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
       this->owner_of_coordinate = Kokkos::View<int *, device_t>
         ("owner_of_coordinate", num_incoming_gnos);
-      memcpy(this->owner_of_coordinate.data(),
+      typename decltype(owner_of_coordinate)::HostMirror
+        host_owner_of_coordinate2 =
+        Kokkos::create_mirror_view(owner_of_coordinate);
+      
+      memcpy(host_owner_of_coordinate2.data(),
         received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
+      Kokkos::deep_copy(owner_of_coordinate, host_owner_of_coordinate2);
     }
 
     // if num procs is less than num parts,
     // we need the part assigment arrays as well, since
     // there will be multiple parts in processor.
     if(num_procs < num_parts) {
+printf("NEEDS TO BE IMPLEMENTED FOR CUDA! Make host forms and use them.\n");
       ArrayView<mj_part_t> sent_partids(
         this->assigned_part_ids.data(), this->num_local_coords);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
@@ -7136,7 +7256,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->assigned_part_ids = Kokkos::View<mj_part_t *, device_t>
         ("assigned_part_ids", num_incoming_gnos);
     }
-
     this->mj_env->timerStop(MACRO_TIMERS,
       "MultiJagged - Migration DistributorMigration-" + iteration);
 
@@ -7178,59 +7297,81 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 {
   // if there is single output part, then simply fill the permutation array.
   if (output_num_parts == 1) {
-    for(mj_lno_t i = 0; i < this->num_local_coords; ++i) {
-      this->new_coordinate_permutations(i) = i;
-    }
-    this->new_part_xadj(0) = this->num_local_coords;
+    auto local_new_coordinate_permutations = this->new_coordinate_permutations;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (0,this->num_local_coords),
+      KOKKOS_LAMBDA(mj_lno_t i) {
+      local_new_coordinate_permutations(i) = i;
+    });
+    auto local_new_part_xadj = this->new_part_xadj;
+    auto local_num_local_coords = this->num_local_coords;
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (0,1),
+      KOKKOS_LAMBDA(mj_lno_t dummy) {
+      local_new_part_xadj(0) = local_num_local_coords;
+    });
   }
   else {
+
+    // cheating - this all needs to be rewritten for performance
+    // I've got other code in place which is similar patterns
+    // This was not originally setup for parallel anyways so for
+    // now just throw it all into a single loop on device so we
+    // can get something running. TODO: Optimize this
+    auto local_num_local_coords = this->num_local_coords;
+    auto local_assigned_part_ids = this->assigned_part_ids;
+    auto local_new_part_xadj = this->new_part_xadj;
+    auto local_new_coordinate_permutations = this->new_coordinate_permutations;
+
+    typedef typename mj_node_t::device_type device_t;
+
+    // part shift holds the which part number an old part number corresponds to.
+    Kokkos::View<mj_part_t*, device_t> part_shifts("part_shifts", num_parts);
+
     // otherwise we need to count how many points are there in each part.
     // we allocate here as num_parts, because the sent partids are up to
     // num_parts, although there are outout_num_parts different part.
-    mj_lno_t *num_points_in_parts = allocMemory<mj_lno_t>(num_parts);
+    Kokkos::View<mj_lno_t*, device_t> num_points_in_parts("num_points_in_parts", num_parts);
 
-    // part shift holds the which part number an old part number corresponds to.
-    mj_part_t *part_shifts = allocMemory<mj_part_t>(num_parts);
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (0,1),
+      KOKKOS_LAMBDA(mj_lno_t dummy) {
 
-    memset(num_points_in_parts, 0, sizeof(mj_lno_t) * num_parts);
-
-    for(mj_lno_t i = 0; i < this->num_local_coords; ++i) {
-      mj_part_t ii = this->assigned_part_ids(i);
-      ++num_points_in_parts[ii];
+    for(mj_lno_t i = 0; i < local_num_local_coords; ++i) {
+      mj_part_t ii = local_assigned_part_ids(i);
+      ++num_points_in_parts(ii);
     }
 
     // write the end points of the parts.
     mj_part_t p = 0;
     mj_lno_t prev_index = 0;
     for(mj_part_t i = 0; i < num_parts; ++i){
-      if(num_points_in_parts[i] > 0) {
-        this->new_part_xadj(p) =  prev_index + num_points_in_parts[i];
-        prev_index += num_points_in_parts[i];
-        part_shifts[i] = p++;
+      if(num_points_in_parts(i) > 0) {
+        local_new_part_xadj(p) = prev_index + num_points_in_parts(i);
+        prev_index += num_points_in_parts(i);
+        part_shifts(i) = p++;
       }
     }
 
     // for the rest of the parts write the end index as end point.
     mj_part_t assigned_num_parts = p - 1;
     for (;p < num_parts; ++p) {
-      this->new_part_xadj(p) =
-        this->new_part_xadj(assigned_num_parts);
+      local_new_part_xadj(p) =
+        local_new_part_xadj(assigned_num_parts);
     }
     for(mj_part_t i = 0; i < output_num_parts; ++i) {
-      num_points_in_parts[i] = this->new_part_xadj(i);
+      num_points_in_parts(i) = local_new_part_xadj(i);
     }
 
     // write the permutation array here.
     // get the part of the coordinate i, shift it to obtain the new part number.
     // assign it to the end of the new part numbers pointer.
-    for(mj_lno_t i = this->num_local_coords - 1; i >= 0; --i) {
+    for(mj_lno_t i = local_num_local_coords - 1; i >= 0; --i) {
       mj_part_t part =
-        part_shifts[mj_part_t(this->assigned_part_ids(i))];
-      this->new_coordinate_permutations(--num_points_in_parts[part]) = i;
+        part_shifts[mj_part_t(local_assigned_part_ids(i))];
+      local_new_coordinate_permutations(--num_points_in_parts[part]) = i;
     }
-
-    freeArray<mj_lno_t>(num_points_in_parts);
-    freeArray<mj_part_t>(part_shifts);
+    });
   }
 }
 
@@ -7272,6 +7413,10 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> &input_part_boxes,
   RCP<mj_partBoxVector_t> &output_part_boxes)
 {
+this->comm->barrier();
+printf("%d mig 1\n", this->comm->getRank());
+this->comm->barrier();
+
   mj_part_t num_procs = this->comm->getSize();
   this->myRank = this->comm->getRank();
 
@@ -7281,11 +7426,18 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_gno_t *num_points_in_all_processor_parts =
     allocMemory<mj_gno_t>(input_num_parts * (num_procs + 1));
 
+this->comm->barrier();
+printf("%d mig 2\n", this->comm->getRank());
+this->comm->barrier();
   // get the number of coordinates in each part in each processor.
   this->get_processor_num_points_in_parts(
     num_procs,
     input_num_parts,
     num_points_in_all_processor_parts);
+
+this->comm->barrier();
+printf("%d mig 3\n", this->comm->getRank());
+this->comm->barrier();
 
   // check if migration will be performed or not.
   if (!this->mj_check_to_migrate(
@@ -7298,10 +7450,18 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     return false;
   }
 
+this->comm->barrier();
+printf("%d mig 4\n", this->comm->getRank());
+this->comm->barrier();
+
   mj_lno_t *send_count_to_each_proc = NULL;
   int *coordinate_destinations = allocMemory<int>(this->num_local_coords);
   send_count_to_each_proc = allocMemory<mj_lno_t>(num_procs);
   
+this->comm->barrier();
+printf("%d mig 5\n", this->comm->getRank());
+this->comm->barrier();
+
   for (int i = 0; i < num_procs; ++i) {
     send_count_to_each_proc[i] = 0;
   }
@@ -7322,12 +7482,15 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     output_part_begin_index,
     coordinate_destinations);
 
+this->comm->barrier();
+printf("%d mig 6\n", this->comm->getRank());
+this->comm->barrier();
+
   freeArray<mj_lno_t>(send_count_to_each_proc);
   std::vector <mj_part_t> tmpv;
 
   std::sort (out_part_indices.begin(), out_part_indices.end());
   mj_part_t outP = out_part_indices.size();
-
   mj_gno_t new_global_num_points = 0;
   mj_gno_t *global_num_points_in_parts =
     num_points_in_all_processor_parts + num_procs * input_num_parts;
@@ -7336,6 +7499,9 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     input_part_boxes->clear();
   }
 
+this->comm->barrier();
+printf("%d mig 7\n", this->comm->getRank());
+this->comm->barrier();
   // now we calculate the new values for next_future_num_parts_in_parts.
   // same for the part boxes.
   for (mj_part_t i = 0; i < outP; ++i) {
@@ -7347,6 +7513,9 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
   }
 
+this->comm->barrier();
+printf("%d mig 8\n", this->comm->getRank());
+this->comm->barrier();
   // swap the input and output part boxes.
   if (this->mj_keep_part_boxes) {
     RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
@@ -7361,8 +7530,10 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   freeArray<mj_gno_t>(num_points_in_all_processor_parts);
 
+this->comm->barrier();
+printf("%d mig 9\n", this->comm->getRank());
+this->comm->barrier();
   mj_lno_t num_new_local_points = 0;
-
   //perform the actual migration operation here.
   this->mj_migrate_coords(
     num_procs,
@@ -7371,8 +7542,10 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     coordinate_destinations,
     input_num_parts);
 
+this->comm->barrier();
+printf("%d mig 10\n", this->comm->getRank());
+this->comm->barrier();
   freeArray<int>(coordinate_destinations);
-
   if(this->num_local_coords != num_new_local_points){
     // TODO: Change to no initialization ... not doing now because not testing migration
     this->new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
@@ -7380,16 +7553,17 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
       ("coordinate_permutations", num_new_local_points);
   }
-
   this->num_local_coords = num_new_local_points;
   this->num_global_coords = new_global_num_points;
 
   // create subcommunicator.
   this->create_sub_communicator(processor_ranks_for_subcomm);
-  processor_ranks_for_subcomm.clear();
 
+  processor_ranks_for_subcomm.clear();
   // fill the new permutation arrays.
+
   this->fill_permutation_array(output_num_parts, input_num_parts);
+
   return true;
 }
 
@@ -7836,6 +8010,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       int ierr = Zoltan_Comm_Create( &plan, int(this->num_local_coords),
                       this->owner_of_coordinate, mpi_comm, message_tag,
                       &incoming);
+
       Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Final Z1PlanCreating" );
@@ -7874,8 +8049,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStart(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanCreating");
       Tpetra::Distributor distributor(this->mj_problemComm);
+      typename decltype (this->owner_of_coordinate)::HostMirror
+        host_owner_of_coordinate =
+        Kokkos::create_mirror_view(this->owner_of_coordinate);
+      Kokkos::deep_copy(host_owner_of_coordinate, this->owner_of_coordinate);
+
       ArrayView<const mj_part_t> owners_of_coords(
-        this->owner_of_coordinate.data(), this->num_local_coords);
+        host_owner_of_coordinate.data(), this->num_local_coords);
 
       mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
       this->mj_env->timerStop(MACRO_TIMERS,
@@ -7885,16 +8065,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       //migrate gnos to actual owners.
       ArrayRCP<mj_gno_t> received_gnos(incoming);
 
-      ArrayView<mj_gno_t> sent_gnos(this->current_mj_gnos.data(),
+      typename decltype (this->current_mj_gnos)::HostMirror
+        host_current_mj_gnos =
+        Kokkos::create_mirror_view(this->current_mj_gnos);
+      deep_copy(host_current_mj_gnos, current_mj_gnos);
+      ArrayView<mj_gno_t> sent_gnos(host_current_mj_gnos.data(),
         this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>
         ("current_mj_gnos", incoming);
-      memcpy( this->current_mj_gnos.data(),
+      typename decltype (this->current_mj_gnos)::HostMirror
+        host_current_mj_gnos2 =
+        Kokkos::create_mirror_view(this->current_mj_gnos);
+      memcpy( host_current_mj_gnos2.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
+      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos2);
 
       // migrate part ids to actual owners.
-      ArrayView<mj_part_t> sent_partids(this->assigned_part_ids.data(),
+      typename decltype (this->assigned_part_ids)::HostMirror
+        host_assigned_part_ids =
+        Kokkos::create_mirror_view(this->assigned_part_ids);
+      Kokkos::deep_copy(host_assigned_part_ids, this->assigned_part_ids);
+      ArrayView<mj_part_t> sent_partids(host_assigned_part_ids.data(),
         this->num_local_coords);
       ArrayRCP<mj_part_t> received_partids(incoming);
       distributor.doPostsAndWaits<mj_part_t>(
@@ -7902,9 +8094,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->assigned_part_ids =
         Kokkos::View<mj_part_t*, device_t>
         ("assigned_part_ids", incoming);
-      memcpy( this->assigned_part_ids.data(),
+      typename decltype (this->assigned_part_ids)::HostMirror
+        host_assigned_part_ids2 =
+        Kokkos::create_mirror_view(this->assigned_part_ids);
+      memcpy( host_assigned_part_ids2.data(),
         received_partids.getRawPtr(), incoming * sizeof(mj_part_t));
-
+      deep_copy(this->assigned_part_ids, host_assigned_part_ids2);
+printf("Rank %d set final parts copy in of size: %d     incoming: %d\n", comm->getRank(), (int) host_assigned_part_ids2.size(), (int) incoming);
       this->num_local_coords = incoming;
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanComm");
@@ -8165,6 +8361,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock clock_mj_1D_part("      clock_mj_1D_part", false);
 
   Clock clock_new_part_chunks("      clock_new_part_chunks", false);
+
+printf("Rank %d made it to CHECKPOINT 0\n", comm->getRank());
 
   for (int i = 0; i < this->recursion_depth; ++i) {
 
@@ -8496,7 +8694,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
 
       clock_new_part_chunks.start();
-      
+ 
       // create new part chunks
       {
         mj_part_t output_array_shift = 0;
@@ -8682,6 +8880,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     clock_loopB.start();
 
+comm->barrier();
+printf("Rank %d made it to CHECKPOINT A\n", comm->getRank());
+comm->barrier();
+
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
     long migration_reduce_all_population =
@@ -8723,6 +8925,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+comm->barrier();
+printf("Rank %d made it to CHECKPOINT B\n", comm->getRank());
+comm->barrier();
+
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8747,6 +8953,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
     clock_loopB.stop();
   }
+
+comm->barrier();
+printf("Rank %d made it to CHECKPOINT C\n", comm->getRank());
+comm->barrier();
+
   clock_multi_jagged_part_loop.stop();
   Clock clock_multi_jagged_part_finish("  clock_multi_jagged_part_finish", true);
 
@@ -8774,7 +8985,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_multi_jagged_part.stop();
 
-  printf("-------------------------------------------------------\n");
   clock_multi_jagged_part.print();
   clock_multi_jagged_part_init.print();
   clock_multi_jagged_part_init_begin.print();
@@ -9249,7 +9459,10 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
 
   mj_env_->timerStart(MACRO_TIMERS,
     "MultiJagged - PreMigration DistributorMigration");
-   
+ 
+
+printf("TODO: THIS mj_premigrate_to_subset is not completed for CUDA!\n");
+ 
   /*
   // migrate gnos.
   {
@@ -9472,6 +9685,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         result_mj_gnos
       );
     }
+printf("Rank %d has result_assigned_part_ids size: %d\n", result_problemComm->getRank(), (int) result_assigned_part_ids.size());
 
     this->mj_env->timerStop(MACRO_TIMERS,
       "partition() - call multi_jagged_part()");
@@ -9483,7 +9697,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     localGidToLid.reserve(result_num_local_coords);
 
     // copy to host
-    
 Clock clock_copy_gnos("clock_copy_gnos", true);
     typename decltype (result_initial_mj_gnos_)::HostMirror
       host_result_initial_mj_gnos_ =
@@ -9491,21 +9704,18 @@ Clock clock_copy_gnos("clock_copy_gnos", true);
     Kokkos::deep_copy(host_result_initial_mj_gnos_,
       result_initial_mj_gnos_);
 clock_copy_gnos.stop(true);
-
 Clock clock_copy_part_ids("clock_copy_part_ids", true);
-    typename decltype (result_assigned_part_ids)::HostMirror
-      host_result_assigned_part_ids =
-      Kokkos::create_mirror_view(result_assigned_part_ids);
-    Kokkos::deep_copy(host_result_assigned_part_ids,
-      result_assigned_part_ids);
 clock_copy_part_ids.stop(true);
-
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_result_initial_mj_gnos_(i)] = i;
     }
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
-
+    typename decltype (result_assigned_part_ids)::HostMirror
+      host_result_assigned_part_ids =
+      Kokkos::create_mirror_view(result_assigned_part_ids);
+    Kokkos::deep_copy(host_result_assigned_part_ids,
+      result_assigned_part_ids);
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[host_result_initial_mj_gnos_(i)];
       partId[origLID] = host_result_assigned_part_ids(i);
@@ -9610,6 +9820,7 @@ clock_copy_part_ids.stop(true);
     solution->setParts(partId);
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
   }
+
   this->mj_env->timerStop(MACRO_TIMERS, "partition() - all");
 }
 
