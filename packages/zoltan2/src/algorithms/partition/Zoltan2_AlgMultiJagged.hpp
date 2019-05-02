@@ -2775,7 +2775,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // only store this much if cuts are needed to be stored.
   // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
   this->all_cut_coordinates = Kokkos::View<mj_scalar_t*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("all cut coordinates"),
+    "all cut coordinates",
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     
   // how much weight percentage should a MPI put left side of the each cutline
