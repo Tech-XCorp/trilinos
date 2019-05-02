@@ -170,11 +170,7 @@ static Clock clock_mj_create_new_partitions_4("           clock_mj_create_new_pa
 static Clock clock_mj_create_new_partitions_5("           clock_mj_create_new_partitions_5", false);
 static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_partitions_6", false);
 
-#if defined(__cplusplus) && __cplusplus >= 201103L
 #include <unordered_map>
-#else
-#include <Teuchos_Hashtable.hpp>
-#endif // C++11 is enabled
 
 #ifdef ZOLTAN2_USEZOLTANCOMM
 #ifdef HAVE_ZOLTAN2_MPI
@@ -9602,7 +9598,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
 
     // Reorder results so that they match the order of the input
-#if defined(__cplusplus) && __cplusplus >= 201103L
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
 
@@ -9630,20 +9625,6 @@ clock_copy_part_ids.stop(true);
       mj_lno_t origLID = localGidToLid[host_result_initial_mj_gnos_(i)];
       partId[origLID] = host_result_assigned_part_ids(i);
     }
-#else
-    Teuchos::Hashtable<mj_gno_t, mj_lno_t>
-    localGidToLid(result_num_local_coords);
-    for (mj_lno_t i = 0; i < result_num_local_coords; i++)
-      localGidToLid.put(result_initial_mj_gnos_(i), i);
-
-    ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
-        0, result_num_local_coords, true);
-
-    for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      mj_lno_t origLID = localGidToLid.get(result_mj_gnos(i));
-      partId[origLID] = result_assigned_part_ids(i);
-    }
-#endif // C++11 is enabled
 
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
@@ -9686,7 +9667,6 @@ clock_copy_part_ids.stop(true);
                       0, this->num_local_coords, true);
 
       {
-#if defined(__cplusplus) && __cplusplus >= 201103L
       std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
       localGidToLid2.reserve(this->num_local_coords);
 
@@ -9707,19 +9687,6 @@ clock_copy_part_ids.stop(true);
         mj_lno_t origLID = localGidToLid2[received_gnos[i]];
         partId[origLID] = received_partids[i];
       }
-#else
-      Teuchos::Hashtable<mj_gno_t, mj_lno_t>
-	      localGidToLid2(this->num_local_coords);
-
-      for (mj_lno_t i = 0; i < this->num_local_coords; i++)
-        localGidToLid2.put(this->initial_mj_gnos(i), i);
-
-      for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
-        mj_lno_t origLID = localGidToLid2.get(received_gnos[i]);
-        partId[origLID] = received_partids[i];
-      }
-
-#endif // C++11 is enabled
       }
       {
         freeArray<int> (result_actual_owner_rank);
