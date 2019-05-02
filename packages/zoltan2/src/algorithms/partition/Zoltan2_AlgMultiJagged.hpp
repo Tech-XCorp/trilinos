@@ -6706,10 +6706,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     num_points_in_all_processor_parts + num_procs * num_parts;
   out_part_indices.clear();
 
-comm->barrier();
-printf("%d assign 1\n", comm->getRank());
-comm->barrier();
-
   // to sort the parts that is assigned to the processors.
   // id is the part number, sort value is the assigned processor id.
   uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment  =
@@ -6717,18 +6713,10 @@ comm->barrier();
   uSortItem<mj_part_t, mj_gno_t> * sort_item_num_points_of_proc_in_part_i =
     allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_procs);
 
-comm->barrier();
-printf("%d assign 2\n", comm->getRank());
-comm->barrier();
-
   // calculate the optimal number of coordinates that should be assigned
   // to each processor.
   mj_lno_t work_each =
     mj_lno_t (this->num_global_coords / (double (num_procs)) + 0.5f);
-
-comm->barrier();
-printf("%d assign 3\n", comm->getRank());
-comm->barrier();
 
   // to hold the left space as the number of coordinates to the optimal
   // number in each proc.
@@ -6739,10 +6727,6 @@ comm->barrier();
     space_in_each_processor[i] = work_each;
   }
 
-comm->barrier();
-printf("%d assign 4\n", comm->getRank());
-comm->barrier();
-
   // we keep track of how many parts each processor is assigned to.
   // because in some weird inputs, it might be possible that some
   // processors is not assigned to any part. Using these variables,
@@ -6751,18 +6735,10 @@ comm->barrier();
   memset(num_parts_proc_assigned, 0, sizeof(mj_part_t) * num_procs);
   int empty_proc_count = num_procs;
 
-comm->barrier();
-printf("%d assign 5\n", comm->getRank());
-comm->barrier();
-
   // to sort the parts with decreasing order of their coordiantes.
   // id are the part numbers, sort value is the number of points in each.
   uSortItem<mj_part_t, mj_gno_t> * sort_item_point_counts_in_parts =
     allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_parts);
-
-comm->barrier();
-printf("%d assign 6\n", comm->getRank());
-comm->barrier();
 
   // initially we will sort the parts according to the number of coordinates
   // they have, so that we will start assigning with the part that has the most
@@ -6772,9 +6748,6 @@ comm->barrier();
     sort_item_point_counts_in_parts[i].val = global_num_points_in_parts[i];
   }
 
-comm->barrier();
-printf("%d assign 7\n", comm->getRank());
-comm->barrier();
   // sort parts with increasing order of loads.
   uqsort<mj_part_t, mj_gno_t>(num_parts, sort_item_point_counts_in_parts);
 
@@ -6860,10 +6833,6 @@ comm->barrier();
       num_points_in_all_processor_parts[this->myRank * num_parts + i];
   }
 
-comm->barrier();
-printf("%d assign 8\n", comm->getRank());
-comm->barrier();
-
   freeArray<mj_part_t>(num_parts_proc_assigned);
   freeArray< uSortItem<mj_part_t, mj_gno_t> >
     (sort_item_num_points_of_proc_in_part_i);
@@ -6873,10 +6842,6 @@ comm->barrier();
   // sort assignments with respect to the assigned processors.
   uqsort<mj_part_t, mj_part_t>(num_parts, sort_item_part_to_proc_assignment);
 
-comm->barrier();
-printf("%d assign 9\n", comm->getRank());
-comm->barrier();
-
   // fill sendBuf.
   this->assign_send_destinations2(
     num_parts,
@@ -6884,10 +6849,6 @@ comm->barrier();
     coordinate_destinations,
     output_part_numbering_begin_index,
     next_future_num_parts_in_parts);
-
-comm->barrier();
-printf("%d assign 10\n", comm->getRank());
-comm->barrier();
 
   freeArray<uSortItem<mj_part_t, mj_part_t> >
     (sort_item_part_to_proc_assignment);
@@ -7413,10 +7374,6 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> &input_part_boxes,
   RCP<mj_partBoxVector_t> &output_part_boxes)
 {
-this->comm->barrier();
-printf("%d mig 1\n", this->comm->getRank());
-this->comm->barrier();
-
   mj_part_t num_procs = this->comm->getSize();
   this->myRank = this->comm->getRank();
 
@@ -7426,18 +7383,11 @@ this->comm->barrier();
   mj_gno_t *num_points_in_all_processor_parts =
     allocMemory<mj_gno_t>(input_num_parts * (num_procs + 1));
 
-this->comm->barrier();
-printf("%d mig 2\n", this->comm->getRank());
-this->comm->barrier();
   // get the number of coordinates in each part in each processor.
   this->get_processor_num_points_in_parts(
     num_procs,
     input_num_parts,
     num_points_in_all_processor_parts);
-
-this->comm->barrier();
-printf("%d mig 3\n", this->comm->getRank());
-this->comm->barrier();
 
   // check if migration will be performed or not.
   if (!this->mj_check_to_migrate(
@@ -7450,18 +7400,10 @@ this->comm->barrier();
     return false;
   }
 
-this->comm->barrier();
-printf("%d mig 4\n", this->comm->getRank());
-this->comm->barrier();
-
   mj_lno_t *send_count_to_each_proc = NULL;
   int *coordinate_destinations = allocMemory<int>(this->num_local_coords);
   send_count_to_each_proc = allocMemory<mj_lno_t>(num_procs);
   
-this->comm->barrier();
-printf("%d mig 5\n", this->comm->getRank());
-this->comm->barrier();
-
   for (int i = 0; i < num_procs; ++i) {
     send_count_to_each_proc[i] = 0;
   }
@@ -7482,10 +7424,6 @@ this->comm->barrier();
     output_part_begin_index,
     coordinate_destinations);
 
-this->comm->barrier();
-printf("%d mig 6\n", this->comm->getRank());
-this->comm->barrier();
-
   freeArray<mj_lno_t>(send_count_to_each_proc);
   std::vector <mj_part_t> tmpv;
 
@@ -7499,9 +7437,6 @@ this->comm->barrier();
     input_part_boxes->clear();
   }
 
-this->comm->barrier();
-printf("%d mig 7\n", this->comm->getRank());
-this->comm->barrier();
   // now we calculate the new values for next_future_num_parts_in_parts.
   // same for the part boxes.
   for (mj_part_t i = 0; i < outP; ++i) {
@@ -7513,9 +7448,6 @@ this->comm->barrier();
     }
   }
 
-this->comm->barrier();
-printf("%d mig 8\n", this->comm->getRank());
-this->comm->barrier();
   // swap the input and output part boxes.
   if (this->mj_keep_part_boxes) {
     RCP<mj_partBoxVector_t> tmpPartBoxes = input_part_boxes;
@@ -7530,9 +7462,6 @@ this->comm->barrier();
 
   freeArray<mj_gno_t>(num_points_in_all_processor_parts);
 
-this->comm->barrier();
-printf("%d mig 9\n", this->comm->getRank());
-this->comm->barrier();
   mj_lno_t num_new_local_points = 0;
   //perform the actual migration operation here.
   this->mj_migrate_coords(
@@ -7542,9 +7471,6 @@ this->comm->barrier();
     coordinate_destinations,
     input_num_parts);
 
-this->comm->barrier();
-printf("%d mig 10\n", this->comm->getRank());
-this->comm->barrier();
   freeArray<int>(coordinate_destinations);
   if(this->num_local_coords != num_new_local_points){
     // TODO: Change to no initialization ... not doing now because not testing migration
@@ -8100,7 +8026,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       memcpy( host_assigned_part_ids2.data(),
         received_partids.getRawPtr(), incoming * sizeof(mj_part_t));
       deep_copy(this->assigned_part_ids, host_assigned_part_ids2);
-printf("Rank %d set final parts copy in of size: %d     incoming: %d\n", comm->getRank(), (int) host_assigned_part_ids2.size(), (int) incoming);
       this->num_local_coords = incoming;
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanComm");
@@ -8361,8 +8286,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Clock clock_mj_1D_part("      clock_mj_1D_part", false);
 
   Clock clock_new_part_chunks("      clock_new_part_chunks", false);
-
-printf("Rank %d made it to CHECKPOINT 0\n", comm->getRank());
 
   for (int i = 0; i < this->recursion_depth; ++i) {
 
@@ -8880,10 +8803,6 @@ printf("Rank %d made it to CHECKPOINT 0\n", comm->getRank());
 
     clock_loopB.start();
 
-comm->barrier();
-printf("Rank %d made it to CHECKPOINT A\n", comm->getRank());
-comm->barrier();
-
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
     long migration_reduce_all_population =
@@ -8925,10 +8844,6 @@ comm->barrier();
       }
     }
 
-comm->barrier();
-printf("Rank %d made it to CHECKPOINT B\n", comm->getRank());
-comm->barrier();
-
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8953,10 +8868,6 @@ comm->barrier();
     }
     clock_loopB.stop();
   }
-
-comm->barrier();
-printf("Rank %d made it to CHECKPOINT C\n", comm->getRank());
-comm->barrier();
 
   clock_multi_jagged_part_loop.stop();
   Clock clock_multi_jagged_part_finish("  clock_multi_jagged_part_finish", true);
@@ -9685,7 +9596,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         result_mj_gnos
       );
     }
-printf("Rank %d has result_assigned_part_ids size: %d\n", result_problemComm->getRank(), (int) result_assigned_part_ids.size());
 
     this->mj_env->timerStop(MACRO_TIMERS,
       "partition() - call multi_jagged_part()");
