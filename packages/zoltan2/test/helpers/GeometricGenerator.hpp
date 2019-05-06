@@ -532,6 +532,7 @@ public:
       int me = 0; // TODO team_member.team_rank();
       view_state(me) = stateBegin + me * slice/(tsize);
  
+ printf("My state: %d\n", (int) view_state(me));
       for(int cnt = 0; cnt < requestedPointcount; ++cnt)
 
 //      Kokkos::parallel_for(Kokkos::TeamThreadRange(
@@ -688,9 +689,14 @@ public:
     //pindex = 0; // not used in normal distribution.
     CoordinatePoint <T> p;
 
-    bool bReset = (pindex == 0);
-  
     for(int i = 0; i < this->dimension; ++i){
+    
+      // there is static handling in the normalDist but I wanted to call two
+      // tests in series wiht the same coordinaes so this little hack requests
+      // to reset the statics for the new set. Eventually I will probably go
+      // back to just one test (have the two separated). TODO: Then delete this
+      // TODO: Probably would be better to eliminate the statics.
+      bool bReset = (pindex == 0 && i == 0);
       switch(i){
       case 0:
         p.x = normalDist(this->center.x, this->standartDevx, state, bReset);
