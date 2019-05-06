@@ -74,7 +74,7 @@
 // Temporary allows quick testing with all Views initialized to check for
 // undefined behaviors. TODO: Eventually this goes away and replace them all
 // with Kokkos::ViewAllocateWithoutInitializing
-#define KokkosNoInit(string) string
+#define KokkosNoInit(string) Kokkos::ViewAllocateWithoutInitializing(string)
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
@@ -2780,7 +2780,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // only store this much if cuts are needed to be stored.
   // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
   this->all_cut_coordinates = Kokkos::View<mj_scalar_t*, device_t>(
-    "all cut coordinates",
+    KokkosNoInit("all cut coordinates"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
     
   // how much weight percentage should a MPI put left side of the each cutline
@@ -3641,7 +3641,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
         host_view_total_reduction_size,
         host_total_part_weight_left_right_closests.data(),
         host_global_total_part_weight_left_right_closests.data());
-
       Kokkos::deep_copy(global_total_part_weight_left_right_closests, host_global_total_part_weight_left_right_closests);
     }
     else {
@@ -3879,7 +3878,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       }
     } // end of if league_rank == 0
   }); // end of outer mj_1D_part loop
-
+    
   clock_mj_1D_part_end.stop();
   delete reductionOp;
 }
@@ -4682,6 +4681,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     mj_lno_t coordinate_end_index = host_part_xadj(concurrent_current_part);
 
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
+    
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
@@ -9607,15 +9607,18 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     localGidToLid.reserve(result_num_local_coords);
 
     // copy to host
-Clock clock_copy_gnos("clock_copy_gnos", true);
     typename decltype (result_initial_mj_gnos_)::HostMirror
       host_result_initial_mj_gnos_ =
       Kokkos::create_mirror_view(result_initial_mj_gnos_);
     Kokkos::deep_copy(host_result_initial_mj_gnos_,
       result_initial_mj_gnos_);
-clock_copy_gnos.stop(true);
-Clock clock_copy_part_ids("clock_copy_part_ids", true);
-clock_copy_part_ids.stop(true);
+
+    typename decltype (result_mj_gnos)::HostMirror
+      host_result_mj_gnos =
+      Kokkos::create_mirror_view(result_mj_gnos);
+    Kokkos::deep_copy(host_result_mj_gnos,
+      result_mj_gnos);
+      
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_result_initial_mj_gnos_(i)] = i;
     }
@@ -9627,7 +9630,7 @@ clock_copy_part_ids.stop(true);
     Kokkos::deep_copy(host_result_assigned_part_ids,
       result_assigned_part_ids);
     for (mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      mj_lno_t origLID = localGidToLid[host_result_initial_mj_gnos_(i)];
+      mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
       partId[origLID] = host_result_assigned_part_ids(i);
     }
 
@@ -9699,6 +9702,7 @@ clock_copy_part_ids.stop(true);
       mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - PostMigration DistributorMigration");
     }
+  
     solution->setParts(partId);
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
   }
