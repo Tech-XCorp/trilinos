@@ -140,6 +140,14 @@ public:
 
   virtual void getEntriesView(const scalar_t *&elements, int &stride,
                               int idx = 0) const = 0;
+                      
+  // TODO: Refactor so this doesn't exist - think on design
+  virtual bool hasKokkosCoordinates() const { return false; }
+  
+  virtual void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const {
+    throw std::logic_error("getEntriesKokkosView not implemented - TODO: Make this abstract?");
+  }
 
   /*! \brief Write files that can be used as input to Zoltan or Zoltan2 driver
    *  Creates chaco-formatted input files for coordinates and weights that
@@ -174,12 +182,17 @@ public:
     getEntriesView(elements, stride, idx);
   }
 
+  inline void getCoordinatesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
+  {
+    getEntriesKokkosView(elements);
+  }
+
 private:
 
   void generateCoordsFileOnly(
     const char* fileprefix, 
     const Teuchos::Comm<int> &comm) const;
-
 };
 
 template <typename User>

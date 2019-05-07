@@ -607,5 +607,6 @@ int main(int narg, char *arg[])
               << std::endl;
   }
 
+  Kokkos::finalize();
   return result;
 }

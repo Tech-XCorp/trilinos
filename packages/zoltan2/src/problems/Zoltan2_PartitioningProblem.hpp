@@ -629,10 +629,14 @@ void PartitioningProblem<Adapter>::solve(bool updateInputData)
 
   // Call the algorithm
 
+  this->env_->timerStart(MACRO_TIMERS, "solve algorithm");
+
   try {
     this->algorithm_->partition(solution_);
   }
   Z2_FORWARD_EXCEPTIONS;
+
+  this->env_->timerStop(MACRO_TIMERS, "solve algorithm");
 
   //if mapping is requested
   const Teuchos::ParameterEntry *pe = this->envConst_->getParameters().getEntryPtr("mapping_type");
