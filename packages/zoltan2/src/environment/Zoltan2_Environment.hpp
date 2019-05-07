@@ -158,20 +158,20 @@ public:
 
   inline void globalInputAssertion(const char *file, int lineNum,
     const char *msg, bool ok, AssertionLevel level, 
-    const Comm_t &comm=comm_) const {}
+    const Comm_t &comm) const {}
 
   inline void localBugAssertion(const char *file, int lineNum,
     const char *msg, bool ok, AssertionLevel level) const {}
 
   inline void globalBugAssertion(const char *file, int lineNum,
     const char *msg, bool ok, AssertionLevel level, 
-    const Comm_t &comm=comm_) const {}
+    const Comm_t &comm) const {}
 
   inline void localMemoryAssertion(const char *file, int lineNum,
     size_t nobj, bool ok) const {}
 
   inline void globalMemoryAssertion(const char *file, int lineNum,
-    size_t nobj, bool ok, const Comm_t &comm=comm_) const {}
+    size_t nobj, bool ok, const Comm_t &comm) const {}
 
 #else
 
@@ -557,7 +557,7 @@ public:
 #ifdef Z2_OMIT_ALL_STATUS_MESSAGES
   inline bool doStatus() const { return false;}
   inline MessageOutputLevel getDebugLevel() const {return NO_STATUS;}
-  inline std::ostream *getDebugOStream() const {return std::cout;}
+  inline std::ostream *getDebugOStream() const {return &std::cout;}
 #else
   inline bool doStatus() const {
      return (debugOut_->getDebugLevel() > NO_STATUS);

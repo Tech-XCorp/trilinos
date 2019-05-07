@@ -206,7 +206,6 @@ void getArgVals(
 int main(int narg, char *arg[]){
 
     Tpetra::ScopeGuard tscope(&narg, &arg);
-
     typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
     typedef Zoltan2::XpetraMultiVectorAdapter<tMVector_t> inputAdapter_t;
     typedef inputAdapter_t::part_t part_t;
@@ -234,7 +233,6 @@ int main(int narg, char *arg[]){
     const RCP<Comm<int> > commN;
     RCP<Comm<int> >comm =  Teuchos::rcp_const_cast<Comm<int> >
             (Teuchos::DefaultComm<int>::getDefaultSerialComm(commN));
-
     part_t *task_communication_xadj_ = NULL;
     part_t *task_communication_adj_ = NULL;
     zscalar_t *task_communication_adjw_ = NULL;
@@ -330,7 +328,6 @@ int main(int narg, char *arg[]){
 
 
 
-
         {
             std::vector < std::vector <zscalar_t> > proc_coords(procDim);
             std::fstream m(procfile.c_str());
@@ -401,6 +398,9 @@ int main(int narg, char *arg[]){
         //hopper[2] = 24;
         part_t *machineDimensions = NULL;
         //machineDimensions = hopper;
+
+
+
         Zoltan2::coordinateTaskMapperInterface<part_t, zscalar_t, zscalar_t>(
                 tcomm,
                 procDim,
@@ -418,10 +418,13 @@ int main(int narg, char *arg[]){
                 proc_to_task_xadj_, /*output*/
                 proc_to_task_adj_, /*output*/
 		
-                partArraysize,
-                partArray,
+                partArraysize, // TODO refactor me out for Kokkos conversion...
+
+                // TODO Not sure we can use 0 size to place hold null here
+                Kokkos::View<part_t*,Kokkos::MemoryUnmanaged>(partArray,(partArraysize == -1 ? 0 : partArraysize)),
                 machineDimensions, rank_per_node, divide_prime
                 );
+
 
         if (tcomm->getRank() == 0){
             std::cout << "PASS" << std::endl;

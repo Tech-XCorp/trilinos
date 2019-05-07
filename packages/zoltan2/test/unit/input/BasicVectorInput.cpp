@@ -120,7 +120,6 @@ int main(int narg, char *arg[])
 {
   Tpetra::ScopeGuard tscope(&narg, &arg);
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
-
   int rank = comm->getRank();
   int nprocs = comm->getSize();
   int fail = 0;
