@@ -504,53 +504,43 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-    // TODO: For openmp this would be get_omp_num_threads() but what can we call
-    // for Cuda? We need this for proper random number generation if we optimize
-    // loops in this file. 
-    int tsize = 1;
-    Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
+      // TODO: For openmp this would be get_omp_num_threads() but what can we call
+      // for Cuda? We need this for proper random number generation if we optimize
+      // loops in this file. Also we have to set me to thread and this OpenMP
+      // case would go away.
+      int me = 0;
+      int tsize = 1;
+#ifdef HAVE_ZOLTAN2_OMP
+      me = omp_get_thread_num(); // TODO: Must go away and use Kokkos
+      tsize = omp_get_num_threads(); // TODO: Must go away and use Kokkos
+#endif
+      unsigned int state = stateBegin + me * slice/(tsize);
 
-    // TODO: Determine why need view - how to do this elegantly?
-    // Also which is the second seemingly indentical case below compiling
-    // without this. What exactly controls this?
-    Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
+      for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
+        lno_t iteration = 0;
+        while(1){
+          if(++iteration > MAX_ITER_ALLOWED) {
+            throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
+          }
+          CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
 
-    //Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member)
-    {
-      int me = 0; // TODO team_member.team_rank();
-      view_state(me) = stateBegin + me * slice/(tsize);
- 
-      for(int cnt = 0; cnt < requestedPointcount; ++cnt)
-
-//      Kokkos::parallel_for(Kokkos::TeamThreadRange(
-//        team_member, 0, requestedPointcount),
-//        KOKKOS_LAMBDA(int & cnt)
-
-        {
-            lno_t iteration = 0;
-            while(1){
-              if(++iteration > MAX_ITER_ALLOWED) {
-                throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
-              }
-              CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
-              bool isInHole = false;
-              for(lno_t i = 0; i < holeCount; ++i){
-                if(holes[i][0].isInArea(p)){
-                  isInHole = true;
-                  break;
-                }
-              }
-              if(isInHole) continue;
-              points[cnt].x = p.x;
-
-              points[cnt].y = p.y;
-              points[cnt].z = p.z;
+          bool isInHole = false;
+          for(lno_t i = 0; i < holeCount; ++i){
+            if(holes[i][0].isInArea(p)){
+              isInHole = true;
               break;
             }
-      } // );
-    }//);
+          }
+          if(isInHole) continue;
+          points[cnt].x = p.x;
 
-//#pragma omp parallel
+          points[cnt].y = p.y;
+          points[cnt].z = p.z;
+          break;
+        }
+      }
+    }
+
       /*
     {
 
@@ -594,54 +584,41 @@ public:
 
     this->requested = requestedPointcount;
 
-    unsigned int slice =  UINT_MAX/(this->worldSize);
-    unsigned int stateBegin = myRank * slice;
 
-    int tsize = 1; // HACK CUDA TEMP node_t::execution_space::thread_pool_size();
-    // typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+      int me = 0;
+      int tsize = 1;
+#ifdef HAVE_ZOLTAN2_OMP
+      me = omp_get_thread_num(); // TODO: Must go away and use Kokkos
+      tsize = omp_get_num_threads(); // TODO: Must go away and use Kokkos
+#endif
+      unsigned int state = stateBegin + me * (slice/(tsize));
 
-    // TODO: Determine why need view - how to do this elegantly?
-    // Also why is the second seemingly identical case below compiling
-    // without this. What exactly controls this?
-    Kokkos::View<unsigned int*, typename node_t::device_type> view_state("view_state", tsize);
+      for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
 
-    Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, tsize);
- //   Kokkos::parallel_for (policy, KOKKOS_LAMBDA(member_type team_member) 
-    {
-      int me = 0; // TODO team_member.team_rank();
-      view_state(me) = stateBegin + me * (slice/(tsize));
-
-      for(int cnt = 0; cnt < requestedPointcount; ++cnt) 
-
-  //    Kokkos::parallel_for(Kokkos::TeamThreadRange(
-  //      team_member, 0, requestedPointcount),
-  //      [=] (int & cnt) 
-      {
-          lno_t iteration = 0;
-          while(1){
-            if(++iteration > MAX_ITER_ALLOWED) {
-            //  throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
-            }
-            CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
-            bool isInHole = false;
-            for(lno_t i = 0; i < holeCount; ++i){
-              if(holes[i][0].isInArea(p)){
-                isInHole = true;
-                break;
-              }
-            }
-            if(isInHole) continue;
-            coords[0][cnt + tindex] = p.x;
-            if(this->dimension > 1){
-              coords[1][cnt + tindex] = p.y;
-              if(this->dimension > 2){
-                coords[2][cnt + tindex] = p.z;
-              }
-            }
-            break;
+        lno_t iteration = 0;
+        while(1){
+          if(++iteration > MAX_ITER_ALLOWED) {
+          //  throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
           }
-      } // );
-    } // );
+          CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, view_state(me));
+          bool isInHole = false;
+          for(lno_t i = 0; i < holeCount; ++i){
+            if(holes[i][0].isInArea(p)){
+              isInHole = true;
+              break;
+            }
+          }
+          if(isInHole) continue;
+          coords[0][cnt + tindex] = p.x;
+          if(this->dimension > 1){
+            coords[1][cnt + tindex] = p.y;
+            if(this->dimension > 2){
+              coords[2][cnt + tindex] = p.z;
+            }
+          }
+          break;
+        }
+    }
   }
 };
 
@@ -677,12 +654,11 @@ public:
     CoordinatePoint <T> p;
 
     for(int i = 0; i < this->dimension; ++i){
-    
       // there is static handling in the normalDist but I wanted to call two
-      // tests in series wiht the same coordinaes so this little hack requests
+      // tests in series with the same coordinates so this little hack requests
       // to reset the statics for the new set. Eventually I will probably go
-      // back to just one test (have the two separated). TODO: Then delete this
-      // TODO: Probably would be better to eliminate the statics.
+      // back to just one test (have the two separated).
+      // TODO: Then delete this once that it done
       bool bReset = (pindex == 0 && i == 0);
       switch(i){
       case 0:
@@ -695,8 +671,7 @@ public:
         p.z = normalDist(this->center.z, this->standartDevz, state, bReset);
         break;
       default:
-        p.x = 0; p.y = 0; p.z = 0;  // TODO This is junk code for cuda need to setup error handling
-       // throw "unsupported dimension";
+        throw "unsupported dimension";
       }
     }
     return p;
@@ -709,8 +684,7 @@ private:
   // odd count so they would end up with different results.
   // Resetting first coordinate can resolve this.
   // This need may be temporary for the debugging setup of the cuda refactor.
-  // TODO: Resolve this - remove bReset and don't use double test or perhaps
-  // remove this static.
+  // TODO: Resolve this - remove bReset once double test is cleaned out
   KOKKOS_INLINE_FUNCTION T normalDist(T center_, T sd, unsigned int & state, bool bReset) {
     static bool derived=false;
     static T storedDerivation;
@@ -2700,7 +2674,7 @@ public:
          this->distribute_points(coordinate_grid_parts);
 
          delete []coordinate_grid_parts;
-  }
+}
 */
 
   //############################################################//
