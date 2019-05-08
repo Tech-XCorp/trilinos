@@ -648,7 +648,7 @@ public:
     this->center.z = center_.z;
   }
 
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int &state){
 
     //pindex = 0; // not used in normal distribution.
     CoordinatePoint <T> p;
@@ -815,8 +815,7 @@ public:
   }
 
   virtual ~CoordinateGridDistribution(){};
-  
-  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int & state){
+  virtual CoordinatePoint<T> getPoint(gno_t pindex, unsigned int &state){
     //lno_t before = processCnt + this->assignedPrevious;
     //std::cout << "before:" << processCnt << " " << this->assignedPrevious << std::endl;
     //lno_t xshift = 0, yshift = 0, zshift = 0;
@@ -1684,16 +1683,10 @@ public:
     }
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){
-      // TODO: Fix this up - move to a method and test carefully
-      // This runs and compiles fine but it's in a constructor so do not
-      // do a lambda. Note cuda builds will flag this as an error
-      // Probably will refactor anyways
-   //   Kokkos::parallel_for(
-   //     Kokkos::RangePolicy<typename node_t::execution_space, int> (0, myPointCount),
-   //     KOKKOS_LAMBDA (const int i) {
+      // TODO: Optimize this loop for Kokkos
       for(int i = 0; i < myPointCount; ++i) {
         this->coords[ii][i] = 0;
-      } // );
+      }
     }
 
     this->numLocalCoords = 0;
@@ -1732,7 +1725,7 @@ public:
     if (this->predistribution){
       // TODO: Dicuss predistribution, get this code all refactors for Kokkos/Cuda
       throw std::logic_error("predistribution option is currently disabled for Kokkos/Cuda refactor.\n");
-    	// redistribute();
+      // redistribute();
     }
 
 
@@ -1813,41 +1806,29 @@ public:
     	}
     }
 
-      // TODO: Fix this up - move to a method and test carefully
-      // This runs and compiles fine but it's in a constructor so do not
-      // do a lambda. Note cuda builds will flag this as an error
-      // Probably will refactor anyways
+    // TODO: Need to optimize this with kokkos loops
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
       switch(this->coordinate_dimension){
       case 1:
-      {
-            //Kokkos::parallel_for(
-            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-            //  KOKKOS_LAMBDA (const int i) {
-            for(int i = 0; i < this->numLocalCoords; ++i) {
-                this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
-            } //);
-      }
-            break;
-          case 2:
-      {
-            //Kokkos::parallel_for(
-            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-            //  KOKKOS_LAMBDA (const int i) {
-            for(int i = 0; i < this->numLocalCoords; ++i) {
-                this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
-            } //);
-      }
-            break;
-          case 3:
-      {
-            //Kokkos::parallel_for(
-            //  Kokkos::RangePolicy<typename node_t::execution_space, int> (0, this->numLocalCoords),
-            //  KOKKOS_LAMBDA (const int i) {
-            for(int i = 0; i < this->numLocalCoords; ++i) {
-                this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
-            } //);
-      }
+       {
+        for (lno_t i = 0; i < this->numLocalCoords; ++i){
+          this->wghts[ii][i] = this->wd[ii]->get1DWeight(this->coords[0][i]);
+        }
+       }
+        break;
+      case 2:
+       {
+        for (lno_t i = 0; i < this->numLocalCoords; ++i){
+          this->wghts[ii][i] = this->wd[ii]->get2DWeight(this->coords[0][i], this->coords[1][i]);
+        }
+       }
+        break;
+      case 3:
+       {
+        for (lno_t i = 0; i < this->numLocalCoords; ++i){
+          this->wghts[ii][i] = this->wd[ii]->get3DWeight(this->coords[0][i], this->coords[1][i], this->coords[2][i]);
+        }
+       }
         break;
       }
     }
@@ -2655,26 +2636,28 @@ public:
 	  delete dots_.coordinates;
 	  return 0;
 }
-
   void redistribute(){
-         int *coordinate_grid_parts = new int[this->numLocalCoords];
-         switch (this->predistribution){
-         case 1:
-                 this->predistributeRCB(coordinate_grid_parts);
-                 break;
-         case 2:
+	  int *coordinate_grid_parts = new int[this->numLocalCoords];
+	  switch (this->predistribution){
+	  case 1:
+		  this->predistributeRCB(coordinate_grid_parts);
+		  break;
+	  case 2:
 
-                 this->predistributeMJ(coordinate_grid_parts);
-                 break;
-         case 3:
-                 //block
-                 blockPartition(coordinate_grid_parts);
-                 break;
-         }
-         this->distribute_points(coordinate_grid_parts);
+		  this->predistributeMJ(coordinate_grid_parts);
+		  break;
+	  case 3:
+		  //block
+		  blockPartition(coordinate_grid_parts);
+		  break;
+	  }
+	  this->distribute_points(coordinate_grid_parts);
 
-         delete []coordinate_grid_parts;
-}
+	  delete []coordinate_grid_parts;
+
+
+  }
+
 */
 
   //############################################################//
