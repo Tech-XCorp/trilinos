@@ -4349,7 +4349,7 @@ struct ReduceWeightsFunctor {
         // TODO if we keep this form we may want to abolish the array_t and make
         // sure it's all double - no idea yet what the cost of the cast could be
         // on GPU
-        Kokkos::atomic_add(&current_part_weights(n), (scalar_t)shared_ptr[n]);
+        Kokkos::atomic_add(&current_part_weights(n), static_cast<double>(shared_ptr[n]));
 #else
         teamSum[n] += shared_ptr[n];
 #endif // USE_ATOMIC_ATOMIC_KERNEL
@@ -9754,9 +9754,33 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   this->mj_uniform_weights = Kokkos::View<bool *, device_t>(
     "uniform weights", criteria_dim);
   Kokkos::View<const mj_gno_t *, device_t> gnos;
-  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> xyz;
-  Kokkos::View<mj_scalar_t **, device_t> wgts;
-  this->mj_coords->getCoordinatesKokkos(gnos, xyz, wgts);
+
+  
+  Kokkos::View<adapter_scalar_t **, Kokkos::LayoutLeft, device_t> xyz_adapter;
+  Kokkos::View<adapter_scalar_t **, device_t> wgts_adapter;
+  this->mj_coords->getCoordinatesKokkos(gnos, xyz_adapter, wgts_adapter);
+  
+  // TODO: This allocation should not happen if types are matched
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> xyz(KokkosNoInit("xyz"), xyz_adapter.extent(0), xyz_adapter.extent(1));
+  Kokkos::View<mj_scalar_t **, device_t> wgts(KokkosNoInit("wgts"), wgts_adapter.extent(0), wgts_adapter.extent(1));
+  
+  // TODO Need to restore the behavior which allows this copy to only happen 
+  // when the types are mismatched
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, xyz_adapter.extent(0)),
+    KOKKOS_LAMBDA (const int i) {
+    for(int n = 0; n < xyz_adapter.extent(1); ++n) {
+      xyz(i, n) = static_cast<mj_scalar_t>(xyz_adapter(i, n));
+    }
+  });
+  Kokkos::parallel_for(
+    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, wgts.extent(0)),
+    KOKKOS_LAMBDA (const int i) {
+    for(int n = 0; n < wgts.extent(1); ++n) {
+      wgts(i, n) = static_cast<mj_scalar_t>(wgts_adapter(i, n));
+    }
+  });
+
   // obtain global ids.
   this->initial_mj_gnos = gnos;
   // extract coordinates from multivector.
