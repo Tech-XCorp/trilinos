@@ -61,16 +61,11 @@
 
 int main(int argc, char *argv[])
 {
-#ifdef HAVE_ZOLTAN2_MPI                   
-  MPI_Init(&argc, &argv);
-  int rank, nprocs;
-  MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#else
-  int rank=0, nprocs=1;
-#endif
+  Tpetra::ScopeGuard tscope(&narg, &arg);
+  Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
 
-  Kokkos::initialize(argc, argv);
+  int rank = comm->getRank();
+  int nprocs = comm->getSize();
 
   // For convenience, we'll use the Tpetra defaults for local/global ID types
   // Users can substitute their preferred local/global ID types
@@ -430,12 +425,6 @@ int main(int argc, char *argv[])
   delete ia2;
   delete problem3;
   delete ia3;
-
-  Kokkos::finalize();
-
-#ifdef HAVE_ZOLTAN2_MPI
-  MPI_Finalize();
-#endif
 
   if (rank == 0)
     std::cout << "PASS" << std::endl;

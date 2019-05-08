@@ -142,7 +142,6 @@ int main(int narg, char *arg[]) {
   // Check and print the solution.
   // Count number of IDs assigned to each part; compare to targetCount
 
-  // TODO: Determine how to set node here
   Kokkos::View<const globalId_t *, typename node_t::device_type> ids;
   ia.getIDsKokkosView(ids);
 
