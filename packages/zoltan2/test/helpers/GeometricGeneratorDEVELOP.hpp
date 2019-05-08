@@ -119,8 +119,6 @@ int getNumObj(void *data, int *ierr)
   return dots_->coordinates->getLocalLength();
 }
 //////////////////////////
-
-/* Unused code not refactored for Kokkos/Cuda
 template <typename tMVector_t>
 void getCoords(void *data, int numGid, int numLid,
   int numObj, ZOLTAN_ID_PTR gids, ZOLTAN_ID_PTR lids,
@@ -194,7 +192,6 @@ void getObjList(void *data, int numGid, int numLid,
   }
 }
 
-*/
 
 enum shape {SQUARE, RECTANGLE, CIRCLE, CUBE, RECTANGULAR_PRISM, SPHERE};
 const std::string shapes[] = {"SQUARE", "RECTANGLE", "CIRCLE", "CUBE", "RECTANGULAR_PRISM", "SPHERE"};
@@ -470,7 +467,7 @@ public:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t, typename node_t>
+template <typename T, typename lno_t, typename gno_t>
 class CoordinateDistribution{
 public:
   gno_t numPoints;
@@ -504,19 +501,25 @@ public:
 
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
+
+//#ifdef HAVE_ZOLTAN2_OMP
+//#pragma omp parallel for
+//#endif
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel
+#endif
     {
-      // TODO: For openmp this would be get_omp_num_threads() but what can we call
-      // for Cuda? We need this for proper random number generation if we optimize
-      // loops in this file. Also we have to set me to thread and this OpenMP
-      // case would go away.
       int me = 0;
       int tsize = 1;
 #ifdef HAVE_ZOLTAN2_OMP
-      me = omp_get_thread_num(); // TODO: Must go away and use Kokkos
-      tsize = omp_get_num_threads(); // TODO: Must go away and use Kokkos
+      me = omp_get_thread_num();
+      tsize = omp_get_num_threads();
 #endif
       unsigned int state = stateBegin + me * slice/(tsize);
 
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp for
+#endif
       for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
         lno_t iteration = 0;
         while(1){
@@ -541,6 +544,7 @@ public:
         }
       }
     }
+//#pragma omp parallel
       /*
     {
 
@@ -586,19 +590,27 @@ public:
 
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel
+#endif
     {
-      // TODO: For openmp this would be get_omp_num_threads() but what can we call
-      // for Cuda? We need this for proper random number generation if we optimize
-      // loops in this file. Also we have to set me to thread and this OpenMP
-      // case would go away.
       int me = 0;
       int tsize = 1;
 #ifdef HAVE_ZOLTAN2_OMP
-      me = omp_get_thread_num(); // TODO: Must go away and use Kokkos
-      tsize = omp_get_num_threads(); // TODO: Must go away and use Kokkos
+      me = omp_get_thread_num();
+      tsize = omp_get_num_threads();
 #endif
       unsigned int state = stateBegin + me * (slice/(tsize));
+      /*
+#pragma omp critical
+      {
 
+        std::cout << "myRank:" << me << " stateBeg:" << stateBegin << " tsize:" << tsize << " state:" << state <<  " slice: " << slice / tsize <<  std::endl;
+      }
+      */
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp for
+#endif
       for(lno_t cnt = 0; cnt < requestedPointcount; ++cnt){
         lno_t iteration = 0;
         while(1){
@@ -606,6 +618,7 @@ public:
             throw "Max number of Iteration is reached for point creation. Check the area criteria or hole coordinates.";
           }
           CoordinatePoint <T> p = this->getPoint( this->assignedPrevious + cnt, state);
+
           bool isInHole = false;
           for(lno_t i = 0; i < holeCount; ++i){
             if(holes[i][0].isInArea(p)){
@@ -628,8 +641,8 @@ public:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t, typename node_t>
-class CoordinateNormalDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
+template <typename T, typename lno_t, typename gno_t>
+class CoordinateNormalDistribution:public CoordinateDistribution<T,lno_t,gno_t>{
 public:
   CoordinatePoint<T> center;
   T standartDevx;
@@ -646,7 +659,7 @@ public:
 
   CoordinateNormalDistribution(gno_t np_, int dim, CoordinatePoint<T> center_ ,
                                T sd_x, T sd_y, T sd_z, int wSize) :
-    CoordinateDistribution<T,lno_t,gno_t,node_t>(np_,dim,wSize),
+    CoordinateDistribution<T,lno_t,gno_t>(np_,dim,wSize),
     standartDevx(sd_x), standartDevy(sd_y), standartDevz(sd_z)
   {
     this->center.x = center_.x;
@@ -660,21 +673,15 @@ public:
     CoordinatePoint <T> p;
 
     for(int i = 0; i < this->dimension; ++i){
-      // there is static handling in the normalDist but I wanted to call two
-      // tests in series with the same coordinates so this little hack requests
-      // to reset the statics for the new set. Eventually I will probably go
-      // back to just one test (have the two separated).
-      // TODO: Then delete this once that it done
-      bool bReset = (pindex == 0 && i == 0);
       switch(i){
       case 0:
-        p.x = normalDist(this->center.x, this->standartDevx, state, bReset);
+        p.x = normalDist(this->center.x, this->standartDevx, state);
         break;
       case 1:
-        p.y = normalDist(this->center.y, this->standartDevy, state, bReset);
+        p.y = normalDist(this->center.y, this->standartDevy, state);
         break;
       case 2:
-        p.z = normalDist(this->center.z, this->standartDevz, state, bReset);
+        p.z = normalDist(this->center.z, this->standartDevz, state);
         break;
       default:
         throw "unsupported dimension";
@@ -685,17 +692,11 @@ public:
 
   virtual ~CoordinateNormalDistribution(){};
 private:
-
-  // Added reset as had multiple tests running in series and they happened to have
-  // odd count so they would end up with different results.
-  // Resetting first coordinate can resolve this.
-  // This may be temporary for the debugging setup of the cuda refactor.
-  // TODO: Resolve this - remove bReset once double test is cleaned out.
-  T normalDist(T center_, T sd, unsigned int & state, bool bReset) {
+  T normalDist(T center_, T sd, unsigned int &state) {
     static bool derived=false;
     static T storedDerivation;
     T polarsqrt, normalsquared, normal1, normal2;
-    if (!derived || bReset) {
+    if (!derived) {
       do {
         normal1=2.0*( T(rand_r(&state))/T(RAND_MAX) ) - 1.0;
         normal2=2.0*( T(rand_r(&state))/T(RAND_MAX) ) - 1.0;
@@ -714,8 +715,8 @@ private:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t, typename node_t>
-class CoordinateUniformDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
+template <typename T, typename lno_t, typename gno_t>
+class CoordinateUniformDistribution:public CoordinateDistribution<T,lno_t, gno_t>{
 public:
   T leftMostx;
   T rightMostx;
@@ -735,7 +736,7 @@ public:
 
   CoordinateUniformDistribution(gno_t np_, int dim, T l_x, T r_x, T l_y, T r_y,
                                 T l_z, T r_z, int wSize ) :
-      CoordinateDistribution<T,lno_t,gno_t,node_t>(np_,dim,wSize),
+      CoordinateDistribution<T,lno_t,gno_t>(np_,dim,wSize),
       leftMostx(l_x), rightMostx(r_x), leftMosty(l_y), rightMosty(r_y),
       leftMostz(l_z), rightMostz(r_z){}
 
@@ -771,8 +772,8 @@ private:
   }
 };
 
-template <typename T, typename lno_t, typename gno_t, typename node_t>
-class CoordinateGridDistribution:public CoordinateDistribution<T,lno_t,gno_t,node_t>{
+template <typename T, typename lno_t, typename gno_t>
+class CoordinateGridDistribution:public CoordinateDistribution<T,lno_t,gno_t>{
 public:
   T leftMostx;
   T rightMostx;
@@ -798,7 +799,7 @@ public:
   CoordinateGridDistribution(gno_t alongX, gno_t alongY, gno_t alongZ, int dim,
                              T l_x, T r_x, T l_y, T r_y, T l_z, T r_z ,
                              int myRank_, int wSize) :
-      CoordinateDistribution<T,lno_t,gno_t,node_t>(alongX * alongY * alongZ,dim,wSize),
+      CoordinateDistribution<T,lno_t,gno_t>(alongX * alongY * alongZ,dim,wSize),
       leftMostx(l_x), rightMostx(r_x), leftMosty(l_y), rightMosty(r_y), leftMostz(l_z), rightMostz(r_z), myRank(myRank_){
     //currentX = leftMostx, currentY = leftMosty, currentZ = leftMostz;
     this->processCnt = 0;
@@ -908,7 +909,7 @@ private:
   float *loadDistributions; //sized as the number of processors, the load of each processor.
   bool loadDistSet;
   bool distinctCoordSet;
-  CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> **coordinateDistributions;
+  CoordinateDistribution<scalar_t, lno_t,gno_t> **coordinateDistributions;
   int distributionCount;
   //CoordinatePoint<scalar_t> *points;
   scalar_t **coords;
@@ -930,11 +931,9 @@ private:
   std::string outfile;
   float perturbation_ratio;
 
-/* Unused code not refactored for Kokkos/Cuda
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> tMVector_t;
   typedef Tpetra::Map<lno_t, gno_t, node_t> tMap_t;
 
-*/
 
   template <typename tt>
   tt getParamVal( const Teuchos::ParameterEntry& pe, const std::string &paramname){
@@ -1023,9 +1022,9 @@ private:
     int argCnt = this->countChar(coordinate_distributions, ',') + 1;
     std::string *splittedStr = new std::string[argCnt];
     splitString(coordinate_distributions, ',', splittedStr);
-    coordinateDistributions = (CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> **) malloc(sizeof (CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> *) * 1);
+    coordinateDistributions = (CoordinateDistribution<scalar_t, lno_t,gno_t> **) malloc(sizeof (CoordinateDistribution<scalar_t, lno_t,gno_t> *) * 1);
     for(int i = 0; i < argCnt; ){
-      coordinateDistributions = (CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> **)realloc((void *)coordinateDistributions, (this->distributionCount + 1)* sizeof(CoordinateDistribution<scalar_t,lno_t,gno_t,node_t> *));
+      coordinateDistributions = (CoordinateDistribution<scalar_t, lno_t,gno_t> **)realloc((void *)coordinateDistributions, (this->distributionCount + 1)* sizeof(CoordinateDistribution<scalar_t, lno_t,gno_t> *));
 
       std::string distName = splittedStr[i++];
       gno_t np_ = 0;
@@ -1054,7 +1053,7 @@ private:
         if(this->coordinate_dimension == 3){
           sd_z = fromString<scalar_t>(splittedStr[i++]);
         }
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateNormalDistribution<scalar_t,lno_t,gno_t,node_t>(np_, this->coordinate_dimension, pp , sd_x, sd_y, sd_z, this->worldSize );
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateNormalDistribution<scalar_t, lno_t,gno_t>(np_, this->coordinate_dimension, pp , sd_x, sd_y, sd_z, this->worldSize );
 
       } else if(distName == "UNIFORM" ){
         int reqArg = 5;
@@ -1078,7 +1077,7 @@ private:
           r_z = fromString<scalar_t>(splittedStr[i++]);
         }
 
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateUniformDistribution<scalar_t,lno_t,gno_t,node_t>( np_,  this->coordinate_dimension, l_x, r_x, l_y, r_y, l_z, r_z, this->worldSize );
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateUniformDistribution<scalar_t, lno_t,gno_t>( np_,  this->coordinate_dimension, l_x, r_x, l_y, r_y, l_z, r_z, this->worldSize );
       } else if (distName == "GRID"){
         int reqArg = 6;
         if(this->coordinate_dimension == 3){
@@ -1115,7 +1114,7 @@ private:
           throw "Provide at least 1 point along each dimension for grid test.";
         }
         //std::cout << "ly:" << l_y << " ry:" << r_y << std::endl;
-        this->coordinateDistributions[this->distributionCount++] = new CoordinateGridDistribution<scalar_t,lno_t,gno_t,node_t>
+        this->coordinateDistributions[this->distributionCount++] = new CoordinateGridDistribution<scalar_t, lno_t,gno_t>
         (np_x, np_y,np_z, this->coordinate_dimension, l_x, r_x,l_y, r_y, l_z, r_z , this->myRank, this->worldSize);
 
       }
@@ -1684,7 +1683,9 @@ public:
     }
 
     for (int ii = 0; ii < this->coordinate_dimension; ++ii){
-      // TODO: Optimize this loop for Kokkos
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
       for(lno_t i = 0; i < myPointCount; ++i){
         this->coords[ii][i] = 0;
       }
@@ -1724,9 +1725,7 @@ public:
 
 
     if (this->predistribution){
-      // TODO: Dicuss predistribution, get this code all refactored for Kokkos/Cuda
-      throw std::logic_error("predistribution option is currently disabled for Kokkos/Cuda refactor.\n");
-      // redistribute();
+    	redistribute();
     }
 
 
@@ -1808,7 +1807,6 @@ public:
     	}
     }
 
-    // TODO: Need to optimize this with kokkos loops
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
       switch(this->coordinate_dimension){
       case 1:
@@ -2380,7 +2378,6 @@ public:
 	  }
   }
 
-/* Unused code not refactored for Kokkos/Cuda
   //calls MJ for p = numProcs
   int predistributeMJ(int *coordinate_grid_parts){
 	  int coord_dim = this->coordinate_dimension;
@@ -2668,7 +2665,6 @@ public:
 
 
   }
-*/
 
   //############################################################//
   ///########END Predistribution functions######################//
@@ -2698,7 +2694,9 @@ public:
 
   void getLocalCoordinatesCopy( scalar_t ** c){
     for(int ii = 0; ii < this->coordinate_dimension; ++ii){
-      // TODO Optimize for Kokkos/Cuda refactor
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
       for (lno_t i = 0; i < this->numLocalCoords; ++i){
         c[ii][i] = this->coords[ii][i];
       }
@@ -2706,10 +2704,10 @@ public:
   }
 
   void getLocalWeightsCopy(scalar_t **w){
-    auto local_numLocalCoords = this->numLocalCoords;
-    auto local_wghts = this->wghts;
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
-      // TODO Optimize for Kokkos/Cuda refactor
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
       for (lno_t i = 0; i < this->numLocalCoords; ++i){
         w[ii][i] = this->wghts[ii][i];
       }
