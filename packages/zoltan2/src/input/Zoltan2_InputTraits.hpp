@@ -133,7 +133,10 @@ typedef int default_part_t;  // Restrictions in MPI interface will make it
     \li \c gno (global number) is the integral data type used by the application and Zoltan2 to represent global identifiers and global counts.
  */
 
-template <typename scalar=double, typename lno=int, typename gno=int, typename node=Zoltan2::default_node_t>
+template <typename scalar=default_scalar_t,
+          typename lno=default_lno_t,
+          typename gno=default_gno_t,
+          typename node=default_node_t>
 class BasicUserTypes{
 };
 

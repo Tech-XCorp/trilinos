@@ -68,11 +68,6 @@
 
 #include <zoltan.h>
 
-// some tm vector code will block a conversion to uvm off
-// for now I'm just disabling anything not used in the tests and will return
-// to determine which pieces we really need.
-#define TEMP_DISABLE_TMVECTOR_CODE // refactoring temp
-
 #ifdef _MSC_VER
 #define NOMINMAX
 #include <windows.h>
@@ -125,8 +120,7 @@ int getNumObj(void *data, int *ierr)
 }
 //////////////////////////
 
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
-
+/* Unused code not refactored for Kokkos/Cuda
 template <typename tMVector_t>
 void getCoords(void *data, int numGid, int numLid,
   int numObj, ZOLTAN_ID_PTR gids, ZOLTAN_ID_PTR lids,
@@ -160,9 +154,6 @@ void getCoords(void *data, int numGid, int numLid,
     }
   }
 }
-#endif // TEMP_DISABLE_TMVECTOR_CODE
-
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
 
 template <typename tMVector_t>
 int getDim(void *data, int *ierr)
@@ -173,10 +164,6 @@ int getDim(void *data, int *ierr)
 
   return dim;
 }
-
-#endif // TEMP_DISABLE_TMVECTOR_CODE
-
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
 
 //////////////////////////
 template <typename tMVector_t>
@@ -206,8 +193,7 @@ void getObjList(void *data, int numGid, int numLid,
         *wgts++ = dots_->weights[w][i];
   }
 }
-
-#endif // TEMP_DISABLE_TMVECTOR_CODE
+*/
 
 enum shape {SQUARE, RECTANGLE, CIRCLE, CUBE, RECTANGULAR_PRISM, SPHERE};
 const std::string shapes[] = {"SQUARE", "RECTANGLE", "CIRCLE", "CUBE", "RECTANGULAR_PRISM", "SPHERE"};
@@ -497,7 +483,7 @@ public:
     numPoints(np_), dimension(dim), requested(0), assignedPrevious(0),
     worldSize(wSize){}
 
-  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int & state) = 0;
+  virtual CoordinatePoint<T> getPoint(gno_t point_index, unsigned int &state) = 0;
   virtual T getXCenter() = 0;
   virtual T getXRadius() =0;
 
@@ -518,8 +504,10 @@ public:
     unsigned int slice =  UINT_MAX/(this->worldSize);
     unsigned int stateBegin = myRank * slice;
 
-    int tsize = 1; // HACK CUDA TEMP node_t::execution_space::thread_pool_size();
-    //typedef typename Kokkos::TeamPolicy<typename node_t::execution_space>::member_type member_type;
+    // TODO: For openmp this would be get_omp_num_threads() but what can we call
+    // for Cuda? We need this for proper random number generation if we optimize
+    // loops in this file. 
+    int tsize = 1;
     Kokkos::TeamPolicy<typename node_t::execution_space> policy (1, this->num_threads);
 
     // TODO: Determine why need view - how to do this elegantly?
@@ -532,7 +520,6 @@ public:
       int me = 0; // TODO team_member.team_rank();
       view_state(me) = stateBegin + me * slice/(tsize);
  
- printf("My state: %d\n", (int) view_state(me));
       for(int cnt = 0; cnt < requestedPointcount; ++cnt)
 
 //      Kokkos::parallel_for(Kokkos::TeamThreadRange(
@@ -969,10 +956,10 @@ private:
   std::string outfile;
   float perturbation_ratio;
 
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
+/* Unused code not refactored for Kokkos/Cuda
   typedef Tpetra::MultiVector<scalar_t, lno_t, gno_t, node_t> tMVector_t;
   typedef Tpetra::Map<lno_t, gno_t, node_t> tMap_t;
-#endif
+*/
 
   template <typename tt>
   tt getParamVal( const Teuchos::ParameterEntry& pe, const std::string &paramname){
@@ -1769,12 +1756,10 @@ public:
 
 
     if (this->predistribution){
-      throw std::logic_error("Temp disabled predistribution code for cuda refactoring. This needs to be reimplemented.\n");
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
-    	redistribute();
-#endif // TEMP_DISABLE_TMVECTOR_CODE
+      // TODO: Dicuss predistribution, get this code all refactors for Kokkos/Cuda
+      throw std::logic_error("predistribution option is currently disabled for Kokkos/Cuda refactor.\n");
+    	// redistribute();
     }
-
 
 
     int scale = 3;
@@ -2429,8 +2414,7 @@ public:
 	  }
   }
 
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
-
+/* Unused code not refactored for Kokkos/Cuda
   //calls MJ for p = numProcs
   int predistributeMJ(int *coordinate_grid_parts){
 	  int coord_dim = this->coordinate_dimension;
@@ -2511,13 +2495,8 @@ public:
 	  return 0;
   }
 
-#endif // #ifndef TEMP_DISABLE_TMVECTOR_CODE
-
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
-
   //calls RCP for p = numProcs
   int predistributeRCB(int *coordinate_grid_parts){
-
 	  int rank = this->myRank;
 	  int nprocs = this->worldSize;
 	  DOTS<tMVector_t> dots_;
@@ -2700,35 +2679,29 @@ public:
 	  MEMORY_CHECK(doMemory && rank==0, "After Zoltan_Destroy");
 
 	  delete dots_.coordinates;
-
 	  return 0;
-  }
-
-#endif // TEMP_DISABLE_TMVECTOR_CODE
-
-#ifndef TEMP_DISABLE_TMVECTOR_CODE
+}
 
   void redistribute(){
-      int *coordinate_grid_parts = new int[this->numLocalCoords];
-      switch (this->predistribution){
-      case 1:
-        this->predistributeRCB(coordinate_grid_parts);
-        break;
-      case 2:
+         int *coordinate_grid_parts = new int[this->numLocalCoords];
+         switch (this->predistribution){
+         case 1:
+                 this->predistributeRCB(coordinate_grid_parts);
+                 break;
+         case 2:
 
-        this->predistributeMJ(coordinate_grid_parts);
-        break;
-      case 3:
-        //block
-        blockPartition(coordinate_grid_parts);
-        break;
-      }
-      this->distribute_points(coordinate_grid_parts);
+                 this->predistributeMJ(coordinate_grid_parts);
+                 break;
+         case 3:
+                 //block
+                 blockPartition(coordinate_grid_parts);
+                 break;
+         }
+         this->distribute_points(coordinate_grid_parts);
 
-      delete []coordinate_grid_parts;
+         delete []coordinate_grid_parts;
   }
-
-#endif // TEMP_DISABLE_TMVECTOR_CODE
+*/
 
   //############################################################//
   ///########END Predistribution functions######################//
@@ -2761,13 +2734,10 @@ public:
     auto local_coords = this->coords;
 
     for(int ii = 0; ii < this->coordinate_dimension; ++ii){
-    // TODO Disabled to get cuda working
-    //  Kokkos::parallel_for(
-    //    Kokkos::RangePolicy<typename node_t::execution_space, int> (0, local_numLocalCoords),
-    //    KOKKOS_LAMBDA (const int i) {
+      // TODO Optimize for Kokkos/Cuda refactor
       for(int i = 0; i < local_numLocalCoords; ++i) {
           c[ii][i] = local_coords[ii][i];
-      } // );
+      }
     }
   }
 
@@ -2775,13 +2745,10 @@ public:
     auto local_numLocalCoords = this->numLocalCoords;
     auto local_wghts = this->wghts;
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
-    // TODO Disabled to get cuda working
-    //  Kokkos::parallel_for(
-    //    Kokkos::RangePolicy<typename node_t::execution_space, int> (0, local_numLocalCoords),
-    //    KOKKOS_LAMBDA (const int i) {
+      // TODO Optimize for Kokkos/Cuda refactor
       for(int i = 0; i < local_numLocalCoords; ++i) {
           w[ii][i] = local_wghts[ii][i];
-      } // );
+      }
     }
   }
 };
