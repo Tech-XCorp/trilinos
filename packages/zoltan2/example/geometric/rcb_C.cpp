@@ -61,7 +61,7 @@
 
 int main(int argc, char *argv[])
 {
-  Tpetra::ScopeGuard tscope(&narg, &arg);
+  Tpetra::ScopeGuard tscope(&argc, &argv);
   Teuchos::RCP<const Teuchos::Comm<int> > comm = Tpetra::getDefaultComm();
 
   int rank = comm->getRank();
