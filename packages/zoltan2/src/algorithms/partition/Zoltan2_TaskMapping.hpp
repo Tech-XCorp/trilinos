@@ -380,7 +380,7 @@ void getCoarsenedPartGraph(
       }
       g_part_xadj[i + 1] = nindex;
     }
-    return; // TODO clean up flow here - remove this return
+    return; // TODO clean up flow here - remove this return - see below
   }
 
   // struct for directory data - note more extensive comments in
