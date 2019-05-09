@@ -4242,7 +4242,7 @@ struct ReduceWeightsFunctor {
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef USE_ATOMIC_KERNEL
-            Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
+            Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
             current_right_closest(part) = b;
             current_left_closest(part) = b;  
 #else
@@ -4273,7 +4273,7 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-                Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
+                Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
                 current_right_closest(part) = b;
                 current_left_closest(part) = b;
               }
@@ -4286,7 +4286,7 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-                Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
+                Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
                 current_right_closest(part) = b;
                 current_left_closest(part) = b;
               }
