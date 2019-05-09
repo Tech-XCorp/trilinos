@@ -53,7 +53,6 @@
 #include <Zoltan2_VectorAdapter.hpp>
 #include <Zoltan2_StridedData.hpp>
 
-#include <Zoltan2_AlgMultiJagged.hpp> // Temporary for debugging clock - delete
 namespace Zoltan2 {
 
 /*!  \brief BasicVectorAdapter represents a vector (plus optional weights)
@@ -240,16 +239,13 @@ public:
   // The Adapter interface.
   ////////////////////////////////////////////////////////////////
 
-  size_t getLocalNumIDs() const {return numIds_;}
+  size_t getLocalNumIDs() const { return numIds_;}
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
     typename node_t::device_type> &ids) const
   {
-    // note we are converting from a non-const to a const gno_t type here since
-    // we built this one manually. In the MultiVector case it has to be const
-    // gno_t due to the way we read the sub view.
     ids = this->kokkos_ids_;
   }
 
@@ -298,16 +294,12 @@ public:
     entries = kokkos_entries_;
   }
 
-// For Kokkos Cuda refactor making this public
-#ifndef KOKKOS_HAVE_CUDA
-private: 
-#endif
-
+private:
   lno_t numIds_;
   const gno_t *idList_;
 
   int numEntriesPerID_;
-  ArrayRCP<StridedData<lno_t, scalar_t> > entries_;
+  ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
 
   Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids_;
 
@@ -320,7 +312,7 @@ private:
   Kokkos::View<scalar_t**, typename node_t::device_type> kokkos_weights_;
 
   void createBasicVector(
-    std::vector<const scalar_t *> &entries, std::vector<int> &entryStride,
+    std::vector<const scalar_t *> &entries,  std::vector<int> &entryStride,
     std::vector<const scalar_t *> &weights, std::vector<int> &weightStrides)
   {
     typedef StridedData<lno_t,scalar_t> input_t;
@@ -334,12 +326,7 @@ private:
       for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
         host_temp_values(n) = idList_[n];
       }
-    
-    
-// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
-Clock clock_host_to_device_ids("copy ids host to device", true);
       Kokkos::deep_copy(this->kokkos_ids_, host_temp_values);
-clock_host_to_device_ids.stop(true);
 
       // make coordinates
       int stride = 1;
@@ -357,28 +344,21 @@ clock_host_to_device_ids.stop(true);
 
       size_t length;
       const scalar_t * entriesPtr;
-    
+
       typename decltype(this->kokkos_entries_)::HostMirror host_kokkos_entries =
         Kokkos::create_mirror_view(this->kokkos_entries_);
 
       for (int idx=0; idx < numEntriesPerID_; idx++) {
-
         entries_[idx].getStridedList(length, entriesPtr, stride);
         size_t fill_index = 0;
         for(int n = 0; n < numIds_; ++n) {
           host_kokkos_entries(fill_index++,idx) = entriesPtr[n*stride];
         }
       }
-      
-// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
-Clock clock_host_to_device_entries("copy entries host to device", true);
       Kokkos::deep_copy(this->kokkos_entries_, host_kokkos_entries);
-clock_host_to_device_entries.stop(true);
-
     }
 
-    // weights
-    if(numWeights_) {
+    if (numWeights_) {
       int stride = 1;
       weights_ = arcp(new input_t [numWeights_], 0, numWeights_, true);
       for (int w=0; w < numWeights_; w++){
@@ -391,30 +371,20 @@ clock_host_to_device_entries.stop(true);
       kokkos_weights_ = Kokkos::View<scalar_t**,
         typename node_t::device_type>("kokkos weights", numIds_, numWeights_);
 
-      // setup kokkos weights
-      const scalar_t * weightsPtr;
-      size_t length;
-
-      // call just to get length for 2d setup
-      weights_[0].getStridedList(length, weightsPtr, stride);
-
       // setup weights
       typename decltype(this->kokkos_weights_)::HostMirror
         host_weight_temp_values =
           Kokkos::create_mirror_view(this->kokkos_weights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
+        const scalar_t * weightsPtr;
+        size_t length;
         weights_[idx].getStridedList(length, weightsPtr, stride);
         size_t fill_index = 0;
         for(size_t n = 0; n < length; n += stride) {
           host_weight_temp_values(fill_index++,idx) = weightsPtr[n];
         }
       }
-
-// Temp clock pulling from Zoltan2_AlgMultiJagged.hpp"
-Clock clock_host_to_device_weights("copy weights host to device", true);
       Kokkos::deep_copy(this->kokkos_weights_, host_weight_temp_values);
-clock_host_to_device_weights.stop(true);
-
     }
   }
 };
