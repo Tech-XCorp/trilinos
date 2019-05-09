@@ -155,9 +155,9 @@ public:
   // */ 
   virtual void getWeightsView(const scalar_t *&wgt, int &stride,
                               int idx = 0) const {
-    Kokkos::View<scalar_t *, typename node_t::device_type> tempWeightsView;
-    getWeightsKokkosView(tempWeightsView, idx);
-    wgt = tempWeightsView.data();
+    Kokkos::View<scalar_t *, typename node_t::device_type> kokkos_wgts;
+    getWeightsKokkosView(kokkos_wgts, idx);
+    wgt = kokkos_wgts.data();
     stride = 1;
   }
 
@@ -172,8 +172,8 @@ public:
     throw std::logic_error("getWeightsKokkosView not implemented.");
   }
 
-  // 2nd form returns the 2darray - still need to decide how this will all sort
-  // out but they should all be made consistent.
+  // TODO: 2nd form returns the 2darray - still need to decide how this
+  // will all sort out but they should all be made consistent.
   virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> & wgt) const {
     throw std::logic_error("getWeightsKokkos2dView not implemented.");
   }
