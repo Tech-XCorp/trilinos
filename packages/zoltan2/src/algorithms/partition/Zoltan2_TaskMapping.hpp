@@ -1362,7 +1362,7 @@ public:
     // eventually this should be built from the start as a Kokkos::View but I'm
     // trying to restrict the scope of the refactoring so it can be done in steps.
     // Make the 2d kokkos view and manually copy in the pieces for now
-    // TODO: Optimmize
+    // TODO: optimmize
     Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_pcoords("pcoords", used_num_procs, procdim);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < used_num_procs; ++j) {
