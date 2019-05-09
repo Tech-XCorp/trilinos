@@ -4260,14 +4260,17 @@ struct ReduceWeightsFunctor {
 #endif
             parts(i) = part*2+1;
 
-/*
-            // need to scan up for any other cuts of same coordinate
-            mj_part_t base_part = part;
-            mj_part_t base_b = b;
+            // Need to scan up for any other cuts of same coordinate
+            // TODO: This is costly - but need to evaluate
+            // It's only relevant for the fix4785 test which loads a lot of
+            // coordinates on the same point, so without this our cuts would
+            // all just sit at 0. Need to discuss how we can avoid this.
+            part_t base_part = part;
+            part_t base_b = b;
             part += 1;
             while(part < num_cuts) {
               b = cut_coordinates(part);
-              scalar_t delta = b - baseb;
+              scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
                 Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
@@ -4280,7 +4283,7 @@ struct ReduceWeightsFunctor {
             part = base_b - 1;
             while(part >= 0) {
               b = cut_coordinates(part);
-              scalar_t delta = b - baseb;
+              scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
                 Kokkos::atomic_add(&current_part_weights(part*2+1), (scalar_t) w);
@@ -4290,7 +4293,7 @@ struct ReduceWeightsFunctor {
               else { break; }
               --part;
             }
-*/
+
             break;
           }
         }
@@ -4681,7 +4684,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     mj_lno_t coordinate_end_index = host_part_xadj(concurrent_current_part);
 
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
-    
+
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
