@@ -404,18 +404,6 @@ void getCoarsenedPartGraph(
   };
 
 #ifdef HAVE_ZOLTAN2_MPI // TODO added this due to return above to clean up cuda warnings - needs rework
-  RCP<const Teuchos::Comm<int> > tcomm = rcpFromRef(*comm);
-  // KDD 8/8/18:  Ideally, we'd use part_t as the global ordinal in our map
-  //     typedef part_t use_this_gno_t;
-  // But when Tpetra is built without global ordinal = int, part_t will not
-  // link.  And changing part_t would affect backward compatibility.  
-  // So we'll use the Tpetra default here.
-  typedef Tpetra::Map<>::global_ordinal_type use_this_gno_t;
-  typedef Tpetra::Map<part_t, use_this_gno_t> t_map_t;
-  Teuchos::RCP<const t_map_t> map = Teuchos::rcp(new t_map_t(np, 0, tcomm));
-  typedef Tpetra::CrsMatrix<t_scalar_t, part_t, use_this_gno_t> tcrsMatrix_t;
-  Teuchos::RCP<tcrsMatrix_t> tMatrix(new tcrsMatrix_t(map, 0));
-
   bool bUseLocalIDs = false;
   const int debug_level = 0;
   typedef Zoltan2_Directory_Vector<part_t,int,std::vector<part_info>>
@@ -489,59 +477,78 @@ void getCoarsenedPartGraph(
   }
   envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Coarsen");
 
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE fillComplete");
-  tMatrix->fillComplete();
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE fillComplete");
+  std::vector<part_t> part_indices(np);
 
+  for (part_t i = 0; i < np; ++i) part_indices[i] = i;
 
-  std::vector<use_this_gno_t> part_indices(np);
+  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory update");
+  directory.update(part_data.size(), &part_data[0], NULL, &user_data[0],
+    NULL, directory_t::Update_Mode::AggregateAdd);
+  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory update");
 
-  for (use_this_gno_t i = 0; i < np; ++i) part_indices[i] = i;
+  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory find");
+  std::vector<std::vector<part_info>> find_user_data(part_indices.size());
+  directory.find(find_user_data.size(), &part_indices[0], NULL,
+    &find_user_data[0], NULL, NULL, false);
+  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory find");
 
-  Teuchos::ArrayView<const use_this_gno_t> global_ids(&(part_indices[0]), np);
+  // Now reconstruct the output data from the directory find data
+  // This code was designed to reproduce the exact format of the original
+  // setup for g_part_xadj, g_part_adj, and g_part_ew but before making any
+  // further changes I wanted to verify if this formatting should be
+  // preserved or potentially changed further.
 
-  //create a map where all processors own all rows.
-  //so that we do a gatherAll for crsMatrix.
-  Teuchos::RCP<const t_map_t> gatherRowMap(new t_map_t(
-      Teuchos::OrdinalTraits<Tpetra::global_size_t>::invalid(),
-      global_ids, 0, tcomm));
-
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE Import");
-  //create the importer for gatherAll
-  Teuchos::RCP<tcrsMatrix_t> A_gather =
-      Teuchos::rcp(new tcrsMatrix_t(gatherRowMap, 0));
-  typedef Tpetra::Import<typename t_map_t::local_ordinal_type,
-                         typename t_map_t::global_ordinal_type,
-                         typename t_map_t::node_type> import_type;
-  import_type import(map, gatherRowMap);
-  A_gather->doImport(*tMatrix, import, Tpetra::INSERT);
-  A_gather->fillComplete();
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Import");
-
-  //create the output part arrays.
-  //all processors owns whole copy.
-  g_part_xadj = ArrayRCP<part_t>(np + 1);
-  g_part_adj = ArrayRCP<part_t>(A_gather->getNodeNumEntries());
-  g_part_ew = ArrayRCP<t_scalar_t>(A_gather->getNodeNumEntries());
-
-  part_t *taskidx = g_part_xadj.getRawPtr();
-  part_t *taskadj = g_part_adj.getRawPtr();
-  t_scalar_t *taskadjwgt = g_part_ew.getRawPtr();
-
-  taskidx[0] = 0;
-
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE Import Copy");
-  for (part_t i = 0; i < np; i++) {
-    part_t length = A_gather->getNumEntriesInLocalRow(i);  // Use Global to get same
-    size_t nentries;
-    taskidx[i+1] = taskidx[i] + length;
-    //get the indices
-    Teuchos::ArrayView<part_t> Indices(taskadj + taskidx[i], length);
-    Teuchos::ArrayView<t_scalar_t> Values(taskadjwgt + taskidx[i], length);
-    A_gather->getLocalRowCopy(i, Indices, Values, nentries);
+  // first thing is get the total number of elements
+  int get_total_length = 0;
+  for(size_t n = 0; n < find_user_data.size(); ++n) {
+    get_total_length += find_user_data[n].size();
   }
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Import Copy");
-#endif
+
+  // setup data space
+  g_part_xadj = ArrayRCP<part_t> (np + 1);
+  g_part_adj = ArrayRCP<part_t> (get_total_length);
+  g_part_ew = ArrayRCP<t_scalar_t> (get_total_length);
+
+  // loop through again and fill to match the original formatting
+  int track_insert_index = 0;
+  for(size_t n = 0; n < find_user_data.size(); ++n) {
+    g_part_xadj[n] = track_insert_index;
+    const std::vector<part_info> & user_data_vector = find_user_data[n];
+    for(size_t q = 0; q < user_data_vector.size(); ++q) {
+      const part_info & info = user_data_vector[q];
+      g_part_adj[track_insert_index] = info.destination_part;
+      g_part_ew[track_insert_index] = info.weight;
+      ++track_insert_index;
+    }
+  }
+  g_part_xadj[np] = get_total_length; // complete the series
+
+  // This is purely for debugging logging and to be deleted
+  // hacky sort here just to make each subset of part destinations ordered
+  // so new and old code will produce identical output for validation. I think
+  // the ordering is arbitrary and no requirement to preserve the old ordering
+  // within each part. This code was written so I could drop it into the
+  // develop branch and validate we were producing identical results at this
+  // step. Would like to discuss this further before continuing.
+  // TODO: Delete all this
+  /*
+  if(comm->getRank() == 0) {
+    for(size_t i = 0; i < (size_t)g_part_xadj.size() - 1; ++i) {
+      part_t b = g_part_xadj[i];
+      part_t e = g_part_xadj[i+1];
+      printf("Results for part %d:\n", (int)i);
+      for(part_t scan_part = 0; scan_part < np; ++scan_part) {
+        for(part_t q = b; q < e; ++q) {
+          if(g_part_adj[q] == scan_part) { // inefficient hack to sort g_part_adj
+            printf( "(%d:%.2f) ", (int)scan_part, (float)g_part_ew[q]);
+          }
+        }
+      }
+      printf("\n");
+    }
+  }
+  */
+#endif // HAVE_ZOLTAN2_MPI
 }
 
 
@@ -860,14 +867,15 @@ template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
     // TODO: Optimize loop for Kokkos
-    for(size_t i = 0; i < arrSize; ++i) {
+    for(size_t i = 0; i < arrSize; ++i){
         arr[i] = i;
     }
   }
   else {
     T v = *val;
     // TODO: Optimize loop for Kokkos
-    for(size_t i = 0; i < arrSize; ++i) {
+    for(size_t i = 0; i < arrSize; ++i){
+      //cout << "writing to i:" << i << " arr:" << arrSize << endl;
       arr[i] = v;
     }
   }
@@ -979,7 +987,6 @@ public:
   // TODO: Perhaps delete this and just reference the view size?
   // Need to check the handling of size -1 versus size 0
   int partArraySize;
-
   Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
 
   int *machine_extent;
@@ -1040,7 +1047,7 @@ public:
     this->partArraySize = psize;
   }
 
-  void setPartArray(Kokkos::View<part_t *> pNo){
+  void setPartArray(Kokkos::View<part_t *, typename node_t::device_type> pNo){
     this->kokkos_partNoArray = pNo;
   }
 
