@@ -114,13 +114,15 @@ public:
 
   size_t getLocalNumIDs() const { return idsView_.extent(0); }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {ids = idsView_;}
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
+    typename node_t::device_type> &ids) const {ids = idsView_;}
 
   int getNumWeightsPerID() const { return weightsView_.extent(1); }
 
   // TODO: I'm adding a new form which takes the 2d array but probably should
   // convert this all to be the same style.
-  void getWeightsKokkosView(Kokkos::View<scalar_t *, typename node_t::device_type> &wgt, int idx) const {
+  void getWeightsKokkosView(Kokkos::View<scalar_t *,
+    typename node_t::device_type> &wgt, int idx) const {
     if (idx < 0 || scalar_t(idx) >= weightsView_.extent(0)) {
       std::ostringstream emsg;
       emsg << __FILE__ << ":" << __LINE__
@@ -131,7 +133,7 @@ public:
   }
 
 private:
-  Kokkos::View<const gno_t *> idsView_;
+  Kokkos::View<const gno_t *, typename node_t::device_type> idsView_;
   Kokkos::View<scalar_t **, weight_layout_t> weightsView_;
 };
 
