@@ -89,8 +89,6 @@ public:
   typedef typename InputTraits<User>::gno_t    gno_t;
   typedef typename InputTraits<User>::part_t   part_t;
   typedef typename InputTraits<User>::node_t   node_t;
-  typedef typename node_t::execution_space     execution_space_t;
-  typedef typename node_t::memory_space        memory_space_t;
   typedef User user_t;
   typedef User userCoord_t;
 
@@ -140,7 +138,8 @@ public:
     ids = map_->getNodeElementList().getRawPtr();
   }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
+    typename node_t::device_type> &ids) const {
     if (map_->lib() == Xpetra::UseTpetra) {
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
@@ -167,13 +166,11 @@ public:
     weights_[idx].getStridedList(length, weights, stride);
   }
 
-  void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> &wgt) const {
-    // now we'd like to make a Kokkos::View<scalar_t **> form from the
-    // weights_ list. Note that in BasicKokkosIdentifierInput.cpp we use
-    // Kokkos::View<scalar_t *> weightIn[N] to store the dimensions so that
-    // all need to be sorted out so convetions are consistent.
+  void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
+    typename node_t::device_type> &wgt) const {
     if (map_->lib() == Xpetra::UseTpetra) {
-      wgt = Kokkos::View<scalar_t**>("wgts", vector_->getLocalLength(), numWeights_);
+      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>(
+        "wgts", vector_->getLocalLength(), numWeights_);
       for(int idx = 0; idx < numWeights_; ++idx) {
         const scalar_t * weights;
         size_t length;
@@ -199,7 +196,8 @@ public:
   void getEntriesView(const scalar_t *&elements, int &stride, int idx=0) const;
 
   void getEntriesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const;
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+    typename node_t::device_type> & elements) const;
 
   template <typename Adapter>
     void applyPartitioningSolution(const User &in, User *&out,
