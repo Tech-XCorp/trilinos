@@ -117,7 +117,6 @@ public:
   virtual ~BaseAdapter() {};
 
   /*! \brief Provide a pointer to this process' identifiers.
-
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
@@ -128,18 +127,19 @@ public:
   }
 
   /*! \brief Provide a pointer to this process' identifiers.
-
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
-  virtual void getIDsKokkosView(Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+  virtual void getIDsKokkosView(Kokkos::View<const gno_t *,
+    typename node_t::device_type> &ids) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 
   /*! \brief Provide a pointer to the coordinates view.
   */
   inline void getCoordinatesKokkosView(
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+    typename node_t::device_type> & elements) const
   {
     Z2_THROW_NOT_IMPLEMENTED
   }
@@ -168,13 +168,15 @@ public:
   // *   getNumWeightsPerID > 0.
   // *   This function should not be called if getNumWeightsPerID is zero.
   // */ 
-  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *, typename node_t::device_type> &wgt, int idx) const {
+  virtual void getWeightsKokkosView(Kokkos::View<scalar_t *,
+    typename node_t::device_type> &wgt, int idx) const {
     throw std::logic_error("getWeightsKokkosView not implemented.");
   }
 
   // TODO: 2nd form returns the 2darray - still need to decide how this
   // will all sort out but they should all be made consistent.
-  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **, typename node_t::device_type> & wgt) const {
+  virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
+    typename node_t::device_type> & wgt) const {
     throw std::logic_error("getWeightsKokkos2dView not implemented.");
   }
 

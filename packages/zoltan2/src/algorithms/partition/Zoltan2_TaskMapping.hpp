@@ -859,23 +859,17 @@ public:
 template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-   // TODO Restore afer fixing for CUDA
-//    Kokkos::parallel_for(
-//      Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
-//      KOKKOS_LAMBDA (const int i) {
+    // TODO: Optimize loop for Kokkos
     for(size_t i = 0; i < arrSize; ++i) {
         arr[i] = i;
-    }//);
+    }
   }
   else {
     T v = *val;
-   // TODO Restore afer fixing for CUDA
-   // Kokkos::parallel_for(
-   //   Kokkos::RangePolicy<typename node_t::execution_space, int> (0, arrSize),
-   //   KOKKOS_LAMBDA (const int i) {
-      for(size_t i = 0; i < arrSize; ++i) {
-        arr[i] = v;
-    }//);
+    // TODO: Optimize loop for Kokkos
+    for(size_t i = 0; i < arrSize; ++i) {
+      arr[i] = v;
+    }
   }
 }
 
@@ -981,6 +975,9 @@ public:
   pcoord_t **proc_coords; //the processor coordinates. allocated outside of the class.
   int task_coord_dim; //dimension of the tasks coordinates.
   tcoord_t **task_coords; //the task coordinates allocated outside of the class.
+
+  // TODO: Perhaps delete this and just reference the view size?
+  // Need to check the handling of size -1 versus size 0
   int partArraySize;
 
   Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
@@ -1365,10 +1362,11 @@ public:
     // eventually this should be built from the start as a Kokkos::View but I'm
     // trying to restrict the scope of the refactoring so it can be done in steps.
     // Make the 2d kokkos view and manually copy in the pieces for now
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_pcoords("pcoords", used_num_procs, procdim);
+    // TODO: Optimmize
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_pcoords("pcoords", used_num_procs, procdim);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < used_num_procs; ++j) {
-        make_kokkos_pcoords(j,i) = pcoords[i][j];
+        kokkos_pcoords(j,i) = pcoords[i][j];
       }
     }
 
@@ -1379,8 +1377,9 @@ public:
         num_parts,
         procdim,
         //minCoordDim,
-        make_kokkos_pcoords, // see note above - eventually this will be prebuilt already as kokkos
-        Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(proc_adjList, this->no_procs),
+        kokkos_pcoords,
+        Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
+          proc_adjList, this->no_procs),
         proc_xadj,
         recursion_depth,
         kokkos_partNoArray,
@@ -1417,11 +1416,13 @@ public:
     // so memory is not contiguous and cannot be directly passed to an unmanaged view
     // eventually this should be built from the start as a Kokkos::View but I'm
     // trying to restrict the scope of the refactoring so it can be done in steps.
-    // Make the 2d kokkos view and manually copy in the pieces for now
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> make_kokkos_tcoords("pcoords", this->no_tasks, procdim);
+    // Make the 2d kokkos view and manually copy in the pieces for now.
+    // TODO: optimize
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_tcoords(
+      "pcoords", this->no_tasks, procdim);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < this->no_tasks; ++j) {
-        make_kokkos_tcoords(j,i) = tcoords[i][j];
+        kokkos_tcoords(j,i) = tcoords[i][j];
       }
     }
 
@@ -1433,8 +1434,9 @@ public:
         num_parts,
         this->task_coord_dim,
         //minCoordDim,
-        make_kokkos_tcoords,
-        Kokkos::View<part_t*>(task_adjList, this->no_procs),
+        kokkos_tcoords,
+        Kokkos::View<part_t*, typename node_t::device_type>(
+          task_adjList, this->no_procs),
         task_xadj,
         recursion_depth,
         kokkos_partNoArray,
@@ -2560,7 +2562,7 @@ public:
       ArrayRCP<part_t>task_comm_adj,
       pcoord_t *task_communication_edge_weight_,
       int recursion_depth,
-      Kokkos::View<part_t *> kokkos_part_no_array,
+      Kokkos::View<part_t *> part_no_array,
       const part_t *machine_dimensions,
       int num_ranks_per_node = 1,
       bool divide_to_prime_first = false, bool reduce_best_mapping = true
@@ -2612,7 +2614,7 @@ public:
     this->proc_task_comm->num_ranks_per_node = num_ranks_per_node;
     this->proc_task_comm->divide_to_prime_first = divide_to_prime_first;
     this->proc_task_comm->setPartArraySize(recursion_depth);
-    this->proc_task_comm->setPartArray(kokkos_part_no_array);
+    this->proc_task_comm->setPartArray(part_no_array);
     int myRank = problemComm->getRank();
 
     this->doMapping(myRank, this->comm);
@@ -2693,9 +2695,7 @@ public:
 
     for (int i = 0; i < machine_dim; ++i){
       part_t numMachinesAlongDim = machine_dimensions[i];
-
-      typedef part_t temp_t; // hack to fix cuda warning - TODO
-      part_t *machineCounts= new temp_t[numMachinesAlongDim];
+      part_t *machineCounts= new part_t[numMachinesAlongDim];
       memset(machineCounts, 0, sizeof(part_t) *numMachinesAlongDim);
 
       int *filledCoordinates= new int[numMachinesAlongDim];
@@ -2908,7 +2908,7 @@ void coordinateTaskMapperInterface(
     part_t *proc_to_task_xadj, /*output*/
     part_t *proc_to_task_adj, /*output*/
     int recursion_depth,
-    Kokkos::View<part_t *> kokkos_part_no_array,
+    Kokkos::View<part_t *> part_no_array,
     const part_t *machine_dimensions,
     int num_ranks_per_node = 1,
     bool divide_to_prime_first = false
@@ -2947,7 +2947,7 @@ void coordinateTaskMapperInterface(
       task_communication_adj,
       task_communication_edge_weight_,
       recursion_depth,
-      kokkos_part_no_array,
+      part_no_array,
       machine_dimensions,
       num_ranks_per_node,
       divide_to_prime_first
