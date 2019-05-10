@@ -2706,8 +2706,6 @@ public:
   }
 
   void getLocalWeightsCopy(scalar_t **w){
-    auto local_numLocalCoords = this->numLocalCoords;
-    auto local_wghts = this->wghts;
     for(int ii = 0; ii < this->numWeightsPerCoord; ++ii){
       // TODO Optimize for Kokkos/Cuda refactor
       for (lno_t i = 0; i < this->numLocalCoords; ++i){
