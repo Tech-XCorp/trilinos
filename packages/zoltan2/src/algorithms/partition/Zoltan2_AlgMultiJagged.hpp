@@ -4248,7 +4248,6 @@ struct ReduceWeightsFunctor {
             }
             part = base_b - 1;
             while(part >= 0) {
-    printf("Size cut_coordinates: %d\n", cut_coordinates.size());
               b = cut_coordinates(part);
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
@@ -9230,7 +9229,7 @@ public:
       mj_num_teams_validator =
       Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(
       1, Teuchos::EnhancedNumberTraits<int>::max()) );
-    pl.set("num_teams", ZOLTAN2_MJ_DEFAULT_NUM_TEAMS,
+    pl.set("mj_num_teams", ZOLTAN2_MJ_DEFAULT_NUM_TEAMS,
       "How many teams for the main kernel loop"
       , mj_num_teams_validator);
 
@@ -9827,8 +9826,8 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   // the length of the input partitioning array.
   this->recursion_depth = 0;
 
-  if (pl.getPtr<int>("num_teams")) {
-    this->num_teams = pl.get<int>("num_teams");
+  if (pl.getPtr<int>("mj_num_teams")) {
+    this->num_teams = pl.get<int>("mj_num_teams");
   }
   
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {

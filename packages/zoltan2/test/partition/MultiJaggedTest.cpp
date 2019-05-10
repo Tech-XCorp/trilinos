@@ -65,22 +65,6 @@
 using Teuchos::RCP;
 using Teuchos::rcp;
 
-// The test originally ran with a MultiVector and then compared results with a
-// BasicVectorAdapter. Now with the Kokkos/Cuda form this option will turn on a
-// second pass where the BasicVectorAdapter runs with UVM off instead of on.
-// MultiVector always runs with UVM on since it's Tpetra based which requires
-// UVM. So we have:
-//    MultiVector(UVM on) compared to BasicVectorAdapter(UMV on)
-//    MultiVector(UVM on) compared to BasicVectorAdapter(UMV off)
-// TODO: This will be reworked so it's an option of main and then run the full
-// test twice, once with UVM on and once with UVM off.
-// Note Geometrically generated tests are now also doing the comparison with
-// the BasicVectorAdapter
-#ifdef KOKKOS_HAVE_CUDA
-#define RUN_UVM_OFF_TEST // Turns on the 2nd pass - which will be changed later
-#endif
-
-
 //#define hopper_separate_test
 #ifdef hopper_separate_test
 #include "stdio.h"
@@ -690,6 +674,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         zscalar_t migration_imbalance_cut_off,
         int migration_processor_assignment_type,
         int migration_doMigration_type,
+        bool uvm,
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option,
@@ -771,6 +756,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     params->set("timer_output_stream" , "std::cout");
 
     params->set("algorithm", "multijagged");
+    if (uvm)
+        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -787,7 +774,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     if(pqParts != "")
         params->set("mj_parts", pqParts);
     if(numTeams > 0) {
-        params->set("num_teams", numTeams);
+        params->set("mj_num_teams", numTeams);
     }
     if(numParts > 0)
         params->set("num_global_parts", numParts);
@@ -867,6 +854,7 @@ int testFromDataFile(
         zscalar_t migration_imbalance_cut_off,
         int migration_processor_assignment_type,
         int migration_doMigration_type,
+        bool uvm,
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option, 
@@ -896,6 +884,8 @@ int testFromDataFile(
     }
 
     //params->set("timer_output_stream" , "std::cout");
+    if (uvm)
+        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -1005,7 +995,8 @@ int testFromSeparateDataFiles(
         zscalar_t migration_imbalance_cut_off,
         int migration_processor_assignment_type,
         int migration_doMigration_type,
-        int test_boxes,
+        bool uvm,
+        bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option
 )
@@ -1082,7 +1073,7 @@ int testFromSeparateDataFiles(
         params->set("mj_parts", pqParts);
     }
     if(numTeams > 0){
-        params->set("num_teams", numTeams);
+        params->set("mj_num_teams", numTeams);
     }
     if(numParts > 0){
         params->set("num_global_parts", numParts);
@@ -1106,6 +1097,8 @@ int testFromSeparateDataFiles(
     if (migration_doMigration_type >= 0){
         params->set("migration_doMigration_type", int (migration_doMigration_type));
     }
+    if (uvm)
+        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -1198,6 +1191,7 @@ void getArgVals(
         zscalar_t &migration_imbalance_cut_off,
         int &migration_processor_assignment_type,
         int &migration_doMigration_type,
+        bool &uvm,
         bool &test_boxes,
         bool &rectilinear,
         int  &mj_premigration_option,
@@ -1216,7 +1210,14 @@ void getArgVals(
         if(!getArgumentValue(identifier, fval, tmp)) continue;
         value = (long long int) (fval);
 
-        if(identifier == "T"){
+        if(identifier == "UVM"){
+            if(value == 0 || value == 1){
+                uvm = (value == 0 ? false : true);
+            } else {
+                throw "Invalid argument at " + tmp;
+            }
+        } 
+        else if(identifier == "T"){
             if(value > 0){
                 numTeams=value;
             } else {
@@ -1392,11 +1393,16 @@ int main(int narg, char *arg[])
     int migration_doMigration_type = -1;
     int  mj_premigration_option = 0;
     int mj_premigration_coordinate_cutoff = 0;
-
+    
+    bool uvm = false;
     bool test_boxes = false;
     bool rectilinear = false;
 
-#ifdef RUN_UVM_OFF_TEST
+#ifdef KOKKOS_HAVE_CUDA
+    // make a new node type so we can run BasicVectorAdapter with UVM off
+    // The Tpetra MV will still run with UVM on and we'll compare the results.
+    // For Serial/OpenMP the 2nd test will be turned off at the CMake level.
+    // For CUDA we control uvm on/off with parameter uvm set to 0 or 1. 
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  uvm_off_node_t;
 #endif
@@ -1419,6 +1425,7 @@ int main(int narg, char *arg[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type,
+                    uvm,
                     test_boxes,
                     rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
@@ -1442,28 +1449,31 @@ int main(int narg, char *arg[])
         switch (opt){
 
         case 0:
-
+          if(uvm == false) {
             ierr = testFromDataFile<znode_t>(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, test_boxes, rectilinear, mj_premigration_option, mj_premigration_coordinate_cutoff);
-
-	    // TODO: Temporary setup to run UVM on and off at same time
-
-#ifdef RUN_UVM_OFF_TEST
+                    migration_doMigration_type, uvm, test_boxes, rectilinear,
+                    mj_premigration_option, mj_premigration_coordinate_cutoff);
+          }
+          else {
+#ifdef KOKKOS_HAVE_CUDA
             ierr = testFromDataFile<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, test_boxes, rectilinear, 
+                    migration_doMigration_type, uvm, test_boxes, rectilinear, 
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
+#else
+            throw std::logic_error("uvm set on but this is not a cuda test.");
 #endif
-            break;
+          }
+          break;
 
 #ifdef hopper_separate_test
         case 1:
@@ -1473,30 +1483,36 @@ int main(int narg, char *arg[])
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, test_boxes, rectilinear,
+                    migration_doMigration_type, uvm, test_boxes, rectilinear,
                     mj_premigration_option);
             break;
 #endif
         default:
+          if(uvm == false) {
             ierr = GeometricGenInterface<znode_t>(tcomm, numTeams, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, test_boxes, rectilinear, 
+                    migration_doMigration_type, uvm, test_boxes, rectilinear, 
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
-#ifdef RUN_UVM_OFF_TEST
+          }
+          else {
+#ifdef KOKKOS_HAVE_CUDA
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, test_boxes, rectilinear,
+                    migration_doMigration_type, uvm, test_boxes, rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
+#else
+            throw std::logic_error("uvm set on but this is not a cuda test.");
 #endif
-            break;
+          }
+          break;
         }
 
         if (rank == 0) {
