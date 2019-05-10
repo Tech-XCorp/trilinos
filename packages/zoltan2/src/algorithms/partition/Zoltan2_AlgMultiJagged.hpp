@@ -4273,9 +4273,25 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
+#ifdef USE_ATOMIC_KERNEL
                 Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
                 current_right_closest(part) = b;
                 current_left_closest(part) = b;
+#else
+
+#ifdef USE_ATOMIC_REDUCE_KERNEL
+                p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
+                Kokkos::atomic_add(&shared_ptr[part*2+1], w);
+                *(p1+2) = b;
+                *(p1+3) = b; 
+#else
+                p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
+                threadSum.ptr[part*2+1] += w;
+                *(p1+2) = b;
+                *(p1+3) = b;  
+#endif
+
+#endif
               }
               else { break; }
               ++part;
@@ -4286,9 +4302,25 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
+#ifdef USE_ATOMIC_KERNEL
                 Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
                 current_right_closest(part) = b;
                 current_left_closest(part) = b;
+#else
+
+#ifdef USE_ATOMIC_REDUCE_KERNEL
+                p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
+                Kokkos::atomic_add(&shared_ptr[part*2+1], w);
+                *(p1+2) = b;
+                *(p1+3) = b; 
+#else
+                p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
+                threadSum.ptr[part*2+1] += w;
+                *(p1+2) = b;
+                *(p1+3) = b;  
+#endif
+
+#endif
               }
               else { break; }
               --part;
