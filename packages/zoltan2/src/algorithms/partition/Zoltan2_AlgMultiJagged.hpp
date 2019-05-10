@@ -64,7 +64,6 @@
 #include <algorithm>    // std::sort
 #include <vector>
 
-//#define USE_ATOMIC_KERNEL // - overrides below
 #define USE_ATOMIC_REDUCE_KERNEL
 #define USE_ATOMIC_ATOMIC_KERNEL // only if above is set
 #define USE_FLOAT_ARRAY
@@ -4018,7 +4017,7 @@ struct ReduceWeightsFunctor {
     scalar_t mj_sEpsilon,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
     Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
-#if defined(USE_ATOMIC_ATOMIC_KERNEL) || defined(USE_ATOMIC_KERNEL)
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
     ,Kokkos::View<double *, device_t> mj_current_part_weights,
     Kokkos::View<scalar_t *, device_t> mj_current_left_closest,
     Kokkos::View<scalar_t *, device_t> mj_current_right_closest
@@ -4043,7 +4042,7 @@ struct ReduceWeightsFunctor {
       sEpsilon(mj_sEpsilon),
       view_num_partitioning_in_current_dim(mj_view_num_partitioning_in_current_dim),
       my_incomplete_cut_count(mj_my_incomplete_cut_count)
-#if defined(USE_ATOMIC_ATOMIC_KERNEL) || defined(USE_ATOMIC_KERNEL)
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
       ,current_part_weights(mj_current_part_weights),
       current_left_closest(mj_current_left_closest),
       current_right_closest(mj_current_right_closest)
@@ -4051,7 +4050,6 @@ struct ReduceWeightsFunctor {
   {
   }
 
-#ifndef USE_ATOMIC_KERNEL
   size_t team_shmem_size (int team_size) const {
 #ifdef USE_ATOMIC_REDUCE_KERNEL
     int result = sizeof(array_t) * (value_count_weights + value_count_rightleft);
@@ -4066,26 +4064,16 @@ struct ReduceWeightsFunctor {
     }
     return result;
   }
-#endif // USE_ATOMIC_KERNEL
-
 
   KOKKOS_INLINE_FUNCTION
-#ifdef USE_ATOMIC_KERNEL
-  void operator() (const size_t ii) const {
-#else
-
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
   void operator() (const member_type & teamMember) const {
 #else
   void operator() (const member_type & teamMember, value_type teamSum) const {
 #endif
 
-#endif
-
-
     bool bUniformWeights = uniform_weights(0);
     
-#ifndef USE_ATOMIC_KERNEL
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
       part_xadj(concurrent_current_part - 1);
     index_t all_end = part_xadj(concurrent_current_part);
@@ -4149,8 +4137,6 @@ struct ReduceWeightsFunctor {
       [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
 #endif // USE_ATOMIC_REDUCE_KERNEL
 
-#endif // USE_ATOMIC_KERNEL
-
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
       array_t w = bUniformWeights ? 1 : (array_t) weights(i,0);
@@ -4164,55 +4150,25 @@ struct ReduceWeightsFunctor {
       for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
         // for the left/right closest part calculation
         
-#ifndef USE_ATOMIC_KERNEL
 #ifdef USE_ATOMIC_REDUCE_KERNEL
         array_t * p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
 #else
         array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
 #endif
-#endif // USE_ATOMIC_KERNEL
 
         scalar_t a = (part == 0) ? -max_scalar : cut_coordinates(part-1);
         scalar_t b = (part == num_cuts) ? max_scalar : cut_coordinates(part);
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-        
-#ifdef USE_ATOMIC_KERNEL
-          Kokkos::atomic_add(&current_part_weights(part*2), (scalar_t)w);
-#else
-
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
           Kokkos::atomic_add(&shared_ptr[part*2], w);
 #else
           threadSum.ptr[part*2] += w;
 #endif
 
-#endif
-
           parts(i) = part*2;
           
           // now handle the left/right closest part
-#ifdef USE_ATOMIC_KERNEL
-          scalar_t new_value = coord;
-          if(part < num_cuts) {
-            int insert_left = part;
-            scalar_t * dst = &current_left_closest(insert_left);
-            scalar_t prev_value = *dst;
-            while(new_value > prev_value) {
-              prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
-            }
-          }
-          if(part > 0) {
-            int insert_right = part - 1;
-            scalar_t * dst = &current_right_closest(insert_right);
-            scalar_t prev_value = *dst;
-            while(new_value < prev_value) {
-              prev_value = Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
-            }
-          }
-#else
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
           array_t new_value = (array_t) coord;
 
@@ -4235,18 +4191,10 @@ struct ReduceWeightsFunctor {
           }
 #endif
 
-#endif
-
           break;
         }
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
-#ifdef USE_ATOMIC_KERNEL
-            Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
-            current_right_closest(part) = b;
-            current_left_closest(part) = b;  
-#else
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
             Kokkos::atomic_add(&shared_ptr[part*2+1], w);
             *(p1+2) = b;
@@ -4257,7 +4205,6 @@ struct ReduceWeightsFunctor {
             *(p1+3) = b;   
 #endif
 
-#endif
             parts(i) = part*2+1;
 
             // Need to scan up for any other cuts of same coordinate
@@ -4272,12 +4219,6 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-#ifdef USE_ATOMIC_KERNEL
-                Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
-                current_right_closest(part) = b;
-                current_left_closest(part) = b;
-#else
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
                 p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
@@ -4288,8 +4229,6 @@ struct ReduceWeightsFunctor {
                 threadSum.ptr[part*2+1] += w;
                 *(p1+2) = b;
                 *(p1+3) = b;  
-#endif
-
 #endif
               }
               else { break; }
@@ -4302,12 +4241,6 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-#ifdef USE_ATOMIC_KERNEL
-                Kokkos::atomic_add(&current_part_weights(part*2+1), (double) w);
-                current_right_closest(part) = b;
-                current_left_closest(part) = b;
-#else
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
                 p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
@@ -4318,8 +4251,6 @@ struct ReduceWeightsFunctor {
                 threadSum.ptr[part*2+1] += w;
                 *(p1+2) = b;
                 *(p1+3) = b;  
-#endif
-
 #endif
               }
               else { break; }
@@ -4359,20 +4290,12 @@ struct ReduceWeightsFunctor {
           }
         }
       }
-#ifdef USE_ATOMIC_KERNEL
-    
-#else
-
 #ifdef USE_ATOMIC_REDUCE_KERNEL
     });
 #else // USE_ATOMIC_REDUCE_KERNEL
     }, arraySumReducer);
 #endif // USE_ATOMIC_REDUCE_KERNEL
 
-#endif
-
-
-#ifndef USE_ATOMIC_KERNEL
     teamMember.team_barrier();
 
     // collect all the team's results
@@ -4440,7 +4363,6 @@ struct ReduceWeightsFunctor {
     });
 
     teamMember.team_barrier();    
-#endif // USE_ATOMIC_KERNEL
   }
   
 #ifndef USE_ATOMIC_ATOMIC_KERNEL
@@ -4608,9 +4530,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     }
 
     clock_weights_new_to_optimize.stop();
-#ifndef USE_ATOMIC_KERNEL
+
     auto policy_ReduceWeightsFunctor = policy_t(mj_num_teams, Kokkos::AUTO);
-#endif
 
     clock_weights3.start();
 
@@ -4656,7 +4577,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
           
     array_t max_scalar = std::numeric_limits<array_t>::max();
     
-#if defined(USE_ATOMIC_ATOMIC_KERNEL) || defined(USE_ATOMIC_KERNEL)
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
     // Need to initialize this each time - maybe it's better to drop this in the
     // functor's single ... to try - then we have repeated write but don't need
     // to worry about atomics - would save us a kernel launch
@@ -4694,21 +4615,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
         sEpsilon,
         view_num_partitioning_in_current_dim,
         local_my_incomplete_cut_count
-#if defined(USE_ATOMIC_ATOMIC_KERNEL) || defined(USE_ATOMIC_KERNEL)
+#ifdef USE_ATOMIC_ATOMIC_KERNEL
         ,my_current_part_weights,
         my_current_left_closest,
         my_current_right_closest
 #endif
         );
-
-#ifdef USE_ATOMIC_KERNEL
-    mj_lno_t coordinate_begin_index = (concurrent_current_part == 0) ? 0 :
-      host_part_xadj(concurrent_current_part - 1);
-    mj_lno_t coordinate_end_index = host_part_xadj(concurrent_current_part);
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-        (coordinate_begin_index, coordinate_end_index), teamFunctor);
-#else
 
 #ifdef USE_ATOMIC_ATOMIC_KERNEL
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
@@ -4717,11 +4629,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
       teamFunctor, reduce_array);
 #endif
 
-#endif
-
     clock_functor_weights.stop();
 
-#if not defined(USE_ATOMIC_ATOMIC_KERNEL) && not defined(USE_ATOMIC_KERNEL)
+#ifndef USE_ATOMIC_ATOMIC_KERNEL
     // Move it from global memory to device memory
     // TODO: Need to figure out how we can better manage this
     typename decltype(my_current_part_weights)::HostMirror
