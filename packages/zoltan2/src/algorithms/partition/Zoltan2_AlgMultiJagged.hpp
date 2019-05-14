@@ -2692,20 +2692,22 @@ Clock partA("partA", true);
 
   auto local_view_num_partitioning_in_current_dim = view_num_partitioning_in_current_dim;
 
+  // TODO: This was ugly hackage to get some performance but need to rework
+  // all of this.
   if(vector_num_partitioning_in_current_dim.size() == 1) {
     mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+      0, 1), KOKKOS_LAMBDA (const int i) {
       local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
     });
   }
   else if(vector_num_partitioning_in_current_dim.size() == 2) {
     mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
-    mj_part_t local_set_value_2 = vector_num_partitioning_in_current_dim[0];
+    mj_part_t local_set_value_2 = vector_num_partitioning_in_current_dim[1];
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+      0, 1), KOKKOS_LAMBDA (const int i) {
       local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
       local_view_num_partitioning_in_current_dim(1) = local_set_value_2;
 
@@ -2721,11 +2723,19 @@ Clock partA("partA", true);
       mj_part_t local_set_value_n = vector_num_partitioning_in_current_dim[n];
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-        0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
+        0, 1), KOKKOS_LAMBDA (const int i) {
         local_view_num_partitioning_in_current_dim(n) = local_set_value_n;
       });
     }
   }
+
+comm->barrier();
+printf("Rank %d Set: ", comm->getRank());
+for(int n = 0; n < local_view_num_partitioning_in_current_dim.size(); ++n) {
+  printf("%d ",(int) local_view_num_partitioning_in_current_dim(n));
+}
+printf("\n");
+comm->barrier();
 
   return output_num_parts;
 }
@@ -4760,7 +4770,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       mj_part_t num_cuts_in_part =
       num_parts_in_part - 1;
       size_t num_total_part_in_part =
-        num_parts_in_part + size_t (num_cuts_in_part) ;
+        num_parts_in_part + size_t (num_cuts_in_part);
+
+printf("Rank %d parts: %d\n",  comm->getRank(), (int) num_total_part_in_part);
 
       // iterate for cuts in a single part.
       for(int ii = 0; ii < num_cuts_in_part; ++ii) {
