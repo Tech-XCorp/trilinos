@@ -70,9 +70,9 @@
 // ScatterView may be a mechanism to allow a single code pipe-line which runs
 // both reduction or atomic patterns but did not investigate that yet.
 // the 
-#ifdef KOKKOS_HAVE_CUDA
+//#ifdef KOKKOS_HAVE_CUDA
 #define ZOLTAN2_USE_CUDA_KERNEL // Atomic Atomic Loops
-#endif
+//#endif
 
 // This option is being maintained to evaluate the perfomance of using floats
 // versus doubles for the reduction arrays used in MJ. I suspect we may want
@@ -2729,14 +2729,6 @@ Clock partA("partA", true);
     }
   }
 
-comm->barrier();
-printf("Rank %d Set: ", comm->getRank());
-for(int n = 0; n < local_view_num_partitioning_in_current_dim.size(); ++n) {
-  printf("%d ",(int) local_view_num_partitioning_in_current_dim(n));
-}
-printf("\n");
-comm->barrier();
-
   return output_num_parts;
 }
 
@@ -4649,7 +4641,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
 #endif
-
+  
     clock_functor_weights.stop();
 
 #ifndef ZOLTAN2_USE_CUDA_KERNEL
@@ -4686,7 +4678,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   clock_weights4.start();
 
   auto local_temp_cut_coords = temp_cut_coords;
-
+  
   Kokkos::parallel_for (current_concurrent_num_parts, KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts = view_num_partitioning_in_current_dim(current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
@@ -4771,8 +4763,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       num_parts_in_part - 1;
       size_t num_total_part_in_part =
         num_parts_in_part + size_t (num_cuts_in_part);
-
-printf("Rank %d parts: %d\n",  comm->getRank(), (int) num_total_part_in_part);
 
       // iterate for cuts in a single part.
       for(int ii = 0; ii < num_cuts_in_part; ++ii) {
@@ -5854,22 +5844,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
           if(view_rectilinear_cut_count(0) > 0) {
           // try
           {
-            // For cuda initial testing reduce this to a form ok for device
-            // TODO need to opimize this but now we're just assuming on thread
-            for(int n = 0; n <
-              (int) local_process_rectilinear_cut_weight.size(); ++n) {
-              local_global_rectilinear_cut_weight(n) =
-              local_process_rectilinear_cut_weight(n);
-            }
-            /*
-              Teuchos::scan<int,mj_scalar_t>(
-                *comm, Teuchos::REDUCE_SUM,
-                num_cuts,
-                // TODO: Note this is refactored but needs to be improved
-                // to avoid the use of direct data() ptr completely.
-                local_process_rectilinear_cut_weight.data(),
-                local_global_rectilinear_cut_weight.data());
-           */
+            typename decltype(local_process_rectilinear_cut_weight)::HostMirror
+              host_local_process_rectilinear_cut_weight =
+              Kokkos::create_mirror_view(local_process_rectilinear_cut_weight);
+            typename decltype(local_global_rectilinear_cut_weight)::HostMirror
+              host_local_global_rectilinear_cut_weight =
+              Kokkos::create_mirror_view(local_global_rectilinear_cut_weight);
+            Kokkos::deep_copy(host_local_process_rectilinear_cut_weight,
+              local_process_rectilinear_cut_weight);
+            Kokkos::deep_copy(host_local_global_rectilinear_cut_weight,
+              local_global_rectilinear_cut_weight);
+            Teuchos::scan<int,mj_scalar_t>(
+              *comm, Teuchos::REDUCE_SUM,
+              num_cuts,
+              // TODO: Note this is refactored but needs to be improved
+              // to avoid the use of direct data() ptr completely.
+              host_local_process_rectilinear_cut_weight.data(),
+              host_local_global_rectilinear_cut_weight.data());
+            Kokkos::deep_copy(local_process_rectilinear_cut_weight,
+              host_local_process_rectilinear_cut_weight);
+            Kokkos::deep_copy(local_global_rectilinear_cut_weight,
+              host_local_global_rectilinear_cut_weight);
           }
           //  Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
 
