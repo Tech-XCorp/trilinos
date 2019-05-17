@@ -47,6 +47,21 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
     FAIL_REGULAR_EXPRESSION "FAIL"
 )
 
+IF (Tpetra_ENABLE_CUDA)
+
+TRIBITS_ADD_EXECUTABLE_AND_TEST(
+    mjTest_uvmOff
+    SOURCES MultiJaggedTest.cpp
+    NUM_MPI_PROCS 4
+    COMM serial mpi
+    ARGS
+    "I=1.03 P=2,2 O=0 C=4 F=simple TB=1 UVM=0"
+    PASS_REGULAR_EXPRESSION "PASS"
+    FAIL_REGULAR_EXPRESSION "FAIL"
+)
+
+ENDIF()
+
 TRIBITS_ADD_TEST(
     mjTest
     NAME mjTest_simple_rectilinear_boxes

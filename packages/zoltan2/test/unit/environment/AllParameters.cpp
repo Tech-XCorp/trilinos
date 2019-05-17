@@ -112,6 +112,7 @@ static string strParams[NUMSTR][3]={
   {"num_local_parts", "0", "invalid_value"},                   // EnhancedNumberValidator
   {"mj_premigration_option", "1", "invalid_value"},               // EnhancedNumberValidator
   {"mj_migration_option", "2", "invalid_value"},               // EnhancedNumberValidator
+  {"mj_num_teams", "60", "invalid_value"},                      // EnhancedNumberValidator
 };
 
 template <typename T>

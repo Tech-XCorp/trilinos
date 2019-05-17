@@ -756,8 +756,6 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
     params->set("timer_output_stream" , "std::cout");
 
     params->set("algorithm", "multijagged");
-    if (uvm)
-        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -884,8 +882,6 @@ int testFromDataFile(
     }
 
     //params->set("timer_output_stream" , "std::cout");
-    if (uvm)
-        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -1097,8 +1093,6 @@ int testFromSeparateDataFiles(
     if (migration_doMigration_type >= 0){
         params->set("migration_doMigration_type", int (migration_doMigration_type));
     }
-    if (uvm)
-        params->set("mj_uvm", true); // bool parameter
     if (test_boxes)
         params->set("mj_keep_part_boxes", true); // bool parameter
     if (rectilinear)
@@ -1394,7 +1388,7 @@ int main(int narg, char *arg[])
     int  mj_premigration_option = 0;
     int mj_premigration_coordinate_cutoff = 0;
     
-    bool uvm = false;
+    bool uvm = true;
     bool test_boxes = false;
     bool rectilinear = false;
 
@@ -1449,7 +1443,7 @@ int main(int narg, char *arg[])
         switch (opt){
 
         case 0:
-          if(uvm == false) {
+          if(uvm == true) {
             ierr = testFromDataFile<znode_t>(tcomm, numTeams, numParts, imbalance,fname,
                     pqParts, paramFile, k,
                     migration_check_option,
@@ -1470,7 +1464,7 @@ int main(int narg, char *arg[])
                     migration_doMigration_type, uvm, test_boxes, rectilinear, 
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
 #else
-            throw std::logic_error("uvm set on but this is not a cuda test.");
+            throw std::logic_error("uvm set off but this is not a cuda test.");
 #endif
           }
           break;
@@ -1488,7 +1482,7 @@ int main(int narg, char *arg[])
             break;
 #endif
         default:
-          if(uvm == false) {
+          if(uvm == true) {
             ierr = GeometricGenInterface<znode_t>(tcomm, numTeams, numParts, imbalance, fname,
                     pqParts, paramFile, k,
                     migration_check_option,
