@@ -69,10 +69,9 @@
 // be KOKKOS_HAVE_CUDA but this allows some easier on/off testing. I understand
 // ScatterView may be a mechanism to allow a single code pipe-line which runs
 // both reduction or atomic patterns but did not investigate that yet.
-// the 
-//#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_HAVE_CUDA
 #define ZOLTAN2_USE_CUDA_KERNEL // Atomic Atomic Loops
-//#endif
+#endif
 
 // This option is being maintained to evaluate the perfomance of using floats
 // versus doubles for the reduction arrays used in MJ. I suspect we may want
@@ -5833,111 +5832,107 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       });
 
       team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
-
-      // TODO: This may not be necessary anymore?
-        
-      // This unnecessary bracket works around a compiler bug in NVCC
-      // when enabling OpenMP as well
-      {
-
-        Kokkos::single(Kokkos::PerTeam(team_member), [=] () {
-          if(view_rectilinear_cut_count(0) > 0) {
-          // try
-          {
-            typename decltype(local_process_rectilinear_cut_weight)::HostMirror
-              host_local_process_rectilinear_cut_weight =
-              Kokkos::create_mirror_view(local_process_rectilinear_cut_weight);
-            typename decltype(local_global_rectilinear_cut_weight)::HostMirror
-              host_local_global_rectilinear_cut_weight =
-              Kokkos::create_mirror_view(local_global_rectilinear_cut_weight);
-            Kokkos::deep_copy(host_local_process_rectilinear_cut_weight,
-              local_process_rectilinear_cut_weight);
-            Kokkos::deep_copy(host_local_global_rectilinear_cut_weight,
-              local_global_rectilinear_cut_weight);
-            Teuchos::scan<int,mj_scalar_t>(
-              *comm, Teuchos::REDUCE_SUM,
-              num_cuts,
-              // TODO: Note this is refactored but needs to be improved
-              // to avoid the use of direct data() ptr completely.
-              host_local_process_rectilinear_cut_weight.data(),
-              host_local_global_rectilinear_cut_weight.data());
-            Kokkos::deep_copy(local_process_rectilinear_cut_weight,
-              host_local_process_rectilinear_cut_weight);
-            Kokkos::deep_copy(local_global_rectilinear_cut_weight,
-              host_local_global_rectilinear_cut_weight);
-          }
-          //  Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
-
-          for (mj_part_t i = 0; i < num_cuts; ++i) {
-            // if cut line weight to be distributed.
-            if(local_global_rectilinear_cut_weight(i) > 0) {
-              // expected weight to go to left of the cut.
-              mj_scalar_t expected_part_weight =
-                current_part_target_weights(i);
-              // the weight that should be put to left of the cut.
-              mj_scalar_t necessary_weight_on_line_for_left =
-                expected_part_weight -
-                current_global_part_weights(i * 2);
-
-              // the weight of the cut in the process
-              mj_scalar_t my_weight_on_line =
-                local_process_rectilinear_cut_weight(i);
-
-              // the sum of the cut weights upto this process,
-              // including the weight of this process.
-              mj_scalar_t weight_on_line_upto_process_inclusive =
-                local_global_rectilinear_cut_weight(i);
-              // the space on the left side of the cut after all processes
-              // before this process (including this process)
-              // puts their weights on cut to left.
-              mj_scalar_t space_to_put_left =
-                necessary_weight_on_line_for_left -
-                weight_on_line_upto_process_inclusive;
-              // add my weight to this space to find out how much space
-              // is left to me.
-              mj_scalar_t space_left_to_me =
-                space_to_put_left + my_weight_on_line;
-
-              /*
-              cout << "expected_part_weight:" << expected_part_weight
-                << " necessary_weight_on_line_for_left:"
-                << necessary_weight_on_line_for_left
-                << " my_weight_on_line" << my_weight_on_line
-                << " weight_on_line_upto_process_inclusive:"
-                << weight_on_line_upto_process_inclusive
-                << " space_to_put_left:" << space_to_put_left
-                << " space_left_to_me" << space_left_to_me << endl;
-               */
-
-              if(space_left_to_me < 0) {
-                // space_left_to_me is negative and i dont need to put
-                // anything to left.
-                current_part_cut_line_weight_to_put_left(i) = 0;
-              }
-              else if(space_left_to_me >= my_weight_on_line) {
-                // space left to me is bigger than the weight of the
-                // processor on cut.
-                // so put everything to left.
-                current_part_cut_line_weight_to_put_left(i) =
-                  my_weight_on_line;
-                // cout << "setting current_part_cut_line_weight_to_put_left
-                // to my_weight_on_line:" << my_weight_on_line << endl;
-              }
-              else {
-                // put only the weight as much as the space.
-                current_part_cut_line_weight_to_put_left(i) =
-                  space_left_to_me;
-                // cout << "setting current_part_cut_line_weight_to_put_left
-                // to space_left_to_me:" << space_left_to_me << endl;
-              }
-            }
-          }
-          view_rectilinear_cut_count(0) = 0;
-        }
-      });
-      team_member.team_barrier(); // for end of Kokkos::single
-    } // TODO: This may not be necessary anymore? See comment above
   });
+  
+  // TODO: Figure out how to not have this read - kind of slow
+  mj_part_t rectilinear_cut_count;
+  Kokkos::parallel_reduce("Read bDoingWork", 1,
+    KOKKOS_LAMBDA(int dummy, int & set_single) {
+    set_single = view_rectilinear_cut_count(0);
+  }, rectilinear_cut_count);
+  
+  if(rectilinear_cut_count > 0) {
+    typename decltype(local_process_rectilinear_cut_weight)::HostMirror
+      host_local_process_rectilinear_cut_weight =
+      Kokkos::create_mirror_view(local_process_rectilinear_cut_weight);
+    typename decltype(local_global_rectilinear_cut_weight)::HostMirror
+      host_local_global_rectilinear_cut_weight =
+      Kokkos::create_mirror_view(local_global_rectilinear_cut_weight);
+    Kokkos::deep_copy(host_local_process_rectilinear_cut_weight,
+      local_process_rectilinear_cut_weight);
+    Kokkos::deep_copy(host_local_global_rectilinear_cut_weight,
+      local_global_rectilinear_cut_weight);
+    Teuchos::scan<int,mj_scalar_t>(
+      *comm, Teuchos::REDUCE_SUM,
+      num_cuts,
+      // TODO: Note this is refactored but needs to be improved
+      // to avoid the use of direct data() ptr completely.
+      host_local_process_rectilinear_cut_weight.data(),
+      host_local_global_rectilinear_cut_weight.data());
+    Kokkos::deep_copy(local_process_rectilinear_cut_weight,
+      host_local_process_rectilinear_cut_weight);
+    Kokkos::deep_copy(local_global_rectilinear_cut_weight,
+      host_local_global_rectilinear_cut_weight);
+
+    Kokkos::parallel_for("finish up mj_get_new_cut_coordinates", 1,
+      KOKKOS_LAMBDA(mj_gno_t i) {
+      for (mj_part_t i = 0; i < num_cuts; ++i) {
+        // if cut line weight to be distributed.
+        if(local_global_rectilinear_cut_weight(i) > 0) {
+          // expected weight to go to left of the cut.
+          mj_scalar_t expected_part_weight =
+            current_part_target_weights(i);
+          // the weight that should be put to left of the cut.
+          mj_scalar_t necessary_weight_on_line_for_left =
+            expected_part_weight -
+            current_global_part_weights(i * 2);
+
+          // the weight of the cut in the process
+          mj_scalar_t my_weight_on_line =
+            local_process_rectilinear_cut_weight(i);
+
+          // the sum of the cut weights upto this process,
+          // including the weight of this process.
+          mj_scalar_t weight_on_line_upto_process_inclusive =
+            local_global_rectilinear_cut_weight(i);
+          // the space on the left side of the cut after all processes
+          // before this process (including this process)
+          // puts their weights on cut to left.
+          mj_scalar_t space_to_put_left =
+            necessary_weight_on_line_for_left -
+            weight_on_line_upto_process_inclusive;
+          // add my weight to this space to find out how much space
+          // is left to me.
+          mj_scalar_t space_left_to_me =
+            space_to_put_left + my_weight_on_line;
+
+          /*
+          cout << "expected_part_weight:" << expected_part_weight
+            << " necessary_weight_on_line_for_left:"
+            << necessary_weight_on_line_for_left
+            << " my_weight_on_line" << my_weight_on_line
+            << " weight_on_line_upto_process_inclusive:"
+            << weight_on_line_upto_process_inclusive
+            << " space_to_put_left:" << space_to_put_left
+            << " space_left_to_me" << space_left_to_me << endl;
+           */
+
+          if(space_left_to_me < 0) {
+            // space_left_to_me is negative and i dont need to put
+            // anything to left.
+            current_part_cut_line_weight_to_put_left(i) = 0;
+          }
+          else if(space_left_to_me >= my_weight_on_line) {
+            // space left to me is bigger than the weight of the
+            // processor on cut.
+            // so put everything to left.
+            current_part_cut_line_weight_to_put_left(i) =
+              my_weight_on_line;
+            // cout << "setting current_part_cut_line_weight_to_put_left
+            // to my_weight_on_line:" << my_weight_on_line << endl;
+          }
+          else {
+            // put only the weight as much as the space.
+            current_part_cut_line_weight_to_put_left(i) =
+              space_left_to_me;
+            // cout << "setting current_part_cut_line_weight_to_put_left
+            // to space_left_to_me:" << space_left_to_me << endl;
+          }
+        }
+      }
+      view_rectilinear_cut_count(0) = 0;
+    });
+  }
 }
 
 /*! \brief Function fills up the num_points_in_all_processor_parts, so that
