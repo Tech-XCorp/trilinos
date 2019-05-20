@@ -4225,6 +4225,12 @@ struct ReduceWeightsFunctor {
             // It's only relevant for the fix4785 test which loads a lot of
             // coordinates on the same point, so without this our cuts would
             // all just sit at 0. Need to discuss how we can avoid this.
+            
+            // NOTE: This code makes Zoltan2_mj_int_coordinates run extremely
+            // slowly for CUDA ... but not sure how to optimize it yet. That
+            // test has a bunch of cuts all in the same coordinate so it
+            // branches like crazy here. Cost was jumping up from about 18ms
+            // to 330ms.
             part_t base_b = part;
             part += 1;
             while(part < num_cuts) {
@@ -9278,7 +9284,6 @@ public:
     const PartitioningSolution<Adapter> *solution,
     ArrayRCP<mj_part_t> &comXAdj,
     ArrayRCP<mj_part_t> &comAdj);
-    
 
   private:
     // After loading views from coordinate adapter we may need to copy them
@@ -9293,6 +9298,8 @@ public:
     }
     template<class mj_view_t, class adapter_view_t>
     void assign_if_same(mj_view_t & mj_view, adapter_view_t adapter_view) {
+      // empty case - can't compile assign because types mismatch
+      // we will do manual copy - test Zoltan2_mj_int_coordinates is an example. 
     }
 };
 
