@@ -64,27 +64,31 @@
 #include <algorithm>    // std::sort
 #include <vector>
 
-// ZOLTAN2_USE_CUDA_KERNEL means we do parallel_for parallel_for with atomics
-// instead of parallel_reduce parallel_reduce with reductions. This could just
-// be KOKKOS_HAVE_CUDA but this allows some easier on/off testing. I understand
-// ScatterView may be a mechanism to allow a single code pipe-line which runs
-// both reduction or atomic patterns but did not investigate that yet.
+// TODO: This macro could just be KOKKOS_HAVE_CUDA but preserving it here to
+// facilitate testing this on and off. When ZOLTAN2_USE_CUDA_KERNEL is defined,
+// the main kernel is run using a parallel_for -> parallel_for loop with
+// atomics. The inner loop ZOLTAN2_USE_CUDA_KERNEL means we do parallel_for
+// parallel_for with atomics instead of parallel_reduce parallel_reduce with
+// reductions. This could just be KOKKOS_HAVE_CUDA but this allows some easier
+// on/off testing. I understand ScatterView may be a mechanism to allow a single
+// code pipe-line which runs both reduction or atomic patterns but did not
+// investigate that yet.
 #ifdef KOKKOS_HAVE_CUDA
 #define ZOLTAN2_USE_CUDA_KERNEL // Atomic Atomic Loops
 #endif
 
+// TODO: This macro will be removed after some furthe profiling.
 // This option is being maintained to evaluate the perfomance of using floats
-// versus doubles for the reduction arrays used in MJ. I suspect we may want
-// to eliminate this. TODO: Evaluate and remove or change permanently.
+// versus doubles for the reduction arrays used in MJ.
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
 
 // Team count defaults to 60 but the parameter option T can set this.
 // TODO: Need to verify T behavior and AllParameters test after latest rebase.
 #define ZOLTAN2_MJ_DEFAULT_NUM_TEAMS 60
 
-// This is temporary and turns off clock clocking
 // TODO: Remove this option and remove all clock code.
-#define ZOLTAN2_MJ_DISABLE_CLOCKS true
+// This is temporary and turns off clock clocking
+#define ZOLTAN2_MJ_DISABLE_CLOCKS false
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
 class Clock {
@@ -5358,7 +5362,7 @@ mj_create_new_partitions(
     local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
   });
 
-#else // KOKKOS_HAVE_CUDA
+#else
 
 #ifdef KOKKOS_HAVE_OPENMP
   // TODO: How do we poll Kokkos for this num threads?
