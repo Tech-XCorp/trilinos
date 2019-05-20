@@ -65,26 +65,22 @@
 #include <vector>
 
 // TODO: This macro could just be KOKKOS_HAVE_CUDA but preserving it here to
-// facilitate testing this on and off. When ZOLTAN2_USE_CUDA_KERNEL is defined,
-// the main kernel is run using a parallel_for -> parallel_for loop with
-// atomics. The inner loop ZOLTAN2_USE_CUDA_KERNEL means we do parallel_for
+// facilitate testing this on and off. When ZOLTAN2_MJ_USE_CUDA_KERNEL is
+// defined, the main kernel is run using a parallel_for -> parallel_for loop
+// with atomics. The inner loop ZOLTAN2_MJ_USE_CUDA_KERNEL means we do parallel_for
 // parallel_for with atomics instead of parallel_reduce parallel_reduce with
 // reductions. This could just be KOKKOS_HAVE_CUDA but this allows some easier
 // on/off testing. I understand ScatterView may be a mechanism to allow a single
 // code pipe-line which runs both reduction or atomic patterns but did not
 // investigate that yet.
 #ifdef KOKKOS_HAVE_CUDA
-#define ZOLTAN2_USE_CUDA_KERNEL // Atomic Atomic Loops
+#define ZOLTAN2_MJ_USE_CUDA_KERNEL // Atomic Atomic Loops
 #endif
 
 // TODO: This macro will be removed after some furthe profiling.
 // This option is being maintained to evaluate the perfomance of using floats
 // versus doubles for the reduction arrays used in MJ.
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
-
-// Team count defaults to 60 but the parameter option T can set this.
-// TODO: Need to verify T behavior and AllParameters test after latest rebase.
-#define ZOLTAN2_MJ_DEFAULT_NUM_TEAMS 60
 
 // TODO: Remove this option and remove all clock code.
 // This is temporary and turns off clock clocking
@@ -1688,7 +1684,7 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
   max_num_total_part_along_dim(0),
   total_dim_num_reduce_all(0),
   last_dim_num_part(0),
-  mj_num_teams(ZOLTAN2_MJ_DEFAULT_NUM_TEAMS),
+  mj_num_teams(0),
   num_global_parts(1),
   kept_boxes(), global_box(),
   myRank(0), myActualRank(0), 
@@ -3906,7 +3902,7 @@ struct Zoltan2_MJArrayType {
   Zoltan2_MJArrayType(scalar_t * pSetPtr) : ptr(pSetPtr) {};
 };
 
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
 
 template<class policy_t, class scalar_t, class part_t>
 struct ArrayCombinationReducer {
@@ -3977,14 +3973,14 @@ struct ArrayCombinationReducer {
     }
   }
 };
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
 template<class policy_t, class scalar_t, class part_t, class index_t, class device_t, class array_t>
 struct ReduceWeightsFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
   
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
   typedef array_t value_type[];
 #endif
 
@@ -4009,11 +4005,11 @@ struct ReduceWeightsFunctor {
   Kokkos::View<part_t*, device_t> view_num_partitioning_in_current_dim;
   Kokkos::View<part_t*, device_t> my_incomplete_cut_count;
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
   Kokkos::View<double *, device_t> current_part_weights;
   Kokkos::View<scalar_t *, device_t> current_left_closest;
   Kokkos::View<scalar_t *, device_t> current_right_closest;
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
   ReduceWeightsFunctor(
     int mj_loop_count,
@@ -4034,11 +4030,11 @@ struct ReduceWeightsFunctor {
     scalar_t mj_sEpsilon,
     Kokkos::View<part_t*, device_t> mj_view_num_partitioning_in_current_dim,
     Kokkos::View<part_t *, device_t> mj_my_incomplete_cut_count
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     ,Kokkos::View<double *, device_t> mj_current_part_weights,
     Kokkos::View<scalar_t *, device_t> mj_current_left_closest,
     Kokkos::View<scalar_t *, device_t> mj_current_right_closest
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
     ) :
       loop_count(mj_loop_count),
       max_scalar(mj_max_scalar),
@@ -4059,16 +4055,16 @@ struct ReduceWeightsFunctor {
       sEpsilon(mj_sEpsilon),
       view_num_partitioning_in_current_dim(mj_view_num_partitioning_in_current_dim),
       my_incomplete_cut_count(mj_my_incomplete_cut_count)
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
       ,current_part_weights(mj_current_part_weights),
       current_left_closest(mj_current_left_closest),
       current_right_closest(mj_current_right_closest)
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
   {
   }
 
   size_t team_shmem_size (int team_size) const {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     int result = sizeof(array_t) * (value_count_weights + value_count_rightleft);
 #else
     int result = sizeof(array_t) * (value_count_weights + value_count_rightleft) * team_size; 
@@ -4083,7 +4079,7 @@ struct ReduceWeightsFunctor {
   }
 
   KOKKOS_INLINE_FUNCTION
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
   void operator() (const member_type & teamMember) const {
 #else
   void operator() (const member_type & teamMember, value_type teamSum) const {
@@ -4109,7 +4105,7 @@ struct ReduceWeightsFunctor {
       end = all_end; // the last team may have less work than the other teams
     }
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
       value_count_rightleft);
 
@@ -4131,7 +4127,7 @@ struct ReduceWeightsFunctor {
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii) {
-#else // ZOLTAN2_USE_CUDA_KERNEL
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
       value_count_rightleft) * teamMember.team_size();
@@ -4152,7 +4148,7 @@ struct ReduceWeightsFunctor {
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
       int i = permutations(ii);
       scalar_t coord = coordinates(i);
@@ -4167,7 +4163,7 @@ struct ReduceWeightsFunctor {
       for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
         // for the left/right closest part calculation
         
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
         array_t * p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
 #else
         array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
@@ -4177,7 +4173,7 @@ struct ReduceWeightsFunctor {
         scalar_t b = (part == num_cuts) ? max_scalar : cut_coordinates(part);
 
         if(coord >= a + sEpsilon && coord <= b - sEpsilon) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
           Kokkos::atomic_add(&shared_ptr[part*2], w);
 #else
           threadSum.ptr[part*2] += w;
@@ -4186,7 +4182,7 @@ struct ReduceWeightsFunctor {
           parts(i) = part*2;
           
           // now handle the left/right closest part
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
           array_t new_value = (array_t) coord;
 
           array_t * dst = p1 + 1;
@@ -4212,7 +4208,7 @@ struct ReduceWeightsFunctor {
         }
         else if(part != num_cuts) {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
             Kokkos::atomic_add(&shared_ptr[part*2+1], w);
             *(p1+2) = b;
             *(p1+3) = b;   
@@ -4242,7 +4238,7 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
                 p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
                 *(p1+2) = b;
@@ -4263,7 +4259,7 @@ struct ReduceWeightsFunctor {
               scalar_t delta = b - base_b;
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
                 p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
                 *(p1+2) = b;
@@ -4312,42 +4308,42 @@ struct ReduceWeightsFunctor {
           }
         }
       }
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     });
-#else // ZOLTAN2_USE_CUDA_KERNEL
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
     }, arraySumReducer);
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
     teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
         // TODO if we keep this form we may want to abolish the array_t and make
         // sure it's all double - no idea yet what the cost of the cast could be
         // on GPU
         Kokkos::atomic_add(&current_part_weights(n), static_cast<double>(shared_ptr[n]));
 #else
         teamSum[n] += shared_ptr[n];
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
-#else // ZOLTAN2_USE_CUDA_KERNEL
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
         teamSum[n] += array.ptr[n];
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
       }
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
       int insert_left = 0;
       int insert_right = 0;
 #endif
 
       for(int n = 2 + value_count_weights; n < value_count_weights + value_count_rightleft - 2; n += 2) {
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
         scalar_t new_value = (scalar_t) shared_ptr[n+1];
         scalar_t * dst = &current_right_closest(insert_right);
         scalar_t prev_value = *dst;
@@ -4373,21 +4369,21 @@ struct ReduceWeightsFunctor {
         }
 #endif
 
-#else // ZOLTAN2_USE_CUDA_KERNEL
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
         if(array.ptr[n] > teamSum[n]) {
           teamSum[n] = array.ptr[n];
         }
         if(array.ptr[n+1] < teamSum[n+1]) {
           teamSum[n+1] = array.ptr[n+1];
         }
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
       }
     });
 
     teamMember.team_barrier();    
   }
   
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count_weights; ++n) {
@@ -4430,7 +4426,7 @@ struct ReduceWeightsFunctor {
       dst[n+1] =  max_scalar;
     }
   }
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 };
 
 /*! \brief Function that calculates the weights of each part according to given
@@ -4557,7 +4553,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     clock_weights3.start();
 
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
     int total_array_length =
       weight_array_length + right_left_array_length;
 #endif
@@ -4568,10 +4564,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
     typedef double array_t;
 #endif
 
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
     array_t * reduce_array =
       new array_t[static_cast<size_t>(total_array_length)];
-#endif // ZOLTAN2_USE_CUDA_KERNEL
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
     clock_functor_weights.start();
 
@@ -4599,7 +4595,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
           
     array_t max_scalar = std::numeric_limits<array_t>::max();
     
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     // Need to initialize this each time - maybe it's better to drop this in the
     // functor's single ... to try - then we have repeated write but don't need
     // to worry about atomics - would save us a kernel launch
@@ -4637,14 +4633,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
         sEpsilon,
         view_num_partitioning_in_current_dim,
         local_my_incomplete_cut_count
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
         ,my_current_part_weights,
         my_current_left_closest,
         my_current_right_closest
 #endif
         );
 
-#ifdef ZOLTAN2_USE_CUDA_KERNEL
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
@@ -4653,7 +4649,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
   
     clock_functor_weights.stop();
 
-#ifndef ZOLTAN2_USE_CUDA_KERNEL
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
     // Move it from global memory to device memory
     // TODO: Need to figure out how we can better manage this
     typename decltype(my_current_part_weights)::HostMirror
@@ -9172,7 +9168,7 @@ public:
       mj_problemComm(problemComm),
       mj_coords(coords),
       imbalance_tolerance(0),
-      num_teams(ZOLTAN2_MJ_DEFAULT_NUM_TEAMS),
+      num_teams(0),
       num_global_parts(1),
       recursion_depth(0),
       coord_dim(0),
@@ -9244,7 +9240,7 @@ public:
       mj_num_teams_validator =
       Teuchos::rcp( new Teuchos::EnhancedNumberValidator<int>(
       1, Teuchos::EnhancedNumberTraits<int>::max()) );
-    pl.set("mj_num_teams", ZOLTAN2_MJ_DEFAULT_NUM_TEAMS,
+    pl.set("mj_num_teams", 60, // 60 was what worked best so far
       "How many teams for the main kernel loop"
       , mj_num_teams_validator);
 
@@ -9767,14 +9763,14 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
       (0, xyz_adapter.extent(0)), KOKKOS_LAMBDA (const int i) {
-      for(int n = 0; n < xyz_adapter.extent(1); ++n) {
+      for(auto n = 0; n < xyz_adapter.extent(1); ++n) {
         xyz(i, n) = static_cast<mj_scalar_t>(xyz_adapter(i, n));
       }
     });
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
       (0, wgts.extent(0)), KOKKOS_LAMBDA (const int i) {
-      for(int n = 0; n < wgts.extent(1); ++n) {
+      for(auto n = 0; n < wgts.extent(1); ++n) {
         wgts(i, n) = static_cast<mj_scalar_t>(wgts_adapter(i, n));
       }
     });
@@ -9880,7 +9876,8 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   if (pl.getPtr<int>("mj_num_teams")) {
     this->num_teams = pl.get<int>("mj_num_teams");
   }
-  
+printf("NUM TEAMS: %d\n", (int) this->num_teams);
+
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
     auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
     int mj_parts_size = static_cast<int>(mj_parts.size());
