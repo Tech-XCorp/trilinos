@@ -9120,6 +9120,9 @@ public:
   // communication graph adj.
   ArrayRCP<mj_part_t> comAdj_;
 
+  void copy(
+    const RCP<PartitioningSolution<Adapter> >&solution);
+    
   void set_up_partitioning_data(
     const RCP<PartitioningSolution<Adapter> >&solution);
 
@@ -9275,6 +9278,22 @@ public:
     const PartitioningSolution<Adapter> *solution,
     ArrayRCP<mj_part_t> &comXAdj,
     ArrayRCP<mj_part_t> &comAdj);
+    
+
+  private:
+    // After loading views from coordinate adapter we may need to copy them
+    // if mj type is different, but otherwise we just want to assign the view.
+    // So purpose of this code is to make that assign only happen when the types
+    // match. The empty case would otherwise not compile.
+    // If they don't match the internal code handles allocating the new view
+    // and copying the elements. See the test Zoltan2_mj_int_coordinates.
+    template<class matching_t>
+    void assign_if_same(matching_t & mj_view, matching_t adapter_view) {
+      mj_view = adapter_view;
+    }
+    template<class mj_view_t, class adapter_view_t>
+    void assign_if_same(mj_view_t & mj_view, adapter_view_t adapter_view) {
+    }
 };
 
 template <typename Adapter>
@@ -9712,27 +9731,46 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   Kokkos::View<adapter_scalar_t **, Kokkos::LayoutLeft, device_t> xyz_adapter;
   Kokkos::View<adapter_scalar_t **, device_t> wgts_adapter;
   this->mj_coords->getCoordinatesKokkos(gnos, xyz_adapter, wgts_adapter);
+
+  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> xyz;
+  Kokkos::View<mj_scalar_t **, device_t> wgts;
+
+  // Now we must get the data from the adapter.
+  // If the types match we point to the view but if not, we must copy.
+  if(std::is_same<mj_scalar_t, adapter_scalar_t>()) {
+    // we can just point the views but we must specialize because this code
+    // only compiles in this case - for is_same false assign does nothing.
+    assign_if_same(xyz, xyz_adapter); 
+    assign_if_same(wgts, wgts_adapter); 
+  }
+  else {
+    // we only allocate a new view if we are going to copy
+    xyz = Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t>
+      (Kokkos::ViewAllocateWithoutInitializing(
+      "xyz"), xyz_adapter.extent(0), xyz_adapter.extent(1));
+    wgts = Kokkos::View<mj_scalar_t **, device_t>(
+      Kokkos::ViewAllocateWithoutInitializing("wgts"),
+      wgts_adapter.extent(0), wgts_adapter.extent(1));
+    
+    // Now do manual copy
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, xyz_adapter.extent(0)), KOKKOS_LAMBDA (const int i) {
+      for(int n = 0; n < xyz_adapter.extent(1); ++n) {
+        xyz(i, n) = static_cast<mj_scalar_t>(xyz_adapter(i, n));
+      }
+    });
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
+      (0, wgts.extent(0)), KOKKOS_LAMBDA (const int i) {
+      for(int n = 0; n < wgts.extent(1); ++n) {
+        wgts(i, n) = static_cast<mj_scalar_t>(wgts_adapter(i, n));
+      }
+    });
+  }
   
-  // TODO: This allocation should not happen if types are matched
-  Kokkos::View<mj_scalar_t **, Kokkos::LayoutLeft, device_t> xyz(Kokkos::ViewAllocateWithoutInitializing("xyz"), xyz_adapter.extent(0), xyz_adapter.extent(1));
-  Kokkos::View<mj_scalar_t **, device_t> wgts(Kokkos::ViewAllocateWithoutInitializing("wgts"), wgts_adapter.extent(0), wgts_adapter.extent(1));
-  
-  // TODO Need to restore the behavior which allows this copy to only happen 
-  // when the types are mismatched
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, xyz_adapter.extent(0)),
-    KOKKOS_LAMBDA (const int i) {
-    for(int n = 0; n < xyz_adapter.extent(1); ++n) {
-      xyz(i, n) = static_cast<mj_scalar_t>(xyz_adapter(i, n));
-    }
-  });
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, wgts.extent(0)),
-    KOKKOS_LAMBDA (const int i) {
-    for(int n = 0; n < wgts.extent(1); ++n) {
-      wgts(i, n) = static_cast<mj_scalar_t>(wgts_adapter(i, n));
-    }
-  });
+
+
 
   // obtain global ids.
   this->initial_mj_gnos = gnos;
