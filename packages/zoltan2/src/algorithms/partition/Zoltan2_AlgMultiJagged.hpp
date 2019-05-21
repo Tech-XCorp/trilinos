@@ -9760,17 +9760,21 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
       wgts_adapter.extent(0), wgts_adapter.extent(1));
     
     // Now do manual copy
+    
+    // TODO: May want to optimize this type as int - check to be sure we loop
+    // larger dimension for parallel_for and smaller for internal loop.
+    typedef typename Kokkos::View<mj_scalar_t **, device_t>::size_type view_size_t;
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
       (0, xyz_adapter.extent(0)), KOKKOS_LAMBDA (const int i) {
-      for(auto n = 0; n < xyz_adapter.extent(1); ++n) {
+      for(view_size_t n = 0; n < xyz_adapter.extent(1); ++n) {
         xyz(i, n) = static_cast<mj_scalar_t>(xyz_adapter(i, n));
       }
     });
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
       (0, wgts.extent(0)), KOKKOS_LAMBDA (const int i) {
-      for(auto n = 0; n < wgts.extent(1); ++n) {
+      for(view_size_t n = 0; n < wgts.extent(1); ++n) {
         wgts(i, n) = static_cast<mj_scalar_t>(wgts_adapter(i, n));
       }
     });
