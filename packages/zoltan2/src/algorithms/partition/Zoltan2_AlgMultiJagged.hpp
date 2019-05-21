@@ -5871,7 +5871,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       host_local_global_rectilinear_cut_weight);
 
     Kokkos::parallel_for("finish up mj_get_new_cut_coordinates", 1,
-      KOKKOS_LAMBDA(mj_gno_t i) {
+      KOKKOS_LAMBDA(mj_gno_t dummy) {
       for (mj_part_t i = 0; i < num_cuts; ++i) {
         // if cut line weight to be distributed.
         if(local_global_rectilinear_cut_weight(i) > 0) {
