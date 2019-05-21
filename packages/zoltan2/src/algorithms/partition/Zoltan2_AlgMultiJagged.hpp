@@ -63,6 +63,15 @@
 #include <new>          // ::operator new[]
 #include <algorithm>    // std::sort
 #include <vector>
+#include <unordered_map>
+
+#ifdef ZOLTAN2_USEZOLTANCOMM
+#ifdef HAVE_ZOLTAN2_MPI
+#define ENABLE_ZOLTAN_MIGRATION
+#include "zoltan_comm_cpp.h"
+#include "zoltan_types.h" // for error codes
+#endif
+#endif
 
 // TODO: This macro could just be KOKKOS_HAVE_CUDA but preserving it here to
 // facilitate testing this on and off. When ZOLTAN2_MJ_USE_CUDA_KERNEL is
@@ -83,7 +92,7 @@
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
 
 // TODO: Remove this option and remove all clock code.
-// This is temporary and turns off clock clocking
+// This is temporary and turns off clocking for most clocks.
 #define ZOLTAN2_MJ_DISABLE_CLOCKS false
 
 // TODO: Delete all clock stuff. These were temporary timers for profiling.
@@ -185,16 +194,6 @@ static Clock clock_mj_create_new_partitions_4("           clock_mj_create_new_pa
 static Clock clock_mj_create_new_partitions_5("           clock_mj_create_new_partitions_5", false);
 static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_partitions_6", false);
 
-#include <unordered_map>
-
-#ifdef ZOLTAN2_USEZOLTANCOMM
-#ifdef HAVE_ZOLTAN2_MPI
-#define ENABLE_ZOLTAN_MIGRATION
-#include "zoltan_comm_cpp.h"
-#include "zoltan_types.h" // for error codes
-#endif
-#endif
-
 #define LEAST_SIGNIFICANCE 0.0001
 #define SIGNIFICANCE_MUL 1000
 
@@ -214,7 +213,6 @@ static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_pa
         (Wachieved) / ((totalW) * (expectedRatio)) - 1
 #define imbalanceOf2(Wachieved, wExpected) \
         (Wachieved) / (wExpected) - 1
-
 
 #define ZOLTAN2_ALGMULTIJAGGED_SWAP(a,b,temp) temp=(a);(a)=(b);(b)=temp;
 
@@ -261,7 +259,6 @@ public:
 namespace Zoltan2{
 
 /*! \brief Allocates memory for the given size.
- *
  */
 template <typename T>
 T *allocMemory(size_t size){
@@ -278,7 +275,6 @@ T *allocMemory(size_t size){
 }
 
 /*! \brief Frees the given array.
- *
  */
 template <typename T>
 void freeArray(T *&array){
@@ -294,14 +290,13 @@ void freeArray(T *&array){
  * The last tie breaking is done with index values.
  * Used for task mapping partitioning where the points on a cut line needs to be
  * distributed consistently.
- *
  */
 template <typename IT, typename CT, typename WT>
 class uMultiSortItem
 {
 public:
   //TODO: Why volatile?
-  //no idea, another intel compiler faiulure.
+  //no idea, another intel compiler failure.
   volatile IT index;
   volatile CT count;
   //unsigned int val;
@@ -388,7 +383,6 @@ public:
 };// uSortItem;
 
 /*! \brief Sort items for quick sort function.
- *
  */
 template <class IT, class WT>
 struct uSortItem
@@ -399,7 +393,7 @@ struct uSortItem
 };// uSortItem;
 
 /*! \brief Quick sort function.
- *      Sorts the arr of uSortItems, with respect to increasing vals.
+ *  Sorts the arr of uSortItems, with respect to increasing vals.
  */
 template <class IT, class WT>
 void uqsort(IT n, uSortItem<IT, WT> * arr)
@@ -536,7 +530,7 @@ struct uSignedSortItem
 };
 
 /*! \brief Quick sort function.
- *      Sorts the arr of uSignedSortItems, with respect to increasing vals.
+ *  Sorts the arr of uSignedSortItems, with respect to increasing vals.
  */
 template <class IT, class WT, class SIGN>
 void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr){
@@ -608,7 +602,6 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr){
 }
 
 /*! \brief Multi Jagged coordinate partitioning algorithm.
- *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -9052,7 +9045,7 @@ public:
   typedef typename mj_node_t::device_type device_t;
 #endif
 
-   AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t> mj_partitioner;
+  AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t> mj_partitioner;
 
   RCP<const Environment> mj_env; // the environment object
   RCP<const Comm<int> > mj_problemComm; // initial comm object
@@ -9880,7 +9873,6 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
   if (pl.getPtr<int>("mj_num_teams")) {
     this->num_teams = pl.get<int>("mj_num_teams");
   }
-printf("NUM TEAMS: %d\n", (int) this->num_teams);
 
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
     auto mj_parts = pl.get<Array <mj_part_t> >("mj_parts");
