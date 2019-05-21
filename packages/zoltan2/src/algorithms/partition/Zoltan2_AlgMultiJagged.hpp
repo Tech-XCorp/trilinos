@@ -1677,7 +1677,7 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
   max_num_total_part_along_dim(0),
   total_dim_num_reduce_all(0),
   last_dim_num_part(0),
-  mj_num_teams(0),
+  mj_num_teams(60), // TODO: TaskMapper will allocate this directly - need to clean up mj_num_teams
   num_global_parts(1),
   kept_boxes(), global_box(),
   myRank(0), myActualRank(0), 
@@ -9872,6 +9872,12 @@ void Zoltan2_AlgMJ<Adapter>::set_input_parameters(
 
   if (pl.getPtr<int>("mj_num_teams")) {
     this->num_teams = pl.get<int>("mj_num_teams");
+  }
+  else {
+    // TODO: All these defaults are replicated in two places - here and validator
+    // That pattern doesn't seem safe but since that's a separate issue I'm
+    // just replicating right now.
+    this->num_teams = 60; 
   }
 
   if (pl.getPtr<Array <mj_part_t> >("mj_parts")) {
