@@ -65,13 +65,6 @@
 #include <vector>
 #include <unordered_map>
 
-
-// TEMP TEMP TEMP
-#ifdef HAVE_ZOLTAN2_MPI
-#define ZOLTAN2_USEZOLTANCOMM
-#define ENABLE_ZOLTAN_MIGRATION
-#endif
-
 #ifdef ZOLTAN2_USEZOLTANCOMM
 #ifdef HAVE_ZOLTAN2_MPI
 #define ENABLE_ZOLTAN_MIGRATION
@@ -9427,74 +9420,92 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
 
   mj_env_->timerStart(MACRO_TIMERS,
     "MultiJagged - PreMigration DistributorMigration");
- 
 
-printf("TODO: THIS mj_premigrate_to_subset is not completed for CUDA!\n");
- 
-  /*
   // migrate gnos.
   {
     ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
 
-    ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_, num_local_coords_);
+    typename std::remove_reference<decltype(initial_mj_gnos_)>::type::HostMirror
+      host_initial_mj_gnos_ =
+      Kokkos::create_mirror_view(initial_mj_gnos_);
+    Kokkos::deep_copy(host_initial_mj_gnos_, initial_mj_gnos_);
+        
+    ArrayView<const mj_gno_t> sent_gnos(host_initial_mj_gnos_.data(),
+      num_local_coords_);
     distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-
-    // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-    // started - not tested yet
-    // result_initial_mj_gnos_ = Kokkos::View<mj_gno_t *, device_t>(
-    //  "gids", num_incoming_gnos);
-    //for(int n = 0; n < num_incoming_gnos; ++n) {
-    //  result_initial_mj_gnos_(n) = received_gnos[n];
-    //}
     
-    result_initial_mj_gnos_ = allocMemory<mj_gno_t>(num_incoming_gnos);
-    memcpy(
-	  result_initial_mj_gnos_,
-	  received_gnos.getRawPtr(),
-	  num_incoming_gnos * sizeof(mj_gno_t));
+    result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, device_t>(
+      "result_initial_mj_gnos_", num_incoming_gnos);
+    typename std::remove_reference<decltype(result_initial_mj_gnos_)>::type::HostMirror
+      host_result_initial_mj_gnos_ =
+      Kokkos::create_mirror_view(result_initial_mj_gnos_);
+    memcpy(host_result_initial_mj_gnos_.data(),
+      received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
+    Kokkos::deep_copy(result_initial_mj_gnos_, host_result_initial_mj_gnos_);
   }
-  */
 
-  //migrate coordinates
-  result_mj_coordinates_ = Kokkos::View<mj_scalar_t **,
-    Kokkos::LayoutLeft, device_t>("coords", num_local_coords_);
-
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  /*
-  result_mj_coordinates_ = allocMemory<mj_scalar_t *>(coord_dim_);
-  for (int i = 0; i < coord_dim_; ++i){
-    ArrayView<const mj_scalar_t>
-      sent_coord(mj_coordinates_[i], num_local_coords_);
+  // migrate coordinates
+  // TODO: This code duplicated - need to make a better formatting and reuse
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
+    dst_coordinates("mj_coordinates", num_incoming_gnos, this->coord_dim);
+  typename decltype(dst_coordinates)::HostMirror
+    host_dst_coordinates = Kokkos::create_mirror_view(dst_coordinates);
+  typename decltype(this->mj_coordinates)::HostMirror host_src_coordinates =
+    Kokkos::create_mirror_view(this->mj_coordinates);
+  Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
+  for (int i = 0; i < this->coord_dim; ++i) {
+    Kokkos::View<mj_scalar_t *, device_t> sub_host_src_coordinates
+      = Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
+    Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_coordinates
+      = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
+    // Note Layout Left means we can do these in contiguous blocks
+    ArrayView<mj_scalar_t> sent_coord(
+      sub_host_src_coordinates.data(), this->num_local_coords);
     ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
-    distributor.doPostsAndWaits<mj_scalar_t>(sent_coord, 1, received_coord());
-    result_mj_coordinates_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-    memcpy(
-	    result_mj_coordinates_[i],
-	    received_coord.getRawPtr(),
-	    num_incoming_gnos * sizeof(mj_scalar_t));
+    distributor.doPostsAndWaits<mj_scalar_t>(
+      sent_coord, 1, received_coord());
+    memcpy(sub_host_dst_coordinates.data(),
+      received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
   }
-  */
+  deep_copy(dst_coordinates, host_dst_coordinates);
+  result_mj_coordinates_ = dst_coordinates;
 
   // migrate weights.
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  /*
-  result_mj_weights_ = allocMemory<mj_scalar_t *>(num_weights_per_coord_);
-  for (int i = 0; i < num_weights_per_coord_; ++i){
-    ArrayView<const mj_scalar_t> sent_weight(mj_weights_[i], num_local_coords_);
+  Kokkos::View<mj_scalar_t**, device_t> dst_weights(
+   "mj_weights", num_incoming_gnos, this->num_weights_per_coord);
+  typename decltype(dst_weights)::HostMirror host_dst_weights =
+    Kokkos::create_mirror_view(dst_weights);
+  typename decltype(this->mj_weights)::HostMirror
+    host_src_weights = Kokkos::create_mirror_view(this->mj_weights);
+  Kokkos::deep_copy(host_src_weights, this->mj_weights);
+  for (int i = 0; i < this->num_weights_per_coord; ++i) {
+    Kokkos::View<mj_scalar_t *, device_t> sub_host_src_weights
+      = Kokkos::subview(host_src_weights, Kokkos::ALL, i);
+    Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_weights
+      = Kokkos::subview(host_dst_weights, Kokkos::ALL, i);
+    ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
+    
+    // TODO: Layout Right means these are not contiguous
+    // However we don't have any systems setup with more than 1 weight so
+    // really I have not tested any of this code with num weights > 1.
+    // I think this is the right thing to do.
+    for(mj_lno_t n = 0; n < this->num_local_coords; ++n) {
+      sent_weight[n] = sub_host_src_weights(n);
+    }
     ArrayRCP<mj_scalar_t> received_weight(num_incoming_gnos);
-    distributor.doPostsAndWaits<mj_scalar_t>(sent_weight, 1, received_weight());
-    result_mj_weights_[i] = allocMemory<mj_scalar_t>(num_incoming_gnos);
-    memcpy(
-	  result_mj_weights_[i],
-	  received_weight.getRawPtr(),
-	  num_incoming_gnos * sizeof(mj_scalar_t));
+    distributor.doPostsAndWaits<mj_scalar_t>(
+      sent_weight(), 1, received_weight());
+    
+    // Again we copy by index due to layout
+    for(mj_lno_t n = 0; n < num_incoming_gnos; ++n) {
+      sub_host_dst_weights(n) = received_weight[n];
+    }
   }
-  */
+  Kokkos::deep_copy(dst_weights, host_dst_weights);
+  result_mj_weights_ = dst_weights;
 
   // migrate the owners of the coordinates
-  // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-  /*
-  { 
+  {
     std::vector<int> owner_of_coordinate(num_local_coords_, myRank);
     ArrayView<int> sent_owners(&(owner_of_coordinate[0]), num_local_coords_);
     ArrayRCP<int> received_owners(num_incoming_gnos);
@@ -9505,7 +9516,6 @@ printf("TODO: THIS mj_premigrate_to_subset is not completed for CUDA!\n");
 	    received_owners.getRawPtr(),
 	    num_incoming_gnos * sizeof(int));
   }
-  */
 
   mj_env_->timerStop(MACRO_TIMERS,
     "MultiJagged - PreMigration DistributorMigration");
@@ -9713,45 +9723,49 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
-        //  ArrayView<const mj_gno_t> sent_gnos(result_num_local_coords);
-        throw std::logic_error("Restore distributor!");
-        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_,
-        // result_num_local_coords);
-        //distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
+      
+        typename decltype(result_initial_mj_gnos_)::HostMirror
+          host_result_initial_mj_gnos_ =
+          Kokkos::create_mirror_view(result_initial_mj_gnos_);
+        Kokkos::deep_copy(host_result_initial_mj_gnos_, result_initial_mj_gnos_);
+              
+        ArrayView<const mj_gno_t> sent_gnos(host_result_initial_mj_gnos_.data(),
+         result_num_local_coords);
+        distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
+
       {
-        throw std::logic_error("Restore distributor!");
-        // TODO RESTORE CODE - COMPLETE REFACTOR FOR KOKKOS
-        //ArrayView<mj_part_t> sent_partnos(partId());
-        //distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1,
-        // received_partids());
+        ArrayView<mj_part_t> sent_partnos(partId());
+        distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1,
+         received_partids());
       }
+      
       partId = arcp(new mj_part_t[this->num_local_coords],
-                      0, this->num_local_coords, true);
-
+        0, this->num_local_coords, true);
+      
       {
-      std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
-      localGidToLid2.reserve(this->num_local_coords);
+        std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
+        localGidToLid2.reserve(this->num_local_coords);
 
-      auto local_initial_mj_gnos = this->initial_mj_gnos;
-      for (mj_lno_t i = 0; i < this->num_local_coords; i++)
-      {
-        // TODO: Change loop so we don't read device to host
-        mj_gno_t p;
-        Kokkos::parallel_reduce("Read single", 1,
-          KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
-            set_single = local_initial_mj_gnos(i);
-        }, p);
+        auto local_initial_mj_gnos = this->initial_mj_gnos;
+        for (mj_lno_t i = 0; i < this->num_local_coords; i++)
+        {
+          // TODO: Change loop so we don't read device to host
+          mj_gno_t p;
+          Kokkos::parallel_reduce("Read single", 1,
+            KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
+              set_single = local_initial_mj_gnos(i);
+          }, p);
 
-        localGidToLid2[p] = i; 
+          localGidToLid2[p] = i; 
+        }
+
+        for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
+          mj_lno_t origLID = localGidToLid2[received_gnos[i]];
+          partId[origLID] = received_partids[i];
+        }
       }
 
-      for (mj_lno_t i = 0; i < this->num_local_coords; i++) {
-        mj_lno_t origLID = localGidToLid2[received_gnos[i]];
-        partId[origLID] = received_partids[i];
-      }
-      }
       {
         freeArray<int> (result_actual_owner_rank);
       }
