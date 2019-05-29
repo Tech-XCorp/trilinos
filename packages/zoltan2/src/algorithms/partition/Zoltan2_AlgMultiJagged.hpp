@@ -1122,8 +1122,7 @@ private:
       current_part_cut_line_weight_to_put_left,
     Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count);
 
-  /*! \brief
-   * Function that calculates the next pivot position,
+  /*! \brief Function that calculates the next pivot position,
    * according to given coordinates of upper bound and lower bound, the
    * weights at upper and lower bounds, and the expected weight.
    * \param cut_upper_bound is the upper bound coordinate of the cut.
@@ -1132,6 +1131,7 @@ private:
    * \param cut_lower_weight is the weights at the lower bound of the cut.
    * \param expected_weight is the expected weight that should be placed on
    * the left of the cut line.
+   * \param new_cut_position TODO: Documentation
    */
   KOKKOS_INLINE_FUNCTION void mj_calculate_new_cut_position (
     mj_scalar_t cut_upper_bound,
@@ -1143,19 +1143,13 @@ private:
 
   /*! \brief Function that determines the permutation indices of coordinates.
    * \param num_parts is the number of parts.
+   * \param current_concurrent_work_part TODO: Documentation
    * \param mj_current_dim_coords is 1 dimensional array holding the
    * coordinate values.
    * \param current_concurrent_cut_coordinate is 1 dimensional array holding
    * the cut coordinates.
-   * \param coordinate_begin is the start index of the given partition on
-   * partitionedPointPermutations.
-   * \param coordinate_end is the end index of the given partition on
-   * partitionedPointPermutations.
    * \param used_local_cut_line_weight_to_left holds how much weight of the
    * coordinates on the cutline should be put on left side.
-   * \param used_thread_part_weight_work is the two dimensional array holding
-   * the weight of parts for each thread. Assumes there are 2*P - 1 parts
-   * (cut lines are seperate parts).
    * \param out_part_xadj is the indices of coordinates calculated for the
    * partition on next dimension.
    */
@@ -1163,25 +1157,9 @@ private:
     mj_part_t num_parts,
     mj_part_t current_concurrent_work_part,
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
-    Kokkos::View<mj_scalar_t *, device_t>
-      current_concurrent_cut_coordinate,
-    Kokkos::View<mj_scalar_t *, device_t>
-      used_local_cut_line_weight_to_left,
-    Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
-      used_thread_part_weight_work,
-    Kokkos::View<mj_lno_t *, device_t> out_part_xadj,
-    Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
-      local_point_counts,
-    bool local_distribute_points_on_cut_lines,
-    Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
-      local_thread_cut_line_weight_to_put_left,
-    mj_scalar_t local_sEpsilon,
-    Kokkos::View<mj_lno_t*, device_t> local_coordinate_permutations,
-    Kokkos::View<bool*, device_t> local_mj_uniform_weights,
-    Kokkos::View<mj_scalar_t**, device_t> local_mj_weights,
-    Kokkos::View<mj_part_t*, device_t> local_assigned_part_ids,
-    Kokkos::View<mj_lno_t*, device_t>
-      local_new_coordinate_permutations);
+    Kokkos::View<mj_scalar_t *, device_t> current_concurrent_cut_coordinate,
+    Kokkos::View<mj_scalar_t *, device_t> used_local_cut_line_weight_to_left,
+    Kokkos::View<mj_lno_t *, device_t> out_part_xadj);
 
   /*! \brief Function checks if should do migration or not.
    * It returns true to point that migration should be done when
@@ -5029,9 +5007,6 @@ struct ReduceArrayFunctor {
  * partitionedPointPermutations.
  * \param used_local_cut_line_weight_to_left holds how much weight of the
  * coordinates on the cutline should be put on left side.
- * \param used_thread_part_weight_work is the two dimensional array holding the
- * weight of parts for each thread. Assumes there are 2*P - 1 parts
- * (cut lines are seperate parts).
  * \param out_part_xadj is the indices of coordinates calculated for the
  * partition on next dimension.
  */
@@ -5042,31 +5017,24 @@ mj_create_new_partitions(
   mj_part_t num_parts,
   mj_part_t current_concurrent_work_part,
   Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
-  Kokkos::View<mj_scalar_t *, device_t>
-    current_concurrent_cut_coordinate,
-  Kokkos::View<mj_scalar_t *, device_t>
-    used_local_cut_line_weight_to_left,
-  Kokkos::View<double *, Kokkos::LayoutLeft, device_t>
-    used_thread_part_weight_work,
-  Kokkos::View<mj_lno_t *, device_t>
-    out_part_xadj,
-  Kokkos::View<mj_lno_t *, Kokkos::LayoutLeft, device_t>
-    local_point_counts,
-  bool local_distribute_points_on_cut_lines,
-  Kokkos::View<mj_scalar_t *, Kokkos::LayoutLeft, device_t>
-    local_thread_cut_line_weight_to_put_left,
-  mj_scalar_t local_sEpsilon,
-  Kokkos::View<mj_lno_t*, device_t>
-    local_coordinate_permutations,
-  Kokkos::View<bool*, device_t>
-    local_mj_uniform_weights,
-  Kokkos::View<mj_scalar_t**, device_t>
-    local_mj_weights,
-  Kokkos::View<mj_part_t*, device_t>
-    local_assigned_part_ids,
-  Kokkos::View<mj_lno_t*, device_t>
-    local_new_coordinate_permutations)
+  Kokkos::View<mj_scalar_t *, device_t> current_concurrent_cut_coordinate,
+  Kokkos::View<mj_scalar_t *, device_t> used_local_cut_line_weight_to_left,
+  Kokkos::View<mj_lno_t *, device_t> out_part_xadj)
 {
+  // TODO: Recheck necessity for all locals - these are for CUDA
+  auto local_thread_part_weight_work = this->thread_part_weight_work;
+  auto local_point_counts = this->thread_point_counts;
+  auto local_distribute_points_on_cut_lines =
+    this->distribute_points_on_cut_lines;
+  auto local_thread_cut_line_weight_to_put_left =
+    this->thread_cut_line_weight_to_put_left;
+  auto local_sEpsilon = this->sEpsilon;
+  auto local_coordinate_permutations = this->coordinate_permutations;
+  auto local_mj_uniform_weights = this->mj_uniform_weights;
+  auto local_mj_weights = this->mj_weights;
+  auto local_assigned_part_ids = this->assigned_part_ids;
+  auto local_new_coordinate_permutations = this->new_coordinate_permutations;
+              
   clock_mj_create_new_partitions.start();
 
   mj_part_t num_cuts = num_parts - 1;
@@ -5083,8 +5051,8 @@ mj_create_new_partitions(
           if(left_weight > local_sEpsilon) {
             // the weight of thread ii on cut.
             mj_scalar_t thread_ii_weight_on_cut =
-              used_thread_part_weight_work(i * 2 + 1) -
-              used_thread_part_weight_work(i * 2);
+              local_thread_part_weight_work(i * 2 + 1) -
+              local_thread_part_weight_work(i * 2);
 
             if(thread_ii_weight_on_cut < left_weight) {
               // if left weight is bigger than threads weight on cut.
@@ -8705,26 +8673,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             }
           
             // Rewrite the indices based on the computed cuts.
+            
+            auto sub_new_part_xadj = Kokkos::subview(this->new_part_xadj,
+                std::pair<mj_lno_t, mj_lno_t>(
+                  output_part_index + output_array_shift,
+                  this->new_part_xadj.size()));
+                  
             this->mj_create_new_partitions(
               num_parts,
               current_concurrent_work_part,
               mj_current_dim_coords,
               current_concurrent_cut_coordinate,
               used_local_cut_line_weight_to_left,
-              this->thread_part_weight_work,
-              Kokkos::subview(this->new_part_xadj,
-                std::pair<mj_lno_t, mj_lno_t>(
-                  output_part_index + output_array_shift,
-                  this->new_part_xadj.size())),  
-              this->thread_point_counts,
-              this->distribute_points_on_cut_lines,
-              this->thread_cut_line_weight_to_put_left,
-              this->sEpsilon,
-              this->coordinate_permutations,
-              this->mj_uniform_weights,
-              this->mj_weights,
-              this->assigned_part_ids,
-              this->new_coordinate_permutations);
+              sub_new_part_xadj);
           }
           else {
 
