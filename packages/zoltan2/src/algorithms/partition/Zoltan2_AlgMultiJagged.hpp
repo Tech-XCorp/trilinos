@@ -73,22 +73,22 @@
 #endif
 #endif
 
-// TODO: This macro could just be KOKKOS_HAVE_CUDA but preserving it here to
+// This macro could just be KOKKOS_HAVE_CUDA but preserving it here to
 // facilitate testing this on and off. When ZOLTAN2_MJ_USE_CUDA_KERNEL is
 // defined, the main kernel is run using a parallel_for -> parallel_for loop
-// with atomics. The inner loop ZOLTAN2_MJ_USE_CUDA_KERNEL means we do nested
-// parallel_for -> parallel_for with atomics instead of parallel_reduce ->
-// parallel_reduce with reductions. This could just be KOKKOS_HAVE_CUDA but
-// this allows some easier on/off testing. I understand ScatterView may be a
-// mechanism to allow a single code pipe-line which runs both reduction or
-// atomic patterns but did not investigate that yet.
+// with atomics, instead of parallel_reduce -> parallel_reduce which gives
+// better performance on host. This occurs because CUDA is more efficient with
+// atomics than host code. I understand ScatterView may be a mechanism to allow
+// a single code pipe-line which runs both reduction or atomic patterns but did
+// not investigate that yet.
+// TODO: Implement ScatterView and get rid of this macro.
 #ifdef KOKKOS_HAVE_CUDA
 #define ZOLTAN2_MJ_USE_CUDA_KERNEL // Atomic Atomic Loops
 #endif
 
-// TODO: This macro will be removed after some furthe profiling.
+// TODO: This macro will be removed after some further profiling.
 // This option is being maintained to evaluate the perfomance of using floats
-// versus doubles for the reduction arrays used in MJ.
+// versus doubles for the reduction arrays in the main kernel of MJ.
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
 
 // TODO: Remove this option and remove all clock code.
@@ -219,7 +219,7 @@ static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_pa
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
- * to all reduce the all box boundaries.
+ *  to all reduce the all box boundaries.
 */
 template <typename Ordinal, typename T>
 class Zoltan2_BoxBoundaries  : public ValueTypeReductionOp<Ordinal,T>
@@ -231,40 +231,41 @@ private:
 public:
   /*! \brief Default Constructor
    */
-  Zoltan2_BoxBoundaries (): size(0),
-    _EPSILON (std::numeric_limits<T>::epsilon()){}
+  Zoltan2_BoxBoundaries() : size(0), 
+    _EPSILON(std::numeric_limits<T>::epsilon()) {}
 
   /*! \brief Constructor
-   *   \param nsum  the count of how many sums will be computed at the
-   *             start of the list.
-   *   \param nmin  following the sums, this many minimums will be computed.
-   *   \param nmax  following the minimums, this many maximums will be computed.
+   *  \param Ordinal          TODO: Documentaion
    */
-  Zoltan2_BoxBoundaries (Ordinal s_):
-    size(s_), _EPSILON (std::numeric_limits<T>::epsilon()){}
+  Zoltan2_BoxBoundaries(Ordinal s_):
+    size(s_), _EPSILON(std::numeric_limits<T>::epsilon()) {}
 
   /*! \brief Implement Teuchos::ValueTypeReductionOp interface
+   *  \param count            TODO: Documentation
+   *  \param inBuffer         TODO: Documentation
+   *  \param inoutBuffer      TODO: Documentation
    */
-  void reduce( const Ordinal count, const T inBuffer[], T inoutBuffer[]) const
-  {
-    for (Ordinal i=0; i < count; i++){
-      if (Z2_ABS(inBuffer[i]) >  _EPSILON){
+  void reduce( const Ordinal count, const T inBuffer[], T inoutBuffer[]) const {
+    for(Ordinal i = 0; i < count; i++) {
+      if(Z2_ABS(inBuffer[i]) > _EPSILON) {
         inoutBuffer[i] = inBuffer[i];
       }
     }
   }
 };
+
 } // namespace Teuchos
 
 namespace Zoltan2{
 
 /*! \brief Allocates memory for the given size.
+ *  \param size   size of allocation
  */
 template <typename T>
-T *allocMemory(size_t size){
-  if (size > 0){
+T *allocMemory(size_t size) {
+  if(size > 0) {
     T * a = new T[size];
-    if (a == NULL) {
+    if(a == NULL) {
       throw  "cannot allocate memory";
     }
     return a;
@@ -277,40 +278,39 @@ T *allocMemory(size_t size){
 /*! \brief Frees the given array.
  */
 template <typename T>
-void freeArray(T *&array){
-  if(array != NULL){
+void freeArray(T *&array) {
+  if(array != NULL) {
     delete [] array;
     array = NULL;
   }
 }
 
-
 /*! \brief Class for sorting items with multiple values.
- * First sorting with respect to val[0], then val[1] then ... val[count-1].
- * The last tie breaking is done with index values.
- * Used for task mapping partitioning where the points on a cut line needs to be
- * distributed consistently.
+ *  First sorting with respect to val[0], then val[1] then ... val[count-1].
+ *  The last tie breaking is done with index values.
+ *  Used for task mapping partitioning where the points on a cut line needs to
+ *  be distributed consistently.
  */
 template <typename IT, typename CT, typename WT>
 class uMultiSortItem
 {
 public:
-  //TODO: Why volatile?
-  //no idea, another intel compiler failure.
+  // TODO: Why volatile?
+  // no idea, another intel compiler failure.
   volatile IT index;
   volatile CT count;
-  //unsigned int val;
   volatile WT *val;
   volatile WT _EPSILON;
 
-  uMultiSortItem(){
+  uMultiSortItem() {
     this->index = 0;
     this->count = 0;
     this->val = NULL;
     this->_EPSILON = std::numeric_limits<WT>::epsilon() * 100;
   }
 
-  uMultiSortItem(IT index_ ,CT count_, WT *vals_){
+  // TODO: Document these methods?
+  uMultiSortItem(IT index_ ,CT count_, WT *vals_) {
     this->index = index_;
     this->count = count_;
     this->val = vals_;
@@ -324,8 +324,8 @@ public:
     this->_EPSILON = other._EPSILON;
   }
 
-  ~uMultiSortItem(){
-    //freeArray<WT>(this->val);
+  ~uMultiSortItem() {
+    // freeArray<WT>(this->val);
   }
 
   void set(IT index_ ,CT count_, WT *vals_) {
@@ -341,46 +341,46 @@ public:
     return *(this);
   }
 
-  bool operator<(const uMultiSortItem<IT,CT,WT>& other) const{
-    assert (this->count == other.count);
-    for(CT i = 0; i < this->count; ++i){
-      //if the values are equal go to next one.
-      if (ZOLTAN2_ABS(this->val[i] - other.val[i]) < this->_EPSILON){
+  bool operator<(const uMultiSortItem<IT,CT,WT>& other) const {
+    assert(this->count == other.count);
+    for(CT i = 0; i < this->count; ++i) {
+      // if the values are equal go to next one.
+      if(ZOLTAN2_ABS(this->val[i] - other.val[i]) < this->_EPSILON) {
         continue;
       }
-      //if next value is smaller return true;
-      if(this->val[i] < other.val[i]){
+      // if next value is smaller return true;
+      if(this->val[i] < other.val[i]) {
         return true;
       }
-      //if next value is bigger return false;
+      // if next value is bigger return false;
       else {
         return false;
       }
     }
-    //if they are totally equal.
+    // if they are totally equal.
     return this->index < other.index;
   }
-  bool operator>(const uMultiSortItem<IT,CT,WT>& other) const{
-    assert (this->count == other.count);
-    for(CT i = 0; i < this->count; ++i){
-      //if the values are equal go to next one.
-      if (ZOLTAN2_ABS(this->val[i] - other.val[i]) < this->_EPSILON){
+
+  bool operator>(const uMultiSortItem<IT,CT,WT>& other) const {
+    assert(this->count == other.count);
+    for(CT i = 0; i < this->count; ++i) {
+      // if the values are equal go to next one.
+      if(ZOLTAN2_ABS(this->val[i] - other.val[i]) < this->_EPSILON) {
         continue;
       }
-      //if next value is bigger return true;
-      if(this->val[i] > other.val[i]){
+      // if next value is bigger return true;
+      if(this->val[i] > other.val[i]) {
         return true;
       }
-      //if next value is smaller return false;
-      else //(this->val[i] > other.val[i])
-      {
+      // if next value is smaller return false;
+      else { // (this->val[i] > other.val[i])
         return false;
       }
     }
-    //if they are totally equal.
+    // if they are totally equal.
     return this->index > other.index;
   }
-};// uSortItem;
+};
 
 /*! \brief Sort items for quick sort function.
  */
@@ -388,16 +388,16 @@ template <class IT, class WT>
 struct uSortItem
 {
   IT id;
-  //unsigned int val;
   WT val;
-};// uSortItem;
+};
 
 /*! \brief Quick sort function.
  *  Sorts the arr of uSortItems, with respect to increasing vals.
+ *  TODO: Document input params
  */
 template <class IT, class WT>
-void uqsort(IT n, uSortItem<IT, WT> * arr)
-{
+void uqsort(IT n, uSortItem<IT, WT> * arr) {
+  // TODO: Make formatting consistent
   int NSTACK = 50;
   int M = 7;
   IT         i, ir=n, j, k, l=1;
@@ -469,6 +469,7 @@ void uqsort(IT n, uSortItem<IT, WT> * arr)
 template <class IT, class WT, class SIGN>
 struct uSignedSortItem
 {
+  // TODO: Make formatting consistent
   IT id;
   //unsigned int val;
   WT val;
@@ -533,7 +534,8 @@ struct uSignedSortItem
  *  Sorts the arr of uSignedSortItems, with respect to increasing vals.
  */
 template <class IT, class WT, class SIGN>
-void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr){
+void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr) {
+  // TODO: Make formatting consistent
   IT NSTACK = 50;
   IT M = 7;
   IT         i, ir=n, j, k, l=1;
@@ -609,31 +611,32 @@ class AlgMJ
 {
 
 // TODO: For use of extended host lambdas added for CUDA this was changed to
-// public. I did this for CUDA only.
+// public. I did this for CUDA only. I forgot the specific fail points now and
+// need to reevaluate this. Check it on CUDA compilation as private.
 #ifdef KOKKOS_HAVE_CUDA
 public:
 #else
 private:
 #endif
 
-  typedef typename mj_node_t::device_type device_t;
+  typedef typename mj_node_t::device_type device_t; // for views
   typedef coordinateModelPartBox mj_partBox_t;
   typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
   
-  RCP<const Environment> mj_env;          // the environment object
-  RCP<const Comm<int> > mj_problemComm;   // initial comm object
+  RCP<const Environment> mj_env; // the environment object
+  RCP<const Comm<int> > mj_problemComm; // initial comm object
   RCP<Comm<int> > comm; // comm object than can be altered during execution
-  double imbalance_tolerance;             // input imbalance tolerance.
+  double imbalance_tolerance; // input imbalance tolerance.
   int recursion_depth; // number of steps that partitioning will be solved in.
-  int coord_dim;                          // coordinate dim
-  int num_weights_per_coord;              // # of weights per coord
-  size_t initial_num_loc_coords;          // initial num local coords.
-  global_size_t initial_num_glob_coords;  // initial num global coords.
-  mj_lno_t num_local_coords;              // number of local coords.
-  mj_gno_t num_global_coords;             // number of global coords.
-  mj_scalar_t sEpsilon;                   // epsilon for mj_scalar_t
+  int coord_dim; // coordinate dim
+  int num_weights_per_coord; // # of weights per coord
+  size_t initial_num_loc_coords; // initial num local coords.
+  global_size_t initial_num_glob_coords; // initial num global coords.
+  mj_lno_t num_local_coords; // number of local coords.
+  mj_gno_t num_global_coords; // number of global coords.
+  mj_scalar_t sEpsilon; // epsilon for mj_scalar_t
   
-  // can distribute points on same coordiante to different parts.
+  // can distribute points on same coordinant to different parts.
   bool distribute_points_on_cut_lines;
   
   // how many parts we can calculate concurrently.
@@ -839,7 +842,6 @@ private:
     double root);
 
   /* \brief Allocates all required memory for the mj partitioning algorithm.
-   *
    */
   void allocate_set_work_memory();
 
@@ -873,6 +875,7 @@ private:
    * \param input_part_boxes: input, if boxes are kept, current boxes.
    * \param output_part_boxes: output, if boxes are kept, the initial box
    * boundaries for obtained parts.
+   * \param atomic_part_count  // TODO: Documentation
    */
   mj_part_t update_part_num_arrays(
     Kokkos::View<mj_part_t*, device_t> & view_num_partitioning_in_current_dim,
@@ -885,10 +888,12 @@ private:
     RCP<mj_partBoxVector_t> output_part_boxes,
     mj_part_t atomic_part_count);
 
+  // TODO: Inconsisent use of ! for descriptive/brief commenting - decide.
   /*! \brief Function to determine the local minimum and maximum coordinate,
-   * and local total weight
-   * in the given set of local points.
-   * TODO: Fix parameters doc
+   * and local total weight in the given set of local points.
+   * \current_work_part  TODO: Documentation
+   * \current_concurrent_num_parts  TODO: Documentation
+   * \mj_current_dim_coords TODO: Documentation
    */
   void mj_get_local_min_max_coord_totW(
     mj_part_t current_work_part,
@@ -896,9 +901,11 @@ private:
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords);
 
   /*! \brief Function to determine the local minimum and maximum coordinate,
-   * and local total weight
-   * in the given set of local points.
-   * TODO: Fix parameters
+   * and local total weight in the given set of local points.
+   * \current_work_part  TODO: Documentation
+   * \current_concurrent_num_parts  TODO: Documentation
+   * \kk  TODO: Documentation
+   * \mj_current_dim_coords TODO: Documentation
    */
   void mj_taskmapper_get_local_min_max_coord_totW(
     mj_part_t current_work_part,
@@ -1001,6 +1008,8 @@ private:
    * positions should be calculated.
    * \param view_num_partitioning_in_current_dim is the vector that holds how
    * many parts each part will be divided into.
+   * \param view_rectilinear_cut_count   TODO: Documentation
+   * \param view_total_reduction_size   TODO: Documentation
    */
   void mj_1D_part(
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords,
@@ -1017,29 +1026,7 @@ private:
   /*! \brief Function that calculates the weights of each part according to
    * given part cut coordinates. Function is called inside the parallel
    * region. Thread specific work arrays are provided as function parameter.
-   *
-   * \param total_part_count is the sum of number of cutlines and number of
-   * parts. Simply it is 2*P - 1.
-   * \param num_cuts is the number of cut lines. P - 1.
-   * \param max_coord is the maximum coordinate in the part.
-   * \param min_coord is the min coordinate in the part.
-   * \param coordinate_begin_index is the index of the first coordinate in
-   * current part.
-   * \param coordinate_end_index is the index of the last coordinate in
-   * current part.
-   * \param mj_current_dim_coords is 1 dimensional array holding coordinate
-   * values.
-   * \param temp_current_cut_coords is the array holding the coordinates of
-   * each cut line. Sized P - 1.
-   * \param current_cut_status is the boolean array to determine if the
-   * correct position for a cut line is found.
-   * \param my_current_part_weights is the array holding the part weights for
-   * the calling thread.
-   * \param my_current_left_closest is the array holding the coordinate of the
-   * closest points to the cut lines from left for the calling thread.
-   * \param my_current_right_closest is the array holding the coordinate of
-   * the closest points to the cut lines from right for the calling thread.
-   * \param partIds is the array that holds the part ids of the coordinates
+   * TODO: Documentation params
    */
   void mj_1D_part_get_part_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
@@ -1056,6 +1043,10 @@ private:
    * when concurrent parts are used.)
    * \param current_concurrent_num_parts is the number of parts whose cut
    * lines will be calculated concurrently.
+   * \param local_thread_cut_left_closest_point   TODO: Documentation
+   * \param local_thread_cut_right_closest_point  TODO: Documentation
+   * \param local_total_part_weight_left_right_closests  TODO: Documentation
+   * \param local_thread_part_weights  TODO: Documentation
    */
   void mj_combine_rightleft_and_weights(
     Kokkos::View<mj_part_t*, device_t> view_num_partitioning_in_current_dim,
@@ -1075,15 +1066,11 @@ private:
    * Function is called inside the parallel region. Write the new cut
    * coordinates to new_current_cut_coordinates, and determines if the final
    * position of a cut is found.
+   * \param current_concurrent_num_parts  TODO: Documentation
+   * \param kk  TODO: Documentation and pick better name
    * \param num_total_part is the sum of number of cutlines and number of
    * parts. Simply it is 2*P - 1.
    * \param num_cuts is the number of cut lines. P - 1.
-   * \param max_coordinate is the maximum coordinate in the current range of
-   * coordinates and in the current dimension.
-   * \param min_coordinate is the maximum coordinate in the current range of
-   * coordinates and in the current dimension.
-   * \param global_total_weight is the global total weight in the current
-   * range of coordinates.
    * \param used_imbalance_tolerance is the maximum allowed imbalance ratio.
    * \param current_global_part_weights is the array holding the weight of
    * parts. Assumes there are 2*P - 1 parts (cut lines are seperate parts).
@@ -1106,13 +1093,9 @@ private:
    * \param current_cut_upper_weights is the array holding the weight of the
    * parts at the left of upper bound coordinates.
    * \param new_current_cut_coordinates is the work array, sized P - 1.
-   * \param current_part_cut_line_weight_ratio holds how much weight of the
-   * coordinates on the cutline should be put on left side.
-   * \param rectilinear_cut_count is the count of cut lines whose balance can
-   * be achived via distributing points in same coordinate to different parts.
-   * \param my_num_incomplete_cut is the number of cutlines whose position has
-   * not been determined yet. For K > 1 it is the count in a single part
-   * (whose cut lines are determined).
+   * \param current_part_cut_line_weight_to_put_left TODO: Documentation
+   * \param view_rectilinear_cut_count is the count of cut lines whose balance
+   * is acheived via distributing points in same coordinate to different parts.   
    */
   void mj_get_new_cut_coordinates(
     mj_part_t current_concurrent_num_parts,
@@ -1136,7 +1119,7 @@ private:
     Kokkos::View<mj_scalar_t *, device_t> current_cut_upper_weights,
     Kokkos::View<mj_scalar_t *, device_t> new_current_cut_coordinates,
     Kokkos::View<mj_scalar_t *, device_t> 
-    current_part_cut_line_weight_to_put_left,
+      current_part_cut_line_weight_to_put_left,
     Kokkos::View<mj_part_t *, device_t> view_rectilinear_cut_count);
 
   /*! \brief
@@ -2783,7 +2766,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::ViewAllocateWithoutInitializing("empty"));
 
   // only store this much if cuts are needed to be stored.
-  // this->all_cut_coordinates = allocMemory< mj_scalar_t>(this->total_num_cut);
   this->all_cut_coordinates = Kokkos::View<mj_scalar_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("all cut coordinates"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
@@ -3584,6 +3566,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
   clock_mj_1D_part_init2.stop();
   clock_mj_1D_part_while_loop.start();
 
+  // loop_count allows the kernel to behave differently on the first loop
+  // and subsequent loops. First loop we do a binary search and subsequent
+  // loops we simply step towards our target.
+  // TODO: Need to carefully evaluate the performance gains and make sure
+  // this is still worth it in the current form. I think it may be but other
+  // other stuff has changed.
   int loop_count = 0;
   while (total_incomplete_cut_count != 0) {
     clock_host_copies.start();
