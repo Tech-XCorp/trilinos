@@ -7133,9 +7133,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::create_mirror_view(this->mj_coordinates);
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for (int i = 0; i < this->coord_dim; ++i) {
-      Kokkos::View<mj_scalar_t *, device_t> sub_host_src_coordinates
+      auto sub_host_src_coordinates
         = Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
-      Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_coordinates
+      auto sub_host_dst_coordinates
         = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
       // Note Layout Left means we can do these in contiguous blocks
       ArrayView<mj_scalar_t> sent_coord(
@@ -7158,9 +7158,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       host_src_weights = Kokkos::create_mirror_view(this->mj_weights);
     Kokkos::deep_copy(host_src_weights, this->mj_weights);
     for (int i = 0; i < this->num_weights_per_coord; ++i) {
-      Kokkos::View<mj_scalar_t *, device_t> sub_host_src_weights
+      auto sub_host_src_weights
         = Kokkos::subview(host_src_weights, Kokkos::ALL, i);
-      Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_weights
+      auto sub_host_dst_weights
         = Kokkos::subview(host_dst_weights, Kokkos::ALL, i);
       ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
       
@@ -9444,6 +9444,22 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     Kokkos::deep_copy(result_initial_mj_gnos_, host_result_initial_mj_gnos_);
   }
 
+
+{
+  int N1 = 10;
+  int N2 = 5;
+  typedef double mj_scalar_t2;
+  typedef Kokkos::CudaUVMSpace device_t2;
+  Kokkos::View<mj_scalar_t2**, Kokkos::LayoutLeft, device_t2>
+    dst_coordinates("mj_coordinates", N1, N2);
+  typename decltype(dst_coordinates)::HostMirror
+    host_dst_coordinates = Kokkos::create_mirror_view(dst_coordinates);
+  for (int i = 0; i < N2; ++i) {
+    Kokkos::View<mj_scalar_t2 *, device_t2> sub_host_dst_coordinates
+      = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
+  }
+
+}
   // migrate coordinates
   // TODO: This code duplicated - need to make a better formatting and reuse
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
@@ -9454,9 +9470,9 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     Kokkos::create_mirror_view(this->mj_coordinates);
   Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
   for (int i = 0; i < this->coord_dim; ++i) {
-    Kokkos::View<mj_scalar_t *, device_t> sub_host_src_coordinates
+    auto sub_host_src_coordinates
       = Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
-    Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_coordinates
+    auto sub_host_dst_coordinates
       = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
     // Note Layout Left means we can do these in contiguous blocks
     ArrayView<mj_scalar_t> sent_coord(
@@ -9479,9 +9495,9 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     host_src_weights = Kokkos::create_mirror_view(this->mj_weights);
   Kokkos::deep_copy(host_src_weights, this->mj_weights);
   for (int i = 0; i < this->num_weights_per_coord; ++i) {
-    Kokkos::View<mj_scalar_t *, device_t> sub_host_src_weights
+    auto sub_host_src_weights
       = Kokkos::subview(host_src_weights, Kokkos::ALL, i);
-    Kokkos::View<mj_scalar_t *, device_t> sub_host_dst_weights
+    auto sub_host_dst_weights
       = Kokkos::subview(host_dst_weights, Kokkos::ALL, i);
     ArrayRCP<mj_scalar_t> sent_weight(this->num_local_coords);
     
