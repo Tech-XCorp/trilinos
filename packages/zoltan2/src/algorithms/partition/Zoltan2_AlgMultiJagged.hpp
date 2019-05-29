@@ -2013,6 +2013,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             // TODO: This needs to be device code?
             // Check if this is running at all for task mapper ....
+printf("Checking Task Mapper entry point\n");
             mj_lno_t coordinate_end_index =
               this->part_xadj(concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
