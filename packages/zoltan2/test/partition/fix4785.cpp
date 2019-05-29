@@ -163,7 +163,23 @@ void test_weights(
   int &nFail
 )
 {
-  typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t> myTypes;
+// Here we want to use UVM off if we're running CUDA. The way we specify this
+// may change in the future. Some other tests still run UVM on while the main
+// MJ tests run both on and off as separate tests. I specifically wanted to run
+// this UVM off because performance on the CUDA kernel is terrible with UVM
+// due to the way this test has all the coordinates on the same position and
+// needs a scan across cuts to find all of them that match. This might be
+// somethng we can fix but since the priority was UVM off anyways, this at
+// least prevents the bottleneck running the test suite.
+#ifdef KOKKOS_HAVE_CUDA
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
+      Kokkos::Cuda, Kokkos::CudaSpace>  myNode_t;
+#else
+    typedef Tpetra::Map<>::node_type myNode_t;
+#endif
+
+  typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t,
+    myNode_t> myTypes;
   typedef Zoltan2::BasicVectorAdapter<myTypes> inputAdapter_t;
   typedef Zoltan2::EvaluatePartition<inputAdapter_t> quality_t;
 
