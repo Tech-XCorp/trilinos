@@ -9432,22 +9432,6 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     Kokkos::deep_copy(result_initial_mj_gnos_, host_result_initial_mj_gnos_);
   }
 
-
-{
-  int N1 = 10;
-  int N2 = 5;
-  typedef double mj_scalar_t2;
-  typedef Kokkos::CudaUVMSpace device_t2;
-  Kokkos::View<mj_scalar_t2**, Kokkos::LayoutLeft, device_t2>
-    dst_coordinates("mj_coordinates", N1, N2);
-  typename decltype(dst_coordinates)::HostMirror
-    host_dst_coordinates = Kokkos::create_mirror_view(dst_coordinates);
-  for (int i = 0; i < N2; ++i) {
-    Kokkos::View<mj_scalar_t2 *, device_t2> sub_host_dst_coordinates
-      = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
-  }
-
-}
   // migrate coordinates
   // TODO: This code duplicated - need to make a better formatting and reuse
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
