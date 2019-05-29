@@ -2013,7 +2013,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             // TODO: This needs to be device code?
             // Check if this is running at all for task mapper ....
-printf("Checking Task Mapper entry point\n");
             mj_lno_t coordinate_end_index =
               this->part_xadj(concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
@@ -2139,8 +2138,8 @@ printf("Checking Task Mapper entry point\n");
             // if this part is partitioned into 1 then just copy
             // the old values.
             mj_lno_t part_size = coordinate_end - coordinate_begin;
-            this->new_part_xadj(
-              output_part_index + output_array_shift) = part_size;
+            this->new_part_xadj(output_part_index + output_array_shift)
+              = part_size;
 
             // TODO optimize
             for(int n = 0; n < part_size; ++n) {
@@ -2177,8 +2176,7 @@ printf("Checking Task Mapper entry point\n");
 
               for (mj_lno_t task_traverse = coordinate_begin;
                 task_traverse < coordinate_end; ++task_traverse) {
-                mj_lno_t l =
-                  this->new_coordinate_permutations(task_traverse);
+                mj_lno_t l = this->new_coordinate_permutations(task_traverse);
 
                 //MARKER: FLIPPED ZORDER BELOW
                 mj_current_dim_coords(l) =
@@ -2200,20 +2198,18 @@ printf("Checking Task Mapper entry point\n");
     current_num_parts = output_part_count_in_dimension;
 
     //swap the coordinate permutations for the next dimension.
-    Kokkos::View<mj_lno_t *, device_t> tmp =
-      this->coordinate_permutations;
-    this->coordinate_permutations =
-      this->new_coordinate_permutations;
+    Kokkos::View<mj_lno_t *, device_t> tmp = this->coordinate_permutations;
+    this->coordinate_permutations = this->new_coordinate_permutations;
     this->new_coordinate_permutations = tmp;
     this->part_xadj = this->new_part_xadj;
 
-      this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
-      Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
+    this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+    Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
 
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty");
   }
 
-  for(mj_lno_t i = 0; i < num_total_coords; ++i){
+  for(mj_lno_t i = 0; i < num_total_coords; ++i) {
     inital_adjList_output_adjlist(i) =
       this->coordinate_permutations(i);
   }
@@ -2273,14 +2269,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->max_num_cut_along_dim = 0;
   this->max_num_total_part_along_dim = 0;
 
-  // TODO: is size() going to work as NULL did?
-  if (this->part_no_array.size())
+  // TODO: is size() 0 always going to work as NULL did? This is now a view.
+  if(this->part_no_array.size())
   {
     auto local_part_no_array = this->part_no_array;
     auto local_recursion_depth = this->recursion_depth; 
 
     this->total_dim_num_reduce_all =
       this->total_num_part * this->recursion_depth;
+
     Kokkos::parallel_reduce("Single Reduce", 1,
       KOKKOS_LAMBDA(const int& dummy, mj_part_t & running) {
       running = 1.0;
@@ -2311,23 +2308,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // we need to calculate the part numbers now, to determine
     // the maximum along the dimensions.
-    for (int i = 0; i < this->recursion_depth; ++i){
+    for(int i = 0; i < this->recursion_depth; ++i) {
       mj_part_t maxNoPartAlongI = this->get_part_count(
         future_num_parts, 1.0f / (this->recursion_depth - i));
 
-      if (maxNoPartAlongI > this->max_num_part_along_dim){
+      if(maxNoPartAlongI > this->max_num_part_along_dim) {
         this->max_num_part_along_dim = maxNoPartAlongI;
       }
 
       mj_part_t nfutureNumParts = future_num_parts / maxNoPartAlongI;
-      if (future_num_parts % maxNoPartAlongI){
+      if(future_num_parts % maxNoPartAlongI) {
         ++nfutureNumParts;
       }
       future_num_parts = nfutureNumParts;
     }
     this->total_num_part = this->num_global_parts;
 
-    if (this->divide_to_prime_first){
+    if(this->divide_to_prime_first) {
       this->total_dim_num_reduce_all = this->num_global_parts * 2;
       this->last_dim_num_part = this->num_global_parts;
     }
@@ -2337,16 +2334,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       //we find the upperbound instead.
       size_t p = 1;
 
-      for (int i = 0; i < this->recursion_depth; ++i){
+      for(int i = 0; i < this->recursion_depth; ++i) {
         this->total_dim_num_reduce_all += p;
         p *= this->max_num_part_along_dim;
       }
 
-      if (p / this->max_num_part_along_dim > this->num_global_parts){
+      if(p / this->max_num_part_along_dim > this->num_global_parts) {
         this->last_dim_num_part = this->num_global_parts;
       }
       else {
-        this->last_dim_num_part  = p / this->max_num_part_along_dim;
+        this->last_dim_num_part = p / this->max_num_part_along_dim;
       }
     }
   }
@@ -2359,8 +2356,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // refine the concurrent part count, if it is given bigger than the maximum
   // possible part count.
-  if(this->max_concurrent_part_calculation > this->last_dim_num_part){
-    if(this->mj_problemComm->getRank() == 0){
+  if(this->max_concurrent_part_calculation > this->last_dim_num_part) {
+    if(this->mj_problemComm->getRank() == 0) {
       std::cerr << "Warning: Concurrent part count (" <<
         this->max_concurrent_part_calculation <<
         ") has been set bigger than maximum amount that can be used." <<
@@ -2381,8 +2378,8 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   get_part_count(mj_part_t num_total_future, double root)
 {
   double fp = pow(num_total_future, root);
-  mj_part_t ip = mj_part_t (fp);
-  if (fp - ip < std::numeric_limits<float>::epsilon() * 100) {
+  mj_part_t ip = mj_part_t(fp);
+  if(fp - ip < std::numeric_limits<float>::epsilon() * 100) {
     return ip;
   }
   else {
@@ -2409,6 +2406,7 @@ inline mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
  * \param input_part_boxes: input, if boxes are kept, current boxes.
  * \param output_part_boxes: output, if boxes are kept, the initial box
  * boundaries for obtained parts.
+ * \param atomic_part_count  TODO: Documentation
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -2424,7 +2422,8 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   RCP<mj_partBoxVector_t> output_part_boxes,
   mj_part_t atomic_part_count)
 {
-Clock partA("partA", true);
+  Clock partA("partA", true);
+
   vector_num_partitioning_in_current_dim.resize(0);
 
   // how many parts that will be obtained after this dimension.
@@ -2434,7 +2433,7 @@ Clock partA("partA", true);
     // each current partition will be partition to the same number of parts.
     // we dont need to use the future_num_part_in_parts vector in this case.
 
-    // TODO - what is the right way to read a single value to host
+    // TODO: Optimize way this single read?
     auto local_part_no_array = this->part_no_array;
     mj_part_t p;
     Kokkos::parallel_reduce("Read single", 1,
@@ -2447,20 +2446,20 @@ Clock partA("partA", true);
         " p is given as:" << p << std::endl;
       exit(1);
     }
-    if (p == 1){
+    if(p == 1) {
       return current_num_parts;
     }
-    for (mj_part_t ii = 0; ii < current_num_parts; ++ii){
+    for(mj_part_t ii = 0; ii < current_num_parts; ++ii) {
       vector_num_partitioning_in_current_dim.push_back(p);
     }
     future_num_parts /= vector_num_partitioning_in_current_dim[0];
     output_num_parts = current_num_parts *
       vector_num_partitioning_in_current_dim[0];
-    if (this->mj_keep_part_boxes){
-      for (mj_part_t k = 0; k < current_num_parts; ++k){
+    if(this->mj_keep_part_boxes){
+      for (mj_part_t k = 0; k < current_num_parts; ++k) {
         //initialized the output boxes as its ancestor.
         for (mj_part_t j = 0; j <
-          vector_num_partitioning_in_current_dim[0]; ++j){
+          vector_num_partitioning_in_current_dim[0]; ++j) {
           output_part_boxes->push_back((*input_part_boxes)[k]);
         }
       }
@@ -2469,7 +2468,7 @@ Clock partA("partA", true);
     // set the how many more parts each part will be divided.
     // this is obvious when partNo array is provided as input.
     // however, fill this so weights will be calculated according to this array.
-    for (mj_part_t ii = 0; ii < output_num_parts; ++ii){
+    for(mj_part_t ii = 0; ii < output_num_parts; ++ii) {
       next_future_num_parts_in_parts->push_back(future_num_parts);
     }
   }
@@ -2483,7 +2482,7 @@ Clock partA("partA", true);
     future_num_parts = 1;
 
     // cout << "i:" << i << std::endl;
-    for (mj_part_t ii = 0; ii < current_num_parts; ++ii) {
+    for(mj_part_t ii = 0; ii < current_num_parts; ++ii) {
       // get how many parts a part should be divided.
       mj_part_t future_num_parts_of_part_ii = (*future_num_part_in_parts)[ii];
 
@@ -2493,7 +2492,7 @@ Clock partA("partA", true);
         this->get_part_count(future_num_parts_of_part_ii,
           1.0 / (this->recursion_depth - current_iteration)
                                     );
-      if (num_partitions_in_current_dim > this->max_num_part_along_dim){
+      if(num_partitions_in_current_dim > this->max_num_part_along_dim) {
         std::cerr << "ERROR: maxPartNo calculation is wrong."
           " num_partitions_in_current_dim: "
           << num_partitions_in_current_dim <<  "this->max_num_part_along_dim:"
@@ -2510,10 +2509,10 @@ Clock partA("partA", true);
       vector_num_partitioning_in_current_dim.push_back(
         num_partitions_in_current_dim);
       mj_part_t largest_prime_factor = num_partitions_in_current_dim;
-      if (this->divide_to_prime_first){
+      if(this->divide_to_prime_first){
         //increase the output number of parts.
         output_num_parts += num_partitions_in_current_dim;
-        if (future_num_parts_of_part_ii == atomic_part_count ||
+        if(future_num_parts_of_part_ii == atomic_part_count ||
           future_num_parts_of_part_ii % atomic_part_count != 0) {
           atomic_part_count = 1;
         }
@@ -2526,12 +2525,12 @@ Clock partA("partA", true);
         // divide to 2 parts with weights 3x and 2x.
         // if the largest prime is less than part count, we use the part count
         // so that we divide uniformly.
-        if (largest_prime_factor < num_partitions_in_current_dim){
+        if(largest_prime_factor < num_partitions_in_current_dim) {
           largest_prime_factor = num_partitions_in_current_dim;
         }
         //ideal number of future partitions for each part.
-        mj_part_t ideal_num_future_parts_in_part = (
-          future_num_parts_of_part_ii / atomic_part_count) /
+        mj_part_t ideal_num_future_parts_in_part =
+          (future_num_parts_of_part_ii / atomic_part_count) /
           largest_prime_factor;
         // if num_partitions_in_current_dim = 2, largest prime = 5 then ideal
         // weight is 2x
@@ -2541,20 +2540,20 @@ Clock partA("partA", true);
         // std::cout << "current num part:" << ii << " largest_prime_factor:"
         // << largest_prime_factor << " To Partition:" <<
         // future_num_parts_of_part_ii << " ";
-        for (mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii) {
+        for(mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii) {
           // if num_partitions_in_current_dim = 2,
           // largest prime = 5 then ideal weight is 2x
           mj_part_t my_ideal_primescale = ideal_prime_scale;
           // left over weighs. Left side is adjusted to be 3x,
           // right side stays as 2x
-          if (iii < (largest_prime_factor) % num_partitions_in_current_dim) {
+          if(iii < (largest_prime_factor) % num_partitions_in_current_dim) {
             ++my_ideal_primescale;
           }
           //scale with 'x';
           mj_part_t num_future_parts_for_part_iii =
             ideal_num_future_parts_in_part * my_ideal_primescale;
           //if there is a remainder in the part increase the part weight.
-          if (iii < (future_num_parts_of_part_ii /
+          if(iii < (future_num_parts_of_part_ii /
             atomic_part_count) % largest_prime_factor) {
             //if not uniform, add 1 for the extra parts.
             ++num_future_parts_for_part_iii;
@@ -2565,11 +2564,11 @@ Clock partA("partA", true);
 
           // if part boxes are stored, initialize the box of the parts as
           // the ancestor.
-          if (this->mj_keep_part_boxes) {
+          if(this->mj_keep_part_boxes) {
             output_part_boxes->push_back((*input_part_boxes)[ii]);
           }
           //set num future_num_parts to maximum in this part.
-          if (num_future_parts_for_part_iii > future_num_parts) {
+          if(num_future_parts_for_part_iii > future_num_parts) {
             future_num_parts = num_future_parts_for_part_iii;
           }
         }
@@ -2578,15 +2577,15 @@ Clock partA("partA", true);
         //increase the output number of parts.
         output_num_parts += num_partitions_in_current_dim;
 
-        if (future_num_parts_of_part_ii == atomic_part_count ||
-          future_num_parts_of_part_ii % atomic_part_count != 0) {
+        if((future_num_parts_of_part_ii == atomic_part_count) ||
+          (future_num_parts_of_part_ii % atomic_part_count != 0)) {
           atomic_part_count = 1;
         }
         //ideal number of future partitions for each part.
         mj_part_t ideal_num_future_parts_in_part =
           (future_num_parts_of_part_ii / atomic_part_count) /
           num_partitions_in_current_dim;
-        for (mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii) {
+        for(mj_part_t iii = 0; iii < num_partitions_in_current_dim; ++iii) {
           mj_part_t num_future_parts_for_part_iii =
             ideal_num_future_parts_in_part;
 
@@ -2613,12 +2612,16 @@ Clock partA("partA", true);
     }
   }
 
-  // this optmization should/could be eliminated once the alternative code is working better
-  if(vector_num_partitioning_in_current_dim.size() != view_num_partitioning_in_current_dim.size()) {
-    Kokkos::resize(view_num_partitioning_in_current_dim, vector_num_partitioning_in_current_dim.size());
+  // TODO: this optmization should/could be eliminated once the
+  // alternative code is working better
+  if(vector_num_partitioning_in_current_dim.size() !=
+    view_num_partitioning_in_current_dim.size()) {
+    Kokkos::resize(view_num_partitioning_in_current_dim,
+      vector_num_partitioning_in_current_dim.size());
   }
 
-  auto local_view_num_partitioning_in_current_dim = view_num_partitioning_in_current_dim;
+  auto local_view_num_partitioning_in_current_dim =
+    view_num_partitioning_in_current_dim;
 
   // TODO: This was ugly hackage to get some performance but need to rework
   // all of this.
@@ -2638,7 +2641,6 @@ Clock partA("partA", true);
       0, 1), KOKKOS_LAMBDA (const int i) {
       local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
       local_view_num_partitioning_in_current_dim(1) = local_set_value_2;
-
     });
   }
   else {
