@@ -2011,8 +2011,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               concurrent_current_part_index,
               obtained_part_index);
 
-            // TODO: This needs to be device code?
-            // Check if this is running at all for task mapper ....
+            // TODO: Needs to be device code
+            // This is currently running ok because I only tested UVM on for
+            // Task Mapper
             mj_lno_t coordinate_end_index =
               this->part_xadj(concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
@@ -2141,7 +2142,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             this->new_part_xadj(output_part_index + output_array_shift)
               = part_size;
 
-            // TODO optimize
+            // TODO: optimize
             for(int n = 0; n < part_size; ++n) {
               this->new_coordinate_permutations(n+coordinate_begin) =
                 this->coordinate_permutations(n+coordinate_begin);
@@ -2216,7 +2217,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // Return output_xadj in CSR format
   output_xadj[0] = 0;
-  for(size_t i = 0; i < this->num_global_parts ; ++i){
+  for(size_t i = 0; i < this->num_global_parts ; ++i) {
     output_xadj[i+1] = this->part_xadj(i);
   }
 
@@ -2623,47 +2624,24 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_view_num_partitioning_in_current_dim =
     view_num_partitioning_in_current_dim;
 
-  // TODO: This was ugly hackage to get some performance but need to rework
-  // all of this.
-  if(vector_num_partitioning_in_current_dim.size() == 1) {
-    mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
+  // TODO: Clearly this is not the right way to do this - need to investigate
+  // why creating temp view and doing host mirror copy was worse.
+  // Also figure out why we can't make the host mirror direcrly from
+  // view_num_partitioning_in_current_dim.
+  for(int n = 0; n < static_cast<int>(
+    vector_num_partitioning_in_current_dim.size()); ++n) {
+    mj_part_t local_set_value_n = vector_num_partitioning_in_current_dim[n];
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
       0, 1), KOKKOS_LAMBDA (const int i) {
-      local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
+      local_view_num_partitioning_in_current_dim(n) = local_set_value_n;
     });
-  }
-  else if(vector_num_partitioning_in_current_dim.size() == 2) {
-    mj_part_t local_set_value_1 = vector_num_partitioning_in_current_dim[0];
-    mj_part_t local_set_value_2 = vector_num_partitioning_in_current_dim[1];
-    Kokkos::parallel_for(
-      Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-      0, 1), KOKKOS_LAMBDA (const int i) {
-      local_view_num_partitioning_in_current_dim(0) = local_set_value_1;
-      local_view_num_partitioning_in_current_dim(1) = local_set_value_2;
-    });
-  }
-  else {
-    // TODO: Clearly this is not the right way to do this - need to investigate why
-    // creating temp view and doing host mirror copy was worse.
-    // Also figure out why we can't make the host mirror direcrly from view_num_partitioning_in_current_dim.
-    printf("Must optimize and fix this loop. This temporary code setup as was not sure why host mirror procedure was giving bad performance only for some cases.\n");
-    for(int n = 0; n < static_cast<int>(
-      vector_num_partitioning_in_current_dim.size()); ++n) {
-      mj_part_t local_set_value_n = vector_num_partitioning_in_current_dim[n];
-      Kokkos::parallel_for(
-        Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (
-        0, 1), KOKKOS_LAMBDA (const int i) {
-        local_view_num_partitioning_in_current_dim(n) = local_set_value_n;
-      });
-    }
   }
 
   return output_num_parts;
 }
 
 /* \brief Allocates and initializes the work memory that will be used by MJ.
- *
  * */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
