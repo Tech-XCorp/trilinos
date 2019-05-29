@@ -1184,7 +1184,6 @@ private:
    * migration. (swapped)
    * \param output_part_boxes is the array that holds the part boxes before
    * the migration. (swapped)
-   *
    */
   bool mj_perform_migration(
     mj_part_t in_num_parts, //current number of parts
@@ -1201,7 +1200,6 @@ private:
    * it has the number of coordinates in each processor of each part.
    * to access how many points processor i has on part j,
    * num_points_in_all_processor_parts[i * num_parts + j].
-   *
    * \param num_procs is the number of processors for migration operation.
    * \param num_parts is the number of parts in the current partitioning.
    * \param num_points_in_all_processor_parts is the output array that holds
@@ -1273,12 +1271,11 @@ private:
     int *coordinate_destinations);
 
   /*! \brief Function that assigned the processors to parts, when there are
-   * more processors then parts.
-   *  sets the destination of each coordinate in coordinate_destinations, also
-   * edits output_part_numbering_begin_index,
-   *  and out_part_index, and returns the processor_ranks_for_subcomm which
-   * represents the ranks of the processors
-   *  that will be used for creating the subcommunicator.
+   * more processors then parts. Sets the destination of each coordinate in
+   * coordinate_destinations, also edits output_part_numbering_begin_index,
+   * and out_part_index, and returns the processor_ranks_for_subcomm which
+   * represents the ranks of the processors that will be used for creating the
+   * subcommunicator.
    * \param num_points_in_all_processor_parts is the array holding the num
    * points in each part in each proc.
    * \param num_parts is the number of parts that exist in the current
@@ -1450,8 +1447,11 @@ private:
    * \param used_local_cut_line_weight_to_left holds how much weight of the
    * coordinates on the cutline should be put on left side.
    * \param out_part_xadj is the indices of begginning and end of the parts in
-  * the output partition.
+   * the output partition.
    * \param coordInd is the index according to which the partitioning is done.
+   * \param longest_dim_part  TODO: documentation
+   * \param mj_scalar_t TODO: documentation
+   * \param p_coord_dimension_range_sorted TODO: documentation
    */
   void create_consistent_chunks(
     mj_part_t num_parts,
@@ -1466,9 +1466,9 @@ private:
     uSignedSortItem<int, mj_scalar_t,
     char> *p_coord_dimension_range_sorted);
 
-  /*!
-   * \brief Function returns the largest prime factor of a given number.
+  /*! \brief Function returns the largest prime factor of a given number.
    * input and output are integer-like.
+   * \param num_parts  TODO: documentation
    */
   mj_part_t find_largest_prime_factor(mj_part_t num_parts){
     mj_part_t largest_factor = 1;
@@ -1493,11 +1493,12 @@ private:
 public:
   AlgMJ();
 
-  /*! \brief Multi Jagged  coordinate partitioning algorithm.
-   *
-   * \param env   library configuration and problem parameters
-   * \param problemComm the communicator for the problem
-   * \param imbalance_tolerance : the input provided imbalance tolerance.
+  // TODO: Make param documentation use : consistently
+  /*! \brief Multi Jagged coordinate partitioning algorithm.
+   * \param env: library configuration and problem parameters
+   * \param problemComm: the communicator for the problem
+   * \param imbalance_tolerance: the input provided imbalance tolerance.
+   * \param num_teams: number of teams for CUDA kernels.
    * \param num_global_parts: number of target global parts.
    * \param part_no_array: part no array, if provided this will be used
    * for partitioning.
@@ -1515,11 +1516,10 @@ public:
    * \param mj_uniform_parts: if the target partitioning aims uniform parts
    * \param mj_part_sizes: if the target partitioning does not aim uniform
    * parts, then weight of each part.
-   * \param result_assigned_part_ids: Output - 1D pointer, should be provided
-   * as null. the result partids corresponding to the coordinates given in
-   * result_mj_gnos.
-   * \param result_mj_gnos: Output - 1D pointer, should be provided as null. the
-   * result coordinate global id's corresponding to the part_ids array.
+   * \param result_assigned_part_ids: Output - the result partids corresponding
+   * to the coordinates given im result_mj_gnos.
+   * \param result_mj_gnos: Output - the result coordinate global id's
+   * corresponding to the part_ids array.
    */
   void multi_jagged_part(
     const RCP<const Environment> &env,
@@ -1544,7 +1544,6 @@ public:
     Kokkos::View<mj_gno_t*, device_t> &result_mj_gnos);
 
   /*! \brief Multi Jagged  coordinate partitioning algorithm.
-   *
    * \param distribute_points_on_cut_lines_ : if partitioning can distribute
    * points on same coordinate to different parts.
    * \param max_concurrent_part_calculation_ : how many parts we can calculate
@@ -1560,26 +1559,29 @@ public:
     bool distribute_points_on_cut_lines_,
     int max_concurrent_part_calculation_,
     int check_migrate_avoid_migration_option_,
-    double minimum_migration_imbalance_, int migration_type_ = 0);
+    double minimum_migration_imbalance_,
+    int migration_type_ = 0);
 
   /*! \brief Function call, if the part boxes are intended to be kept.
-   *
    */
   void set_to_keep_part_boxes();
 
-  /*! \brief Return the global bounding box: min/max coords of global domain
+  /*! \brief TODO: Documentation
    */
   RCP<mj_partBox_t> get_global_box() const;
 
+  /*! \brief TODO: Documentation
+   */
   RCP<mj_partBoxVector_t> get_kept_boxes() const;
 
+  /*! \brief TODO: Documentation
+   */
   RCP<mj_partBoxVector_t> compute_global_box_boundaries(
     RCP<mj_partBoxVector_t> &localPartBoxes) const;
 
   /*! \brief Special function for partitioning for task mapping.
    * Runs sequential, and performs deterministic partitioning for the
    * partitioning the points along a cutline.
-   *
    * \param env library configuration and problem parameters
    * \param num_total_coords number of total coordinates
    * \param num_selected_coords : the number of selected coordinates. This is
@@ -1588,16 +1590,18 @@ public:
    * \param num_target_part: number of target global parts.
    * \param coord_dim_: coordinate dimension for coordinates
    * \param mj_coordinates_: the coordinates
-   * \param inital_adjList_output_adjlist: Array allocated by caller, in the
-   * size of num_total_coords, first num_selected_coords elements should list
-   * the indices of the selected processors. This is output for output
-   * permutation array.
+   * \param initial_selected_coords_output_permutation: Array allocated by
+   * caller, in the size of num_total_coords, first num_selected_coords elements
+   * should list the indices of the selected processors. This is output for
+   * output permutation array.
    * \param output_xadj: The output part xadj array, pointing beginning and end
    * of each part on output permutation array (inital_adjList_output_adjlist).
    * Returned in CSR format: part i's info in output_xadj[i] : output_xadj[i+1]
-   * \param rd: recursion depth
+   * \param recursion_depth: recursion depth
    * \param part_no_array_: possibly null part_no_array, specifying how many
    * parts each should be divided during partitioning.
+   * \param partition_along_longest_dim  TODO: Documentation
+   * \param divide_to_prime_first_ TODO: Documentation
    */
   void sequential_task_partitioning(
     const RCP<const Environment> &env,
@@ -1616,7 +1620,7 @@ public:
     bool divide_to_prime_first_);
 };
 
-/*! \brief Multi Jagged  coordinate partitioning algorithm default constructor.
+/*! \brief Multi Jagged coordinate partitioning algorithm default constructor.
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -1649,7 +1653,6 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
 /*! \brief Special function for partitioning for task mapping.
  * Runs sequential, and performs deterministic partitioning for the
  * partitioning the points along a cutline.
- *
  * \param env library configuration and problem parameters
  * \param num_total_coords number of total coordinates
  * \param num_selected_coords : the number of selected coordinates. This is to
@@ -1668,6 +1671,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
  * \param rd: recursion depth
  * \param part_no_array_: possibly null part_no_array, specifying how many parts
  * each should be divided during partitioning.
+ * \param partition_along_longest_dim TODO: Documentation
+ * \param num_ranks_per_node TODO: Documentation
+ * \param divide_to_prime_first_ TODO: Documentation
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -1690,10 +1696,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 {
   this->mj_env = env;
   const RCP<Comm<int> > commN;
-  this->mj_problemComm = 
-    Teuchos::DefaultComm<int>::getDefaultSerialComm(commN);
-  this->comm = 
-    Teuchos::rcp_const_cast<Comm<int> >(this->mj_problemComm);
+  this->mj_problemComm = Teuchos::DefaultComm<int>::getDefaultSerialComm(commN);
+  this->comm = Teuchos::rcp_const_cast<Comm<int> >(this->mj_problemComm);
   this->myActualRank = this->myRank = 1;
 
   this->divide_to_prime_first = divide_to_prime_first_;
@@ -1708,20 +1712,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->coord_dim = coord_dim_;
   this->num_local_coords = num_total_coords;
   this->num_global_coords = num_total_coords;
-  
-  // will copy the memory to this->mj_coordinates.
   this->mj_coordinates = mj_coordinates_;
-
-  // temporary memory. It is not used here, but the functions
-  // require these to be allocated.
-  // will copy the memory to this->current_mj_gnos[j].
 
   this->initial_mj_gnos =
     Kokkos::View<mj_gno_t*, device_t>("gids", this->num_local_coords);
 
   this->num_weights_per_coord = 0;
-  Kokkos::View<bool*, device_t>
-    tmp_mj_uniform_weights("uniform weights", 1);
+  Kokkos::View<bool*, device_t> tmp_mj_uniform_weights("uniform weights", 1);
   this->mj_uniform_weights = tmp_mj_uniform_weights;
   this->mj_uniform_weights(0) = true;
   Kokkos::View<mj_scalar_t**, device_t> tmp_mj_weights("weights", 1);
@@ -1729,8 +1726,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<bool*, device_t> tmp_mj_uniform_parts("uniform parts", 1);
   this->mj_uniform_parts = tmp_mj_uniform_parts;
   this->mj_uniform_parts(0) = true;
-  Kokkos::View<mj_scalar_t**, device_t>
-    tmp_mj_part_sizes("part sizes", 1);
+  Kokkos::View<mj_scalar_t**, device_t> tmp_mj_part_sizes("part sizes", 1);
   this->mj_part_sizes = tmp_mj_part_sizes;
 
   this->set_part_specifications();
@@ -1739,9 +1735,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // the end of the initial partition is the end of coordinates.
   this->part_xadj(0) = static_cast<mj_lno_t>(num_selected_coords);
 
-  for(size_t i = 0; i < static_cast<size_t>(num_total_coords); ++i){
-    this->coordinate_permutations(i) =
-      inital_adjList_output_adjlist(i);
+  for(size_t i = 0; i < static_cast<size_t>(num_total_coords); ++i) {
+    this->coordinate_permutations(i) = inital_adjList_output_adjlist(i);
   }
 
   mj_part_t current_num_parts = 1;
@@ -1752,14 +1747,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t future_num_parts = this->total_num_part;
 
   std::vector<mj_part_t> *future_num_part_in_parts =
-    new std::vector<mj_part_t> ();
+    new std::vector<mj_part_t>();
   std::vector<mj_part_t> *next_future_num_parts_in_parts =
-    new std::vector<mj_part_t> ();
+    new std::vector<mj_part_t>();
   next_future_num_parts_in_parts->push_back(this->num_global_parts);
   RCP<mj_partBoxVector_t> t1;
   RCP<mj_partBoxVector_t> t2;
 
-  std::vector <uSignedSortItem<int, mj_scalar_t, char> >
+  std::vector <uSignedSortItem<int, mj_scalar_t, char>>
     coord_dimension_range_sorted(this->coord_dim);
   uSignedSortItem<int, mj_scalar_t, char> *p_coord_dimension_range_sorted =
     &(coord_dimension_range_sorted[0]);
@@ -1773,7 +1768,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<size_t*, device_t>
     view_total_reduction_size("view_total_reduction_size", 1);
 
-  for (int i = 0; i < this->recursion_depth; ++i){
+  for (int i = 0; i < this->recursion_depth; ++i) {
     // partitioning array. size will be as the number of current partitions
     // and this holds how many parts that each part will be in the current
     // dimension partitioning.
@@ -1816,7 +1811,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // skip this dimension. For example, this happens when 1 is given in
     // the input part array is given. P=4,5,1,2
     if(output_part_count_in_dimension == current_num_parts) {
-      tmpPartVect= future_num_part_in_parts;
+      tmpPartVect = future_num_part_in_parts;
       future_num_part_in_parts = next_future_num_parts_in_parts;
       next_future_num_parts_in_parts = tmpPartVect;
       continue;
@@ -1853,10 +1848,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     for (; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
-      // current_concurrent_num_parts =
-      //  std::min(current_num_parts - current_work_part,
-      // this->max_concurrent_part_calculation);
-
       mj_part_t actual_work_part_count = 0;
       // initialization for 1D partitioning.
       // get the min and max coordinates of each part
@@ -1866,8 +1857,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           current_work_part + kk;
 
         // if this part wont be partitioned any further
-        //dont do any work for this part.
-
+        // dont do any work for this part.
         mj_part_t partition_count;
         Kokkos::parallel_reduce("Read single", 1,
           KOKKOS_LAMBDA(int dummy, mj_part_t & set_single) {
@@ -1883,7 +1873,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         if(partition_along_longest_dim) {
           auto local_process_local_min_max_coord_total_weight =
             this->process_local_min_max_coord_total_weight;
-          for (int coord_traverse_ind = 0;
+          for(int coord_traverse_ind = 0;
             coord_traverse_ind < this->coord_dim; ++coord_traverse_ind) {
             // MD:same for all coordinates, but I will still use this for now.
             this->mj_taskmapper_get_local_min_max_coord_totW(
@@ -1897,14 +1887,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               coord_traverse_ind;
             coord_dimension_range_sorted[coord_traverse_ind].signbit = 1;
 
-            // TODO: Refactoring and optimizing general MJ leaves
-            // us with some awkward issues here
-            // for the Task Mapper code. For now just brute force the reads
-
-            // This is the original code we are effecting here
-            // coord_dim_mins[coord_traverse_ind] = best_min_coord;
-            // coord_dim_maxs[coord_traverse_ind] = best_max_coord;
-
+            // TODO: Optimize this - reading cuda singles is inefficient
             Kokkos::parallel_reduce("Read single", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
               set_single =
@@ -1918,8 +1901,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                 kk + current_concurrent_num_parts);
             }, coord_dim_maxs[coord_traverse_ind]);
 
-            // Temporary - in refactor progress - will need to redo this
-            // formatting: TODO
             Kokkos::parallel_reduce("Read single", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
               set_single =
@@ -1936,11 +1917,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
  
           // Note original code tracked unsorted weight but this should be set
           // already. So nothing to do ... but need to investigate if that was
-          // intended. TODO:
+          // intended. TODO: Check this - need to go back and look at original.
 
           // TODO: This also was a relic of the refactor and we might consider
-          // a different format
-          // Related to above issues - need to clean this up
+          // a different format. Related to above issues - need to clean this up
           auto set_min = coord_dim_mins[coordInd];
           auto set_max = coord_dim_maxs[coordInd];
           Kokkos::parallel_for(
@@ -1948,7 +1928,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               (0, 1), KOKKOS_LAMBDA (const int dummy) {
             local_process_local_min_max_coord_total_weight(kk) = set_min;
             local_process_local_min_max_coord_total_weight(
-              kk+ current_concurrent_num_parts) = set_max;
+              kk + current_concurrent_num_parts) = set_max;
           });
         }
         else {
@@ -2031,11 +2011,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               concurrent_current_part_index,
               obtained_part_index);
 
+            // TODO: This needs to be device code?
+            // Check if this is running at all for task mapper ....
             mj_lno_t coordinate_end_index =
               this->part_xadj(concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
-              concurrent_current_part_index==0 ? 0 :
-                this->part_xadj[concurrent_current_part_index -1];
+              (concurrent_current_part_index==0) ? 0 :
+                this->part_xadj[concurrent_current_part_index - 1];
 
             // get the initial estimated part assignments of the coordinates.
             this->set_initial_coordinate_parts(
@@ -2259,7 +2241,6 @@ AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t, mj_node_t>::
 }
 
 /*! \brief Function call, if the part boxes are intended to be kept.
- *
  */
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
@@ -2291,16 +2272,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->max_num_cut_along_dim = 0;
   this->max_num_total_part_along_dim = 0;
 
-  // TODO - is size() going to work as NULL did?
+  // TODO: is size() going to work as NULL did?
   if (this->part_no_array.size())
   {
-    // original code as follows - first line is a simple multiply
-    // 2nd line needs kokkos loop 
-    // for (int i = 0; i < this->recursion_depth; ++i) {
-    //        this->total_dim_num_reduce_all += this->total_num_part;
-    //        this->total_num_part *= this->part_no_array(i);
-    //}
-
     auto local_part_no_array = this->part_no_array;
     auto local_recursion_depth = this->recursion_depth; 
 
