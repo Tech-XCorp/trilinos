@@ -4218,17 +4218,8 @@ struct ReduceWeightsFunctor {
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count_weights; ++n) {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-
-#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-        // TODO if we keep this form we may want to abolish the array_t and make
-        // sure it's all double - no idea yet what the cost of the cast could be
-        // on GPU
         Kokkos::atomic_add(&current_part_weights(n),
           static_cast<double>(shared_ptr[n]));
-#else
-        teamSum[n] += shared_ptr[n];
-#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
-
 #else // ZOLTAN2_MJ_USE_CUDA_KERNEL
         teamSum[n] += array.ptr[n];
 #endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
@@ -4752,6 +4743,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
   new_cut_position = coordinate_range * required_shift + cut_lower_bound;
 }
 
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
+
 template<class policy_t, class scalar_t>
 struct ArrayReducer {
 
@@ -4793,12 +4786,17 @@ struct ArrayReducer {
   }
 };
 
+#endif
+
 template<class policy_t, class scalar_t, class part_t, class index_t,
   class device_t, class array_t>
 struct ReduceArrayFunctor {
   typedef typename policy_t::member_type member_type;
   typedef Kokkos::View<scalar_t*> scalar_view_t;
+
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
   typedef array_t value_type[];
+#endif
   
   part_t concurrent_current_part;
   int value_count;
@@ -4808,6 +4806,10 @@ struct ReduceArrayFunctor {
   Kokkos::View<index_t *, device_t> part_xadj;
   Kokkos::View<index_t *, device_t> track_on_cuts;
 
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+  Kokkos::View<int *, device_t> local_point_counts;
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
+
   ReduceArrayFunctor(
     part_t mj_concurrent_current_part,
     part_t mj_weight_array_size,
@@ -4816,6 +4818,9 @@ struct ReduceArrayFunctor {
     Kokkos::View<part_t*, device_t> mj_parts,
     Kokkos::View<index_t *, device_t> mj_part_xadj,
     Kokkos::View<index_t *, device_t> mj_track_on_cuts
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+    ,Kokkos::View<int *, device_t> mj_local_point_counts
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
     ) :
       concurrent_current_part(mj_concurrent_current_part),
       value_count(mj_weight_array_size),
@@ -4824,12 +4829,20 @@ struct ReduceArrayFunctor {
       parts(mj_parts),
       part_xadj(mj_part_xadj),
       track_on_cuts(mj_track_on_cuts)
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+      ,local_point_counts(mj_local_point_counts)
+#endif
   {
   }
 
   size_t team_shmem_size (int team_size) const {
-    // pad this to a multiple of 8 or it will run corrupt
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+    int result = sizeof(array_t) * (value_count);
+#else
     int result = sizeof(array_t) * (value_count) * team_size;
+#endif
+
+    // pad this to a multiple of 8 or it will run corrupt
     int remainder = result % 8;
     if(remainder != 0) {
       result += 8 - remainder;
@@ -4838,8 +4851,11 @@ struct ReduceArrayFunctor {
   }
 
   KOKKOS_INLINE_FUNCTION
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+  void operator() (const member_type & teamMember) const {
+#else
   void operator() (const member_type & teamMember, value_type teamSum) const {
-
+#endif
     index_t all_begin = (concurrent_current_part == 0) ? 0 :
       part_xadj(concurrent_current_part - 1);
     index_t all_end = part_xadj(concurrent_current_part);
@@ -4857,32 +4873,54 @@ struct ReduceArrayFunctor {
     if(end > all_end) {
       end = all_end; // the last team may have less work than the other teams
     }
-
+    
+    int track_on_cuts_insert_index = track_on_cuts.size() - 1;
+    
     // create the team shared data - each thread gets one of the arrays
-    size_t sh_mem_size =
-      sizeof(array_t) * (value_count) * teamMember.team_size();
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+    size_t sh_mem_size = sizeof(array_t) * (value_count);
+#else
+    size_t sh_mem_size = sizeof(array_t) * (value_count) * teamMember.team_size();
+#endif
 
     array_t * shared_ptr = (array_t *) teamMember.team_shmem().get_shmem(
       sh_mem_size);
       
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+    // init the shared array to 0
+    Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
+      for(int n = 0; n < value_count; ++n) {
+        shared_ptr[n] = 0;
+      }
+    });
+    teamMember.team_barrier();
+
+    Kokkos::parallel_for(
+      Kokkos::TeamThreadRange(teamMember, begin, end),
+      [=] (const size_t ii) {
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
     // select the array for this thread
     Zoltan2_MJArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
         (value_count)]);
 
     // create reducer which handles the Zoltan2_MJArrayType class
     ArrayReducer<policy_t, array_t> arrayReducer(array, value_count);
-      
-    int track_on_cuts_insert_index = track_on_cuts.size()-1;
- 
+    
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
       [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
-      
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
+
       index_t coordinate_index = permutations(ii);
       part_t place = parts(coordinate_index);
       part_t part = place / 2;
       if(place % 2 == 0) {
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+        Kokkos::atomic_add(&shared_ptr[part], 1);
+#else
         threadSum.ptr[part] += 1;
+#endif
+        
         parts(coordinate_index) = part;
       }
       else {
@@ -4892,20 +4930,30 @@ struct ReduceArrayFunctor {
             &track_on_cuts(track_on_cuts_insert_index), 1);
         track_on_cuts(set_index) = ii;
       }
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+    });
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
     }, arrayReducer);
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
 
     teamMember.team_barrier();
 
     // collect all the team's results
     Kokkos::single(Kokkos::PerTeam(teamMember), [=] () {
       for(int n = 0; n < value_count; ++n) {
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+        Kokkos::atomic_add(&local_point_counts(n), shared_ptr[n]);
+#else // ZOLTAN2_MJ_USE_CUDA_KERNEL
         teamSum[n] += array.ptr[n];
+#endif // ZOLTAN2_MJ_USE_CUDA_KERNEL
       }
     });
 
     teamMember.team_barrier();
   }
-  
+
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
+
   KOKKOS_INLINE_FUNCTION
   void join(value_type dst, const value_type src)  const {
     for(int n = 0; n < value_count; ++n) {
@@ -4925,6 +4973,7 @@ struct ReduceArrayFunctor {
       dst[n] = 0;
     }
   }
+#endif
 };
 
 /*! \brief Function that determines the permutation indices of the coordinates.
@@ -5068,6 +5117,12 @@ mj_create_new_partitions(
   // before where the kernel had atomics and this only seemed to be a problem
   // when the kernel had atomics. Not doing this check would be fine for all
   // large tests but for a small number of coords we would see test failures.
+  
+  // TODO: Come back and test this again - there is another issue with reduction
+  // of arrays on Cuda causing intermittent failures due to changes made in
+  // kokkos. This was reported but not fixed yet. I'm switching this code to
+  // now run atomics (faster) for CUDA so this issue perhaps will go away.
+  // However this code should be fine regardless.
   int use_num_teams = mj_num_teams;
   mj_lno_t range = coordinate_end_index - coordinate_begin_index;
   if(use_num_teams > range/32) {
@@ -5092,11 +5147,19 @@ mj_create_new_partitions(
       mj_current_dim_coords,
       assigned_part_ids,
       part_xadj,
-      track_on_cuts);
+      track_on_cuts
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+      ,local_point_counts
+#endif
+      );
 
-  Kokkos::parallel_reduce(policy_ReduceFunctor,
-    teamFunctor, reduce_array);
+#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
+  Kokkos::parallel_for(policy_ReduceFunctor, teamFunctor);
+#else
+  Kokkos::parallel_reduce(policy_ReduceFunctor, teamFunctor, reduce_array);
+#endif
 
+#ifndef ZOLTAN2_MJ_USE_CUDA_KERNEL
   // Move it from global memory to device memory
   // TODO: Need to figure out how we can better manage this
   typename decltype(local_point_counts)::HostMirror host_part_count =
@@ -5107,6 +5170,7 @@ mj_create_new_partitions(
   Kokkos::deep_copy(local_point_counts, host_part_count);
     
   delete [] reduce_array;
+#endif
 
   clock_mj_create_new_partitions_4.stop();
   clock_mj_create_new_partitions_5.start();
