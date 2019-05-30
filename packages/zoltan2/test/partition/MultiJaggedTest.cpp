@@ -1482,7 +1482,8 @@ int main(int narg, char *arg[])
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, uvm, test_boxes, rectilinear, 
+                    migration_doMigration_type, uvm, print_details, test_boxes,
+                    rectilinear, 
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
 #else
             throw std::logic_error("uvm set off but this is not a cuda test.");
