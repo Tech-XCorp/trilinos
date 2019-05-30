@@ -860,6 +860,7 @@ int testFromDataFile(
         int migration_processor_assignment_type,
         int migration_doMigration_type,
         bool uvm,
+        bool print_details,
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option, 
@@ -1469,7 +1470,8 @@ int main(int narg, char *arg[])
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, uvm, test_boxes, rectilinear,
+                    migration_doMigration_type, uvm, print_details, test_boxes,
+                    rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
           }
           else {
@@ -1508,7 +1510,8 @@ int main(int narg, char *arg[])
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, uvm, test_boxes, rectilinear, 
+                    migration_doMigration_type, uvm, print_details, test_boxes,
+                    rectilinear, 
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
           }
           else {
