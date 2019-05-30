@@ -9527,11 +9527,17 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       this->min_coord_per_rank_for_premigration;
     bool is_pre_migrated = false;
     bool am_i_in_subset = true;
+    
+    printf("Rank %d PM option: %d current_world_size: %d global_parts: %d num_global_coords: %d threshold: %d\n",
+      this->mj_problemComm->getRank(),
+      (int)mj_premigration_option, (int)current_world_size, (int)this->num_global_parts, (int)this->num_global_coords, (int)threshold_num_local_coords);
+      
     if (mj_premigration_option > 0 &&
         size_t (current_world_size) > this->num_global_parts &&
         this->num_global_coords < mj_gno_t (
         current_world_size * threshold_num_local_coords))
     {
+printf("PREMIGRATING!\n");
       if (this->mj_keep_part_boxes) {
         throw std::logic_error("Multijagged: mj_keep_part_boxes and "
           "mj_premigration_option are not supported together yet.");
