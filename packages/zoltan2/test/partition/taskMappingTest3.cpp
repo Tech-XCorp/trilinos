@@ -196,7 +196,6 @@ void getArgVals(
         else {
             throw "Invalid argument at " + tmp;
         }
-
     }
     if(!(ispartset >= 3&& isprocset)){
         throw "(PROC && PART) are mandatory arguments.";

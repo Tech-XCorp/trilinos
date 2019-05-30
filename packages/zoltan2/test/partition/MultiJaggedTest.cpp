@@ -1221,14 +1221,14 @@ void getArgVals(
             } else {
                 throw "Invalid argument at " + tmp;
             }
-        } 
+        }
         else if(identifier == "UVM"){
             if(value == 0 || value == 1){
                 uvm = (value == 0 ? false : true);
             } else {
                 throw "Invalid argument at " + tmp;
             }
-        } 
+        }
         else if(identifier == "T"){
             if(value > 0){
                 numTeams=value;
@@ -1405,7 +1405,7 @@ int main(int narg, char *arg[])
     int migration_doMigration_type = -1;
     int  mj_premigration_option = 0;
     int mj_premigration_coordinate_cutoff = 0;
-    
+
     bool uvm = true;
     bool print_details = true;
     bool test_boxes = false;
@@ -1415,7 +1415,7 @@ int main(int narg, char *arg[])
     // make a new node type so we can run BasicVectorAdapter with UVM off
     // The Tpetra MV will still run with UVM on and we'll compare the results.
     // For Serial/OpenMP the 2nd test will be turned off at the CMake level.
-    // For CUDA we control uvm on/off with parameter uvm set to 0 or 1. 
+    // For CUDA we control uvm on/off with parameter uvm set to 0 or 1.
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  uvm_off_node_t;
 #endif
@@ -1483,7 +1483,7 @@ int main(int narg, char *arg[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, uvm, print_details, test_boxes,
-                    rectilinear, 
+                    rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
 #else
             throw std::logic_error("uvm set off but this is not a cuda test.");
@@ -1512,7 +1512,7 @@ int main(int narg, char *arg[])
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
                     migration_doMigration_type, uvm, print_details, test_boxes,
-                    rectilinear, 
+                    rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
           }
           else {
