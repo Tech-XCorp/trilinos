@@ -91,108 +91,9 @@
 // versus doubles for the reduction arrays in the main kernel of MJ.
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
 
-// TODO: Remove this option and remove all clock code.
-// This is temporary and turns off clocking for most clocks.
-#define ZOLTAN2_MJ_DISABLE_CLOCKS false
-
-// TODO: Delete all clock stuff. These were temporary timers for profiling.
-class Clock {
-  typedef typename std::chrono::time_point<std::chrono::steady_clock> clock_t;
-  public:
-    Clock(std::string clock_name, bool bStart, bool bAlwaysOnIn = false) :
-      name(clock_name), bAlwaysOn(bAlwaysOnIn) {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOnIn) {
-        reset();
-        if(bStart) {
-          start();
-        }
-      }
-    }
-    void reset() {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOn) {
-        time_sum_ns = 0;
-        counter_start = 0;
-        counter_stop = 0;
-      }
-    }
-    int time() const {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOn) {
-        if(counter_start != counter_stop) {
-          printf("Clock %s bad counters for time!\n", name.c_str());
-          throw std::logic_error("bad timer counters for time!\n");
-        }
-        return time_sum_ns;
-      } else {
-        return 0.0;
-      }
-    }
-    void start() {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOn) {
-        if(counter_start != counter_stop) {
-          printf("Clock %s bad counters for start!\n", name.c_str());
-          throw std::logic_error("bad timer counters for start!\n");
-        }
-        ++counter_start;
-        start_time = std::chrono::steady_clock::now();
-      }
-    }
-    void stop(bool bPrint = false) {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOn) {
-        if(counter_start-1 != counter_stop) {
-          printf("Clock %s bad counters for stop!\n", name.c_str());
-          throw std::logic_error("bad timer counters for stop!\n");
-        }
-        ++counter_stop;
-        clock_t now_time = std::chrono::steady_clock::now();
-        time_sum_ns += static_cast<int>(std::chrono::duration_cast<std::chrono::nanoseconds>(now_time - start_time).count());
-
-        if(bPrint) {
-          print();
-        }
-      }
-    }
-    void print() {
-      if(!ZOLTAN2_MJ_DISABLE_CLOCKS || bAlwaysOn) {
-        printf("%s: %d us    Count: %d\n", name.c_str(), time()/1000, counter_stop);
-      }
-    }
-  private:
-    std::string name;
-    int counter_start;
-    int counter_stop;
-    clock_t start_time;
-    int time_sum_ns;
-    bool bAlwaysOn;
-};
-
-// TODO: Also delete all of this temp profiling code
-static Clock clock_mj_1D_part_init("        clock_mj_1D_part_init", false);
-static Clock clock_mj_1D_part_init2("        clock_mj_1D_part_init2", false);
-static Clock clock_mj_1D_part_while_loop("        clock_mj_1D_part_while_loop", false);
-static Clock clock_swap("          clock_swap", false);
-static Clock clock_host_copies("          clock_host_copies", false);
-static Clock clock_mj_1D_part_get_weights_init("          clock_mj_1D_part_get_weights_init", false);
-static Clock clock_mj_1D_part_get_weights_setup("          clock_mj_1D_part_get_weights_setup", false);
-static Clock clock_mj_1D_part_get_weights("          clock_mj_1D_part_get_weights", false);
-static Clock clock_weights1("            clock_weights1", false);
-static Clock clock_weights_new_to_optimize("              clock_weights_new_to_optimize", false);
-static Clock clock_weights2("            clock_weights2", false);
-static Clock clock_weights3("            clock_weights3", false);
-static Clock clock_functor_weights("              clock_functor_weights", false);
-static Clock clock_weights4("            clock_weights4", false);
-static Clock clock_mj_combine_rightleft_and_weights("          clock_mj_combine_rightleft_and_weights", false);
-static Clock clock_mj_get_new_cut_coordinates_init("          clock_mj_get_new_cut_coordinates_init", false);
-static Clock clock_mj_get_new_cut_coordinates("          clock_mj_get_new_cut_coordinates", false);
-static Clock clock_mj_get_new_cut_coordinates_end("          clock_mj_get_new_cut_coordinates_end", false);
-static Clock clock_write_globals("          clock_write_globals", false);
-static Clock clock_mj_1D_part_end("        clock_mj_1D_part_end", false);
-static Clock clock_mj_create_new_partitions("         clock_mj_create_new_partitions", false);
-static Clock clock_mj_create_new_partitions_1("           clock_mj_create_new_partitions_1", false);
-static Clock clock_mj_create_new_partitions_2("           clock_mj_create_new_partitions_2", false);
-static Clock clock_mj_create_new_partitions_3("           clock_mj_create_new_partitions_3", false);
-static Clock clock_mj_create_new_partitions_4("           clock_mj_create_new_partitions_4", false);
-static Clock clock_mj_create_new_partitions_5("           clock_mj_create_new_partitions_5", false);
-static Clock clock_mj_create_new_partitions_6("           clock_mj_create_new_partitions_6", false);
+// Some clocking code which is temporary
+// TODO: Delete this file and all clock code.
+#include "Zoltan2_AlgMultiJagged_Clocks.hpp"
 
 #define LEAST_SIGNIFICANCE 0.0001
 #define SIGNIFICANCE_MUL 1000
@@ -1629,7 +1530,9 @@ AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::AlgMJ():
   max_num_total_part_along_dim(0),
   total_dim_num_reduce_all(0),
   last_dim_num_part(0),
-  mj_num_teams(60), // TODO: TaskMapper will allocate this directly - need to clean up mj_num_teams
+  // TODO: TaskMapper allocates directly - clean up 60 as default
+  // Need a better way to organize the parameters
+  mj_num_teams(60),
   num_global_parts(1),
   kept_boxes(), global_box(),
   myRank(0), myActualRank(0),
@@ -1957,8 +1860,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             2 * current_concurrent_num_parts);
           mj_part_t concurrent_current_part_index = current_work_part + kk;
 
-          mj_part_t partition_count =
-            vector_num_partitioning_in_current_dim[concurrent_current_part_index];
+          mj_part_t partition_count = vector_num_partitioning_in_current_dim[
+            concurrent_current_part_index];
 
           Kokkos::View<mj_scalar_t *, device_t> usedCutCoordinate =
             Kokkos::subview(current_cut_coordinates,
@@ -2059,8 +1962,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         for(int kk = 0; kk < current_concurrent_num_parts; ++kk) {
           mj_part_t current_concurrent_work_part = current_work_part + kk;
 
-          mj_part_t num_parts =
-            vector_num_partitioning_in_current_dim[current_concurrent_work_part];
+          mj_part_t num_parts = vector_num_partitioning_in_current_dim[
+            current_concurrent_work_part];
 
           // if the part is empty, skip the part.
           if((num_parts != 1  ) &&
@@ -2652,9 +2555,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // new_coordinate_permutations holds the current permutation.
   this->new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("num_local_coords"), this->num_local_coords);
+    Kokkos::ViewAllocateWithoutInitializing("num_local_coords"),
+    this->num_local_coords);
+  // TODO empty is ok for NULL replacement?
   this->assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
-    Kokkos::ViewAllocateWithoutInitializing("assigned parts")); // TODO empty is ok for NULL replacement?
+    Kokkos::ViewAllocateWithoutInitializing("assigned parts"));
   if(this->num_local_coords > 0) {
     this->assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
       Kokkos::ViewAllocateWithoutInitializing("assigned part ids"), this->num_local_coords);
@@ -6863,6 +6768,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   int *coordinate_destinations,
   mj_part_t num_parts)
 {
+static_clock_mj_migrate_coords.start();
+
 #ifdef ENABLE_ZOLTAN_MIGRATION
   if(sizeof(mj_lno_t) <= sizeof(int)) {
     // Cannot use Zoltan_Comm with local ordinals larger than ints.
