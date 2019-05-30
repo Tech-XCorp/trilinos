@@ -17,8 +17,17 @@
 #include <Zoltan2_XpetraCrsGraphAdapter.hpp>
 #include <Zoltan2_XpetraMultiVectorAdapter.hpp>
 
-typedef Tpetra::CrsGraph<zlno_t, zgno_t, znode_t> tcrsGraph_t;
-typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, znode_t> tMVector_t;
+// Experimenting with cuda uvm off - need some testing of MJ sequential code
+#ifdef KOKKOS_HAVE_CUDA
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
+      Kokkos::Cuda, Kokkos::CudaSpace>  use_node_t;
+#else
+    typedef znode_t use_node_t;
+#endif
+
+
+typedef Tpetra::CrsGraph<zlno_t, zgno_t, use_node_t> tcrsGraph_t;
+typedef Tpetra::MultiVector<zscalar_t, zlno_t, zgno_t, use_node_t> tMVector_t;
 typedef Zoltan2::XpetraCrsGraphAdapter<tcrsGraph_t, tMVector_t> my_adapter_t;
 
 
@@ -111,7 +120,12 @@ int main(int narg, char *arg[]){
     }
     using namespace Teuchos;
     RCP<my_adapter_t> ia;
-    typedef Tpetra::Map<>::node_type mytest_znode_t;
+    
+    // Not sure about this different node type here
+    // Would like to force UVM off for testing so changing for now...
+    // typedef Tpetra::Map<>::node_type mytest_znode_t;
+    typedef use_node_t mytest_znode_t;
+    
     typedef Tpetra::Map<zlno_t, zgno_t, mytest_znode_t> map_t;
     RCP<const map_t> map = rcp (new map_t (numGlobalTasks, myTasks, 0, tcomm));
 
