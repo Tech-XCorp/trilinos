@@ -6768,7 +6768,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   int *coordinate_destinations,
   mj_part_t num_parts)
 {
-static_clock_mj_migrate_coords.start();
+clock_mj_migrate_coords.start();
 
 #ifdef ENABLE_ZOLTAN_MIGRATION
   if(sizeof(mj_lno_t) <= sizeof(int)) {
@@ -7089,6 +7089,8 @@ static_clock_mj_migrate_coords.start();
 
     num_new_local_points = num_incoming_gnos;
   }
+
+  clock_mj_migrate_coords.stop();
 }
 
 /*! \brief Function creates the new subcomminicator for the processors
@@ -8031,6 +8033,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_mj_get_new_cut_coordinates_end.reset();
   clock_write_globals.reset();
   clock_mj_1D_part_end.reset();
+  clock_mj_migrate_coords.reset();
 
   Clock clock_multi_jagged_part("clock_multi_jagged_part", true, true);
   Clock clock_multi_jagged_part_init("  clock_multi_jagged_part_init", true);
@@ -8825,6 +8828,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   clock_functor_weights.print();                  // 2nd print for easy access
   clock_mj_create_new_partitions.print();         // 2nd print for easy access
   clock_mj_get_local_min_max_coord_totW.print();  // 2nd print for easy access
+  clock_mj_migrate_coords.print();
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,

@@ -171,3 +171,5 @@ static Clock clock_mj_create_new_partitions_5(
   "           clock_mj_create_new_partitions_5", false);
 static Clock clock_mj_create_new_partitions_6(
   "           clock_mj_create_new_partitions_6", false);
+static Clock clock_mj_migrate_coords(
+  " ------- migrate_coords", false);
