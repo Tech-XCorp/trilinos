@@ -168,7 +168,8 @@ void print_boxAssign_result(
 template <typename Adapter>
 int run_pointAssign_tests(
   Zoltan2::PartitioningProblem<Adapter> *problem,
-  RCP<tMVector_t> &coords)
+  RCP<tMVector_t> &coords,
+  bool print_details)
 {
     int ierr = 0;
 
@@ -199,14 +200,16 @@ int run_pointAssign_tests(
         }
         CATCH_EXCEPTIONS_WITH_COUNT(ierr, me + ": pointAssign -- OwnedPoints");
 
-        std::cout << me << " Point " << localID
-                  << " gid " << coords->getMap()->getGlobalElement(localID)
-                  << " (" << pointDrop[0];
-        if (coordDim > 1) std::cout << " " << pointDrop[1];
-        if (coordDim > 2) std::cout << " " << pointDrop[2];
-        std::cout << ") in boxPart " << part
-                  << "  in solnPart " << solnPart
-                  << std::endl;
+        if(print_details) {
+          std::cout << me << " Point " << localID
+                    << " gid " << coords->getMap()->getGlobalElement(localID)
+                    << " (" << pointDrop[0];
+          if (coordDim > 1) std::cout << " " << pointDrop[1];
+          if (coordDim > 2) std::cout << " " << pointDrop[2];
+          std::cout << ") in boxPart " << part
+                    << "  in solnPart " << solnPart
+                    << std::endl;
+        }
 
 // this error test does not work for points that fall on the cuts.
 // like Zoltan's RCB, pointAssign arbitrarily picks a part along the cut.
@@ -225,14 +228,16 @@ int run_pointAssign_tests(
     {
       const std::vector<Zoltan2::coordinateModelPartBox>
             pBoxes = problem->getSolution().getPartBoxesView();
-      for (size_t i = 0; i < pBoxes.size(); i++) {
-        typename Zoltan2::coordinateModelPartBox::coord_t *lmin = pBoxes[i].getlmins();
-        typename Zoltan2::coordinateModelPartBox::coord_t *lmax = pBoxes[i].getlmaxs();;
-        std::cout << me << " pBox " << i << " pid " << pBoxes[i].getpId()
-                  << " (" << lmin[0] << "," << lmin[1] << ","
-                  << (coordDim > 2 ? lmin[2] : 0) << ") x "
-                  << " (" << lmax[0] << "," << lmax[1] << ","
-                  << (coordDim > 2 ? lmax[2] : 0) << ")" << std::endl;
+      if(print_details) {
+        for (size_t i = 0; i < pBoxes.size(); i++) {
+          typename Zoltan2::coordinateModelPartBox::coord_t *lmin = pBoxes[i].getlmins();
+          typename Zoltan2::coordinateModelPartBox::coord_t *lmax = pBoxes[i].getlmaxs();;
+          std::cout << me << " pBox " << i << " pid " << pBoxes[i].getpId()
+                    << " (" << lmin[0] << "," << lmin[1] << ","
+                    << (coordDim > 2 ? lmin[2] : 0) << ") x "
+                    << " (" << lmax[0] << "," << lmax[1] << ","
+                    << (coordDim > 2 ? lmax[2] : 0) << ")" << std::endl;
+        }
       }
     }
 
@@ -675,6 +680,7 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
         int migration_processor_assignment_type,
         int migration_doMigration_type,
         bool uvm,
+        bool print_details,
         bool test_boxes,
         bool rectilinear,
         int  mj_premigration_option,
@@ -815,7 +821,8 @@ int GeometricGenInterface(RCP<const Teuchos::Comm<int> > &comm,
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr += run_pointAssign_tests<inputAdapter_t>(problem, tmVector);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, tmVector,
+        print_details);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, tmVector);
     }
 
@@ -944,7 +951,8 @@ int testFromDataFile(
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords,
+        print_details);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, coords);
     }
 
@@ -1140,7 +1148,8 @@ int testFromSeparateDataFiles(
 
     // run pointAssign tests
     if (test_boxes) {
-      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords);
+      ierr += run_pointAssign_tests<inputAdapter_t>(problem, coords,
+        print_details);
       ierr += run_boxAssign_tests<inputAdapter_t>(problem, coords);
     }
 
@@ -1186,6 +1195,7 @@ void getArgVals(
         int &migration_processor_assignment_type,
         int &migration_doMigration_type,
         bool &uvm,
+        bool &print_details,
         bool &test_boxes,
         bool &rectilinear,
         int  &mj_premigration_option,
@@ -1204,7 +1214,14 @@ void getArgVals(
         if(!getArgumentValue(identifier, fval, tmp)) continue;
         value = (long long int) (fval);
 
-        if(identifier == "UVM"){
+        if(identifier == "W"){
+            if(value == 0 || value == 1){
+                print_details = (value == 0 ? false : true);
+            } else {
+                throw "Invalid argument at " + tmp;
+            }
+        } 
+        else if(identifier == "UVM"){
             if(value == 0 || value == 1){
                 uvm = (value == 0 ? false : true);
             } else {
@@ -1389,6 +1406,7 @@ int main(int narg, char *arg[])
     int mj_premigration_coordinate_cutoff = 0;
     
     bool uvm = true;
+    bool print_details = true;
     bool test_boxes = false;
     bool rectilinear = false;
 
@@ -1420,6 +1438,7 @@ int main(int narg, char *arg[])
                     migration_processor_assignment_type,
                     migration_doMigration_type,
                     uvm,
+                    print_details,
                     test_boxes,
                     rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
