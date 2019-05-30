@@ -82,9 +82,9 @@
 // a single code pipe-line which runs both reduction or atomic patterns but did
 // not investigate that yet.
 // TODO: Implement ScatterView and get rid of this macro.
-//#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_HAVE_CUDA
 #define ZOLTAN2_MJ_USE_CUDA_KERNEL // Atomic Atomic Loops
-//#endif
+#endif
 
 // TODO: This macro will be removed after some further profiling.
 // This option is being maintained to evaluate the perfomance of using floats
