@@ -1379,6 +1379,29 @@ void print_usage(char *executable){
     std::cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << std::endl;
 }
 
+
+#define SIMPLE_TEST
+#ifdef SIMPLE_TEST // this is temporary - TODO: Delete me
+
+int main(int narg, char *arg[])
+{
+  Tpetra::ScopeGuard tscope(&narg, &arg);
+  Teuchos::RCP<const Teuchos::Comm<int> > tcomm = Tpetra::getDefaultComm();
+
+  const int N = 50;
+  Kokkos::View<int *, Kokkos::Serial>("test", N);
+  int first_value;
+  Kokkos::parallel_reduce("Read bDoingWork", 1,
+    KOKKOS_LAMBDA(int dummy, int & set_single) {
+    set_single = 0;
+  }, first_value);
+  printf("Rank %d has first_value: %d\n", tcomm->getRank(), first_value);
+
+  return 0;
+}
+
+#else
+
 int main(int narg, char *arg[])
 {
     Tpetra::ScopeGuard tscope(&narg, &arg);
@@ -1552,3 +1575,5 @@ int main(int narg, char *arg[])
 
     return 0;
 }
+
+#endif // SIMPLE_TEST
