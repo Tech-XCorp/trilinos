@@ -112,12 +112,18 @@ public:
   // The Adapter interface.
   ////////////////////////////////////////////////////////////////
 
-  size_t getLocalNumIDs() const { return idsView_.extent(0); }
+  size_t getLocalNumIDs() const {
+    return idsView_.extent(0);
+  }
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    typename node_t::device_type> &ids) const {ids = idsView_;}
+    Kokkos::Serial> &ids) const {
+    ids = idsView_;
+  }
 
-  int getNumWeightsPerID() const { return weightsView_.extent(1); }
+  int getNumWeightsPerID() const {
+    return weightsView_.extent(1);
+  }
 
   void getWeightsKokkosView(Kokkos::View<scalar_t *,
     typename node_t::device_type> &wgt, int idx) const {
@@ -131,7 +137,7 @@ public:
   }
 
 private:
-  Kokkos::View<const gno_t *, typename node_t::device_type> idsView_;
+  Kokkos::View<const gno_t *, Kokkos::Serial> idsView_;
   Kokkos::View<scalar_t **, weight_layout_t> weightsView_;
 };
 

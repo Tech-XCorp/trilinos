@@ -219,7 +219,8 @@ public:
   }
 
   size_t getCoordinatesKokkos(
-    Kokkos::View<const gno_t *, typename node_t::device_type> &Ids,
+    // Note decided to make gnos host space for now
+    Kokkos::View<const gno_t *, Kokkos::Serial> &Ids,
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
     Kokkos::View<scalar_t **, typename node_t::device_type> &wgts) const
   {
@@ -251,7 +252,7 @@ private:
 
   // TODO: We now have a Kokkos version and non kokkos version so need to clean
   // this up and perhaps eliminate the non-kokkos version completely.
-  Kokkos::View<const gno_t *, typename node_t::device_type> kokkos_gids_;
+  Kokkos::View<const gno_t *, Kokkos::Serial> kokkos_gids_;
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;
   Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_;
 
@@ -312,6 +313,9 @@ void CoordinateModel<Adapter>::sharedConstructor(
     }
 
     const gno_t *gids=NULL;
+
+    // the derived classes will currently provide the host form
+    // we decide to keep gids host because they aren't used anywhere on device.
     ia->getIDsView(gids);
     gids_ = arcp(gids, 0, nLocalIds, false);
 

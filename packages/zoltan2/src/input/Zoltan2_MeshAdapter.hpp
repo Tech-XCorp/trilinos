@@ -459,21 +459,15 @@ public:
   }
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    typename node_t::device_type> &ids) const
+    Kokkos::Serial> &ids) const
   {
-    // I'm not sure how we'll organize this yet
-    // I want to get the cuda builds running and passing
-    // so first step let's just build the View
-    Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids("pamgen ids", getLocalNumIDs());
-    typename decltype(kokkos_ids)::HostMirror
-      host_temp_values = Kokkos::create_mirror_view(kokkos_ids);
+    Kokkos::View<gno_t *, Kokkos::Serial> kokkos_ids("gids", getLocalNumIDs());
     const gno_t * gnos;
-
     getIDsView(gnos);
+    // TODO: Make this an unmanaged view and save the copy?
     for(int n = 0; n < getLocalNumIDs(); ++n) {
-      host_temp_values(n) = gnos[n];
+      kokkos_ids(n) = gnos[n];
     }
-    Kokkos::deep_copy(kokkos_ids, host_temp_values);
     ids = kokkos_ids;
   }
 
