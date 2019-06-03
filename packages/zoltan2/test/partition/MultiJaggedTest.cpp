@@ -1380,7 +1380,7 @@ void print_usage(char *executable){
 }
 
 
-#define SIMPLE_TEST
+//#define SIMPLE_TEST
 #ifdef SIMPLE_TEST // this is temporary - TODO: Delete me
 
 int main(int narg, char *arg[])

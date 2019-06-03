@@ -101,6 +101,15 @@
 // TODO: Delete this file and all clock code.
 #include "Zoltan2_AlgMultiJagged_Clocks.hpp"
 
+// gnos and owners don't really need to be on device. If we keep them on host
+// we can more quickly process migration code. The only disadvantage is when
+// they are initialized. So for now we decided to just keep these as views
+// but set them to host serial. Later we may wish to make this OpenMP when
+// available, so that even when running on GPU we can still benefit from
+// threads. I added this typedef to help keep track of the relevant spots.
+// TODO: Think on this design and improve.
+typedef Kokkos::Serial host_t;
+
 #define LEAST_SIGNIFICANCE 0.0001
 #define SIGNIFICANCE_MUL 1000
 
@@ -614,10 +623,10 @@ private:
   Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos;
 
   // current global ids of the coordinates, might change during migration.
-  Kokkos::View<mj_gno_t*, device_t> current_mj_gnos;
+  Kokkos::View<mj_gno_t*, host_t> current_mj_gnos;
 
   // the actual processor owner of the coordinate, to track after migrations.
-  Kokkos::View<int*, device_t> owner_of_coordinate;
+  Kokkos::View<int*, host_t> owner_of_coordinate;
 
   // permutation of coordinates, for partitioning.
   Kokkos::View<mj_lno_t*, device_t> coordinate_permutations;
@@ -1435,7 +1444,7 @@ public:
     Kokkos::View<bool*, device_t> mj_uniform_parts,
     Kokkos::View<mj_scalar_t**, device_t> mj_part_sizes,
     Kokkos::View<mj_part_t*, device_t> &result_assigned_part_ids,
-    Kokkos::View<mj_gno_t*, device_t> &result_mj_gnos);
+    Kokkos::View<mj_gno_t*, host_t> &result_mj_gnos);
 
   /*! \brief Multi Jagged  coordinate partitioning algorithm.
    * \param distribute_points_on_cut_lines_ : if partitioning can distribute
@@ -4002,7 +4011,8 @@ struct ReduceWeightsFunctor {
       int upper = num_cuts;
       int lower = 0;
 
-      for(int binarySearch = 0; binarySearch < 999999; ++binarySearch) {
+      // binary search - find matching part
+      while(true) {
         // for the left/right closest part calculation
 
         // TODO: Using ptr logic didn't show much or any improvement
@@ -4071,12 +4081,6 @@ struct ReduceWeightsFunctor {
             // It's only relevant for the fix4785 test which loads a lot of
             // coordinates on the same point, so without this our cuts would
             // all just sit at 0. Need to discuss how we can avoid this.
-
-            // NOTE: This code makes Zoltan2_mj_int_coordinates run extremely
-            // slowly for CUDA ... but not sure how to optimize it yet. That
-            // test has a bunch of cuts all in the same coordinate so it
-            // branches like crazy here. Cost was jumping up from about 18ms
-            // to 330ms.
             part_t base_b = part;
             part += 1;
             while(part < num_cuts) {
@@ -8051,7 +8055,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<bool*, device_t> mj_uniform_parts_,
   Kokkos::View<mj_scalar_t**, device_t> mj_part_sizes_,
   Kokkos::View<mj_part_t *, device_t> &result_assigned_part_ids_,
-  Kokkos::View<mj_gno_t*, device_t> &result_mj_gnos_)
+  Kokkos::View<mj_gno_t*, host_t> &result_mj_gnos_)
 {
   // purpose of this code is to validate node and UVM status for the tests
   // TODO: Later can remove or make this debug code
@@ -9538,7 +9542,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
      }
 
     Kokkos::View<mj_part_t *, device_t> result_assigned_part_ids;
-    Kokkos::View<mj_gno_t*, device_t> result_mj_gnos;
+    Kokkos::View<mj_gno_t*, host_t> result_mj_gnos;
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - setup");
     this->mj_env->timerStart(MACRO_TIMERS,
