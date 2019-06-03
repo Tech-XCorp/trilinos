@@ -138,8 +138,8 @@ public:
     ids = map_->getNodeElementList().getRawPtr();
   }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *,
-    typename node_t::device_type> &ids) const {
+  void getIDsKokkosView(
+    Kokkos::View<const gno_t *, Kokkos::Serial> &ids) const {
     if (map_->lib() == Xpetra::UseTpetra) {
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());

@@ -121,7 +121,7 @@ public:
         this process.
    */
   virtual void getIDsView(const gno_t *&ids) const {
-    Kokkos::View<const gno_t *, typename node_t::device_type> kokkosIds;
+    Kokkos::View<const gno_t *, Kokkos::Serial> kokkosIds;
     getIDsKokkosView(kokkosIds);
     ids = kokkosIds.data();
   }
@@ -131,7 +131,7 @@ public:
         this process.
    */
   virtual void getIDsKokkosView(Kokkos::View<const gno_t *,
-    typename node_t::device_type> &ids) const {
+    Kokkos::Serial> &ids) const {
     Z2_THROW_NOT_IMPLEMENTED
   }
 

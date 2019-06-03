@@ -244,7 +244,7 @@ public:
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    typename node_t::device_type> &ids) const
+    Kokkos::Serial> &ids) const
   {
     ids = this->kokkos_ids_;
   }
@@ -301,7 +301,7 @@ private:
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
 
-  Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids_;
+  Kokkos::View<gno_t *, Kokkos::Serial> kokkos_ids_;
 
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> kokkos_entries_;
