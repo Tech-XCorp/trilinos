@@ -91,6 +91,12 @@
 // versus doubles for the reduction arrays in the main kernel of MJ.
 #define ZOLTAN2_MJ_USE_FLOAT_ARRAY_FOR_KERNEL
 
+
+// TODO: Delete this - I added it to temporarily roll back a fix which is tested
+// by 4785. The reason was I wanted to make the test run faster but needed to
+// confirm it was still accurately reflecting the issue. This is temporary.
+// #define ZOLTAN2_ACTIVATE_4785_FAILURES
+
 // Some clocking code which is temporary
 // TODO: Delete this file and all clock code.
 #include "Zoltan2_AlgMultiJagged_Clocks.hpp"
@@ -2537,9 +2543,12 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
 void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   allocate_set_work_memory()
 {
+Clock check1("check1", true);
   // points to process that initially owns the coordinate.
   Kokkos::resize(this->owner_of_coordinate, 0);
+check1.stop(true);
 
+Clock check2("check2", true);
   // Throughout the partitioning execution,
   // instead of the moving the coordinates, hold a permutation array for parts.
   // coordinate_permutations holds the current permutation.
@@ -2552,7 +2561,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     0, this->num_local_coords), KOKKOS_LAMBDA (const int i) {
       local_coordinate_permutations(i) = i;
   });
+check2.stop(true);
 
+Clock check3("check3", true);
   // new_coordinate_permutations holds the current permutation.
   this->new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("num_local_coords"),
@@ -2564,6 +2575,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->assigned_part_ids = Kokkos::View<mj_part_t*, device_t>(
       Kokkos::ViewAllocateWithoutInitializing("assigned part ids"), this->num_local_coords);
   }
+check3.stop(true);
+
+Clock check4("check4", true);
   // single partition starts at index-0, and ends at numLocalCoords
   // inTotalCounts array holds the end points in coordinate_permutations array
   // for each partition. Initially sized 1, and single element is set to
@@ -2585,6 +2599,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   });
   host_part_xadj(0) = num_local_coords; // keep in sync
 
+check4.stop(true);
+
+Clock check5("check5", true);
   // the ends points of the output, this is allocated later.
   this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("empty"));
@@ -2598,6 +2615,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->process_cut_line_weight_to_put_left = Kokkos::View<mj_scalar_t*,
     device_t>(Kokkos::ViewAllocateWithoutInitializing("empty"));
 
+check5.stop(true);
+
+Clock check6("check6", true);
   // how much weight percentage should each thread in MPI put left side of
   // each outline
   this->thread_cut_line_weight_to_put_left =
@@ -2625,6 +2645,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::ViewAllocateWithoutInitializing("global_rectilinear_cut_weight"),
       this->max_num_cut_along_dim);
   }
+check6.stop(true);
+
+Clock check7("check7", true);
 
   // work array to manipulate coordinate of cutlines in different iterations.
   // necessary because previous cut line information is used for determining
@@ -2645,6 +2668,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::View<mj_scalar_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("cut_upper_bound_coordinates"),
     this->max_num_cut_along_dim * this->max_concurrent_part_calculation);
+
+check7.stop(true);
+
+Clock check8("check8", true);
 
   // lower bound coordinate of a cut line
   this->cut_lower_bound_coordinates =
@@ -2672,6 +2699,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       "process_local_min_max_coord_total_weight"),
     3 * this->max_concurrent_part_calculation);
 
+check8.stop(true);
+
+Clock check9("check9", true);
   // global combined array with the results for min, max and total weight.
   this->global_min_max_coord_total_weight =
     Kokkos::View<mj_scalar_t*, device_t>(
@@ -2697,6 +2727,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->host_my_incomplete_cut_count =
     Kokkos::create_mirror_view(my_incomplete_cut_count);
 
+check9.stop(true);
+
+Clock check10("check10", true);
+
   // local part weights of each thread.
   this->thread_part_weights = Kokkos::View<double *,
     Kokkos::LayoutLeft, device_t>(
@@ -2721,6 +2755,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::ViewAllocateWithoutInitializing("thread_point_counts"),
     this->max_num_part_along_dim);
 
+check10.stop(true);
+
+Clock check11("check11", true);
+
   // for faster communication, concatanation of
   // totalPartWeights sized 2P-1, since there are P parts and P-1 cut lines
   // leftClosest distances sized P-1, since P-1 cut lines
@@ -2742,6 +2780,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->current_mj_gnos =
     Kokkos::View<mj_gno_t*, device_t>("gids", num_local_coords);
 
+check11.stop(true);
+
+Clock check12("check12", true);
+
   this->owner_of_coordinate = Kokkos::View<int *, device_t>
     ("owner_of_coordinate", num_local_coords);
   auto local_owner_of_coordinate = this->owner_of_coordinate;
@@ -2754,6 +2796,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     local_owner_of_coordinate(j) = local_myActualRank;
     local_current_mj_gnos(j) = local_initial_mj_gnos(j);
   });
+
+check12.stop(true);
 }
 
 /* \brief compute the global bounding box
@@ -4965,9 +5009,13 @@ mj_create_new_partitions(
               local_thread_cut_line_weight_to_put_left(i - 1);
         }
         local_thread_cut_line_weight_to_put_left(i) =
-          static_cast<long long>(((local_thread_cut_line_weight_to_put_left(i) +
+#ifdef ZOLTAN2_ACTIVATE_4785_FAILURES
+          int ((local_thread_cut_line_weight_to_put_left(i) +
+#else
+          static_cast<long long>((local_thread_cut_line_weight_to_put_left(i) +
+#endif
           LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
-          mj_scalar_t(SIGNIFICANCE_MUL));
+          mj_scalar_t(SIGNIFICANCE_MUL);
       }
 
       for(mj_part_t i = 0; i < num_parts; ++i) {
@@ -7439,9 +7487,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             this->thread_cut_line_weight_to_put_left(i - 1);
         }
         this->thread_cut_line_weight_to_put_left(i) =
-          static_cast<long long>(((this->thread_cut_line_weight_to_put_left(i) +
+#ifdef ZOLTAN2_ACTIVATE_4785_FAILURES
+          int((this->thread_cut_line_weight_to_put_left(i) +
+#else
+          static_cast<long long>((this->thread_cut_line_weight_to_put_left(i) +
+#endif
           LEAST_SIGNIFICANCE) * SIGNIFICANCE_MUL) /
-          mj_scalar_t(SIGNIFICANCE_MUL));
+          mj_scalar_t(SIGNIFICANCE_MUL);
       }
     }
   }
