@@ -138,6 +138,50 @@ public:
     ids = map_->getNodeElementList().getRawPtr();
   }
 
+  void getIDsKokkosView(
+    Kokkos::View<const gno_t *, Kokkos::Serial> &ids) const {
+    if (map_->lib() == Xpetra::UseTpetra) {
+      const xt_mvector_t *tvector =
+        dynamic_cast<const xt_mvector_t *>(vector_.get());
+
+      // We'll need to remap this to a Serial since we decided for now to make
+      // owners and gids on host for improvements to migration copying. Tpetra
+      // requires UVM on so I'm not sure if there is a better way to exploit
+      // that here to copy from the Tpetra View to the Kokkos::Serial view.
+      // TODO: Find a better way...
+
+      // If we are just on serial we could simply do this
+      // ids = tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+
+      // But with Cuda (where UVM is on for the Tpetra map) not sure
+      auto tpetra_ids =
+        tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+
+      // mirror it to host
+      typename decltype(tpetra_ids)::HostMirror
+        host_tpetra_ids = Kokkos::create_mirror_view(tpetra_ids);
+
+      // copy it (actually we can skip so long as Tpetra stays UVM on)
+      // Kokkos::deep_copy(host_tpetra_ids, tpetra_ids);
+
+      // allocate with non const
+      Kokkos::View<gno_t *, Kokkos::Serial> non_const_ids(
+        Kokkos::ViewAllocateWithoutInitializing("ids"), tpetra_ids.size());
+
+      // copy values
+      // TODO: Could memcpy to raw ... or is there a better way
+      for(gno_t i = 0; i < tpetra_ids.size(); ++i) {
+        non_const_ids(i) = tpetra_ids(i);
+      }
+
+      // set const ids
+      ids = non_const_ids;
+    }
+    else {
+      throw std::logic_error("getIDsKokkosView called but not on Tpetra!");
+    }
+  }
+
   int getNumWeightsPerID() const { return numWeights_;}
 
   void getWeightsView(const scalar_t *&weights, int &stride, int idx) const
@@ -154,6 +198,27 @@ public:
     weights_[idx].getStridedList(length, weights, stride);
   }
 
+  void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
+    typename node_t::device_type> &wgt) const {
+    if (map_->lib() == Xpetra::UseTpetra) {
+      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>(
+        "wgts", vector_->getLocalLength(), numWeights_);
+      for(int idx = 0; idx < numWeights_; ++idx) {
+        const scalar_t * weights;
+        size_t length;
+        int stride;
+        weights_[idx].getStridedList(length, weights, stride);
+        size_t fill_index = 0;
+        for(size_t n = 0; n < length; n += stride) {
+          wgt(fill_index++,idx) = weights[n];
+        }
+      }
+    }
+    else {
+      throw std::logic_error("getWeightsKokkos2dView called but not Tpetra!");
+    }
+  }
+
   ////////////////////////////////////////////////////
   // The VectorAdapter interface.
   ////////////////////////////////////////////////////
@@ -161,6 +226,10 @@ public:
   int getNumEntriesPerID() const {return vector_->getNumVectors();}
 
   void getEntriesView(const scalar_t *&elements, int &stride, int idx=0) const;
+
+  void getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
+    typename node_t::device_type> & elements) const;
 
   template <typename Adapter>
     void applyPartitioningSolution(const User &in, User *&out,
@@ -272,6 +341,27 @@ template <typename User>
   }
   else{
     throw std::logic_error("invalid underlying lib");
+  }
+}
+
+////////////////////////////////////////////////////////////////////////////
+template <typename User>
+  void XpetraMultiVectorAdapter<User>::getEntriesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
+{
+  if (map_->lib() == Xpetra::UseTpetra){
+      const xt_mvector_t *tvector =
+        dynamic_cast<const xt_mvector_t *>(vector_.get());
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> view2d =
+      tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
+
+    elements = view2d;
+
+    // TODO: Delete later ... keeping in case we end up switching back
+    // elements = Kokkos::subview(view2d, Kokkos::ALL, idx);
+  }
+  else {
+    throw std::logic_error("getEntriesKokkosView called but not using Tpetra!");
   }
 }
 

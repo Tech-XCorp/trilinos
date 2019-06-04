@@ -76,6 +76,7 @@ public:
   typedef typename Adapter::scalar_t    scalar_t;
   typedef typename Adapter::gno_t       gno_t;
   typedef typename Adapter::lno_t       lno_t;
+  typedef typename Adapter::node_t      node_t;
   typedef typename Adapter::user_t      user_t;
   typedef typename Adapter::userCoord_t userCoord_t;
   typedef StridedData<lno_t, scalar_t>  input_t;
@@ -217,6 +218,18 @@ public:
     return nCoord;
   }
 
+  size_t getCoordinatesKokkos(
+    // Note decided to make gnos host space for now
+    Kokkos::View<const gno_t *, Kokkos::Serial> &Ids,
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
+    Kokkos::View<scalar_t **, typename node_t::device_type> &wgts) const
+  {
+    Ids = kokkos_gids_;
+    xyz = kokkos_xyz_;
+    wgts = kokkos_weights_;
+    return getLocalNumCoordinates();
+  }
+
   ////////////////////////////////////////////////////
   // The Model interface.
   ////////////////////////////////////////////////////
@@ -236,6 +249,13 @@ private:
   const RCP<const Environment> env_;
   const RCP<const Comm<int> > comm_;
   int coordinateDim_;
+
+  // TODO: We now have a Kokkos version and non kokkos version so need to clean
+  // this up and perhaps eliminate the non-kokkos version completely.
+  Kokkos::View<const gno_t *, Kokkos::Serial> kokkos_gids_;
+  Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;
+  Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_;
+
   ArrayRCP<const gno_t> gids_;
   ArrayRCP<input_t> xyz_;
   int userNumWeights_;
@@ -285,7 +305,17 @@ void CoordinateModel<Adapter>::sharedConstructor(
 
 
   if (nLocalIds){
+
+    ia->getIDsKokkosView(kokkos_gids_);
+    ia->getCoordinatesKokkosView(kokkos_xyz_);
+    if(userNumWeights_ > 0) {
+      ia->getWeightsKokkos2dView(kokkos_weights_);
+    }
+
     const gno_t *gids=NULL;
+
+    // the derived classes will currently provide the host form
+    // we decide to keep gids host because they aren't used anywhere on device.
     ia->getIDsView(gids);
     gids_ = arcp(gids, 0, nLocalIds, false);
 

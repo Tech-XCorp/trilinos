@@ -105,20 +105,27 @@ public:
    *  The values pointed to the arguments must remain valid for the
    *  lifetime of this Adapter.
    */
-  BasicKokkosIdentifierAdapter(Kokkos::View<gno_t*> &ids,
-                            Kokkos::View<scalar_t**, weight_layout_t> &weights);
+  BasicKokkosIdentifierAdapter(Kokkos::View<gno_t*, Kokkos::Serial> &ids,
+    Kokkos::View<scalar_t**, weight_layout_t> &weights);
 
   ////////////////////////////////////////////////////////////////
   // The Adapter interface.
   ////////////////////////////////////////////////////////////////
 
-  size_t getLocalNumIDs() const { return idsView_.extent(0); }
+  size_t getLocalNumIDs() const {
+    return idsView_.extent(0);
+  }
 
-  void getIDsKokkosView(Kokkos::View<gno_t *> &ids) const {ids = idsView_;}
+  void getIDsKokkosView(Kokkos::View<const gno_t *, Kokkos::Serial> &ids) const {
+    ids = idsView_;
+  }
 
-  int getNumWeightsPerID() const { return weightsView_.extent(1); }
+  int getNumWeightsPerID() const {
+    return weightsView_.extent(1);
+  }
 
-  void getWeightsKokkosView(Kokkos::View<scalar_t *> &wgt, int idx = 0) const {
+  void getWeightsKokkosView(Kokkos::View<scalar_t *,
+    typename node_t::device_type> &wgt, int idx) const {
     if (idx < 0 || scalar_t(idx) >= weightsView_.extent(0)) {
       std::ostringstream emsg;
       emsg << __FILE__ << ":" << __LINE__
@@ -129,7 +136,7 @@ public:
   }
 
 private:
-  Kokkos::View<gno_t *> idsView_;
+  Kokkos::View<const gno_t *, Kokkos::Serial> idsView_;
   Kokkos::View<scalar_t **, weight_layout_t> weightsView_;
 };
 
@@ -139,7 +146,7 @@ private:
 
 template <typename User>
   BasicKokkosIdentifierAdapter<User>::BasicKokkosIdentifierAdapter(
-    Kokkos::View<gno_t*> &ids,
+    Kokkos::View<gno_t*, Kokkos::Serial> &ids,
     Kokkos::View<scalar_t**, weight_layout_t> &weights):
       idsView_(ids), weightsView_(weights) {
 }
