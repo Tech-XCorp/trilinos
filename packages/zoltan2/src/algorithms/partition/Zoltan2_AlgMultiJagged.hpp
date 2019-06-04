@@ -4018,13 +4018,15 @@ struct ReduceWeightsFunctor {
           array_t new_value = (array_t) coord;
           array_t prev_value = shared_ptr[value_count_weights + part * 2 + 1];
           while(new_value < prev_value) {
-            prev_value =
-              Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+            prev_value = Kokkos::atomic_compare_exchange(
+                &shared_ptr[value_count_weights + part * 2 + 1],
+                prev_value, new_value);
           }
           prev_value = shared_ptr[value_count_weights + part * 2 + 2];
           while(new_value > prev_value) {
-            prev_value =
-              Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+            prev_value = Kokkos::atomic_compare_exchange(
+              &shared_ptr[value_count_weights + part * 2 + 2],
+              prev_value, new_value);
           }
 #else
           array_t * p1 = &threadSum.ptr[value_count_weights + part * 2];
@@ -4160,20 +4162,18 @@ struct ReduceWeightsFunctor {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
 
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-        scalar_t new_value = (scalar_t) shared_ptr[n+1];
-        scalar_t * dst = &current_right_closest(insert_right);
-        scalar_t prev_value = *dst;
+        scalar_t new_value = shared_ptr[n+1];
+        scalar_t prev_value = current_right_closest(insert_right);
         while(new_value < prev_value) {
-          prev_value =
-            Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+          prev_value = Kokkos::atomic_compare_exchange(
+            &current_right_closest(insert_right), prev_value, new_value);
         }
 
         new_value = shared_ptr[n];
-        dst = &current_left_closest(insert_left);
-        prev_value = *dst;
+        prev_value = current_left_closest(insert_left);
         while(new_value > prev_value) {
-          prev_value =
-            Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
+          prev_value = Kokkos::atomic_compare_exchange(
+            &current_left_closest(insert_left), prev_value, new_value);
         }
 
         ++insert_left;
