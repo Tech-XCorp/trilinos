@@ -319,14 +319,10 @@ private:
 
     if (numIds_){
       // make kokkos ids
-      kokkos_ids_ = Kokkos::View<gno_t *,
-        typename node_t::device_type>("ids", numIds_);
-      typename decltype(this->kokkos_ids_)::HostMirror
-        host_temp_values = Kokkos::create_mirror_view(this->kokkos_ids_);
-      for(int n = 0; n < numIds_; ++n) { // copy on host to the temp host view
-        host_temp_values(n) = idList_[n];
+      kokkos_ids_ = Kokkos::View<gno_t *, Kokkos::Serial>("ids", numIds_);
+      for(int n = 0; n < numIds_; ++n) {
+        kokkos_ids_(n) = idList_[n];
       }
-      Kokkos::deep_copy(this->kokkos_ids_, host_temp_values);
 
       // make coordinates
       int stride = 1;
