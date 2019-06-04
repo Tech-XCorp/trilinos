@@ -8121,7 +8121,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   clock_multi_jagged_part_init_finish.stop();
 
-
   clock_multi_jagged_part_init.stop();
   Clock clock_multi_jagged_part_loop("  clock_multi_jagged_part_loop", true);
 
@@ -9499,7 +9498,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         result_mj_gnos
       );
     }
-
+printf("Complete 1\n");
     this->mj_env->timerStop(MACRO_TIMERS,
       "partition() - call multi_jagged_part()");
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
@@ -9507,24 +9506,24 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     // Reorder results so that they match the order of the input
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
-
+printf("Complete 2\n");
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[result_initial_mj_gnos_(i)] = i;
     }
+printf("Complete 3\n");
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[result_mj_gnos(i)];
       partId[origLID] = result_assigned_part_ids(i);
     }
-
+printf("Complete 4\n");
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
     if(is_pre_migrated) {
       this->mj_env->timerStart(MACRO_TIMERS,
         "MultiJagged - PostMigration DistributorPlanCreating");
       Tpetra::Distributor distributor(this->mj_problemComm);
-
       ArrayView<const mj_part_t> actual_owner_destinations(
         result_actual_owner_rank , result_num_local_coords);
       mj_lno_t num_incoming_gnos = distributor.createFromSends(
@@ -9574,8 +9573,9 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - PostMigration DistributorMigration");
     }
-
+printf("Complete 5\n");
     solution->setParts(partId);
+printf("Complete 6\n");
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
   }
 
