@@ -105,8 +105,8 @@ public:
    *  The values pointed to the arguments must remain valid for the
    *  lifetime of this Adapter.
    */
-  BasicKokkosIdentifierAdapter(Kokkos::View<gno_t*> &ids,
-                            Kokkos::View<scalar_t**, weight_layout_t> &weights);
+  BasicKokkosIdentifierAdapter(Kokkos::View<gno_t*, Kokkos::Serial> &ids,
+    Kokkos::View<scalar_t**, weight_layout_t> &weights);
 
   ////////////////////////////////////////////////////////////////
   // The Adapter interface.
@@ -116,8 +116,7 @@ public:
     return idsView_.extent(0);
   }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *,
-    Kokkos::Serial> &ids) const {
+  void getIDsKokkosView(Kokkos::View<const gno_t *, Kokkos::Serial> &ids) const {
     ids = idsView_;
   }
 
@@ -147,7 +146,7 @@ private:
 
 template <typename User>
   BasicKokkosIdentifierAdapter<User>::BasicKokkosIdentifierAdapter(
-    Kokkos::View<gno_t*> &ids,
+    Kokkos::View<gno_t*, Kokkos::Serial> &ids,
     Kokkos::View<scalar_t**, weight_layout_t> &weights):
       idsView_(ids), weightsView_(weights) {
 }

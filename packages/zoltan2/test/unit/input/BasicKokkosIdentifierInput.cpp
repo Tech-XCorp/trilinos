@@ -68,7 +68,7 @@ int main(int narg, char *arg[]) {
   zlno_t numLocalIds = 10;
   const int nWeights = 2;
 
-  Kokkos::View<zgno_t *> myIds("myIds", numLocalIds);
+  Kokkos::View<zgno_t *, Kokkos::Serial> myIds("myIds", numLocalIds);
   zgno_t myFirstId = rank * numLocalIds * numLocalIds;
   Kokkos::View<zscalar_t **, Layout> weights("weights", numLocalIds, nWeights);
 
