@@ -9498,7 +9498,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         result_mj_gnos
       );
     }
-printf("Complete 1\n");
+
     this->mj_env->timerStop(MACRO_TIMERS,
       "partition() - call multi_jagged_part()");
     this->mj_env->timerStart(MACRO_TIMERS, "partition() - cleanup");
@@ -9506,18 +9506,22 @@ printf("Complete 1\n");
     // Reorder results so that they match the order of the input
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
-printf("Complete 2\n");
+
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[result_initial_mj_gnos_(i)] = i;
     }
-printf("Complete 3\n");
+
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
+    typename decltype(result_assigned_part_ids)::HostMirror
+      host_result_assigned_part_ids =
+      Kokkos::create_mirror_view(result_assigned_part_ids);
+    Kokkos::deep_copy(host_result_assigned_part_ids, result_assigned_part_ids);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[result_mj_gnos(i)];
-      partId[origLID] = result_assigned_part_ids(i);
+      partId[origLID] = host_result_assigned_part_ids(i);
     }
-printf("Complete 4\n");
+
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again. 
     if(is_pre_migrated) {
@@ -9573,9 +9577,7 @@ printf("Complete 4\n");
       mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - PostMigration DistributorMigration");
     }
-printf("Complete 5\n");
     solution->setParts(partId);
-printf("Complete 6\n");
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - cleanup");
   }
 
