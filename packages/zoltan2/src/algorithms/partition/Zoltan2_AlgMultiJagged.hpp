@@ -4069,8 +4069,8 @@ struct ReduceWeightsFunctor {
               if(delta < sEpsilon) {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
-                shared_ptr[value_count_weights + part * 2 + 2]; = b;
-                shared_ptr[value_count_weights + part * 2 + 3]; = b;
+                shared_ptr[value_count_weights + part * 2 + 2] = b;
+                shared_ptr[value_count_weights + part * 2 + 3] = b;
 #else
                 threadSum.ptr[part*2+1] += w;
                 threadSum.ptr[value_count_weights + part * 2 + 2] = b;
