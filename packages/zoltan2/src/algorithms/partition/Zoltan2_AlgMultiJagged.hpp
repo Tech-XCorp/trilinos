@@ -1426,7 +1426,7 @@ public:
     int coord_dim,
     mj_lno_t num_local_coords,
     mj_gno_t num_global_coords,
-    Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos,
+    Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       mj_coordinates,
     int num_weights_per_coord,
@@ -1611,7 +1611,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->mj_coordinates = mj_coordinates_;
 
   this->initial_mj_gnos =
-    Kokkos::View<mj_gno_t*, device_t>("gids", this->num_local_coords);
+    Kokkos::View<mj_gno_t*, Kokkos::Serial>("gids", this->num_local_coords);
 
   this->num_weights_per_coord = 0;
   Kokkos::View<bool*, device_t> tmp_mj_uniform_weights("uniform weights", 1);
@@ -2795,14 +2795,9 @@ Clock check12("check12", true);
   // this improves migration code but means we have to serial init here.
   // TODO: We might allow this to be OpenMP when available even for CUDA.
   for(int j = 0; j < num_local_coords; ++j) {
-
-  }
-  Kokkos::parallel_for(
-    Kokkos::RangePolicy<typename mj_node_t::execution_space, int>
-    (0, num_local_coords), KOKKOS_LAMBDA (int j) {
     local_owner_of_coordinate(j) = local_myActualRank;
     local_current_mj_gnos(j) = local_initial_mj_gnos(j);
-  });
+  }
 
 check12.stop(true);
 }
@@ -8017,9 +8012,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_,
-  Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos_,
-  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
-    mj_coordinates_,
+  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos_,
+  Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> mj_coordinates_,
   int num_weights_per_coord_,
   Kokkos::View<bool*, device_t> mj_uniform_weights_,
   Kokkos::View<mj_scalar_t**, device_t> mj_weights_,
@@ -9007,7 +9001,7 @@ public:
   mj_gno_t num_global_coords; //number of global coords.
 
   // initial global ids of the coordinates.
-  Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos;
 
   // two dimension coordinate array.
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
@@ -9075,7 +9069,7 @@ public:
     int coord_dim_,
     mj_lno_t num_local_coords_,
     mj_gno_t num_global_coords_,  size_t num_global_parts_,
-    Kokkos::View<const mj_gno_t*, device_t> &initial_mj_gnos_,
+    Kokkos::View<const mj_gno_t*, Kokkos::Serial> &initial_mj_gnos_,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
       mj_coordinates_,
     int num_weights_per_coord_,
@@ -9083,7 +9077,7 @@ public:
     //results
     RCP<const Comm<int> > &result_problemComm_,
     mj_lno_t & result_num_local_coords_,
-    Kokkos::View<mj_gno_t*, device_t> &result_initial_mj_gnos_,
+    Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_initial_mj_gnos_,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
       result_mj_coordinates_,
     Kokkos::View<mj_scalar_t**, device_t> &result_mj_weights_,
@@ -9243,7 +9237,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_, size_t num_global_parts_,
-  Kokkos::View<const mj_gno_t*, device_t> &initial_mj_gnos_,
+  Kokkos::View<const mj_gno_t*, Kokkos::Serial> &initial_mj_gnos_,
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
     mj_coordinates_,
   int num_weights_per_coord_,
@@ -9251,7 +9245,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   //results
   RCP<const Comm<int> > &result_problemComm_,
   mj_lno_t &result_num_local_coords_,
-  Kokkos::View<mj_gno_t*, device_t> &result_initial_mj_gnos_,
+  Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_initial_mj_gnos_,
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
     result_mj_coordinates_,
   Kokkos::View<mj_scalar_t**, device_t> &result_mj_weights_,
@@ -9303,24 +9297,14 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   // migrate gnos.
   {
     ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
-
-    typename std::remove_reference<decltype(initial_mj_gnos_)>::type::HostMirror
-      host_initial_mj_gnos_ =
-      Kokkos::create_mirror_view(initial_mj_gnos_);
-    Kokkos::deep_copy(host_initial_mj_gnos_, initial_mj_gnos_);
-
-    ArrayView<const mj_gno_t> sent_gnos(host_initial_mj_gnos_.data(),
+    ArrayView<const mj_gno_t> sent_gnos(initial_mj_gnos_.data(),
       num_local_coords_);
     distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
 
-    result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, device_t>(
+    result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, Kokkos::Serial>(
       "result_initial_mj_gnos_", num_incoming_gnos);
-    typename std::remove_reference<decltype(result_initial_mj_gnos_)>::type::HostMirror
-      host_result_initial_mj_gnos_ =
-      Kokkos::create_mirror_view(result_initial_mj_gnos_);
-    memcpy(host_result_initial_mj_gnos_.data(),
+    memcpy(result_initial_mj_gnos_.data(),
       received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
-    Kokkos::deep_copy(result_initial_mj_gnos_, host_result_initial_mj_gnos_);
   }
 
   // migrate coordinates
@@ -9432,14 +9416,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
     mj_lno_t result_num_local_coords = this->num_local_coords;
-    Kokkos::View<mj_gno_t*, device_t> result_initial_mj_gnos;
+    Kokkos::View<mj_gno_t*, Kokkos::Serial> result_initial_mj_gnos;
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       result_mj_coordinates = this->mj_coordinates;
     Kokkos::View<mj_scalar_t**, device_t> result_mj_weights =
       this->mj_weights;
     int *result_actual_owner_rank = NULL;
 
-    Kokkos::View<const mj_gno_t*, device_t> result_initial_mj_gnos_ =
+    Kokkos::View<const mj_gno_t*, Kokkos::Serial> result_initial_mj_gnos_ =
       this->initial_mj_gnos;
 
     // TODO: MD 08/2017: Further discussion is required.
@@ -9551,32 +9535,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
 
-    // copy to host
-    typename decltype (result_initial_mj_gnos_)::HostMirror
-      host_result_initial_mj_gnos_ =
-      Kokkos::create_mirror_view(result_initial_mj_gnos_);
-    Kokkos::deep_copy(host_result_initial_mj_gnos_,
-      result_initial_mj_gnos_);
-
-    typename decltype (result_mj_gnos)::HostMirror
-      host_result_mj_gnos =
-      Kokkos::create_mirror_view(result_mj_gnos);
-    Kokkos::deep_copy(host_result_mj_gnos,
-      result_mj_gnos);
-
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      localGidToLid[host_result_initial_mj_gnos_(i)] = i;
+      localGidToLid[result_initial_mj_gnos_(i)] = i;
     }
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
-    typename decltype (result_assigned_part_ids)::HostMirror
-      host_result_assigned_part_ids =
-      Kokkos::create_mirror_view(result_assigned_part_ids);
-    Kokkos::deep_copy(host_result_assigned_part_ids,
-      result_assigned_part_ids);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
-      mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
-      partId[origLID] = host_result_assigned_part_ids(i);
+      mj_lno_t origLID = localGidToLid[result_mj_gnos(i)];
+      partId[origLID] = result_assigned_part_ids(i);
     }
 
     //now the results are reordered. but if premigration occured,
@@ -9602,12 +9568,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
-        typename decltype(result_initial_mj_gnos_)::HostMirror
-          host_result_initial_mj_gnos_ =
-          Kokkos::create_mirror_view(result_initial_mj_gnos_);
-        Kokkos::deep_copy(host_result_initial_mj_gnos_, result_initial_mj_gnos_);
-
-        ArrayView<const mj_gno_t> sent_gnos(host_result_initial_mj_gnos_.data(),
+        ArrayView<const mj_gno_t> sent_gnos(result_initial_mj_gnos_.data(),
          result_num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
@@ -9624,18 +9585,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       {
         std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
         localGidToLid2.reserve(this->num_local_coords);
-
-        auto local_initial_mj_gnos = this->initial_mj_gnos;
-        for(mj_lno_t i = 0; i < this->num_local_coords; i++)
-        {
-          // TODO: Change loop so we don't read device to host
-          mj_gno_t p;
-          Kokkos::parallel_reduce("Read single", 1,
-            KOKKOS_LAMBDA(int dummy, mj_gno_t & set_single) {
-              set_single = local_initial_mj_gnos(i);
-          }, p);
-
-          localGidToLid2[p] = i;
+        for(mj_lno_t i = 0; i < this->num_local_coords; i++) {
+          localGidToLid2[this->initial_mj_gnos(i)] = i;
         }
 
         for(mj_lno_t i = 0; i < this->num_local_coords; i++) {
