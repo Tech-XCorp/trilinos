@@ -611,7 +611,7 @@ private:
   bool divide_to_prime_first;
 
   // initial global ids of the coordinates.
-  Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos;
 
   // current global ids of the coordinates, might change during migration.
   Kokkos::View<mj_gno_t*, Kokkos::Serial> current_mj_gnos;
