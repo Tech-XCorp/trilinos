@@ -4001,16 +4001,6 @@ struct ReduceWeightsFunctor {
 
       // binary search - find matching part
       while(true) {
-        // for the left/right closest part calculation
-
-        // TODO: Using ptr logic didn't show much or any improvement
-        // so we could probably clean this all up and read directly.
-#ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-        array_t * p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
-#else
-        array_t * p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
-#endif
-
         scalar_t a = (part == 0) ? -max_scalar : cut_coordinates(part-1);
         scalar_t b = (part == num_cuts) ? max_scalar : cut_coordinates(part);
 
@@ -4026,25 +4016,24 @@ struct ReduceWeightsFunctor {
           // now handle the left/right closest part
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
           array_t new_value = (array_t) coord;
-
-          array_t * dst = p1 + 1;
-          array_t prev_value = *dst;
+          array_t prev_value = shared_ptr[value_count_weights + part * 2 + 1];
           while(new_value < prev_value) {
             prev_value =
               Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
           }
-          dst = p1 + 2;
-          prev_value = *dst;
+          prev_value = shared_ptr[value_count_weights + part * 2 + 2];
           while(new_value > prev_value) {
             prev_value =
               Kokkos::atomic_compare_exchange(dst, prev_value, new_value);
           }
 #else
-          if(coord < *(p1+1)) {
-            *(p1+1) = coord;
+          array_t * p1 = &threadSum.ptr[value_count_weights + part * 2];
+
+          if(coord < threadSum.ptr[value_count_weights + part * 2 + 1]) {
+            threadSum.ptr[value_count_weights + part * 2 + 1] = coord;
           }
-          if(coord > *(p1+2)) {
-            *(p1+2) = coord;
+          if(coord > threadSum.ptr[value_count_weights + part * 2 + 2]) {
+            threadSum.ptr[value_count_weights + part * 2 + 2] = coord;
           }
 #endif
 
@@ -4054,12 +4043,12 @@ struct ReduceWeightsFunctor {
           if(coord < b + sEpsilon && coord > b - sEpsilon) {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
             Kokkos::atomic_add(&shared_ptr[part*2+1], w);
-            *(p1+2) = b;
-            *(p1+3) = b;
+            shared_ptr[value_count_weights + part * 2 + 2] = b;
+            shared_ptr[value_count_weights + part * 2 + 3] = b;
 #else
             threadSum.ptr[part*2+1] += w;
-            *(p1+2) = b;
-            *(p1+3) = b;
+            threadSum.ptr[value_count_weights + part * 2 + 2] = b;
+            threadSum.ptr[value_count_weights + part * 2 + 3] = b;
 #endif
 
             parts(i) = part*2+1;
@@ -4077,15 +4066,13 @@ struct ReduceWeightsFunctor {
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-                p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
-                *(p1+2) = b;
-                *(p1+3) = b;
+                shared_ptr[value_count_weights + part * 2 + 2]; = b;
+                shared_ptr[value_count_weights + part * 2 + 3]; = b;
 #else
-                p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
                 threadSum.ptr[part*2+1] += w;
-                *(p1+2) = b;
-                *(p1+3) = b;
+                threadSum.ptr[value_count_weights + part * 2 + 2] = b;
+                threadSum.ptr[value_count_weights + part * 2 + 3] = b;
 #endif
               }
               else { break; }
@@ -4098,15 +4085,13 @@ struct ReduceWeightsFunctor {
               if(delta < 0) delta = -delta;
               if(delta < sEpsilon) {
 #ifdef ZOLTAN2_MJ_USE_CUDA_KERNEL
-                p1 = &shared_ptr[value_count_weights + 2 + part * 2 - 2];
                 Kokkos::atomic_add(&shared_ptr[part*2+1], w);
-                *(p1+2) = b;
-                *(p1+3) = b;
+                shared_ptr[value_count_weights + part * 2 + 2] = b;
+                shared_ptr[value_count_weights + part * 2 + 3] = b;
 #else
-                p1 = &threadSum.ptr[value_count_weights + 2 + part * 2 - 2];
                 threadSum.ptr[part*2+1] += w;
-                *(p1+2) = b;
-                *(p1+3) = b;
+                threadSum.ptr[value_count_weights + part * 2 + 2] = b;
+                threadSum.ptr[value_count_weights + part * 2 + 3] = b;
 #endif
               }
               else { break; }
