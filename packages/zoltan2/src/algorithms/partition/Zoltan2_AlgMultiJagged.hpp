@@ -1427,8 +1427,7 @@ public:
     mj_lno_t num_local_coords,
     mj_gno_t num_global_coords,
     Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos,
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
-      mj_coordinates,
+    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> mj_coordinates,
     int num_weights_per_coord,
     Kokkos::View<bool*, device_t> mj_uniform_weights,
     Kokkos::View<mj_scalar_t**, device_t> mj_weights,
@@ -7816,17 +7815,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStart(MACRO_TIMERS, "MultiJagged - Final Z1PlanComm");
 
       // migrate gnos to actual owners.
-      typename decltype (this->current_mj_gnos)::HostMirror
-        host_src_gnos = Kokkos::create_mirror_view(this->current_mj_gnos);
-      deep_copy(host_src_gnos, current_mj_gnos);
       Kokkos::View<mj_gno_t*, device_t> dst_gnos("dst_gnos", incoming);
-      typename decltype (dst_gnos)::HostMirror
-        host_dst_gnos = Kokkos::create_mirror_view(dst_gnos);
       message_tag++;
-      ierr = Zoltan_Comm_Do( plan, message_tag, (char *) host_src_gnos.data(),
-        sizeof(mj_gno_t), (char *) host_dst_gnos.data());
+      ierr = Zoltan_Comm_Do( plan, message_tag, (char *) src_gnos.data(),
+        sizeof(mj_gno_t), (char *) dst_gnos.data());
       Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
-      Kokkos::deep_copy(dst_gnos, host_dst_gnos);
       this->current_mj_gnos = dst_gnos;
 
       // migrate part ids to actual owners.
@@ -7869,21 +7862,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
       // migrate gnos to actual owners.
       ArrayRCP<mj_gno_t> received_gnos(incoming);
-      typename decltype (this->current_mj_gnos)::HostMirror
-        host_current_mj_gnos =
-        Kokkos::create_mirror_view(this->current_mj_gnos);
-      deep_copy(host_current_mj_gnos, current_mj_gnos);
-      ArrayView<mj_gno_t> sent_gnos(host_current_mj_gnos.data(),
+      ArrayView<mj_gno_t> sent_gnos(current_mj_gnos.data(),
         this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>
         ("current_mj_gnos", incoming);
-      typename decltype (this->current_mj_gnos)::HostMirror
-        host_current_mj_gnos2 =
-        Kokkos::create_mirror_view(this->current_mj_gnos);
-      memcpy( host_current_mj_gnos2.data(),
+      memcpy(this->current_mj_gnos.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
-      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos2);
 
       // migrate part ids to actual owners.
       typename decltype (this->assigned_part_ids)::HostMirror
