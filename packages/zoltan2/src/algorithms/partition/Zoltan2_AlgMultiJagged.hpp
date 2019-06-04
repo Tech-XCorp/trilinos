@@ -2784,19 +2784,15 @@ check11.stop(true);
 
 Clock check12("check12", true);
 
-  this->owner_of_coordinate = Kokkos::View<int *, device_t>
+  this->owner_of_coordinate = Kokkos::View<int *, Kokkos::Serial>
     ("owner_of_coordinate", num_local_coords);
-  auto local_owner_of_coordinate = this->owner_of_coordinate;
-  auto local_current_mj_gnos = this->current_mj_gnos;
-  auto local_initial_mj_gnos = this->initial_mj_gnos;
-  auto local_myActualRank = this->myActualRank;
 
   // changes gnos and owners back to host - so we don't run them on device
   // this improves migration code but means we have to serial init here.
   // TODO: We might allow this to be OpenMP when available even for CUDA.
   for(int j = 0; j < num_local_coords; ++j) {
-    local_owner_of_coordinate(j) = local_myActualRank;
-    local_current_mj_gnos(j) = local_initial_mj_gnos(j);
+    owner_of_coordinate(j) = myActualRank;
+    current_mj_gnos(j) = initial_mj_gnos(j);
   }
 
 check12.stop(true);
@@ -7810,12 +7806,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         "MultiJagged - Final Z1PlanCreating");
 
       // setup incoming count
-      typename decltype (this->owner_of_coordinate)::HostMirror
-        host_owner_of_coordinate =
-        Kokkos::create_mirror_view(this->owner_of_coordinate);
-      Kokkos::deep_copy(host_owner_of_coordinate, this->owner_of_coordinate);
       int ierr = Zoltan_Comm_Create( &plan, int(this->num_local_coords),
-        host_owner_of_coordinate.data(), mpi_comm, message_tag, &incoming);
+        this->owner_of_coordinate.data(), mpi_comm, message_tag, &incoming);
 
       Z2_ASSERT_VALUE(ierr, ZOLTAN_OK);
       this->mj_env->timerStop(MACRO_TIMERS,
@@ -7866,12 +7858,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStart(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanCreating");
       Tpetra::Distributor distributor(this->mj_problemComm);
-      typename decltype (this->owner_of_coordinate)::HostMirror
-        host_owner_of_coordinate =
-        Kokkos::create_mirror_view(this->owner_of_coordinate);
-      Kokkos::deep_copy(host_owner_of_coordinate, this->owner_of_coordinate);
       ArrayView<const mj_part_t> owners_of_coords(
-        host_owner_of_coordinate.data(), this->num_local_coords);
+        this->owner_of_coordinate.data(), this->num_local_coords);
       mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
       this->mj_env->timerStop(MACRO_TIMERS,
         "MultiJagged - Final DistributorPlanCreating" );
