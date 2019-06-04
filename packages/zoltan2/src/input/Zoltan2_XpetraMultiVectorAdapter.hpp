@@ -143,7 +143,39 @@ public:
     if (map_->lib() == Xpetra::UseTpetra) {
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
-      ids = tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+
+      // We'll need to remap this to a Serial since we decided for now to make
+      // owners and gids on host for improvements to migration copying. Tpetra
+      // requires UVM on so I'm not sure if there is a better way to exploit
+      // that here to copy from the Tpetra View to the Kokkos::Serial view.
+      // TODO: Find a better way...
+
+      // If we are just on serial we could simply do this
+      // ids = tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+
+      // But with Cuda (where UVM is on for the Tpetra map) not sure
+      auto tpetra_ids =
+        tvector->getTpetra_MultiVector()->getMap()->getMyGlobalIndices();
+
+      // mirror it to host
+      typename decltype(tpetra_ids)::HostMirror
+        host_tpetra_ids = Kokkos::create_mirror_view(tpetra_ids);
+
+      // copy it (actually we can skip so long as Tpetra stays UVM on)
+      // Kokkos::deep_copy(host_tpetra_ids, tpetra_ids);
+
+      // allocate with non const
+      Kokkos::View<gno_t *, Kokkos::Serial> non_const_ids(
+        Kokkos::ViewAllocateWithoutInitializing("ids"), tpetra_ids.size());
+
+      // copy values
+      // TODO: Could memcpy to raw ... or is there a better way
+      for(gno_t i = 0; i < tpetra_ids.size(); ++i) {
+        non_const_ids(i) = tpetra_ids(i);
+      }
+
+      // set const ids
+      ids = non_const_ids;
     }
     else {
       throw std::logic_error("getIDsKokkosView called but not on Tpetra!");
