@@ -7865,7 +7865,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       ArrayView<mj_gno_t> sent_gnos(current_mj_gnos.data(),
         this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-      this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>
+      this->current_mj_gnos = Kokkos::View<mj_gno_t*, Kokkos::Serial>
         ("current_mj_gnos", incoming);
       memcpy(this->current_mj_gnos.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
