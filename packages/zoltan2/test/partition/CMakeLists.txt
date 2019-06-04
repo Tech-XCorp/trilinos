@@ -139,8 +139,9 @@ TRIBITS_ADD_TEST(
 
 IF (Tpetra_ENABLE_CUDA)
 
-TRIBITS_ADD_EXECUTABLE_AND_TEST(
-    mjTest_uvmOff
+TRIBITS_ADD_TEST(
+    mjTest
+    NAME mjTest_uvmOff
     SOURCES MultiJaggedTest.cpp
     NUM_MPI_PROCS 4
     COMM serial mpi
@@ -151,7 +152,7 @@ TRIBITS_ADD_EXECUTABLE_AND_TEST(
 )
 
 TRIBITS_ADD_TEST(
-    mjTest_uvmOff
+    mjTest
     NAME mjTest_geomgen_uvmOff
     NUM_MPI_PROCS 3
     COMM serial mpi
@@ -163,7 +164,7 @@ TRIBITS_ADD_TEST(
 
 
 TRIBITS_ADD_TEST(
-    mjTest_uvmOff
+    mjTest
     NAME mjTest_geomgen_noholes_uvmOff
     NUM_MPI_PROCS 3
     COMM serial mpi
@@ -175,7 +176,7 @@ TRIBITS_ADD_TEST(
 
 #muelu like usecase, don't specify mjparts
 TRIBITS_ADD_TEST(
-    mjTest_uvmOff
+    mjTest
     NAME mjTest_geomgen_nomjparts_uvmOff
     NUM_MPI_PROCS 3
     COMM serial mpi
@@ -187,7 +188,7 @@ TRIBITS_ADD_TEST(
 
 #muelu like usecase, don't specify mjparts, odd parts
 TRIBITS_ADD_TEST(
-    mjTest_uvmOff
+    mjTest
     NAME mjTest_geomgen_nomjparts_odd_uvmOff
     NUM_MPI_PROCS 3
     COMM serial mpi
