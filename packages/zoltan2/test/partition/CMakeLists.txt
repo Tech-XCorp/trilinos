@@ -142,7 +142,6 @@ IF (Tpetra_ENABLE_CUDA)
 TRIBITS_ADD_TEST(
     mjTest
     NAME mjTest_uvmOff
-    SOURCES MultiJaggedTest.cpp
     NUM_MPI_PROCS 4
     COMM serial mpi
     ARGS
