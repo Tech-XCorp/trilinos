@@ -506,7 +506,8 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 class AlgMJ
 {
-private:
+// TODO: Changed all to public for CUDA - need to work on design
+public:
   typedef typename mj_node_t::device_type device_t; // for views
   typedef coordinateModelPartBox mj_partBox_t;
   typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
