@@ -459,9 +459,9 @@ public:
   }
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    Kokkos::Serial> &ids) const
+    Kokkos::HostSpace> &ids) const
   {
-    Kokkos::View<gno_t *, Kokkos::Serial> kokkos_ids("gids", getLocalNumIDs());
+    Kokkos::View<gno_t *, Kokkos::HostSpace> kokkos_ids("gids", getLocalNumIDs());
     const gno_t * gnos;
     getIDsView(gnos);
     // TODO: Make this an unmanaged view and save the copy?

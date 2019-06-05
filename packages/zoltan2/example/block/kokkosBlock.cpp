@@ -83,7 +83,7 @@ int main(int narg, char *arg[]) {
   int localCount = 40 * (rank + 1);
   int totalCount = 20 * nprocs * (nprocs + 1);
   int targetCount = totalCount / nprocs;
-  Kokkos::View<globalId_t*, Kokkos::Serial> globalIds("globalIds", localCount);
+  Kokkos::View<globalId_t*, Kokkos::HostSpace> globalIds("globalIds", localCount);
 
   if (rank == 0) {
     for (int i = 0, num = 40; i < nprocs ; i++, num += 40) {
@@ -142,7 +142,7 @@ int main(int narg, char *arg[]) {
   // Check and print the solution.
   // Count number of IDs assigned to each part; compare to targetCount
 
-  Kokkos::View<const globalId_t *, Kokkos::Serial> ids;
+  Kokkos::View<const globalId_t *, Kokkos::HostSpace> ids;
   ia.getIDsKokkosView(ids);
 
   Kokkos::View<int*> partCounts("partCounts", nprocs);
