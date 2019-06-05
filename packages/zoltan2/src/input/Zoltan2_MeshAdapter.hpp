@@ -458,6 +458,19 @@ public:
     getIDsViewOf(getPrimaryEntityType(), Ids);
   }
 
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
+    Kokkos::HostSpace> &ids) const
+  {
+    Kokkos::View<gno_t *, Kokkos::HostSpace> kokkos_ids("gids", getLocalNumIDs());
+    const gno_t * gnos;
+    getIDsView(gnos);
+    // TODO: Make this an unmanaged view and save the copy?
+    for(int n = 0; n < getLocalNumIDs(); ++n) {
+      kokkos_ids(n) = gnos[n];
+    }
+    ids = kokkos_ids;
+  }
+
   int getNumWeightsPerID() const {
     return getNumWeightsPerOf(getPrimaryEntityType());
   }
@@ -470,6 +483,28 @@ public:
                           int coordDim) const
   {
     getCoordinatesViewOf(getPrimaryEntityType(), coords, stride, coordDim);
+  }
+
+  inline void getCoordinatesKokkosView(
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
+  {
+    // I'm not sure how we'll organize this yet
+    // I want to get the cuda builds running and passing
+    // so first step let's just build the View
+    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>
+      kokkos_coordinates("pamgen coords", getLocalNumIDs(), getDimension());
+    typename decltype(kokkos_coordinates)::HostMirror
+      host_temp_values = Kokkos::create_mirror_view(kokkos_coordinates);
+    const scalar_t * coords;
+    for(int dim = 0; dim < getDimension(); ++dim) {
+      int stride = -1;
+      getCoordinatesView(coords, stride, dim);
+      for(int n = 0; n < getLocalNumIDs(); ++n) {
+        host_temp_values(n, dim) = coords[n*stride];
+      }
+    }
+    Kokkos::deep_copy(kokkos_coordinates, host_temp_values);
+    elements = kokkos_coordinates;
   }
 
   bool useDegreeAsWeight(int idx) const
