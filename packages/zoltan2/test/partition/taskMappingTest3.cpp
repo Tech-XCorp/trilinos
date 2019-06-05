@@ -196,6 +196,7 @@ void getArgVals(
         else {
             throw "Invalid argument at " + tmp;
         }
+
     }
     if(!(ispartset >= 3&& isprocset)){
         throw "(PROC && PART) are mandatory arguments.";
@@ -420,7 +421,7 @@ int main(int narg, char *arg[]){
                 // TODO: Complete refactor for Kokkos/Cuda conversion
                 // Avoid passing empty View when partArraysize == -1
                 // Remove partArraysize since View contains the size
-                partArraysize, // TODO refactor me out for Kokkos conversion...
+                partArraysize,
                 Kokkos::View<part_t*,Kokkos::MemoryUnmanaged>(partArray,(partArraysize == -1 ? 0 : partArraysize)),
                 machineDimensions, rank_per_node, divide_prime
                 );

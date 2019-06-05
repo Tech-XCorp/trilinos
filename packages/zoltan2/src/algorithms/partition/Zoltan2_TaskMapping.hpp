@@ -866,14 +866,18 @@ public:
 template <typename T, typename node_t>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
-    // TODO: Optimize loop for Kokkos
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
     for(size_t i = 0; i < arrSize; ++i){
-        arr[i] = i;
+      arr[i] = i;
     }
   }
   else {
     T v = *val;
-    // TODO: Optimize loop for Kokkos
+#ifdef HAVE_ZOLTAN2_OMP
+#pragma omp parallel for
+#endif
     for(size_t i = 0; i < arrSize; ++i){
       //cout << "writing to i:" << i << " arr:" << arrSize << endl;
       arr[i] = v;
@@ -1073,7 +1077,7 @@ public:
     }
     /*
   //fill array.
-  fillContinousArray<part_t, node_t>(proc_permutation, nprocs, NULL);
+  fillContinousArray<part_t>(proc_permutation, nprocs, NULL);
   int _u_umpa_seed = 847449649;
   srand (time(NULL));
   int a = rand() % 1000 + 1;
@@ -1194,7 +1198,7 @@ public:
 
 
     part_t invalid = 0;
-    fillContinousArray<part_t, node_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
+    fillContinousArray<part_t> (proc_to_task_xadj, this->no_procs+1, &invalid);
 
     //obtain the number of parts that should be divided.
     part_t num_parts = MINOF(this->no_procs, this->no_tasks);
@@ -1248,7 +1252,7 @@ public:
       used_num_procs = this->no_tasks;
     }
     else {
-      fillContinousArray<part_t, node_t>(proc_adjList,this->no_procs, NULL);
+      fillContinousArray<part_t>(proc_adjList,this->no_procs, NULL);
     }
 
     int myPermutation = myRank % permutations; //the index of the permutation
@@ -1365,10 +1369,10 @@ public:
     AlgMJ<pcoord_t, part_t, part_t, part_t, node_t> mj_partitioner;
 
     // pcoords was allocated as an array of arrays - each made individually
-    // so memory is not contiguous and cannot be directly passed to an unmanaged view
-    // eventually this should be built from the start as a Kokkos::View but I'm
-    // trying to restrict the scope of the refactoring so it can be done in steps.
-    // Make the 2d kokkos view and manually copy in the pieces for now
+    // so memory is not contiguous and cannot be directly passed to an unmanaged
+    // view. Eventually this should be built from the start as a Kokkos::View
+    // but I'm trying to restrict the scope of the refactoring so it can be done
+    // in steps. Making 2d kokkos view and manually copy in the pieces for now.
     // TODO: optimmize
     Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_pcoords("pcoords", used_num_procs, procdim);
     for(int i = 0; i < procdim; ++i) {
@@ -1405,7 +1409,7 @@ public:
     part_t *task_xadj = allocMemory<part_t>(num_parts+1);
     part_t *task_adjList = allocMemory<part_t>(this->no_tasks);
     //fill task_adjList st: task_adjList[i] <- i.
-    fillContinousArray<part_t, node_t>(task_adjList,this->no_tasks, NULL);
+    fillContinousArray<part_t>(task_adjList,this->no_tasks, NULL);
 
     //get the permutation order from the task permutation index.
     ithPermutation<int>(this->task_coord_dim, myTaskPerm, permutation);
@@ -1420,10 +1424,10 @@ public:
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
 
     // tcoords was allocated as an array of arrays - each made individually
-    // so memory is not contiguous and cannot be directly passed to an unmanaged view
-    // eventually this should be built from the start as a Kokkos::View but I'm
-    // trying to restrict the scope of the refactoring so it can be done in steps.
-    // Make the 2d kokkos view and manually copy in the pieces for now.
+    // so memory is not contiguous and cannot be directly passed to an unmanaged
+    // view. Eventually this should be built from the start as a Kokkos::View
+    // but I'm trying to restrict the scope of the refactoring so it can be done
+    // in steps. Making 2d kokkos view and manually copy in the pieces for now.
     // TODO: optimize
     Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_tcoords(
       "pcoords", this->no_tasks, procdim);

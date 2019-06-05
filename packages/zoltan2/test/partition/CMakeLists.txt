@@ -162,7 +162,6 @@ TRIBITS_ADD_TEST(
     FAIL_REGULAR_EXPRESSION "FAIL"
 )
 
-
 TRIBITS_ADD_TEST(
     mjTest
     NAME mjTest_geomgen_noholes_uvmOff

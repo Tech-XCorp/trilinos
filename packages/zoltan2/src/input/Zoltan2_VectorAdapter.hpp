@@ -192,6 +192,7 @@ private:
   void generateCoordsFileOnly(
     const char* fileprefix, 
     const Teuchos::Comm<int> &comm) const;
+
 };
 
 template <typename User>

@@ -218,10 +218,18 @@ public:
     return nCoord;
   }
 
+  /*! \brief Returns the coordinate ids, values and optional weights.
+      \param Ids will on return point to the list of the global Ids for
+        each coordinate on this process.
+      \param xyz on return is a view of xyz coordinates.
+      \param wgts on return is a view of the weights.
+      \return The number of ids in the Ids list
+   */
   size_t getCoordinatesKokkos(
     // Note decided to make gnos host space for now
     Kokkos::View<const gno_t *, Kokkos::Serial> &Ids,
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
+    Kokkos::View<scalar_t **,
+      Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
     Kokkos::View<scalar_t **, typename node_t::device_type> &wgts) const
   {
     Ids = kokkos_gids_;
@@ -252,6 +260,8 @@ private:
 
   // TODO: We now have a Kokkos version and non kokkos version so need to clean
   // this up and perhaps eliminate the non-kokkos version completely.
+  // However not all tests are converted to Kokkos so keeping both forms around
+  // for now is probably necessary.
   Kokkos::View<const gno_t *, Kokkos::Serial> kokkos_gids_;
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;
   Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_;

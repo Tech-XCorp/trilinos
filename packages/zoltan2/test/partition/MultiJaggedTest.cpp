@@ -1416,6 +1416,8 @@ int main(int narg, char *arg[])
     // The Tpetra MV will still run with UVM on and we'll compare the results.
     // For Serial/OpenMP the 2nd test will be turned off at the CMake level.
     // For CUDA we control uvm on/off with parameter uvm set to 0 or 1.
+    // TODO: Probably this should all change eventually so we don't have a node
+    // declared like this.
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  uvm_off_node_t;
 #endif
