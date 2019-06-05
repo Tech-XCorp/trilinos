@@ -1379,55 +1379,6 @@ void print_usage(char *executable){
     std::cout << "Example:\n" << executable << " P=2,2,2 C=8 F=simple O=0" << std::endl;
 }
 
-
-//#define SIMPLE_TEST
-#ifdef SIMPLE_TEST // this is temporary - TODO: Delete me
-
-int main(int narg, char *arg[])
-{
-  Tpetra::ScopeGuard tscope(&narg, &arg);
-  Teuchos::RCP<const Teuchos::Comm<int> > tcomm = Tpetra::getDefaultComm();
-
-/*
-  const int N = 50;
-  Kokkos::View<int *, Kokkos::Serial>("test", N);
-
-Clock test("test", true);
-  int first_value;
-  Kokkos::parallel_reduce("Read bDoingWork", 1,
-    KOKKOS_LAMBDA(int dummy, int & set_single) {
-    set_single = 0;
-  }, first_value);
-test.stop(true);
-*/
-
-Clock alloc_no_init("no init", true);
-  auto view = Kokkos::View<int*, Kokkos::Cuda>(
-    Kokkos::ViewAllocateWithoutInitializing("num_local_coords"),
-    200000);
-alloc_no_init.stop(true);
-printf("View size is: %d\n", (int) view.size());
-
-/*
-Clock allocate("allocate", true);
-  const int N = 200000;
-  Kokkos::View<int *, Kokkos::Cuda> test("test", N);
-allocate.stop(true);
-
-Clock loop("loop", true);
-  Kokkos::parallel_for("Read bDoingWork", 1,
-    KOKKOS_LAMBDA(int i) {
-    test(i) = i;
-    if(test(i) == -1) printf("Dummy\n");
-  });
-loop.stop(true);
-*/
-
-  return 0;
-}
-
-#else
-
 int main(int narg, char *arg[])
 {
     Tpetra::ScopeGuard tscope(&narg, &arg);
@@ -1601,5 +1552,3 @@ int main(int narg, char *arg[])
 
     return 0;
 }
-
-#endif // SIMPLE_TEST
