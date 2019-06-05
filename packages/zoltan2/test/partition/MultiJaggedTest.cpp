@@ -65,6 +65,7 @@
 using Teuchos::RCP;
 using Teuchos::rcp;
 
+
 //#define hopper_separate_test
 #ifdef hopper_separate_test
 #include "stdio.h"
@@ -1465,9 +1466,9 @@ int main(int narg, char *arg[])
         switch (opt){
 
         case 0:
-          if(uvm == true) {
-            ierr = testFromDataFile<znode_t>(tcomm, numTeams, numParts, imbalance,fname,
-                    pqParts, paramFile, k,
+          if(uvm == true) { // true by default, if not CUDA it should be unset
+            ierr = testFromDataFile<znode_t>(tcomm, numTeams, numParts,
+                    imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
@@ -1478,8 +1479,8 @@ int main(int narg, char *arg[])
           }
           else {
 #ifdef KOKKOS_HAVE_CUDA
-            ierr = testFromDataFile<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance,fname,
-                    pqParts, paramFile, k,
+            ierr = testFromDataFile<uvm_off_node_t>(tcomm, numTeams, numParts,
+                    imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
@@ -1495,20 +1496,23 @@ int main(int narg, char *arg[])
 
 #ifdef hopper_separate_test
         case 1:
-            ierr = testFromSeparateDataFiles(tcomm, numTeams, numParts, imbalance,fname,
-                    pqParts, paramFile, k,
+            // TODO: Note made changes here but did not actually run this
+            // method.
+            ierr = testFromSeparateDataFiles(tcomm, numTeams, numParts,
+                    imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
                     migration_processor_assignment_type,
-                    migration_doMigration_type, uvm, test_boxes, rectilinear,
-                    mj_premigration_option);
+                    migration_doMigration_type,uvm, print_details, test_boxes,
+                    rectilinear,
+                    mj_premigration_option, mj_premigration_coordinate_cutoff);
             break;
 #endif
         default:
-          if(uvm == true) {
-            ierr = GeometricGenInterface<znode_t>(tcomm, numTeams, numParts, imbalance, fname,
-                    pqParts, paramFile, k,
+          if(uvm == true) { // true by default, if not CUDA it should be unset
+            ierr = GeometricGenInterface<znode_t>(tcomm, numTeams, numParts,
+                    imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
@@ -1519,8 +1523,8 @@ int main(int narg, char *arg[])
           }
           else {
 #ifdef KOKKOS_HAVE_CUDA
-            ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numTeams, numParts, imbalance, fname,
-                    pqParts, paramFile, k,
+            ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numTeams,
+                    numParts, imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
                     migration_all_to_all_type,
                     migration_imbalance_cut_off,
@@ -1529,7 +1533,7 @@ int main(int narg, char *arg[])
                     rectilinear,
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
 #else
-            throw std::logic_error("uvm set on but this is not a cuda test.");
+            throw std::logic_error("uvm set off but this is not a cuda test.");
 #endif
           }
           break;

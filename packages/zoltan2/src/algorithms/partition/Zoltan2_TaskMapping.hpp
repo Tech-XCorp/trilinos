@@ -863,7 +863,7 @@ public:
  *  \param arrSize the size of the array.
  *  \param val    the pointer to the value to be filled. if given NULL, the filling performs arr[i] = i.
  */
-template <typename T, typename node_t>
+template <typename T>
 void fillContinousArray(T *arr, size_t arrSize, T *val){
   if(val == NULL){
 #ifdef HAVE_ZOLTAN2_OMP
