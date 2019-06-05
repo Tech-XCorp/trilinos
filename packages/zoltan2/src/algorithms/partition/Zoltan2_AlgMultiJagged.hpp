@@ -506,16 +506,7 @@ template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
   typename mj_part_t, typename mj_node_t>
 class AlgMJ
 {
-
-// TODO: For use of extended host lambdas added for CUDA this was changed to
-// public. I did this for CUDA only. I forgot the specific fail points now and
-// need to reevaluate this. Check it on CUDA compilation as private.
-#ifdef KOKKOS_HAVE_CUDA
-public:
-#else
 private:
-#endif
-
   typedef typename mj_node_t::device_type device_t; // for views
   typedef coordinateModelPartBox mj_partBox_t;
   typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
@@ -601,13 +592,13 @@ private:
   bool divide_to_prime_first;
 
   // initial global ids of the coordinates.
-  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> initial_mj_gnos;
 
   // current global ids of the coordinates, might change during migration.
-  Kokkos::View<mj_gno_t*, Kokkos::Serial> current_mj_gnos;
+  Kokkos::View<mj_gno_t*, Kokkos::HostSpace> current_mj_gnos;
 
   // the actual processor owner of the coordinate, to track after migrations.
-  Kokkos::View<int*, Kokkos::Serial> owner_of_coordinate;
+  Kokkos::View<int*, Kokkos::HostSpace> owner_of_coordinate;
 
   // permutation of coordinates, for partitioning.
   Kokkos::View<mj_lno_t*, device_t> coordinate_permutations;
@@ -1416,7 +1407,7 @@ public:
     int coord_dim,
     mj_lno_t num_local_coords,
     mj_gno_t num_global_coords,
-    Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos,
+    Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> initial_mj_gnos,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> mj_coordinates,
     int num_weights_per_coord,
     Kokkos::View<bool*, device_t> mj_uniform_weights,
@@ -1424,7 +1415,7 @@ public:
     Kokkos::View<bool*, device_t> mj_uniform_parts,
     Kokkos::View<mj_scalar_t**, device_t> mj_part_sizes,
     Kokkos::View<mj_part_t*, device_t> &result_assigned_part_ids,
-    Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_mj_gnos);
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace> &result_mj_gnos);
 
   /*! \brief Multi Jagged  coordinate partitioning algorithm.
    * \param distribute_points_on_cut_lines_ : if partitioning can distribute
@@ -1600,7 +1591,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->mj_coordinates = mj_coordinates_;
 
   this->initial_mj_gnos =
-    Kokkos::View<mj_gno_t*, Kokkos::Serial>("gids", this->num_local_coords);
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace>("gids", this->num_local_coords);
 
   this->num_weights_per_coord = 0;
   Kokkos::View<bool*, device_t> tmp_mj_uniform_weights("uniform weights", 1);
@@ -1729,7 +1720,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::subview(this->mj_coordinates, Kokkos::ALL, coordInd);
 
     // run for all available parts.
-
     for(; current_work_part < current_num_parts;
       current_work_part += current_concurrent_num_parts) {
 
@@ -1773,20 +1763,23 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             coord_dimension_range_sorted[coord_traverse_ind].signbit = 1;
 
             // TODO: Optimize this - reading cuda singles is inefficient
-            Kokkos::parallel_reduce("Read single", 1,
+            Kokkos::parallel_reduce(
+              "Read coord_dim_mins[coord_traverse_ind]", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
               set_single =
                 local_process_local_min_max_coord_total_weight(kk);
             }, coord_dim_mins[coord_traverse_ind]);
 
-            Kokkos::parallel_reduce("Read single", 1,
+            Kokkos::parallel_reduce(
+              "Read coord_dim_maxs[coord_traverse_ind]", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
               set_single =
                 local_process_local_min_max_coord_total_weight(
                 kk + current_concurrent_num_parts);
             }, coord_dim_maxs[coord_traverse_ind]);
 
-            Kokkos::parallel_reduce("Read single", 1,
+            Kokkos::parallel_reduce(
+              "Read coord_dimension_range_sorted[coord_traverse_ind].val", 1,
               KOKKOS_LAMBDA(int dummy, mj_scalar_t & set_single) {
               set_single =
                 local_process_local_min_max_coord_total_weight(
@@ -2163,7 +2156,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->total_dim_num_reduce_all =
       this->total_num_part * this->recursion_depth;
 
-    Kokkos::parallel_reduce("Single Reduce", 1,
+    Kokkos::parallel_reduce("Read this->total_num_part", 1,
       KOKKOS_LAMBDA(const int& dummy, mj_part_t & running) {
       running = 1.0;
       for(int i = 0; i < local_recursion_depth; ++i) {
@@ -2172,7 +2165,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }, this->total_num_part);
 
     mj_part_t track_max;
-    Kokkos::parallel_reduce("MaxReduce", local_recursion_depth,
+    Kokkos::parallel_reduce("Max of part_no_array", local_recursion_depth,
       KOKKOS_LAMBDA(const int& i, mj_part_t & running_max) {
         if(local_part_no_array(i) > running_max) {
           running_max = local_part_no_array(i);
@@ -2180,7 +2173,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }, Kokkos::Max<mj_part_t>(track_max));
 
     auto local_total_num_part = this->total_num_part;
-    Kokkos::parallel_reduce("Single Reduce", 1,
+    Kokkos::parallel_reduce("Read this->last_dim_num_part", 1,
       KOKKOS_LAMBDA(const int& dummy, mj_part_t & running) {
       running = local_total_num_part /
         local_part_no_array(local_recursion_depth-1);
@@ -2318,22 +2311,22 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // TODO: Optimize way this single read?
     auto local_part_no_array = this->part_no_array;
-    mj_part_t p;
-    Kokkos::parallel_reduce("Read single", 1,
+    mj_part_t current_part_no_array;
+    Kokkos::parallel_reduce("Read part_no_array", 1,
       KOKKOS_LAMBDA(int i, mj_part_t & set_single) {
         set_single = local_part_no_array(current_iteration);
-    }, p);
+    }, current_part_no_array);
 
-    if(p < 1) {
+    if(current_part_no_array < 1) {
       std::cout << "i:" << current_iteration <<
-        " p is given as:" << p << std::endl;
+        " p is given as:" << current_part_no_array << std::endl;
       exit(1);
     }
-    if(p == 1) {
+    if(current_part_no_array == 1) {
       return current_num_parts;
     }
     for(mj_part_t ii = 0; ii < current_num_parts; ++ii) {
-      vector_num_partitioning_in_current_dim.push_back(p);
+      vector_num_partitioning_in_current_dim.push_back(current_part_no_array);
     }
     future_num_parts /= vector_num_partitioning_in_current_dim[0];
     output_num_parts = current_num_parts *
@@ -2734,9 +2727,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->max_num_cut_along_dim * 2) * this->max_concurrent_part_calculation);
 
   this->current_mj_gnos =
-    Kokkos::View<mj_gno_t*, Kokkos::Serial>("gids", num_local_coords);
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace>("gids", num_local_coords);
 
-  this->owner_of_coordinate = Kokkos::View<int *, Kokkos::Serial>
+  this->owner_of_coordinate = Kokkos::View<int *, Kokkos::HostSpace>
     ("owner_of_coordinate", num_local_coords);
 
   // changes gnos and owners back to host - so we don't run them on device
@@ -6685,7 +6678,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // migrate gnos.
     {
       // Note that gnos we kept on Serial
-      Kokkos::View<mj_gno_t*, Kokkos::Serial>
+      Kokkos::View<mj_gno_t*, Kokkos::HostSpace>
         dst_gnos("dst_gnos", num_incoming_gnos);
       message_tag++;
       ierr = Zoltan_Comm_Do(
@@ -6766,7 +6759,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // migrate owners.
     {
       // Note that owners we kept on Serial
-      Kokkos::View<int *, Kokkos::Serial> dst_owners_of_coordinate
+      Kokkos::View<int *, Kokkos::HostSpace> dst_owners_of_coordinate
         ("owner_of_coordinate", num_incoming_gnos);
       message_tag++;
       ierr = Zoltan_Comm_Do(
@@ -6838,7 +6831,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         this->current_mj_gnos.data(), this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos =
-        Kokkos::View<mj_gno_t*, Kokkos::Serial>("gids", num_incoming_gnos);
+        Kokkos::View<mj_gno_t*, Kokkos::HostSpace>("gids", num_incoming_gnos);
       memcpy(this->current_mj_gnos.data(),
         received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
     }
@@ -6909,7 +6902,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         owner_of_coordinate.data(), this->num_local_coords);
       ArrayRCP<int> received_owners(num_incoming_gnos);
       distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
-      this->owner_of_coordinate = Kokkos::View<int *, Kokkos::Serial>
+      this->owner_of_coordinate = Kokkos::View<int *, Kokkos::HostSpace>
         ("owner_of_coordinate", num_incoming_gnos);
       memcpy(this->owner_of_coordinate.data(),
         received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
@@ -7704,7 +7697,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       ArrayView<mj_gno_t> sent_gnos(current_mj_gnos.data(),
         this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-      this->current_mj_gnos = Kokkos::View<mj_gno_t*, Kokkos::Serial>
+      this->current_mj_gnos = Kokkos::View<mj_gno_t*, Kokkos::HostSpace>
         ("current_mj_gnos", incoming);
       memcpy(this->current_mj_gnos.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
@@ -7824,7 +7817,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_,
-  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos_,
+  Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> initial_mj_gnos_,
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> mj_coordinates_,
   int num_weights_per_coord_,
   Kokkos::View<bool*, device_t> mj_uniform_weights_,
@@ -7832,7 +7825,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<bool*, device_t> mj_uniform_parts_,
   Kokkos::View<mj_scalar_t**, device_t> mj_part_sizes_,
   Kokkos::View<mj_part_t *, device_t> &result_assigned_part_ids_,
-  Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_mj_gnos_)
+  Kokkos::View<mj_gno_t*, Kokkos::HostSpace> &result_mj_gnos_)
 {
   // purpose of this code is to validate node and UVM status for the tests
   //std::cout << "Memory Space: " << mj_node_t::memory_space::name()
@@ -8595,7 +8588,7 @@ public:
   mj_gno_t num_global_coords; //number of global coords.
 
   // initial global ids of the coordinates.
-  Kokkos::View<const mj_gno_t*, Kokkos::Serial> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> initial_mj_gnos;
 
   // two dimension coordinate array.
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
@@ -8663,7 +8656,7 @@ public:
     int coord_dim_,
     mj_lno_t num_local_coords_,
     mj_gno_t num_global_coords_,  size_t num_global_parts_,
-    Kokkos::View<const mj_gno_t*, Kokkos::Serial> &initial_mj_gnos_,
+    Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> &initial_mj_gnos_,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
       mj_coordinates_,
     int num_weights_per_coord_,
@@ -8671,7 +8664,7 @@ public:
     //results
     RCP<const Comm<int> > &result_problemComm_,
     mj_lno_t & result_num_local_coords_,
-    Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_initial_mj_gnos_,
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace> &result_initial_mj_gnos_,
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
       result_mj_coordinates_,
     Kokkos::View<mj_scalar_t**, device_t> &result_mj_weights_,
@@ -8831,7 +8824,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_, size_t num_global_parts_,
-  Kokkos::View<const mj_gno_t*, Kokkos::Serial> &initial_mj_gnos_,
+  Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> &initial_mj_gnos_,
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
     mj_coordinates_,
   int num_weights_per_coord_,
@@ -8839,7 +8832,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   //results
   RCP<const Comm<int> > &result_problemComm_,
   mj_lno_t &result_num_local_coords_,
-  Kokkos::View<mj_gno_t*, Kokkos::Serial> &result_initial_mj_gnos_,
+  Kokkos::View<mj_gno_t*, Kokkos::HostSpace> &result_initial_mj_gnos_,
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
     result_mj_coordinates_,
   Kokkos::View<mj_scalar_t**, device_t> &result_mj_weights_,
@@ -8895,7 +8888,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
       num_local_coords_);
     distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
 
-    result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, Kokkos::Serial>(
+    result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, Kokkos::HostSpace>(
       "result_initial_mj_gnos_", num_incoming_gnos);
     memcpy(result_initial_mj_gnos_.data(),
       received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
@@ -9010,14 +9003,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
 
     RCP<const Comm<int> > result_problemComm = this->mj_problemComm;
     mj_lno_t result_num_local_coords = this->num_local_coords;
-    Kokkos::View<mj_gno_t*, Kokkos::Serial> result_initial_mj_gnos;
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace> result_initial_mj_gnos;
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       result_mj_coordinates = this->mj_coordinates;
     Kokkos::View<mj_scalar_t**, device_t> result_mj_weights =
       this->mj_weights;
     int *result_actual_owner_rank = NULL;
 
-    Kokkos::View<const mj_gno_t*, Kokkos::Serial> result_initial_mj_gnos_ =
+    Kokkos::View<const mj_gno_t*, Kokkos::HostSpace> result_initial_mj_gnos_ =
       this->initial_mj_gnos;
 
     // TODO: MD 08/2017: Further discussion is required.
@@ -9091,7 +9084,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
      }
 
     Kokkos::View<mj_part_t *, device_t> result_assigned_part_ids;
-    Kokkos::View<mj_gno_t*, Kokkos::Serial> result_mj_gnos;
+    Kokkos::View<mj_gno_t*, Kokkos::HostSpace> result_mj_gnos;
 
     this->mj_env->timerStop(MACRO_TIMERS, "partition() - setup");
     this->mj_env->timerStart(MACRO_TIMERS,
@@ -9232,7 +9225,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   this->mj_uniform_weights = Kokkos::View<bool *, device_t>(
     "uniform weights", criteria_dim);
 
-  Kokkos::View<const mj_gno_t *, Kokkos::Serial> gnos;
+  Kokkos::View<const mj_gno_t *, Kokkos::HostSpace> gnos;
   Kokkos::View<adapter_scalar_t **, Kokkos::LayoutLeft, device_t> xyz_adapter;
   Kokkos::View<adapter_scalar_t **, device_t> wgts_adapter;
   this->mj_coords->getCoordinatesKokkos(gnos, xyz_adapter, wgts_adapter);

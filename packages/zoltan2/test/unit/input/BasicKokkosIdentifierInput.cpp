@@ -68,7 +68,7 @@ int main(int narg, char *arg[]) {
   zlno_t numLocalIds = 10;
   const int nWeights = 2;
 
-  Kokkos::View<zgno_t *, Kokkos::Serial> myIds("myIds", numLocalIds);
+  Kokkos::View<zgno_t *, Kokkos::HostSpace> myIds("myIds", numLocalIds);
   zgno_t myFirstId = rank * numLocalIds * numLocalIds;
   Kokkos::View<zscalar_t **, Layout> weights("weights", numLocalIds, nWeights);
 
@@ -87,7 +87,7 @@ int main(int narg, char *arg[]) {
     fail = 5;
   }
 
-  Kokkos::View<const zgno_t *, Kokkos::Serial> globalIdsIn;
+  Kokkos::View<const zgno_t *, Kokkos::HostSpace> globalIdsIn;
   Kokkos::View<zscalar_t *, typename znode_t::device_type> weightsIn[nWeights];
 
   ia.getIDsKokkosView(globalIdsIn);
