@@ -83,7 +83,8 @@ int main(int narg, char *arg[]) {
   int localCount = 40 * (rank + 1);
   int totalCount = 20 * nprocs * (nprocs + 1);
   int targetCount = totalCount / nprocs;
-  Kokkos::View<globalId_t*, Kokkos::HostSpace> globalIds("globalIds", localCount);
+  Kokkos::View<globalId_t*, Kokkos::HostSpace>
+    globalIds("globalIds", localCount);
 
   if (rank == 0) {
     for (int i = 0, num = 40; i < nprocs ; i++, num += 40) {
@@ -145,9 +146,10 @@ int main(int narg, char *arg[]) {
   Kokkos::View<const globalId_t *, Kokkos::HostSpace> ids;
   ia.getIDsKokkosView(ids);
 
-  Kokkos::View<int*> partCounts("partCounts", nprocs);
+  Kokkos::View<int*, Kokkos::HostSpace> partCounts("partCounts", nprocs);
 
-  Kokkos::View<int*> globalPartCounts("globalPartCounts", nprocs);
+  Kokkos::View<int*, Kokkos::HostSpace>
+    globalPartCounts("globalPartCounts", nprocs);
 
   for (size_t i = 0; i < ia.getLocalNumIDs(); i++) {
     int pp = problem->getSolution().getPartListView()[i];
@@ -157,7 +159,7 @@ int main(int narg, char *arg[]) {
   }
 
   Teuchos::reduceAll<int, int>(*comm, Teuchos::REDUCE_SUM, nprocs,
-      &partCounts(0), &globalPartCounts(0));
+      partCounts.data(), globalPartCounts.data());
 
   if (rank == 0) {
     int ierr = 0;

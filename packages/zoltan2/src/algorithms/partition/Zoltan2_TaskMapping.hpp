@@ -992,7 +992,8 @@ public:
   // TODO: Perhaps delete this and just reference the view size?
   // Need to check the handling of size -1 versus size 0
   int partArraySize;
-  Kokkos::View<part_t *, Kokkos::MemoryUnmanaged> kokkos_partNoArray;
+
+  Kokkos::View<part_t *, typename node_t::device_type> kokkos_partNoArray;
 
   int *machine_extent;
   bool *machine_extent_wrap_around;
@@ -1375,12 +1376,18 @@ public:
     // but I'm trying to restrict the scope of the refactoring so it can be done
     // in steps. Making 2d kokkos view and manually copy in the pieces for now.
     // TODO: optimmize
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_pcoords("pcoords", used_num_procs, procdim);
+    typedef typename node_t::device_type device_t;
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft, device_t>
+      kokkos_pcoords("pcoords", used_num_procs, procdim);
+
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < used_num_procs; ++j) {
         kokkos_pcoords(j,i) = pcoords[i][j];
       }
     }
+
+    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_pcoords
+      (proc_adjList, this->no_procs);
 
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1390,8 +1397,7 @@ public:
         procdim,
         //minCoordDim,
         kokkos_pcoords,
-        Kokkos::View<part_t*,Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
-          proc_adjList, this->no_procs),
+        initial_selected_coords_output_permutation_pcoords,
         proc_xadj,
         recursion_depth,
         kokkos_partNoArray,
@@ -1430,13 +1436,17 @@ public:
     // but I'm trying to restrict the scope of the refactoring so it can be done
     // in steps. Making 2d kokkos view and manually copy in the pieces for now.
     // TODO: optimize
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft> kokkos_tcoords(
+
+    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft, device_t> kokkos_tcoords(
       "pcoords", this->no_tasks, procdim);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < this->no_tasks; ++j) {
         kokkos_tcoords(j,i) = tcoords[i][j];
       }
     }
+
+    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_tcoords
+      (task_adjList, this->no_procs);
 
     //partitioning of tasks
     mj_partitioner.sequential_task_partitioning(
@@ -1447,8 +1457,7 @@ public:
         this->task_coord_dim,
         //minCoordDim,
         kokkos_tcoords,
-        Kokkos::View<part_t*, typename node_t::device_type>(
-          task_adjList, this->no_procs),
+        initial_selected_coords_output_permutation_tcoords,
         task_xadj,
         recursion_depth,
         kokkos_partNoArray,
