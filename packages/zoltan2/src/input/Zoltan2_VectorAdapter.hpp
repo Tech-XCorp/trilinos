@@ -142,6 +142,7 @@ public:
                               int idx = 0) const = 0;
 
   virtual void getEntriesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> & elements) const {
     // TODO: Eventually this can become abstract if everything is using kokkos
@@ -182,6 +183,7 @@ public:
   }
 
   inline void getCoordinatesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
   {
     getEntriesKokkosView(elements);

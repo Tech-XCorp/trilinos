@@ -228,6 +228,7 @@ public:
   void getEntriesView(const scalar_t *&elements, int &stride, int idx=0) const;
 
   void getEntriesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> & elements) const;
 
@@ -347,11 +348,13 @@ template <typename User>
 ////////////////////////////////////////////////////////////////////////////
 template <typename User>
   void XpetraMultiVectorAdapter<User>::getEntriesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
 {
   if (map_->lib() == Xpetra::UseTpetra){
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> view2d =
       tvector->getTpetra_MultiVector()->template getLocalView<node_t>();
 

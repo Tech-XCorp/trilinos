@@ -301,7 +301,7 @@ int main(int narg, char *arg[]){
           mach.getHopCount(procId1, procId2, distance2);
           hops2 += distance2;
           for (int k = 0 ; k < mach_coord_dim ; ++k){
-            part_t distance = ZOLTAN2_ABS(proc_coords[k][procId1] - proc_coords[k][procId2]);
+            part_t distance = std::abs(proc_coords[k][procId1] - proc_coords[k][procId2]);
             if (machine_extent_wrap_around[k]){
               if (machine_extent[k] - distance < distance){
                 distance = machine_extent[k] - distance;

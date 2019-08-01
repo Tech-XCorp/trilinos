@@ -102,7 +102,7 @@ void test_no_weights(
 
 // Tried UVM off to see if it would speed things up - it did not.
 // TODO: Decide if we want to keep this or change it.
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  myNode_t;
 #else
@@ -159,7 +159,7 @@ void test_weights(
 {
 // Tried UVM off to see if it would speed things up - it did not.
 // TODO: Decide if we want to keep this or change it.
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
     typedef Kokkos::Compat::KokkosDeviceWrapperNode<
       Kokkos::Cuda, Kokkos::CudaSpace>  myNode_t;
 #else
