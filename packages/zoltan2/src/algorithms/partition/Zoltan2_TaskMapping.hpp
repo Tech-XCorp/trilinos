@@ -39,12 +39,12 @@ template <typename Ordinal, typename T>
 class Zoltan2_ReduceBestMapping  : public ValueTypeReductionOp<Ordinal,T>
 {
 private:
-  T _EPSILON;
+  T epsilon;
 
 public:
   /*! \brief Default Constructor
    */
-  Zoltan2_ReduceBestMapping():_EPSILON(std::numeric_limits<T>::epsilon()){}
+  Zoltan2_ReduceBestMapping():epsilon(std::numeric_limits<T>::epsilon()){}
 
   /*! \brief Implement Teuchos::ValueTypeReductionOp interface
    */
@@ -52,11 +52,11 @@ public:
   {
 
     for (Ordinal i=0; i < count; i++){
-      if (inBuffer[0] - inoutBuffer[0] < -_EPSILON){
+      if (inBuffer[0] - inoutBuffer[0] < -epsilon){
         inoutBuffer[0] = inBuffer[0];
         inoutBuffer[1] = inBuffer[1];
-      } else if(inBuffer[0] - inoutBuffer[0] < _EPSILON &&
-          inBuffer[1] - inoutBuffer[1] < _EPSILON){
+      } else if(inBuffer[0] - inoutBuffer[0] < epsilon &&
+          inBuffer[1] - inoutBuffer[1] < epsilon){
         inoutBuffer[0] = inBuffer[0];
         inoutBuffer[1] = inBuffer[1];
       }
@@ -560,7 +560,7 @@ class KmeansHeap{
   IT heapSize;
   IT *indices;
   WT *values;
-  WT _EPSILON;
+  WT epsilon;
 
 
 public:
@@ -568,7 +568,7 @@ public:
     this->heapSize = heapsize_;
     this->indices = allocMemory<IT>(heapsize_ );
     this->values = allocMemory<WT>(heapsize_ );
-    this->_EPSILON = std::numeric_limits<WT>::epsilon();
+    this->epsilon = std::numeric_limits<WT>::epsilon();
   }
 
   ~KmeansHeap(){
@@ -654,7 +654,7 @@ public:
         nc += coords[i][k];
       }
       nc /= this->heapSize;
-      moved = (ZOLTAN2_ABS(center[i] - nc) > this->_EPSILON || moved );
+      moved = (std::abs(center[i] - nc) > this->epsilon || moved );
       center[i] = nc;
 
     }
@@ -993,7 +993,7 @@ public:
   // Need to check the handling of size -1 versus size 0
   int partArraySize;
 
-  Kokkos::View<part_t *, typename node_t::device_type> kokkos_partNoArray;
+  Kokkos::View<part_t *, Kokkos::HostSpace> kokkos_partNoArray;
 
   int *machine_extent;
   bool *machine_extent_wrap_around;
@@ -1053,7 +1053,7 @@ public:
     this->partArraySize = psize;
   }
 
-  void setPartArray(Kokkos::View<part_t *, typename node_t::device_type> pNo){
+  void setPartArray(Kokkos::View<part_t *, Kokkos::HostSpace> pNo){
     this->kokkos_partNoArray = pNo;
   }
 
@@ -1114,7 +1114,7 @@ public:
     pcoord_t distance = 0;
     if (machine == NULL){
       for (int i = 0 ; i < this->proc_coord_dim; ++i){
-        double d = ZOLTAN2_ABS(proc_coords[i][procId1] - proc_coords[i][procId2]);
+        double d = std::abs(proc_coords[i][procId1] - proc_coords[i][procId2]);
         if (machine_extent_wrap_around && machine_extent_wrap_around[i]){
           if (machine_extent[i] - d < d){
             d = machine_extent[i] - d;
@@ -1370,24 +1370,30 @@ public:
 
     AlgMJ<pcoord_t, part_t, part_t, part_t, node_t> mj_partitioner;
 
-    // pcoords was allocated as an array of arrays - each made individually
-    // so memory is not contiguous and cannot be directly passed to an unmanaged
-    // view. Eventually this should be built from the start as a Kokkos::View
-    // but I'm trying to restrict the scope of the refactoring so it can be done
-    // in steps. Making 2d kokkos view and manually copy in the pieces for now.
-    // TODO: optimmize
     typedef typename node_t::device_type device_t;
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<pcoord_t**, Kokkos::LayoutLeft, device_t>
       kokkos_pcoords("pcoords", used_num_procs, procdim);
-
+    typename decltype(kokkos_pcoords)::HostMirror
+      host_kokkos_pcoords = Kokkos::create_mirror_view(kokkos_pcoords);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < used_num_procs; ++j) {
-        kokkos_pcoords(j,i) = pcoords[i][j];
+        host_kokkos_pcoords(j,i) = pcoords[i][j];
       }
     }
+    Kokkos::deep_copy(kokkos_pcoords, host_kokkos_pcoords);
 
-    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_pcoords
-      (proc_adjList, this->no_procs);
+    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_pcoords(
+      "initial_selected_coords_output_permutation_pcoords", this->no_procs);
+    typename decltype(initial_selected_coords_output_permutation_pcoords)::HostMirror
+      host_initial_selected_coords_output_permutation_pcoords =
+        Kokkos::create_mirror_view(initial_selected_coords_output_permutation_pcoords);
+    for(int n = 0; n < this->no_procs; ++n) {
+      host_initial_selected_coords_output_permutation_pcoords(n) =
+        proc_adjList[n];
+    }
+    Kokkos::deep_copy(initial_selected_coords_output_permutation_pcoords,
+      host_initial_selected_coords_output_permutation_pcoords);
 
     mj_partitioner.sequential_task_partitioning(
         env,
@@ -1409,12 +1415,12 @@ public:
     //comm_->barrier();
     //std::cout << "mj_partitioner.for procs over" << std::endl;
 
-
     //freeArray<pcoord_t *>(pcoords);
 
 
     part_t *task_xadj = allocMemory<part_t>(num_parts+1);
     part_t *task_adjList = allocMemory<part_t>(this->no_tasks);
+
     //fill task_adjList st: task_adjList[i] <- i.
     fillContinousArray<part_t>(task_adjList,this->no_tasks, NULL);
 
@@ -1427,26 +1433,31 @@ public:
       tcoords[i] = this->task_coords[permutation[i]];
     }
 
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
+    Kokkos::View<tcoord_t**, Kokkos::LayoutLeft, device_t>
+      kokkos_tcoords("tcoords", this->no_tasks, this->task_coord_dim);
+    typename decltype(kokkos_tcoords)::HostMirror
+      host_kokkos_tcoords = Kokkos::create_mirror_view(kokkos_tcoords);
+    for(int i = 0; i < this->task_coord_dim; ++i) {
+      for(int j = 0; j < this->no_tasks; ++j) {
+        host_kokkos_tcoords(j,i) = tcoords[i][j];
+      }
+    }
+    Kokkos::deep_copy(kokkos_tcoords, host_kokkos_tcoords);
 
     env->timerStart(MACRO_TIMERS, "Mapping - Task Partitioning");
 
-    // tcoords was allocated as an array of arrays - each made individually
-    // so memory is not contiguous and cannot be directly passed to an unmanaged
-    // view. Eventually this should be built from the start as a Kokkos::View
-    // but I'm trying to restrict the scope of the refactoring so it can be done
-    // in steps. Making 2d kokkos view and manually copy in the pieces for now.
-    // TODO: optimize
-
-    Kokkos::View<pcoord_t**, Kokkos::LayoutLeft, device_t> kokkos_tcoords(
-      "pcoords", this->no_tasks, procdim);
-    for(int i = 0; i < procdim; ++i) {
-      for(int j = 0; j < this->no_tasks; ++j) {
-        kokkos_tcoords(j,i) = tcoords[i][j];
-      }
+    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_tcoords(
+      "initial_selected_coords_output_permutation_tcoords", this->no_tasks);
+    typename decltype(initial_selected_coords_output_permutation_tcoords)::HostMirror
+      host_initial_selected_coords_output_permutation_tcoords =
+        Kokkos::create_mirror_view(initial_selected_coords_output_permutation_tcoords);
+    for(int n = 0; n < this->no_tasks; ++n) {
+      host_initial_selected_coords_output_permutation_tcoords(n) =
+        task_adjList[n];
     }
-
-    Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_tcoords
-      (task_adjList, this->no_procs);
+    Kokkos::deep_copy(initial_selected_coords_output_permutation_tcoords,
+      host_initial_selected_coords_output_permutation_tcoords);
 
     //partitioning of tasks
     mj_partitioner.sequential_task_partitioning(
@@ -1593,7 +1604,13 @@ protected:
   typedef typename Adapter::scalar_t tcoord_t;
   typedef typename Adapter::scalar_t scalar_t;
   typedef typename Adapter::lno_t lno_t;
+
+#ifdef KOKKOS_ENABLE_CUDA
+    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
+      Kokkos::Cuda, Kokkos::CudaSpace>  node_t;
+#else
   typedef typename Adapter::node_t node_t;
+#endif
 
 #endif
 
@@ -2583,7 +2600,7 @@ public:
       ArrayRCP<part_t>task_comm_adj,
       pcoord_t *task_communication_edge_weight_,
       int recursion_depth,
-      Kokkos::View<part_t *> part_no_array,
+      Kokkos::View<part_t *, Kokkos::HostSpace> part_no_array,
       const part_t *machine_dimensions,
       int num_ranks_per_node = 1,
       bool divide_to_prime_first = false, bool reduce_best_mapping = true
@@ -2929,7 +2946,7 @@ void coordinateTaskMapperInterface(
     part_t *proc_to_task_xadj, /*output*/
     part_t *proc_to_task_adj, /*output*/
     int recursion_depth,
-    Kokkos::View<part_t *> part_no_array,
+    Kokkos::View<part_t *, Kokkos::HostSpace> part_no_array,
     const part_t *machine_dimensions,
     int num_ranks_per_node = 1,
     bool divide_to_prime_first = false

@@ -486,11 +486,10 @@ public:
   }
 
   inline void getCoordinatesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> & elements) const
   {
-    // I'm not sure how we'll organize this yet
-    // I want to get the cuda builds running and passing
-    // so first step let's just build the View
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type>
       kokkos_coordinates("pamgen coords", getLocalNumIDs(), getDimension());
     typename decltype(kokkos_coordinates)::HostMirror

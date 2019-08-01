@@ -138,6 +138,7 @@ public:
   /*! \brief Provide a pointer to the coordinates view.
   */
   inline void getCoordinatesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> & elements) const
   {

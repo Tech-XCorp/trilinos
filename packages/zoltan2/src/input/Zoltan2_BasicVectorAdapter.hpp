@@ -288,6 +288,7 @@ public:
   }
 
   void getEntriesKokkosView(
+    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> & entries) const
   {
@@ -303,6 +304,7 @@ private:
 
   Kokkos::View<gno_t *, Kokkos::HostSpace> kokkos_ids_;
 
+  // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
     typename node_t::device_type> kokkos_entries_;
 
@@ -334,6 +336,7 @@ private:
       }
 
       // setup kokkos entries
+      // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
       kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
         typename node_t::device_type>
         ("entries", numIds_, numEntriesPerID_);

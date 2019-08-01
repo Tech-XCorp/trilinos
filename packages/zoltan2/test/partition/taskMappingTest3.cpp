@@ -418,11 +418,9 @@ int main(int narg, char *arg[]){
                 proc_to_task_xadj_, /*output*/
                 proc_to_task_adj_, /*output*/
 
-                // TODO: Complete refactor for Kokkos/Cuda conversion
-                // Avoid passing empty View when partArraysize == -1
-                // Remove partArraysize since View contains the size
                 partArraysize,
-                Kokkos::View<part_t*,Kokkos::MemoryUnmanaged>(partArray,(partArraysize == -1 ? 0 : partArraysize)),
+                Kokkos::View<part_t*, Kokkos::HostSpace,
+                  Kokkos::MemoryUnmanaged>(partArray,(partArraysize == -1 ? 0 : partArraysize)),
                 machineDimensions, rank_per_node, divide_prime
                 );
 

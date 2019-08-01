@@ -1013,7 +1013,7 @@ int testFromSeparateDataFiles(
     int ierr = 0;
     int mR = comm->getRank();
     if (mR == 0) std::cout << "size of zscalar_t:" << sizeof(zscalar_t) << std::endl;
-    string tFile = fname +"_" + Teuchos::toString<int>(mR) + ".mtx";
+    string tFile = fname +"_" + std::to_string(mR) + ".mtx";
     zscalar_t **double_coords;
     zlno_t numLocal = 0;
     int dim = 0;
@@ -1412,7 +1412,7 @@ int main(int narg, char *arg[])
     bool test_boxes = false;
     bool rectilinear = false;
 
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
     // make a new node type so we can run BasicVectorAdapter with UVM off
     // The Tpetra MV will still run with UVM on and we'll compare the results.
     // For Serial/OpenMP the 2nd test will be turned off at the CMake level.
@@ -1478,7 +1478,7 @@ int main(int narg, char *arg[])
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
           }
           else {
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
             ierr = testFromDataFile<uvm_off_node_t>(tcomm, numTeams, numParts,
                     imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
@@ -1522,7 +1522,7 @@ int main(int narg, char *arg[])
                     mj_premigration_option, mj_premigration_coordinate_cutoff);
           }
           else {
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
             ierr = GeometricGenInterface<uvm_off_node_t>(tcomm, numTeams,
                     numParts, imbalance, fname, pqParts, paramFile, k,
                     migration_check_option,
