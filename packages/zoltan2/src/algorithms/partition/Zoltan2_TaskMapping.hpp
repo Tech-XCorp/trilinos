@@ -114,8 +114,8 @@ template <typename part_t>
 void getGridCommunicationGraph(part_t taskCount, part_t *&task_comm_xadj, part_t *&task_comm_adj, std::vector<int> grid_dims){
   int dim = grid_dims.size();
   int neighborCount = 2 * dim;
-  task_comm_xadj = allocMemory<part_t>(taskCount+1);
-  task_comm_adj = allocMemory<part_t>(taskCount * neighborCount);
+  task_comm_xadj = new part_t[taskCount+1];
+  task_comm_adj = new part_t[taskCount * neighborCount];
 
   part_t neighBorIndex = 0;
   task_comm_xadj[0] = 0;
@@ -164,14 +164,14 @@ void getSolutionCenterCoordinates(
 
 
   //local number of points in each part.
-  gno_t *point_counts = allocMemory<gno_t>(ntasks);
+  gno_t *point_counts = new gno_t[ntasks];
   memset(point_counts, 0, sizeof(gno_t) * ntasks);
 
   //global number of points in each part.
-  gno_t *global_point_counts = allocMemory<gno_t>(ntasks);
+  gno_t *global_point_counts = new gno_t[ntasks];
 
 
-  scalar_t **multiJagged_coordinates = allocMemory<scalar_t *>(coordDim);
+  scalar_t **multiJagged_coordinates = new scalar_t*[coordDim];
 
   for (int dim=0; dim < coordDim; dim++){
     ArrayRCP<const scalar_t> ar;
@@ -215,7 +215,7 @@ void getSolutionCenterCoordinates(
     }
   }
 
-  scalar_t *tmpCoords = allocMemory<scalar_t>(ntasks);
+  scalar_t *tmpCoords = new scalar_t[ntasks];
   for(int j = 0; j < coordDim; ++j){
     reduceAll<int, scalar_t>(*comm, Teuchos::REDUCE_SUM,
         ntasks, partCenters[j], tmpCoords
@@ -227,11 +227,11 @@ void getSolutionCenterCoordinates(
   }
   envConst->timerStop(MACRO_TIMERS, "Mapping - Center Calculation");
 
-  freeArray<gno_t>(point_counts);
-  freeArray<gno_t>(global_point_counts);
+  delete [] point_counts;
+  delete [] global_point_counts;
 
-  freeArray<scalar_t>(tmpCoords);
-  freeArray<scalar_t *>(multiJagged_coordinates);
+  delete [] tmpCoords;
+  delete [] multiJagged_coordinates;
 }
 
 //returns the coarsend part graph.
@@ -566,14 +566,14 @@ class KmeansHeap{
 public:
   void setHeapsize(IT heapsize_){
     this->heapSize = heapsize_;
-    this->indices = allocMemory<IT>(heapsize_ );
-    this->values = allocMemory<WT>(heapsize_ );
+    this->indices = new IT[heapsize_];
+    this->values = new WT[heapsize_];
     this->epsilon = std::numeric_limits<WT>::epsilon();
   }
 
   ~KmeansHeap(){
-    freeArray<IT>(this->indices);
-    freeArray<WT>(this->values);
+    delete [] this->indices;
+    delete [] this->values;
   }
 
 
@@ -679,12 +679,12 @@ class KMeansCluster{
 public:
   WT *center;
   ~KMeansCluster(){
-    freeArray<WT>(center);
+    delete [] center;
   }
 
   void setParams(int dimension_, int heapsize){
     this->dimension = dimension_;
-    this->center = allocMemory<WT>(dimension_);
+    this->center = new WT[dimension_];
     this->closestPoints.setHeapsize(heapsize);
   }
 
@@ -734,9 +734,9 @@ class KMeansAlgorithm{
   WT *minCoordinates;
 public:
   ~KMeansAlgorithm(){
-    freeArray<KMeansCluster<IT,WT> >(clusters);
-    freeArray<WT>(maxCoordinates);
-    freeArray<WT>(minCoordinates);
+    delete [] clusters;
+    delete [] maxCoordinates;
+    delete [] minCoordinates;
   }
 
   /*! \brief KMeansAlgorithm Constructor
@@ -752,14 +752,14 @@ public:
         numClusters((1 << dim_) + 1),
         required_elements(required_elements_)
   {
-    this->clusters  = allocMemory<KMeansCluster<IT,WT> >(this->numClusters);
+    this->clusters  = new KMeansCluster<IT,WT>[this->numClusters];
     //set dimension and the number of required elements for all clusters.
     for (int i = 0; i < numClusters; ++i){
       this->clusters[i].setParams(this->dim, this->required_elements);
     }
 
-    this->maxCoordinates = allocMemory <WT>(this->dim);
-    this->minCoordinates = allocMemory <WT>(this->dim);
+    this->maxCoordinates = new WT[this->dim];
+    this->minCoordinates = new WT[this->dim];
 
     //obtain the min and max coordiantes for each dimension.
     for (int j = 0; j < dim; ++j){
@@ -971,9 +971,9 @@ public:
   virtual void getMapping(
       int myRank,
       const RCP<const Environment> &env,
-      ArrayRCP <part_t> &proc_to_task_xadj, //  = allocMemory<part_t> (this->no_procs+1); //holds the pointer to the task array
-      ArrayRCP <part_t> &proc_to_task_adj, // = allocMemory<part_t>(this->no_tasks); //holds the indices of tasks wrt to proc_to_task_xadj array.
-      ArrayRCP <part_t> &task_to_proc //allocMemory<part_t>(this->no_tasks); //holds the processors mapped to tasks.
+      ArrayRCP <part_t> &proc_to_task_xadj, //  = new part_t[this->no_procs+1]; //holds the pointer to the task array
+      ArrayRCP <part_t> &proc_to_task_adj, // = new part_t[this->no_tasks]; //holds the indices of tasks wrt to proc_to_task_xadj array.
+      ArrayRCP <part_t> &task_to_proc // new part_t[this->no_tasks]; //holds the processors mapped to tasks.
       ,const Teuchos::RCP <const Teuchos::Comm<int> > comm_
   ) const = 0;
 };
@@ -1184,9 +1184,9 @@ public:
   virtual void getMapping(
       int myRank,
       const RCP<const Environment> &env,
-      ArrayRCP <part_t> &rcp_proc_to_task_xadj, //  = allocMemory<part_t> (this->no_procs+1); //holds the pointer to the task array
-      ArrayRCP <part_t> &rcp_proc_to_task_adj, // = allocMemory<part_t>(this->no_tasks); //holds the indices of tasks wrt to proc_to_task_xadj array.
-      ArrayRCP <part_t> &rcp_task_to_proc //allocMemory<part_t>(this->no_tasks); //holds the processors mapped to tasks.
+      ArrayRCP <part_t> &rcp_proc_to_task_xadj, //  = new part_t[this->no_procs+1]; //holds the pointer to the task array
+      ArrayRCP <part_t> &rcp_proc_to_task_adj, // = new part_t[this->no_tasks]; //holds the indices of tasks wrt to proc_to_task_xadj array.
+      ArrayRCP <part_t> &rcp_task_to_proc // = new part_t[this->no_tasks]; //holds the processors mapped to tasks.
       ,const Teuchos::RCP <const Teuchos::Comm<int> > comm_
   ) const{
 
@@ -1241,10 +1241,10 @@ public:
     //add one also that partitions based the longest dimension.
 
     //holds the pointers to proc_adjList
-    part_t *proc_xadj = allocMemory<part_t>(num_parts+1);
+    part_t *proc_xadj = new part_t[num_parts+1];
     //holds the processors in parts according to the result of partitioning algorithm.
     //the processors assigned to part x is at proc_adjList[ proc_xadj[x] : proc_xadj[x+1] ]
-    part_t *proc_adjList = allocMemory<part_t>(this->no_procs);
+    part_t *proc_adjList = new part_t[this->no_procs];
 
 
     part_t used_num_procs = this->no_procs;
@@ -1309,15 +1309,15 @@ public:
 
 
 
-    int *permutation = allocMemory<int>((this->proc_coord_dim > this->task_coord_dim)
-        ? this->proc_coord_dim : this->task_coord_dim);
+    int *permutation = new int[(this->proc_coord_dim > this->task_coord_dim)
+        ? this->proc_coord_dim : this->task_coord_dim];
 
     //get the permutation order from the proc permutation index.
     ithPermutation<int>(this->proc_coord_dim, myProcPerm, permutation);
 
     /*
     //reorder the coordinate dimensions.
-    pcoord_t **pcoords = allocMemory<pcoord_t *>(this->proc_coord_dim);
+    pcoord_t **pcoords = new pcoord_t[this->proc_coord_dim];
     for(int i = 0; i < this->proc_coord_dim; ++i){
       pcoords[i] = this->proc_coords[permutation[i]];
       //cout << permutation[i] << " ";
@@ -1329,7 +1329,7 @@ public:
     int procdim  = this->proc_coord_dim;
     procdim  = 6;
     //reorder the coordinate dimensions.
-    pcoord_t **pcoords = allocMemory<pcoord_t *>(procdim);
+    pcoord_t **pcoords = new pcoord_t[procdim];
     for(int i = 0; i < procdim; ++i){
       pcoords[i] = new pcoord_t[used_num_procs] ;//this->proc_coords[permutation[i]];
     }
@@ -1418,8 +1418,8 @@ public:
     //freeArray<pcoord_t *>(pcoords);
 
 
-    part_t *task_xadj = allocMemory<part_t>(num_parts+1);
-    part_t *task_adjList = allocMemory<part_t>(this->no_tasks);
+    part_t *task_xadj = new part_t[num_parts+1];
+    part_t *task_adjList = new part_t[this->no_tasks];
 
     //fill task_adjList st: task_adjList[i] <- i.
     fillContinousArray<part_t>(task_adjList,this->no_tasks, NULL);
@@ -1428,7 +1428,7 @@ public:
     ithPermutation<int>(this->task_coord_dim, myTaskPerm, permutation);
 
     //reorder task coordinate dimensions.
-    tcoord_t **tcoords = allocMemory<tcoord_t *>(this->task_coord_dim);
+    tcoord_t **tcoords = new tcoord_t*[this->task_coord_dim];
     for(int i = 0; i < this->task_coord_dim; ++i){
       tcoords[i] = this->task_coords[permutation[i]];
     }
@@ -1484,8 +1484,8 @@ public:
     //comm_->barrier();
     //std::cout << "mj_partitioner.sequential_task_partitioning over" << std::endl;
 
-    freeArray<pcoord_t *>(tcoords);
-    freeArray<int>(permutation);
+    delete [] tcoords;
+    delete [] permutation;
 
 
     //filling proc_to_task_xadj, proc_to_task_adj, task_to_proc arrays.
@@ -1509,7 +1509,7 @@ public:
 
     //holds the pointer to the task array
     //convert proc_to_task_xadj to CSR index array
-    part_t *proc_to_task_xadj_work = allocMemory<part_t>(this->no_procs);
+    part_t *proc_to_task_xadj_work = new part_t[this->no_procs];
     part_t sum = 0;
     for(part_t i = 0; i < this->no_procs; ++i){
       part_t tmp = proc_to_task_xadj[i];
@@ -1585,11 +1585,11 @@ public:
     }
     */
 
-    freeArray<part_t>(proc_to_task_xadj_work);
-    freeArray<part_t>(task_xadj);
-    freeArray<part_t>(task_adjList);
-    freeArray<part_t>(proc_xadj);
-    freeArray<part_t>(proc_adjList);
+    delete [] proc_to_task_xadj_work;
+    delete [] task_xadj;
+    delete [] task_adjList;
+    delete [] proc_xadj;
+    delete [] proc_adjList;
   }
 
 };
@@ -1615,10 +1615,10 @@ protected:
 #endif
 
   //RCP<const Environment> env;
-  ArrayRCP<part_t> proc_to_task_xadj; //  = allocMemory<part_t> (this->no_procs+1); //holds the pointer to the task array
-  ArrayRCP<part_t> proc_to_task_adj; // = allocMemory<part_t>(this->no_tasks); //holds the indices of tasks wrt to proc_to_task_xadj array.
-  ArrayRCP<part_t> task_to_proc; //allocMemory<part_t>(this->no_procs); //holds the processors mapped to tasks.
-  ArrayRCP<part_t> local_task_to_rank; //allocMemory<part_t>(this->no_procs); //holds the processors mapped to tasks.
+  ArrayRCP<part_t> proc_to_task_xadj; //  = new part_t[this->no_procs+1]; //holds the pointer to the task array
+  ArrayRCP<part_t> proc_to_task_adj; // = new part_t[this->no_tasks]; //holds the indices of tasks wrt to proc_to_task_xadj array.
+  ArrayRCP<part_t> task_to_proc; // = new part_t[this->no_procs]; //holds the processors mapped to tasks.
+  ArrayRCP<part_t> local_task_to_rank; // new part_t[this->no_procs]; //holds the processors mapped to tasks.
 
   bool isOwnerofModel;
   CoordinateCommunicationModel<pcoord_t,tcoord_t,part_t,node_t> *proc_task_comm;
@@ -1637,9 +1637,9 @@ protected:
       this->proc_task_comm->getMapping(
           myRank,
           this->env,
-          this->proc_to_task_xadj, //  = allocMemory<part_t> (this->no_procs+1); //holds the pointer to the task array
-          this->proc_to_task_adj, // = allocMemory<part_t>(this->no_tasks); //holds the indices of tasks wrt to proc_to_task_xadj array.
-          this->task_to_proc //allocMemory<part_t>(this->no_procs); //holds the processors mapped to tasks.);
+          this->proc_to_task_xadj, //  = new part_t[this->no_procs+1]; //holds the pointer to the task array
+          this->proc_to_task_adj, // = new part_t[this->no_tasks]; //holds the indices of tasks wrt to proc_to_task_xadj array.
+          this->task_to_proc // = new part_t[this->no_procs]; //holds the processors mapped to tasks.);
           ,comm_
       );
     }
@@ -1682,7 +1682,7 @@ protected:
     }
     int myGroupSize = myGroupEnd - myGroupBegin;
 
-    part_t *myGroup = allocMemory<part_t>(myGroupSize);
+    part_t *myGroup = new part_t[myGroupSize];
     for (int i = 0; i < myGroupSize; ++i){
       myGroup[i] = myGroupBegin + i;
     }
@@ -1691,7 +1691,7 @@ protected:
     ArrayView<const part_t> myGroupView(myGroup, myGroupSize);
 
     RCP<Comm<int> > subComm = this->comm->createSubcommunicator(myGroupView);
-    freeArray<part_t>(myGroup);
+    delete [] myGroup;
     return subComm;
   }
 
@@ -2125,10 +2125,9 @@ public:
     this->solution_parts = soln_->getPartListView();
 
     //we need to calculate the center of parts.
-    tcoord_t **partCenters = NULL;
-    partCenters = allocMemory<tcoord_t *>(coordDim);
+    tcoord_t **partCenters = new tcoord_t*[coordDim];
     for (int i = 0; i < coordDim; ++i){
-      partCenters[i] = allocMemory<tcoord_t>(this->ntasks);
+      partCenters[i] = new tcoord_t[this->ntasks];
     }
 
     typedef typename Adapter::scalar_t t_scalar_t;
@@ -2263,9 +2262,9 @@ public:
     }
 
     for (int i = 0; i < coordDim; ++i){
-      freeArray<tcoord_t>(partCenters[i]);
+      delete [] partCenters[i];
     }
-    freeArray<tcoord_t *>(partCenters);
+    delete [] partCenters;
 
   }
 
@@ -2388,9 +2387,9 @@ public:
 
     //we need to calculate the center of parts.
     tcoord_t **partCenters = NULL;
-    partCenters = allocMemory<tcoord_t *>(coordDim);
+    partCenters = new tcoord_t[coordDim];
     for (int i = 0; i < coordDim; ++i){
-      partCenters[i] = allocMemory<tcoord_t>(this->ntasks);
+      partCenters[i] = new tcoord_t[this->ntasks];
     }
 
     typedef typename Adapter::scalar_t t_scalar_t;
@@ -2535,9 +2534,9 @@ public:
     }
 
     for (int i = 0; i < coordDim; ++i){
-      freeArray<tcoord_t>(partCenters[i]);
+      delete [] partCenters[i];
     }
-    freeArray<tcoord_t *>(partCenters);
+    delete [] partCenters;
 
   }
 

@@ -130,33 +130,6 @@ public:
 
 namespace Zoltan2{
 
-/*! \brief Allocates memory for the given size.
- *  \param size   size of allocation
- */
-template <typename T>
-T *allocMemory(size_t size) {
-  if(size > 0) {
-    T * a = new T[size];
-    if(a == NULL) {
-      throw  "cannot allocate memory";
-    }
-    return a;
-  }
-  else {
-    return NULL;
-  }
-}
-
-/*! \brief Frees the given array.
- */
-template <typename T>
-void freeArray(T *&array) {
-  if(array != NULL) {
-    delete [] array;
-    array = NULL;
-  }
-}
-
 /*! \brief Class for sorting items with multiple values.
  *  First sorting with respect to val[0], then val[1] then ... val[count-1].
  *  The last tie breaking is done with index values.
@@ -2687,13 +2660,13 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
   mj_node_t>::compute_global_box()
 {
   //local min coords
-  mj_scalar_t *mins = allocMemory<mj_scalar_t>(this->coord_dim);
+  mj_scalar_t *mins = new mj_scalar_t[this->coord_dim];
   //global min coords
-  mj_scalar_t *gmins = allocMemory<mj_scalar_t>(this->coord_dim);
+  mj_scalar_t *gmins = new mj_scalar_t[this->coord_dim];
   //local max coords
-  mj_scalar_t *maxs = allocMemory<mj_scalar_t>(this->coord_dim);
+  mj_scalar_t *maxs = new mj_scalar_t[this->coord_dim];
   //global max coords
-  mj_scalar_t *gmaxs = allocMemory<mj_scalar_t>(this->coord_dim);
+  mj_scalar_t *gmaxs = new mj_scalar_t[this->coord_dim];
 
   auto local_mj_coordinates = this->mj_coordinates;
 
@@ -2730,10 +2703,10 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
   //create single box with all areas.
   global_box = rcp(new mj_partBox_t(0,this->coord_dim,gmins,gmaxs));
   //coordinateModelPartBox <mj_scalar_t, mj_part_t> tmpBox (0, coordDim);
-  freeArray<mj_scalar_t>(mins);
-  freeArray<mj_scalar_t>(gmins);
-  freeArray<mj_scalar_t>(maxs);
-  freeArray<mj_scalar_t>(gmaxs);
+  delete [] mins;
+  delete [] gmins;
+  delete [] maxs;
+  delete [] gmaxs;
 }
 
 /* \brief for part communication we keep track of the box boundaries.
@@ -5386,7 +5359,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // allocate memory for the local num coordinates in each part.
   mj_gno_t *num_local_points_in_each_part_to_reduce_sum =
-    allocMemory<mj_gno_t>(allocation_size);
+    new mj_gno_t[allocation_size];
 
   // this is the portion of the memory which will be used
   // at the summation to obtain total number of processors' points in each part.
@@ -5436,7 +5409,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       num_points_in_all_processor_parts);
   }
   Z2_THROW_OUTSIDE_ERROR(*(this->mj_env))
-  freeArray<mj_gno_t>(num_local_points_in_each_part_to_reduce_sum);
+  delete [] num_local_points_in_each_part_to_reduce_sum;
 }
 
 /*! \brief Function checks if should do migration or not.
@@ -5601,8 +5574,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   mj_gno_t *global_num_points_in_parts =
     num_points_in_all_processor_parts + num_procs * num_parts;
-  mj_part_t *num_procs_assigned_to_each_part =
-    allocMemory<mj_part_t>(num_parts);
+  mj_part_t *num_procs_assigned_to_each_part = new mj_part_t[num_parts];
 
   // boolean variable if the process finds its part to be assigned.
   bool did_i_find_my_group = false;
@@ -5666,13 +5638,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     // part_assignment_proc_begin_indices ([i]) is the array that holds the
     // beginning index of a processor that processor sends its data for part - i
-    mj_part_t *part_assignment_proc_begin_indices =
-      allocMemory<mj_part_t>(num_parts);
+    mj_part_t *part_assignment_proc_begin_indices = new mj_part_t[num_parts];
 
     // the next processor send is found in processor_chains_in_parts,
     // in linked list manner.
-    mj_part_t *processor_chains_in_parts = allocMemory<mj_part_t>(num_procs);
-    mj_part_t *processor_part_assignments = allocMemory<mj_part_t>(num_procs);
+    mj_part_t *processor_chains_in_parts = new mj_part_t [num_procs];
+    mj_part_t *processor_part_assignments = new mj_part_t[num_procs];
 
     // initialize the assignment of each processor.
     // this has a linked list implementation.
@@ -5694,7 +5665,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // Allocate memory for sorting data structure.
     uSignedSortItem<mj_part_t, mj_gno_t, char> *
       sort_item_num_part_points_in_procs =
-      allocMemory <uSignedSortItem<mj_part_t, mj_gno_t, char> > (num_procs);
+       new uSignedSortItem<mj_part_t, mj_gno_t, char>[num_procs];
 
     for(mj_part_t i = 0; i < num_parts; ++i) {
       // the algorithm tries to minimize the cost of migration, by assigning the
@@ -5968,12 +5939,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     processor_chains_in_parts,
     send_count_to_each_proc,
     coordinate_destinations);
-  freeArray<mj_part_t>(part_assignment_proc_begin_indices);
-  freeArray<mj_part_t>(processor_chains_in_parts);
-  freeArray<mj_part_t>(processor_part_assignments);
-  freeArray<uSignedSortItem<mj_part_t, mj_gno_t, char> >
-    (sort_item_num_part_points_in_procs);
-  freeArray<mj_part_t > (num_procs_assigned_to_each_part);
+  delete [] part_assignment_proc_begin_indices;
+  delete [] processor_chains_in_parts;
+  delete [] processor_part_assignments;
+  delete [] sort_item_num_part_points_in_procs;
+  delete [] num_procs_assigned_to_each_part;
 }
 
 /*! \brief Function fills up coordinate_destinations is the output array
@@ -6083,10 +6053,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // to sort the parts that is assigned to the processors.
   // id is the part number, sort value is the assigned processor id.
-  uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment  =
-    allocMemory <uSortItem<mj_part_t, mj_part_t> >(num_parts);
+  uSortItem<mj_part_t, mj_part_t> * sort_item_part_to_proc_assignment =
+    new uSortItem<mj_part_t, mj_part_t>[num_parts];
   uSortItem<mj_part_t, mj_gno_t> * sort_item_num_points_of_proc_in_part_i =
-    allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_procs);
+    new uSortItem<mj_part_t, mj_gno_t>[num_procs];
 
   // calculate the optimal number of coordinates that should be assigned
   // to each processor.
@@ -6095,7 +6065,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   // to hold the left space as the number of coordinates to the optimal
   // number in each proc.
-  mj_lno_t *space_in_each_processor = allocMemory <mj_lno_t>(num_procs);
+  mj_lno_t *space_in_each_processor = new mj_lno_t[num_procs];
 
   // initialize left space in each.
   for(mj_part_t i = 0; i < num_procs; ++i) {
@@ -6106,14 +6076,14 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // because in some weird inputs, it might be possible that some
   // processors is not assigned to any part. Using these variables,
   // we force each processor to have at least one part.
-  mj_part_t *num_parts_proc_assigned = allocMemory <mj_part_t>(num_procs);
+  mj_part_t *num_parts_proc_assigned = new mj_part_t[num_procs];
   memset(num_parts_proc_assigned, 0, sizeof(mj_part_t) * num_procs);
   int empty_proc_count = num_procs;
 
   // to sort the parts with decreasing order of their coordiantes.
   // id are the part numbers, sort value is the number of points in each.
   uSortItem<mj_part_t, mj_gno_t> * sort_item_point_counts_in_parts =
-    allocMemory <uSortItem<mj_part_t, mj_gno_t> >(num_parts);
+    new uSortItem<mj_part_t, mj_gno_t>[num_parts];
 
   // initially we will sort the parts according to the number of coordinates
   // they have, so that we will start assigning with the part that has the most
@@ -6208,11 +6178,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       num_points_in_all_processor_parts[this->myRank * num_parts + i];
   }
 
-  freeArray<mj_part_t>(num_parts_proc_assigned);
-  freeArray< uSortItem<mj_part_t, mj_gno_t> >
-    (sort_item_num_points_of_proc_in_part_i);
-  freeArray<uSortItem<mj_part_t, mj_gno_t> >(sort_item_point_counts_in_parts);
-  freeArray<mj_lno_t >(space_in_each_processor);
+  delete [] num_parts_proc_assigned;
+  delete [] sort_item_num_points_of_proc_in_part_i;
+  delete [] sort_item_point_counts_in_parts;
+  delete [] space_in_each_processor;
 
   // sort assignments with respect to the assigned processors.
   uqsort<mj_part_t, mj_part_t>(num_parts, sort_item_part_to_proc_assignment);
@@ -6225,8 +6194,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     output_part_numbering_begin_index,
     next_future_num_parts_in_parts);
 
-  freeArray<uSortItem<mj_part_t, mj_part_t> >
-    (sort_item_part_to_proc_assignment);
+  delete [] sort_item_part_to_proc_assignment;
 }
 
 
@@ -6477,7 +6445,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         host_src_assigned_part_ids =
         Kokkos::create_mirror_view(this->assigned_part_ids);
       Kokkos::deep_copy(host_src_assigned_part_ids, this->assigned_part_ids);
-      mj_part_t *new_parts = allocMemory<mj_part_t>(num_incoming_gnos);
+      mj_part_t *new_parts = new mj_part_t[num_incoming_gnos];
       if(num_procs < num_parts) {
         message_tag++;
         ierr = Zoltan_Comm_Do(
@@ -6646,13 +6614,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   create_sub_communicator(std::vector<mj_part_t> &processor_ranks_for_subcomm)
 {
   mj_part_t group_size = processor_ranks_for_subcomm.size();
-  mj_part_t *ids = allocMemory<mj_part_t>(group_size);
+  mj_part_t *ids = new mj_part_t[group_size];
   for(mj_part_t i = 0; i < group_size; ++i) {
     ids[i] = processor_ranks_for_subcomm[i];
   }
   ArrayView<const mj_part_t> idView(ids, group_size);
   this->comm = this->comm->createSubcommunicator(idView);
-  freeArray<mj_part_t>(ids);
+  delete [] ids;
 }
 
 /*! \brief Function writes the new permutation arrays after the migration.
@@ -6788,7 +6756,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // to access how many points processor i has on part j,
   // num_points_in_all_processor_parts[i * num_parts + j]
   mj_gno_t *num_points_in_all_processor_parts =
-    allocMemory<mj_gno_t>(input_num_parts * (num_procs + 1));
+    new mj_gno_t[input_num_parts * (num_procs + 1)];
 
   // get the number of coordinates in each part in each processor.
   this->get_processor_num_points_in_parts(
@@ -6803,13 +6771,13 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     num_procs,
     input_num_parts,
     num_points_in_all_processor_parts)) {
-    freeArray<mj_gno_t>(num_points_in_all_processor_parts);
+    delete [] num_points_in_all_processor_parts;
     return false;
   }
 
   mj_lno_t *send_count_to_each_proc = NULL;
-  int *coordinate_destinations = allocMemory<int>(this->num_local_coords);
-  send_count_to_each_proc = allocMemory<mj_lno_t>(num_procs);
+  int *coordinate_destinations = new int[this->num_local_coords];
+  send_count_to_each_proc = new mj_lno_t[num_procs];
 
   for(int i = 0; i < num_procs; ++i) {
     send_count_to_each_proc[i] = 0;
@@ -6831,7 +6799,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     output_part_begin_index,
     coordinate_destinations);
 
-  freeArray<mj_lno_t>(send_count_to_each_proc);
+  delete [] send_count_to_each_proc;
   std::vector <mj_part_t> tmpv;
 
   std::sort (out_part_indices.begin(), out_part_indices.end());
@@ -6867,7 +6835,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     next_future_num_parts_in_parts->push_back(p);
   }
 
-  freeArray<mj_gno_t>(num_points_in_all_processor_parts);
+  delete [] num_points_in_all_processor_parts;
 
   mj_lno_t num_new_local_points = 0;
   //perform the actual migration operation here.
@@ -6878,7 +6846,7 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     coordinate_destinations,
     input_num_parts);
 
-  freeArray<int>(coordinate_destinations);
+  delete [] coordinate_destinations;
   if(this->num_local_coords != num_new_local_points) {
     this->new_coordinate_permutations = Kokkos::View<mj_lno_t*, device_t>
       (Kokkos::ViewAllocateWithoutInitializing("new_coordinate_permutations"),
@@ -7018,7 +6986,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // some of the cuts might share the same position.
   // in this case, if cut i and cut j share the same position
   // cut_map[i] = cut_map[j] = sort item index.
-  mj_part_t *cut_map = allocMemory<mj_part_t> (no_cuts);
+  mj_part_t *cut_map = new mj_part_t[no_cuts];
 
   typedef uMultiSortItem<mj_lno_t, int, mj_scalar_t> multiSItem;
   typedef std::vector< multiSItem > multiSVector;
@@ -7091,7 +7059,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     mj_part_t p = pp / 2;
     // if the coordinate is on a cut.
     if(pp % 2 == 1 ) {
-      mj_scalar_t *vals = allocMemory<mj_scalar_t>(local_coord_dim -1);
+      mj_scalar_t *vals = new mj_scalar_t[local_coord_dim -1];
       allocated_memory.push_back(vals);
 
       // we insert the coordinates to the sort item here.
@@ -7278,12 +7246,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   }
 
   sort_vector_points_on_cut[previous_cut_map].clear();
-  freeArray<mj_part_t> (cut_map);
+  delete [] cut_map;
 
   //free the memory allocated for vertex sort items .
   mj_lno_t vSize = (mj_lno_t) allocated_memory.size();
   for(mj_lno_t i = 0; i < vSize; ++i) {
-    freeArray<mj_scalar_t> (allocated_memory[i]);
+    delete [] allocated_memory[i];
   }
 
   auto local_out_part_xadj = out_part_xadj;
@@ -8690,7 +8658,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     ArrayView<int> sent_owners(&(owner_of_coordinate[0]), num_local_coords_);
     ArrayRCP<int> received_owners(num_incoming_gnos);
     distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
-    result_actual_owner_rank_ = allocMemory<int>(num_incoming_gnos);
+    result_actual_owner_rank_ = new int[num_incoming_gnos];
     memcpy(
 	    result_actual_owner_rank_,
 	    received_owners.getRawPtr(),
@@ -8922,7 +8890,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       }
 
       {
-        freeArray<int> (result_actual_owner_rank);
+        delete [] result_actual_owner_rank;
       }
       mj_env->timerStop(MACRO_TIMERS,
         timer_base_string + "PostMigration DistributorMigration");
