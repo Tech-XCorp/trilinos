@@ -213,7 +213,7 @@ int main(int narg, char *arg[]){
 
     //if (narg != 3){
     //    std::cout << "Usage: " << arg[0] << " PART=partGeoParams.txt PROC=procGeoParams.txt" << std::endl;
-    //    exit(1);
+    //    std::terminate();
     //}
     part_t numParts = 0;
     zscalar_t **partCenters = NULL;

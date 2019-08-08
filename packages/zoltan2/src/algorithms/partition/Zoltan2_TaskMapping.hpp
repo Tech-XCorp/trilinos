@@ -1500,7 +1500,7 @@ public:
       if(proc_index_end - proc_index_begin != 1){
         std::cerr << "Error at partitioning of processors" << std::endl;
         std::cerr << "PART:" << i << " is assigned to " << proc_index_end - proc_index_begin << " processors." << std::endl;
-        exit(1);
+        std::terminate();
       }
       part_t assigned_proc = proc_adjList[proc_index_begin];
       proc_to_task_xadj[assigned_proc] = task_end_index - task_begin_index;
@@ -1550,7 +1550,7 @@ public:
         if(proc_index_end - proc_index_begin != 1){
           std::cerr << "Error at partitioning of processors" << std::endl;
           std::cerr << "PART:" << i << " is assigned to " << proc_index_end - proc_index_begin << " processors." << std::endl;
-          exit(1);
+          std::terminate();
         }
 
         part_t assigned_proc = proc_adjList[proc_index_begin];
@@ -1574,7 +1574,7 @@ public:
         if(proc_index_end - proc_index_begin != 1){
           std::cerr << "Error at partitioning of processors" << std::endl;
           std::cerr << "PART:" << i << " is assigned to " << proc_index_end - proc_index_begin << " processors." << std::endl;
-          exit(1);
+          std::terminate();
         }
 
         part_t assigned_proc = proc_adjList[proc_index_begin];
@@ -1645,7 +1645,7 @@ protected:
     }
     else {
       std::cerr << "communicationModel is not specified in the Mapper" << std::endl;
-      exit(1);
+      std::terminate();
     }
   }
 

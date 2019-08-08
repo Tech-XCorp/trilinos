@@ -170,7 +170,7 @@ public:
 
       // copy values
       // TODO: Could memcpy to raw ... or is there a better way
-      for(gno_t i = 0; i < tpetra_ids.size(); ++i) {
+      for(size_t i = 0; i < tpetra_ids.size(); ++i) {
         non_const_ids(i) = tpetra_ids(i);
       }
 
