@@ -72,22 +72,6 @@
 #endif
 #endif
 
-#define ZOLTAN2_MJ_LEAST_SIGNIFICANCE 0.0001
-#define ZOLTAN2_MJ_SIGNIFICANCE_MUL 1000
-
-//if the (last dimension reduce all count) x the mpi world size
-//estimated to be bigger than this number then migration will be forced
-//in earlier iterations.
-#define ZOLTAN2_MJ_FUTURE_REDUCEALL_CUTOFF 1500000
-
-//if parts right before last dimension are estimated to have less than
-//MIN_WORK_LAST_DIM many coords, migration will be forced in earlier iterations.
-#define ZOLTAN2_MJ_MIN_WORK_LAST_DIM 1000
-
-//imbalance calculation. Wreal / Wexpected - 1
-#define ZOLTAN2_MJ_IMBALANCEOF2(Wachieved, wExpected) \
-        (Wachieved) / (wExpected) - 1
-
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -162,28 +146,13 @@ public:
     this->epsilon = std::numeric_limits<WT>::epsilon() * 100;
   }
 
-  uMultiSortItem( const uMultiSortItem<IT,CT,WT>& other ) {
-    this->index = other.index;
-    this->count = other.count;
-    this->val = other.val;
-    this->epsilon = other.epsilon;
-  }
-
   ~uMultiSortItem() {
-    // freeArray<WT>(this->val);
   }
 
   void set(IT index_ ,CT count_, WT *vals_) {
     this->index = index_;
     this->count = count_;
     this->val = vals_;
-  }
-
-  uMultiSortItem<IT,CT,WT> operator=(const uMultiSortItem<IT,CT,WT>& other) {
-    this->index = other.index;
-    this->count = other.count;
-    this->val = other.val;
-    return *(this);
   }
 
   bool operator<(const uMultiSortItem<IT,CT,WT>& other) const {
@@ -204,26 +173,6 @@ public:
     }
     // if they are totally equal.
     return this->index < other.index;
-  }
-
-  bool operator>(const uMultiSortItem<IT,CT,WT>& other) const {
-    assert(this->count == other.count);
-    for(CT i = 0; i < this->count; ++i) {
-      // if the values are equal go to next one.
-      if(std::abs(this->val[i] - other.val[i]) < this->epsilon) {
-        continue;
-      }
-      // if next value is bigger return true;
-      if(this->val[i] > other.val[i]) {
-        return true;
-      }
-      // if next value is smaller return false;
-      else { // (this->val[i] > other.val[i])
-        return false;
-      }
-    }
-    // if they are totally equal.
-    return this->index > other.index;
   }
 };
 
@@ -294,7 +243,7 @@ void uqsort(IT n, uSortItem<IT, WT> * arr) {
       jstack += 2;
       if(jstack > NSTACK) {
         std::cout << "uqsort: NSTACK too small in sort." << std::endl;
-        exit(1);
+        std::terminate();
       }
       if(ir-i+1 >= j-l) {
         istack[jstack]=ir;
@@ -314,7 +263,6 @@ template <class IT, class WT, class SIGN>
 struct uSignedSortItem
 {
   IT id;
-  //unsigned int val;
   WT val;
   SIGN signbit; // 1 means positive, 0 means negative.
   bool operator<(const uSignedSortItem<IT, WT, SIGN>& rhs) const {
@@ -341,35 +289,9 @@ struct uSignedSortItem
       return false;
     }
   }
-  bool operator>(const uSignedSortItem<IT, WT, SIGN>& rhs) const {
-    /*if I am positive, the other is negative*/
-    if(this->signbit > rhs.signbit) {
-      return true;
-    }
-    /*if both has the same sign*/
-    else if(this->signbit == rhs.signbit) {
-      if(this->val < rhs.val) {//if my value is smaller,
-        return !this->signbit;//then if we both are positive return false.
-                            //if we both are negative, return true.
-      }
-      else if(this->val > rhs.val) {//if my value is larger,
-        return this->signbit; //then if we both are positive return true.
-                              //if we both are negative, return false.
-      }
-      else { // if they are equal
-        return false;
-      }
-    }
-    else {
-      /*if I am negative, the other is positive*/
-      return false;
-    }
-  }
+
   bool operator<=(const uSignedSortItem<IT, WT, SIGN>& rhs) {
-    return !(*this > rhs);
-  }
-  bool operator>=(const uSignedSortItem<IT, WT, SIGN>& rhs) {
-    return !(*this  < rhs);
+    return (this->val == rhs.val && this->signbit == rhs.signbit) || (*this < rhs);
   }
 };
 
@@ -382,7 +304,7 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr) {
   IT M = 7;
   IT         i, ir=n, j, k, l=1;
   IT         jstack=0, istack[50];
-  uSignedSortItem<IT,WT,SIGN>    a, temp;
+  uSignedSortItem<IT,WT,SIGN>    a;
 
   --arr;
   for(;;) {
@@ -406,13 +328,13 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr) {
     else {
       k=(l+ir) >> 1;
       std::swap(arr[k],arr[l+1]);
-      if(arr[l+1] > arr[ir]) {
+      if(arr[ir] < arr[l+1]) {
         std::swap(arr[l+1],arr[ir]);
       }
-      if(arr[l] > arr[ir]) {
+      if(arr[ir] < arr[l] ) {
         std::swap(arr[l],arr[ir]);
       }
-      if(arr[l+1] > arr[l]) {
+      if(arr[l] < arr[l+1]) {
         std::swap(arr[l+1],arr[l]);
       }
       i=l+1;
@@ -420,7 +342,7 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr) {
       a=arr[l];
       for(;;) {
         do i++; while (arr[i] < a);
-        do j--; while (arr[j] > a);
+        do j--; while (a < arr[j]);
         if(j < i) break;
         std::swap(arr[i],arr[j]);
       }
@@ -429,7 +351,7 @@ void uqSignsort(IT n, uSignedSortItem<IT, WT, SIGN> * arr) {
       jstack += 2;
       if(jstack > NSTACK) {
         std::cout << "uqsort: NSTACK too small in sort." << std::endl;
-        exit(1);
+        std::terminate();
       }
       if(ir+l+1 >= j+i) {
         istack[jstack]=ir;
@@ -483,6 +405,18 @@ private:
   typedef typename mj_node_t::device_type device_t; // for views
   typedef coordinateModelPartBox mj_partBox_t;
   typedef std::vector<mj_partBox_t> mj_partBoxVector_t;
+
+  //if the (last dimension reduce all count) x the mpi world size
+  //estimated to be bigger than this number then migration will be forced
+  //in earlier iterations.
+  static constexpr size_t future_reduceall_cutoff = 1500000;
+
+  //if parts right before last dimension are estimated to have less than
+  //MIN_WORK_LAST_DIM many coords, migration will be forced in earlier iterations.
+  static constexpr mj_lno_t min_work_last_dim = 1000;
+
+  static constexpr mj_scalar_t least_signifiance = 0.0001;
+  static constexpr int significance_mul = 1000;
 
   std::string mj_timer_base_string; // for convenience making timer names
 
@@ -688,6 +622,15 @@ private:
   typename decltype(device_num_partitioning_in_current_dim)::HostMirror
     host_num_partitioning_in_current_dim; // for quick access on host
 
+  /* \brief helper functio to calculate imbalance.
+   * \param achieved balance we achieved.
+   * \param expected balance expected.
+   */
+  KOKKOS_INLINE_FUNCTION
+  double calculate_imbalance(mj_scalar_t achieved, mj_scalar_t expected) const {
+    return static_cast<double>(achieved) / static_cast<double>(expected) - 1.0;
+  }
+
   /* \brief Either the mj array (part_no_array) or num_global_parts should be
    * provided in the input. part_no_array takes precedence if both are
    * provided. Depending on these parameters, total cut/part number, maximum
@@ -753,7 +696,8 @@ private:
    * the left of the cut line.
    * \param new_cut_position DOCWORK: Documentation
    */
-  KOKKOS_INLINE_FUNCTION void mj_calculate_new_cut_position (
+  KOKKOS_INLINE_FUNCTION
+  void mj_calculate_new_cut_position (
     mj_scalar_t cut_upper_bound,
     mj_scalar_t cut_lower_bound,
     mj_scalar_t cut_upper_weight,
@@ -1150,9 +1094,15 @@ public:
     int num_ranks_per_node,
     bool divide_to_prime_first_);
 
+#ifdef KOKKOS_ENABLE_CUDA
+  public:
+#else
+  private:
+#endif
+
   /* \brief Allocates all required memory for the mj partitioning algorithm.
    */
-  void allocate_set_work_memory(); // public for CUDA
+  void allocate_set_work_memory();
 
   /* \brief compute global bounding box:  min/max coords of global domain */
   void compute_global_box();
@@ -1164,7 +1114,7 @@ public:
    * \current_concurrent_num_parts  DOCWORK: Documentation
    * \mj_current_dim_coords DOCWORK: Documentation
    */
-  void mj_get_local_min_max_coord_totW( // public for CUDA
+  void mj_get_local_min_max_coord_totW(
     mj_part_t current_work_part,
     mj_part_t current_concurrent_num_parts,
     Kokkos::View<mj_scalar_t *, device_t> & mj_current_dim_coords);
@@ -1828,8 +1778,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               concurrent_current_part_index,
               obtained_part_index);
 
-            // This is currently running ok because I only tested UVM on for
-            // Task Mapper
             mj_lno_t coordinate_end_index =
               host_part_xadj(concurrent_current_part_index);
             mj_lno_t coordinate_begin_index =
@@ -2262,7 +2210,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     if(current_part_no_array < 1) {
       std::cout << "i:" << current_iteration <<
         " p is given as:" << current_part_no_array << std::endl;
-      exit(1);
+        std::terminate();
     }
     if(current_part_no_array == 1) {
       return current_num_parts;
@@ -2321,7 +2269,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           " might need to fix max part no calculation for "
           "largest_prime_first partitioning" <<
           std::endl;
-        exit(1);
+        std::terminate();
       }
       // add this number to vector_num_partitioning_in_current_dim vector.
       num_partitioning_in_current_dim.push_back(
@@ -2948,7 +2896,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   }
   else {
     std::cerr << "MJ does not support non uniform part weights" << std::endl;
-    exit(1);
+    std::terminate();
   }
 }
 
@@ -3080,9 +3028,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
     global_rectilinear_cut_weight;
   auto local_process_rectilinear_cut_weight =
     process_rectilinear_cut_weight;
-
-  typedef typename Kokkos::TeamPolicy<typename mj_node_t::execution_space>::
-    member_type member_type;
 
   auto local_is_cut_line_determined = this->is_cut_line_determined;
   auto local_device_num_partitioning_in_current_dim =
@@ -3357,6 +3302,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
 template<class scalar_t>
 struct Zoltan2_MJArrayType {
   scalar_t * ptr;
+
+  // With new kokkos setup parallel_reduce will call empty constructor and
+  // we update the ptr in the init method.
+  KOKKOS_INLINE_FUNCTION
+  Zoltan2_MJArrayType() : ptr(NULL) {};
+
   KOKKOS_INLINE_FUNCTION
   Zoltan2_MJArrayType(scalar_t * pSetPtr) : ptr(pSetPtr) {};
 };
@@ -3424,6 +3375,8 @@ struct ArrayCombinationReducer {
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
+    dst.ptr = value->ptr; // must update ptr
+
     for(int n = 0; n < value_count_weights; ++n) {
       dst.ptr[n] = 0;
     }
@@ -4082,10 +4035,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
       size_t offset = 0;
       size_t offset_cuts = 0;
       for(mj_part_t kk2 = 0; kk2 < kk; ++kk2) {
-        auto num_parts = local_device_num_partitioning_in_current_dim(
+        auto num_parts_kk2 = local_device_num_partitioning_in_current_dim(
           current_work_part + kk2);
-        offset += num_parts * 2 - 1;
-        offset_cuts += num_parts - 1;
+        offset += num_parts_kk2 * 2 - 1;
+        offset_cuts += num_parts_kk2 - 1;
       }
 
       for(mj_part_t i = 1; i < total_part_count; ++i) {
@@ -4276,6 +4229,7 @@ struct ArrayReducer {
   }
 
   KOKKOS_INLINE_FUNCTION void init (value_type& dst) const {
+    dst.ptr = value->ptr; // must update ptr
     for(int n = 0; n < value_count; ++n) {
       dst.ptr[n] = 0;
     }
@@ -4553,8 +4507,8 @@ mj_create_new_partitions(
         }
         local_thread_cut_line_weight_to_put_left(i) =
           static_cast<long long>((local_thread_cut_line_weight_to_put_left(i) +
-          ZOLTAN2_MJ_LEAST_SIGNIFICANCE) * ZOLTAN2_MJ_SIGNIFICANCE_MUL) /
-          mj_scalar_t(ZOLTAN2_MJ_SIGNIFICANCE_MUL);
+          least_signifiance) * significance_mul) /
+          static_cast<mj_scalar_t>(significance_mul);
       }
 
       for(mj_part_t i = 0; i < num_parts; ++i) {
@@ -4758,7 +4712,7 @@ mj_create_new_partitions(
   // here we will determine insert indices for N teams
   // then all the teams can fill
 
-#ifdef KOKKOS_HAVE_CUDA
+#ifdef KOKKOS_ENABLE_CUDA
 
   // This is the fastest so far - just straight atomic writes
   Kokkos::parallel_for(
@@ -5005,11 +4959,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
         expected_weight_in_part = current_part_target_weights(i);
 
        //leftImbalance = imbalanceOf(seenW, globalTotalWeight, expected);
-        imbalance_on_left = ZOLTAN2_MJ_IMBALANCEOF2(seen_weight_in_part,
+        imbalance_on_left = calculate_imbalance(seen_weight_in_part,
           expected_weight_in_part);
         // rightImbalance = imbalanceOf(globalTotalWeight - seenW,
         // globalTotalWeight, 1 - expected);
-        imbalance_on_right = ZOLTAN2_MJ_IMBALANCEOF2(global_total_weight -
+        imbalance_on_right = calculate_imbalance(global_total_weight -
           seen_weight_in_part, global_total_weight - expected_weight_in_part);
         bool is_left_imbalance_valid = std::abs(imbalance_on_left) -
           used_imbalance_tolerance < local_sEpsilon ;
@@ -5438,12 +5392,12 @@ bool AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_gno_t *num_points_in_all_processor_parts)
 {
   // if reduce all count and population in the last dim is too high
-  if(migration_reduce_all_population > ZOLTAN2_MJ_FUTURE_REDUCEALL_CUTOFF) {
+  if(migration_reduce_all_population > future_reduceall_cutoff) {
     return true;
   }
 
   // if the work in a part per processor in the last dim is too low.
-  if(num_coords_for_last_dim_part < ZOLTAN2_MJ_MIN_WORK_LAST_DIM) {
+  if(num_coords_for_last_dim_part < min_work_last_dim) {
     return true;
   }
 
@@ -5824,7 +5778,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         cout << "Migration - processor assignments - for part:" << i
           << "from proc:" << nonassigned_proc_id << " num_points_to_sent:"
           << num_points_to_sent << std::endl;
-        exit(1);
+        std::terminate();
       }
 #endif
 
@@ -5878,7 +5832,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
                     << " required_proc_count:" << required_proc_count
                     << " Error: next_part_to_send_index <" <<
                     << " nprocs - required_proc_count" << std::endl;
-                  exit(1);
+                std::terminate();
               }
 #endif
               // send the new id.
@@ -6963,8 +6917,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         }
         host_thread_cut_line_weight_to_put_left(i) =
           static_cast<long long>((host_thread_cut_line_weight_to_put_left(i) +
-          ZOLTAN2_MJ_LEAST_SIGNIFICANCE) * ZOLTAN2_MJ_SIGNIFICANCE_MUL) /
-          mj_scalar_t(ZOLTAN2_MJ_SIGNIFICANCE_MUL);
+          least_signifiance) * significance_mul) /
+          static_cast<mj_scalar_t>(significance_mul);
       }
       Kokkos::deep_copy(thread_cut_line_weight_to_put_left,
         host_thread_cut_line_weight_to_put_left);
@@ -7088,7 +7042,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
 
       multiSItem tempSortItem(i, local_coord_dim -1, vals);
-      //inser the point to the sort vector pointed by the cut_map[p].
+      //insert the point to the sort vector pointed by the cut_map[p].
       mj_part_t cmap = cut_map[p];
       sort_vector_points_on_cut[cmap].push_back(tempSortItem);
     }
@@ -8995,7 +8949,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
     }
     else {
       printf("Error: MJ does not support non uniform target part weights\n");
-      exit(1);
+      std::terminate();
     }
   }
 }

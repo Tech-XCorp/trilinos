@@ -970,7 +970,7 @@ void getCoords(zscalar_t **&coords, zlno_t &numLocal, int &dim, string fileName)
     FILE *f = fopen(fileName.c_str(), "r");
     if (f == NULL){
         std::cout << fileName << " cannot be opened" << std::endl;
-        exit(1);
+        std::terminate();
     }
     fscanf(f, "%d", &numLocal);
     fscanf(f, "%d", &dim);
