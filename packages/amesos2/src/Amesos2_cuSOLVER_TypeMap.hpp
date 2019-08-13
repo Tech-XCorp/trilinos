@@ -2,7 +2,7 @@
 //
 // ***********************************************************************
 //
-//           Amesos2: Templated Direct Sparse Solver Package 
+//           Amesos2: Templated Direct Sparse Solver Package
 //                  Copyright 2011 Sandia Corporation
 //
 // Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
@@ -43,15 +43,15 @@
 
 
 /**
-   \file   Amesos2_Cholmod_TypeMap.hpp
+   \file   Amesos2_cuSolver_TypeMap.hpp
    \author John Doe <jd@sandia.gov>
    \date
 
    \brief
 */
 
-#ifndef AMESOS2_CHOLMOD_TYPEMAP_HPP
-#define AMESOS2_CHOLMOD_TYPEMAP_HPP
+#ifndef AMESOS2_CUSOLVER_TYPEMAP_HPP
+#define AMESOS2_CUSOLVER_TYPEMAP_HPP
 
 #include <functional>
 #ifdef HAVE_TEUCHOS_COMPLEX
@@ -66,16 +66,14 @@
 #include "Amesos2_TypeMap.hpp"
 
 namespace Amesos2{
-  namespace CHOL {
-    
+  namespace CUSOLVER {
+
     struct complex
     {
       double complexpair[2];
     };
 
-    #   include "cholmod.h"
-    //#   include <mkl_types.h>
-  } // end namespace CHOL
+  } // end namespace CUSOLVER
 } // end namespace Amesos2
 
 
@@ -89,12 +87,12 @@ namespace Amesos2{
 namespace Teuchos {
 
   template <typename TypeFrom>
-  class ValueTypeConversionTraits<Amesos2::CHOL::complex, TypeFrom>
+  class ValueTypeConversionTraits<Amesos2::CUSOLVER::complex, TypeFrom>
   {
   public:
-    static Amesos2::CHOL::complex convert( const TypeFrom t )
+    static Amesos2::CUSOLVER::complex convert( const TypeFrom t )
     {                           // adapt conversion as necessary
-      Amesos2::CHOL::complex ret;
+      Amesos2::CUSOLVER::complex ret;
       //ret.r = Teuchos::as<float>(t.real());
       //ret.i = Teuchos::as<float>(t.imag());
       ret.complexpair[0] = Teuchos::as<float>(t.real());
@@ -102,9 +100,9 @@ namespace Teuchos {
       return( ret );
     }
 
-    static Amesos2::CHOL::complex safeConvert( const TypeFrom t )
+    static Amesos2::CUSOLVER::complex safeConvert( const TypeFrom t )
     {                           // adapt conversion as necessary
-      Amesos2::CHOL::complex ret;
+      Amesos2::CUSOLVER::complex ret;
       //ret.r = Teuchos::as<float>(t.real());
       //ret.i = Teuchos::as<float>(t.imag());
       ret.complexpair[0] = Teuchos::as<float>(t.real());
@@ -115,10 +113,10 @@ namespace Teuchos {
 
   // Also convert *from* New_Solver types
   template <typename TypeTo>
-  class ValueTypeConversionTraits<TypeTo, Amesos2::CHOL::complex>
+  class ValueTypeConversionTraits<TypeTo, Amesos2::CUSOLVER::complex>
   {
   public:
-    static TypeTo convert( const Amesos2::CHOL::complex t )
+    static TypeTo convert( const Amesos2::CUSOLVER::complex t )
     {                           // adapt conversion as necessary
       typedef typename TypeTo::value_type value_type;
       //value_type ret_r = Teuchos::as<value_type>( t.real );
@@ -128,7 +126,7 @@ namespace Teuchos {
       return ( TypeTo( ret_r, ret_i ) );
     }
 
-    static TypeTo safeConvert( const Amesos2::CHOL::complex t )
+    static TypeTo safeConvert( const Amesos2::CUSOLVER::complex t )
     {                           // adapt conversion as necessary
       typedef typename TypeTo::value_type value_type;
       //value_type ret_r = Teuchos::as<value_type>( t.real );
@@ -147,17 +145,17 @@ namespace Teuchos {
 namespace Amesos2 {
 
   // forward declaration due to circular reference
-  template <class, class> class Cholmod;
+  template <class, class> class cuSOLVER;
 
   template <>
-  struct TypeMap<Cholmod,float>
+  struct TypeMap<cuSOLVER,float>
   {
     typedef float type;
     typedef float magnitude_type;
   };
 
   template <>
-  struct TypeMap<Cholmod,double>
+  struct TypeMap<cuSOLVER,double>
   {
     typedef double type;
     typedef double magnitude_type;
@@ -166,9 +164,9 @@ namespace Amesos2 {
 #ifdef HAVE_TEUCHOS_COMPLEX
 
   template <>
-  struct TypeMap<Cholmod,std::complex<double> >
+  struct TypeMap<cuSOLVER,std::complex<double> >
   {
-    typedef CHOL::complex type;
+    typedef CUSOLVER::complex type;
     typedef double magnitude_type;
   };
 
@@ -178,4 +176,4 @@ namespace Amesos2 {
 
 } // end namespace Amesos
 
-#endif  // AMESOS2_CHOLMOD_TYPEMAP_HPP
+#endif  // AMESOS2_CUSOLVER_TYPEMAP_HPP

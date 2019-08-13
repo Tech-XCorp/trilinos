@@ -2,7 +2,7 @@
 //
 // ***********************************************************************
 //
-//           Amesos2: Templated Direct Sparse Solver Package 
+//           Amesos2: Templated Direct Sparse Solver Package
 //                  Copyright 2011 Sandia Corporation
 //
 // Under the terms of Contract DE-AC04-94AL85000 with Sandia Corporation,
@@ -43,7 +43,7 @@
 
 
 /**
-   \file   Amesos2_Cholmod_FunctionMap.hpp
+   \file   Amesos2_cuSOLVER_FunctionMap.hpp
    \author Kevin Deweese <kdewees@sandia.gov>
    \date   Tue Aug 6 12:53:10 MDT 2013
 
@@ -52,128 +52,83 @@
            MultiVectors
 */
 
-#ifndef AMESOS2_CHOLMOD_FUNCTIONMAP_HPP
-#define AMESOS2_CHOLMOD_FUNCTIONMAP_HPP
+#ifndef AMESOS2_CUSOLVER_FUNCTIONMAP_HPP
+#define AMESOS2_CUSOLVER_FUNCTIONMAP_HPP
 
 #ifdef HAVE_TEUCHOS_COMPLEX
 #include <complex>
 #endif
 
 #include "Amesos2_FunctionMap.hpp"
-#include "Amesos2_Cholmod_TypeMap.hpp"
-
+#include "Amesos2_cuSOLVER_TypeMap.hpp"
 
 namespace Amesos2 {
 
-  namespace CHOL {
-#   include "cholmod_core.h"
-#   include "cholmod.h"
+  namespace CUSOLVER {
+
+#    include <cuda.h>
+#    include <cusolverSp.h>
+#    include <cusolverDn.h>
+#    include <cusparse.h>
+#    include <cuComplex.h>
   }
 
-  
   template <>
-  struct FunctionMap<Cholmod,double>
+  struct FunctionMap<cuSOLVER,double>
   {
-    
-    static void cholmod_init_sparse(size_t nrow, size_t ncol, size_t nzmax,
+
+    static void cusolver_init_sparse(size_t nrow, size_t ncol, size_t nzmax,
 				    int sorted, void *p, void *x, void *i,
-				    CHOL::cholmod_sparse *sparse)
+				    CUSOLVER::cusolverSpHandle_t *sparse)
     {
-      sparse->nrow = nrow;
-      sparse->ncol = ncol;
-      sparse->nzmax = nzmax;
-      sparse->stype = 1;
-      sparse->itype = CHOLMOD_LONG;
-      sparse->sorted = 0;
-      sparse->packed = 1;
-      sparse->xtype = CHOLMOD_REAL;
-      sparse->dtype = CHOLMOD_DOUBLE;
-      sparse->x = x;
-      sparse->p = p;
-      sparse->i = i;
+       // MDM-cuSolver-TODO
     }
 
     static void cholmod_init_dense(int nrow, int ncol, int d, void *x,
-				   CHOL::cholmod_dense *dense)
+				   CUSOLVER::cusolverDnHandle_t *dense)
     {
-      dense->nrow = nrow;
-      dense->ncol = ncol;
-      dense->d = d;
-      dense->xtype = CHOLMOD_REAL;
-      dense->dtype = CHOLMOD_DOUBLE;
-      dense->x = x;
+      // MDM-cuSolver-TODO
     }
   };
 
   template <>
-  struct FunctionMap<Cholmod,float>
+  struct FunctionMap<cuSOLVER,float>
   {
     static void cholmod_init_sparse(size_t nrow, size_t ncol, size_t nzmax,
 				    int sorted, void *p, void *x, void*i,
-				    CHOL::cholmod_sparse* sparse)
+				    CUSOLVER::cusolverSpHandle_t *sparse)
     {
-      sparse->nrow = nrow;
-      sparse->ncol = ncol;
-      sparse->nzmax = nzmax;
-      sparse->stype = 1;
-      sparse->itype = CHOLMOD_LONG;
-      sparse->sorted = 0;
-      sparse->packed = 1;
-      sparse->xtype = CHOLMOD_REAL;
-      sparse->dtype = CHOLMOD_SINGLE;
-      sparse->x = x;
-      sparse->p = p;
-      sparse->i = i;
+      // MDM-cuSolver-TODO
     }
 
-
     static void cholmod_init_dense(int nrow, int ncol, int d, void *x,
-				   CHOL::cholmod_dense *dense)
+				   CUSOLVER::cusolverDnHandle_t *dense)
     {
-      dense->nrow = nrow;
-      dense->ncol = ncol;
-      dense->d = d;
-      dense->xtype = CHOLMOD_REAL;
-      dense->dtype = CHOLMOD_SINGLE;
-      dense->x = x;
+      cusolverDnCreate(dense);
+      // MDM-cuSolver-TODO
     }
   };
 
 #ifdef HAVE_TEUCHOS_COMPLEX
   template <>
-  struct FunctionMap<Cholmod,CHOL::complex>
+  struct FunctionMap<cuSOLVER,CUSOLVER::complex>
   {
 
     static void cholmod_init_sparse(size_t nrow, size_t ncol, size_t nzmax,
 				    int sorted, void *p, void *x, void *i,
-				    CHOL::cholmod_sparse* sparse)
+				    CUSOLVER::cholmod_sparse* sparse)
     {
-      sparse->nrow = nrow;
-      sparse->ncol = ncol;
-      sparse->nzmax = nzmax;
-      sparse->stype = 1;
-      sparse->itype = CHOLMOD_LONG;
-      sparse->sorted = 0;
-      sparse->packed = 1;
-      sparse->xtype = CHOLMOD_COMPLEX;
-      sparse->x = x;
-      sparse->p = p;
-      sparse->i = i;
-
+      // MDM-cuSolver-TODO
     }
-  
+
     static void cholmod_init_dense(int nrow, int ncol, int d, void *x,
-				   CHOL::cholmod_dense *dense)
+				   CUSOLVER::cholmod_dense *dense)
     {
-      dense->nrow = nrow;
-      dense->ncol = ncol;
-      dense->d = d;
-      dense->xtype = CHOLMOD_COMPLEX;
-      dense->x = x;
+      // MDM-cuSolver-TODO
     }
   };
 #endif
 
 } // end namespace Amesos2
 
-#endif  // AMESOS2_CHOLMOD_FUNCTIONMAP_HPP
+#endif  // AMESOS2_CUSOLVER_FUNCTIONMAP_HPP

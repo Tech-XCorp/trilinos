@@ -434,6 +434,20 @@ ENDIF()
 ENDIF()
 
 
+# TODO Setup cuSolver checks for availability
+
+      APPEND_SET(HEADERS
+        Amesos2_cuSOLVER.hpp
+        Amesos2_cuSOLVER_decl.hpp
+        Amesos2_cuSOLVER_def.hpp
+        Amesos2_cuSOLVER_FunctionMap.hpp
+        Amesos2_cuSOLVER_TypeMap.hpp
+        )
+
+      APPEND_SET(SOURCES
+        Amesos2_cuSOLVER.cpp
+        )
+
 #
 # C) Define the targets for package's library(s)
 #

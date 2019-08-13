@@ -572,9 +572,9 @@ namespace Amesos2 {
   Teuchos::RCP<const MatrixAdapter<Matrix> >
   createConstMatrixAdapter(Teuchos::RCP<const Matrix> m){
     using Teuchos::rcp;
-    using Teuchos::rcp_const_cast;
-    
-    if(m.is_null()) return Teuchos::null;
+     using Teuchos::rcp_const_cast;
+
+     if(m.is_null()) return Teuchos::null;
     return( rcp(new ConcreteMatrixAdapter<Matrix>(rcp_const_cast<Matrix,const Matrix>(m))).getConst() );
   }
 
