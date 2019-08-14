@@ -168,26 +168,12 @@ TachoSolver<Matrix,Vector>::symbolicFactorization_impl()
     // data_.solver.setMaxNumberOfSuperblocks(data_.max_num_superblocks);
 
     // Symbolic factorization currently must be done on host
-    typename decltype(row_ptr)::HostMirror host_row_ptr = Kokkos::create_mirror_view(row_ptr);
-    typename decltype(cols)::HostMirror host_cols = Kokkos::create_mirror_view(cols);
+    host_size_type_array host_row_ptr("host_row_ptr", this->globalNumRows_ + 1);
+    host_ordinal_type_array host_cols("host_cols", this->globalNumNonZeros_);
     Kokkos::deep_copy(host_row_ptr, row_ptr);
     Kokkos::deep_copy(host_cols, cols);
 
-    // TODO: Resolve this - are layouts somehow causing the compilation issue for CUDA even though 1D?
-    // I expect host_row_ptr above to be host_size_type_array but it's not working.
-    // Then they should be ready to go for numeric factorization.
-    // Temporarily I am just copying
-    host_size_type_array temp_row_ptr("temp row_ptr", this->globalNumRows_ + 1);
-    host_ordinal_type_array temp_cols("temp cols", this->globalNumNonZeros_);
-
-    for(size_t n = 0; n < this->globalNumRows_ + 1; ++n) {
-      temp_row_ptr(n) = host_row_ptr(n);
-    }
-    for(size_t n = 0; n < this->globalNumNonZeros_; ++n) {
-      temp_cols(n) = host_cols(n);
-    }
-
-    data_.solver.analyze(this->globalNumCols_, temp_row_ptr, temp_cols);
+    data_.solver.analyze(this->globalNumCols_, host_row_ptr, host_cols);
   }
 
   return status;
@@ -234,8 +220,6 @@ TachoSolver<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector
   const global_size_type ld_rhs = this->root_ ? X->getGlobalLength() : 0;
   const size_t nrhs = X->getGlobalNumVectors();
 
-  const size_t val_store_size = as<size_t>(ld_rhs * nrhs);
-
   device_solve_array_t x("x", this->globalNumRows_, nrhs);
   device_solve_array_t b("b", this->globalNumRows_, nrhs);
 
@@ -261,9 +245,6 @@ TachoSolver<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector
       workspace_ = device_solve_array_t("t", this->globalNumRows_, nrhs);
     }
 
-    // Temporary
-    std::cout << "Solving in memory space: " << DeviceSpaceType::memory_space::name() << std::endl;
-
     data_.solver.solve(x, b, workspace_);
 
     int status = 0; // TODO: determine what error handling will be
@@ -284,8 +265,6 @@ TachoSolver<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector
     Teuchos::TimeMonitor redistTimer(this->timers_.vecRedistTime_);
 #endif
 
-    // TODO - passing raw ptr to ArrayView but need to make View methods and
-    // handle device/host properly.
     Util::put_1d_data_helper_kokkos_view<
       MultiVecAdapter<Vector>,device_solve_array_t>::do_put(X, x,
                                          as<size_t>(ld_rhs),
@@ -355,6 +334,8 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
   Teuchos::TimeMonitor convTimer(this->timers_.mtxConvTime_);
 #endif
 
+std::cout << "Not doing optimization." << std::endl;
+
     // Only the root image needs storage allocated
     if( this->root_ ) {
       nzvals_ = device_value_type_array("nzvals", this->globalNumNonZeros_);
@@ -386,6 +367,9 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
                                                       ROOTED, ARBITRARY,
                                                       this->columnIndexBase_);
     }
+  }
+  else {
+    std::cout << "Doing optimization." << std::endl;
   }
 
   return true;
