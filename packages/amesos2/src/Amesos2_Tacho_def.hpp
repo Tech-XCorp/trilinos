@@ -329,12 +329,10 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
     return(false);
   }
 
-  if(!do_optimization()) {
+  if(true || !do_optimization()) { // TEMPORARY TEST REMOVE THIS TRUE MDM-TODO
 #ifdef HAVE_AMESOS2_TIMERS
   Teuchos::TimeMonitor convTimer(this->timers_.mtxConvTime_);
 #endif
-
-std::cout << "Not doing optimization." << std::endl;
 
     // Only the root image needs storage allocated
     if( this->root_ ) {
@@ -353,23 +351,16 @@ std::cout << "Not doing optimization." << std::endl;
                           std::runtime_error,
                           "Row and column maps have different indexbase ");
 
-      Util::get_crs_helper<
-      MatrixAdapter<Matrix>,tacho_type,ordinal_type,size_type>::do_get(
+      Util::get_crs_helper_kokkos_view<
+      MatrixAdapter<Matrix>,device_value_type_array,device_ordinal_type_array,device_size_type_array>::do_get(
                                                       this->matrixA_.ptr(),
-
-                                                      // MDM-TODO Just make ArrayViews for now.
-                                                      // Need to handle host/device for optimal UVM off handling
-                                                      // similar to what has been added for x and b MVs.
-                                                      Teuchos::ArrayView<tacho_type>(nzvals_.data(), this->globalNumNonZeros_),
-                                                      Teuchos::ArrayView<ordinal_type>(colind_.data(), this->globalNumNonZeros_),
-                                                      Teuchos::ArrayView<size_type>(rowptr_.data(), this->globalNumRows_ + 1),
+                                                      nzvals_,
+                                                      colind_,
+                                                      rowptr_,
                                                       nnz_ret,
                                                       ROOTED, ARBITRARY,
                                                       this->columnIndexBase_);
     }
-  }
-  else {
-    std::cout << "Doing optimization." << std::endl;
   }
 
   return true;
