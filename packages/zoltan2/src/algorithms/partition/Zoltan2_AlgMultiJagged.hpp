@@ -6460,8 +6460,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::create_mirror_view(this->mj_coordinates);
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for(int i = 0; i < this->coord_dim; ++i) {
-      auto sub_host_src_coordinates
-        = Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
+      Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, device_t>
+        sub_host_src_coordinates;
+      if(host_src_coordinates.extent(0) == 0) {
+        // view could be size 0 if graph was not distributed - make an empty view
+        sub_host_src_coordinates =
+          Kokkos::View<mj_scalar_t *, device_t>("empty", 0);
+      }
+      else {
+        sub_host_src_coordinates =
+          Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
+      }
+
       auto sub_host_dst_coordinates
         = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
       // Note Layout Left means we can do these in contiguous blocks
@@ -7653,8 +7663,15 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // get the coordinate axis along which the partitioning will be done.
     int coordInd = i % this->coord_dim;
 
-    Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords =
-      Kokkos::subview(this->mj_coordinates, Kokkos::ALL, coordInd);
+    Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords;
+    if(this->mj_coordinates.extent(0) == 0) {
+      // view could be size 0 if graph was not distributed - make an empty view
+      mj_current_dim_coords = Kokkos::View<mj_scalar_t *, device_t>(0, 0);
+    }
+    else {
+      mj_current_dim_coords =
+        Kokkos::subview(this->mj_coordinates, Kokkos::ALL, coordInd);
+    }
 
     this->mj_env->timerStart(MACRO_TIMERS,
       mj_timer_base_string + "Problem_Partitioning_" + istring);
