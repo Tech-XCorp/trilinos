@@ -6462,12 +6462,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     for(int i = 0; i < this->coord_dim; ++i) {
       Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, device_t>
         sub_host_src_coordinates;
-      if(host_src_coordinates.extent(0) == 0) {
-        // view could be size 0 if graph was not distributed - make an empty view
-        sub_host_src_coordinates =
-          Kokkos::View<mj_scalar_t *, device_t>("empty", 0);
-      }
-      else {
+      // view could be size 0 if graph was not distributed
+      if(host_src_coordinates.extent(0) != 0) {
         sub_host_src_coordinates =
           Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
       }
@@ -7664,11 +7660,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     int coordInd = i % this->coord_dim;
 
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords;
-    if(this->mj_coordinates.extent(0) == 0) {
-      // view could be size 0 if graph was not distributed - make an empty view
-      mj_current_dim_coords = Kokkos::View<mj_scalar_t *, device_t>(0, 0);
-    }
-    else {
+    // view could be size 0 if graph was not distributed
+    if(this->mj_coordinates.extent(0) != 0) {
       mj_current_dim_coords =
         Kokkos::subview(this->mj_coordinates, Kokkos::ALL, coordInd);
     }
