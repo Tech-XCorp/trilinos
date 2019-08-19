@@ -465,7 +465,7 @@ public:
     const gno_t * gnos;
     getIDsView(gnos);
     // TODO: Make this an unmanaged view and save the copy?
-    for(int n = 0; n < getLocalNumIDs(); ++n) {
+    for(size_t n = 0; n < getLocalNumIDs(); ++n) {
       kokkos_ids(n) = gnos[n];
     }
     ids = kokkos_ids;
@@ -498,7 +498,7 @@ public:
     for(int dim = 0; dim < getDimension(); ++dim) {
       int stride = -1;
       getCoordinatesView(coords, stride, dim);
-      for(int n = 0; n < getLocalNumIDs(); ++n) {
+      for(size_t n = 0; n < getLocalNumIDs(); ++n) {
         host_temp_values(n, dim) = coords[n*stride];
       }
     }
