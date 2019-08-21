@@ -381,174 +381,150 @@ void getCoarsenedPartGraph(
       }
       g_part_xadj[i + 1] = nindex;
     }
-    return; // TODO clean up flow here - remove this return - see below
   }
 
-  // struct for directory data - note more extensive comments in
-  // Zoltan2_GraphMetricsUtility.hpp which I didn't want to duplicate
-  // because this is in progress. Similar concept there.
-  struct part_info {
-    part_info() : weight(0) {
-    }
-    const part_info & operator+=(const part_info & src) {
-      this->weight += src.weight;
-      return *this;
-    }
-    bool operator>(const part_info & src) {
-      return (destination_part > src.destination_part);
-    }
-    bool operator==(const part_info & src) {
-      return (destination_part == src.destination_part);
-    }
-    part_t destination_part;
-    scalar_t weight;
-  };
+#ifdef HAVE_ZOLTAN2_MPI
+  if(comm->getSize() > 1) { // Otherwise it's already handled above and done
 
-#ifdef HAVE_ZOLTAN2_MPI // TODO added this due to return above to clean up cuda warnings - needs rework
-  bool bUseLocalIDs = false;
-  const int debug_level = 0;
-  typedef Zoltan2_Directory_Vector<part_t,int,std::vector<part_info>>
-      directory_t;
-  const RCP<const Comm<int> > rcp_comm(comm,false);
-  directory_t directory(rcp_comm, bUseLocalIDs, debug_level);
-  std::vector<part_t> part_data;
-  std::vector<std::vector<part_info>> user_data;
+    // struct for directory data - note more extensive comments in
+    // Zoltan2_GraphMetricsUtility.hpp which I didn't want to duplicate
+    // because this is in progress. Similar concept there.
+    struct part_info {
+      part_info() : weight(0) {
+      }
+      const part_info & operator+=(const part_info & src) {
+        this->weight += src.weight;
+        return *this;
+      }
+      bool operator>(const part_info & src) {
+        return (destination_part > src.destination_part);
+      }
+      bool operator==(const part_info & src) {
+        return (destination_part == src.destination_part);
+      }
+      part_t destination_part;
+      scalar_t weight;
+    };
 
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE Coarsen");
-  {
-    //get the vertices in each part in my part.
-    std::vector<t_lno_t> part_begins(np, -1);
-    std::vector<t_lno_t> part_nexts(localNumVertices, -1);
+    bool bUseLocalIDs = false;
+    const int debug_level = 0;
+    typedef Zoltan2_Directory_Vector<part_t,int,std::vector<part_info>>
+        directory_t;
+    const RCP<const Comm<int> > rcp_comm(comm,false);
+    directory_t directory(rcp_comm, bUseLocalIDs, debug_level);
+    std::vector<part_t> part_data;
+    std::vector<std::vector<part_info>> user_data;
 
-    //cluster vertices according to their parts.
-    //create local part graph.
-    for (t_lno_t i = 0; i < localNumVertices; ++i){
-      part_t ap = parts[i];
-      part_nexts[i] = part_begins[ap];
-      part_begins[ap] = i;
-    }
+    envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE Coarsen");
+    {
+      //get the vertices in each part in my part.
+      std::vector<t_lno_t> part_begins(np, -1);
+      std::vector<t_lno_t> part_nexts(localNumVertices, -1);
 
-    std::vector<part_t> part_neighbors(np);
-    std::vector<t_scalar_t> part_neighbor_weights(np, 0);
-    std::vector<t_scalar_t> part_neighbor_weights_ordered(np);
+      //cluster vertices according to their parts.
+      //create local part graph.
+      for (t_lno_t i = 0; i < localNumVertices; ++i){
+        part_t ap = parts[i];
+        part_nexts[i] = part_begins[ap];
+        part_begins[ap] = i;
+      }
 
-    //coarsen for all vertices in my part in order with parts.
-    for (t_lno_t i = 0; i < np; ++i){
-      part_t num_neighbor_parts = 0;
-      t_lno_t v = part_begins[i];
-      //get part i, and first vertex in this part v.
-      while (v != -1){
-        //now get the neightbors of v.
-        for (t_offset_t j = offsets[v]; j < offsets[v+1]; ++j){
-          //get the part of the second vertex.
-          part_t ep = e_parts[j];
+      std::vector<part_t> part_neighbors(np);
+      std::vector<t_scalar_t> part_neighbor_weights(np, 0);
+      std::vector<t_scalar_t> part_neighbor_weights_ordered(np);
 
-          t_scalar_t ew = 1;
-          if (numWeightPerEdge > 0){
-            ew = edge_weights[j];
+      //coarsen for all vertices in my part in order with parts.
+      for (t_lno_t i = 0; i < np; ++i){
+        part_t num_neighbor_parts = 0;
+        t_lno_t v = part_begins[i];
+        //get part i, and first vertex in this part v.
+        while (v != -1){
+          //now get the neightbors of v.
+          for (t_offset_t j = offsets[v]; j < offsets[v+1]; ++j){
+            //get the part of the second vertex.
+            part_t ep = e_parts[j];
+
+            t_scalar_t ew = 1;
+            if (numWeightPerEdge > 0){
+              ew = edge_weights[j];
+            }
+            //add it to my local part neighbors for part i.
+            if (part_neighbor_weights[ep] < 0.00001){
+              part_neighbors[num_neighbor_parts++] = ep;
+            }
+            part_neighbor_weights[ep] += ew;
           }
-          //add it to my local part neighbors for part i.
-          if (part_neighbor_weights[ep] < 0.00001){
-            part_neighbors[num_neighbor_parts++] = ep;
-          }
-          part_neighbor_weights[ep] += ew;
+          v = part_nexts[v];
         }
-        v = part_nexts[v];
-      }
 
-      //now get the part list.
-      for (t_lno_t j = 0; j < num_neighbor_parts; ++j){
-        part_t neighbor_part = part_neighbors[j];
-        part_neighbor_weights_ordered[j] = part_neighbor_weights[neighbor_part];
-        part_neighbor_weights[neighbor_part] = 0;
-      }
-
-      //insert it to tpetra crsmatrix.
-      if (num_neighbor_parts > 0){
-        part_data.push_back(i); // TODO: optimize to avoid push_back
-        std::vector<part_info> new_user_data(num_neighbor_parts);
-        for(int q = 0; q < num_neighbor_parts; ++q) {
-          part_info & info = new_user_data[q];
-          info.weight = part_neighbor_weights_ordered[q];
-          info.destination_part = part_neighbors[q];
+        //now get the part list.
+        for (t_lno_t j = 0; j < num_neighbor_parts; ++j){
+          part_t neighbor_part = part_neighbors[j];
+          part_neighbor_weights_ordered[j] = part_neighbor_weights[neighbor_part];
+          part_neighbor_weights[neighbor_part] = 0;
         }
-        user_data.push_back(new_user_data); // TODO: optimize to avoid push_back
-      }
-    }
-  }
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Coarsen");
 
-  std::vector<part_t> part_indices(np);
-
-  for (part_t i = 0; i < np; ++i) part_indices[i] = i;
-
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory update");
-  directory.update(part_data.size(), &part_data[0], NULL, &user_data[0],
-    NULL, directory_t::Update_Mode::AggregateAdd);
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory update");
-
-  envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory find");
-  std::vector<std::vector<part_info>> find_user_data(part_indices.size());
-  directory.find(find_user_data.size(), &part_indices[0], NULL,
-    &find_user_data[0], NULL, NULL, false);
-  envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory find");
-
-  // Now reconstruct the output data from the directory find data
-  // This code was designed to reproduce the exact format of the original
-  // setup for g_part_xadj, g_part_adj, and g_part_ew but before making any
-  // further changes I wanted to verify if this formatting should be
-  // preserved or potentially changed further.
-
-  // first thing is get the total number of elements
-  int get_total_length = 0;
-  for(size_t n = 0; n < find_user_data.size(); ++n) {
-    get_total_length += find_user_data[n].size();
-  }
-
-  // setup data space
-  g_part_xadj = ArrayRCP<part_t> (np + 1);
-  g_part_adj = ArrayRCP<part_t> (get_total_length);
-  g_part_ew = ArrayRCP<t_scalar_t> (get_total_length);
-
-  // loop through again and fill to match the original formatting
-  int track_insert_index = 0;
-  for(size_t n = 0; n < find_user_data.size(); ++n) {
-    g_part_xadj[n] = track_insert_index;
-    const std::vector<part_info> & user_data_vector = find_user_data[n];
-    for(size_t q = 0; q < user_data_vector.size(); ++q) {
-      const part_info & info = user_data_vector[q];
-      g_part_adj[track_insert_index] = info.destination_part;
-      g_part_ew[track_insert_index] = info.weight;
-      ++track_insert_index;
-    }
-  }
-  g_part_xadj[np] = get_total_length; // complete the series
-
-  // This is purely for debugging logging and to be deleted
-  // hacky sort here just to make each subset of part destinations ordered
-  // so new and old code will produce identical output for validation. I think
-  // the ordering is arbitrary and no requirement to preserve the old ordering
-  // within each part. This code was written so I could drop it into the
-  // develop branch and validate we were producing identical results at this
-  // step. Would like to discuss this further before continuing.
-  // TODO: Delete all this
-  /*
-  if(comm->getRank() == 0) {
-    for(size_t i = 0; i < (size_t)g_part_xadj.size() - 1; ++i) {
-      part_t b = g_part_xadj[i];
-      part_t e = g_part_xadj[i+1];
-      printf("Results for part %d:\n", (int)i);
-      for(part_t scan_part = 0; scan_part < np; ++scan_part) {
-        for(part_t q = b; q < e; ++q) {
-          if(g_part_adj[q] == scan_part) { // inefficient hack to sort g_part_adj
-            printf( "(%d:%.2f) ", (int)scan_part, (float)g_part_ew[q]);
+        //insert it to tpetra crsmatrix.
+        if (num_neighbor_parts > 0){
+          part_data.push_back(i); // TODO: optimize to avoid push_back
+          std::vector<part_info> new_user_data(num_neighbor_parts);
+          for(int q = 0; q < num_neighbor_parts; ++q) {
+            part_info & info = new_user_data[q];
+            info.weight = part_neighbor_weights_ordered[q];
+            info.destination_part = part_neighbors[q];
           }
+          user_data.push_back(new_user_data); // TODO: optimize to avoid push_back
         }
       }
-      printf("\n");
     }
+    envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE Coarsen");
+
+    std::vector<part_t> part_indices(np);
+
+    for (part_t i = 0; i < np; ++i) part_indices[i] = i;
+
+    envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory update");
+    directory.update(part_data.size(), &part_data[0], NULL, &user_data[0],
+      NULL, directory_t::Update_Mode::AggregateAdd);
+    envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory update");
+
+    envConst->timerStart(MACRO_TIMERS, "GRAPHCREATE directory find");
+    std::vector<std::vector<part_info>> find_user_data(part_indices.size());
+    directory.find(find_user_data.size(), &part_indices[0], NULL,
+      &find_user_data[0], NULL, NULL, false);
+    envConst->timerStop(MACRO_TIMERS, "GRAPHCREATE directory find");
+
+    // Now reconstruct the output data from the directory find data
+    // This code was designed to reproduce the exact format of the original
+    // setup for g_part_xadj, g_part_adj, and g_part_ew but before making any
+    // further changes I wanted to verify if this formatting should be
+    // preserved or potentially changed further.
+
+    // first thing is get the total number of elements
+    int get_total_length = 0;
+    for(size_t n = 0; n < find_user_data.size(); ++n) {
+      get_total_length += find_user_data[n].size();
+    }
+
+    // setup data space
+    g_part_xadj = ArrayRCP<part_t> (np + 1);
+    g_part_adj = ArrayRCP<part_t> (get_total_length);
+    g_part_ew = ArrayRCP<t_scalar_t> (get_total_length);
+
+    // loop through again and fill to match the original formatting
+    int track_insert_index = 0;
+    for(size_t n = 0; n < find_user_data.size(); ++n) {
+      g_part_xadj[n] = track_insert_index;
+      const std::vector<part_info> & user_data_vector = find_user_data[n];
+      for(size_t q = 0; q < user_data_vector.size(); ++q) {
+        const part_info & info = user_data_vector[q];
+        g_part_adj[track_insert_index] = info.destination_part;
+        g_part_ew[track_insert_index] = info.weight;
+        ++track_insert_index;
+      }
+    }
+    g_part_xadj[np] = get_total_length; // complete the series
   }
-  */
 #endif // HAVE_ZOLTAN2_MPI
 }
 

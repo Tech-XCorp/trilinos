@@ -6460,7 +6460,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::create_mirror_view(this->mj_coordinates);
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for(int i = 0; i < this->coord_dim; ++i) {
-      Kokkos::View<mj_scalar_t*, Kokkos::LayoutLeft, device_t>
+      typename Kokkos::View<mj_scalar_t*, device_t>::HostMirror
         sub_host_src_coordinates;
       // view could be size 0 if graph was not distributed
       if(host_src_coordinates.extent(0) != 0) {

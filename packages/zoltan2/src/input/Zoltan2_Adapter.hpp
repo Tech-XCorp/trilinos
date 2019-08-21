@@ -135,16 +135,6 @@ public:
     Z2_THROW_NOT_IMPLEMENTED
   }
 
-  /*! \brief Provide a pointer to the coordinates view.
-  */
-  inline void getCoordinatesKokkosView(
-    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
-    Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
-    typename node_t::device_type> & elements) const
-  {
-    Z2_THROW_NOT_IMPLEMENTED
-  }
-
   ///*! \brief Provide pointer to a weight array with stride.
   // *    \param wgt on return a pointer to the weights for this idx
   // *    \param stride on return, the value such that
@@ -174,8 +164,6 @@ public:
     throw std::logic_error("getWeightsKokkosView not implemented.");
   }
 
-  // TODO: 2nd form returns the 2darray - still need to decide how this
-  // will all sort out but they should all be made consistent.
   virtual void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
     typename node_t::device_type> & wgt) const {
     throw std::logic_error("getWeightsKokkos2dView not implemented.");

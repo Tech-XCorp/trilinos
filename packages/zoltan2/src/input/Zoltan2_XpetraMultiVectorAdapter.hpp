@@ -200,22 +200,17 @@ public:
 
   void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
     typename node_t::device_type> &wgt) const {
-    if (map_->lib() == Xpetra::UseTpetra) {
-      wgt = Kokkos::View<scalar_t**, typename node_t::device_type>(
-        "wgts", vector_->getLocalLength(), numWeights_);
-      for(int idx = 0; idx < numWeights_; ++idx) {
-        const scalar_t * weights;
-        size_t length;
-        int stride;
-        weights_[idx].getStridedList(length, weights, stride);
-        size_t fill_index = 0;
-        for(size_t n = 0; n < length; n += stride) {
-          wgt(fill_index++,idx) = weights[n];
-        }
+    wgt = Kokkos::View<scalar_t**, typename node_t::device_type>(
+      "wgts", vector_->getLocalLength(), numWeights_);
+    for(int idx = 0; idx < numWeights_; ++idx) {
+      const scalar_t * weights;
+      size_t length;
+      int stride;
+      weights_[idx].getStridedList(length, weights, stride);
+      size_t fill_index = 0;
+      for(size_t n = 0; n < length; n += stride) {
+        wgt(fill_index++,idx) = weights[n];
       }
-    }
-    else {
-      throw std::logic_error("getWeightsKokkos2dView called but not Tpetra!");
     }
   }
 
