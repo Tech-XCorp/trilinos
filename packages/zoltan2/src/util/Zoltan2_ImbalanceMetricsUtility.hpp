@@ -157,15 +157,14 @@ template <typename scalar_t, typename lno_t, typename part_t>
 
   part_t globalSumSize = maxPartPlusOne * numMetrics;
 
-  typedef scalar_t temp_t; // TODO remove this - added to resolve cuda warnings I didn't understand yet
-  scalar_t * sumBuf = new temp_t [globalSumSize];
+  scalar_t * sumBuf = new scalar_t[globalSumSize];
   env->localMemoryAssertion(__FILE__, __LINE__, globalSumSize, sumBuf);
   globalSums = arcp(sumBuf, 0, globalSumSize);
 
   //////////////////////////////////////////////////////////
   // Calculate the local totals by part.
 
-  scalar_t *localBuf = new temp_t [globalSumSize];
+  scalar_t *localBuf = new scalar_t[globalSumSize];
   env->localMemoryAssertion(__FILE__, __LINE__, globalSumSize, localBuf);
   memset(localBuf, 0, sizeof(scalar_t) * globalSumSize);
 

@@ -99,15 +99,7 @@ void test_no_weights(
   int &nFail
 )
 {
-
-// Tried UVM off to see if it would speed things up - it did not.
-// TODO: Decide if we want to keep this or change it.
-#ifdef KOKKOS_ENABLE_CUDA
-    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
-      Kokkos::Cuda, Kokkos::CudaSpace>  myNode_t;
-#else
-    typedef Tpetra::Map<>::node_type myNode_t;
-#endif
+  typedef Tpetra::Map<>::node_type myNode_t;
 
   typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t,
                                   myNode_t> myTypes;
@@ -157,14 +149,7 @@ void test_weights(
   int &nFail
 )
 {
-// Tried UVM off to see if it would speed things up - it did not.
-// TODO: Decide if we want to keep this or change it.
-#ifdef KOKKOS_ENABLE_CUDA
-    typedef Kokkos::Compat::KokkosDeviceWrapperNode<
-      Kokkos::Cuda, Kokkos::CudaSpace>  myNode_t;
-#else
-    typedef Tpetra::Map<>::node_type myNode_t;
-#endif
+  typedef Tpetra::Map<>::node_type myNode_t;
 
   typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t,
     myNode_t> myTypes;
