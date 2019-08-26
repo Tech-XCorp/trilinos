@@ -459,15 +459,19 @@ public:
   }
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    Kokkos::HostSpace> &ids) const
+    typename node_t::device_type> &ids) const
   {
-    Kokkos::View<gno_t *, Kokkos::HostSpace> kokkos_ids("gids", getLocalNumIDs());
+    Kokkos::View<gno_t *, typename node_t::device_type>
+      kokkos_ids("gids", getLocalNumIDs());
+    typename decltype(kokkos_ids)::HostMirror
+      host_kokkos_ids = Kokkos::create_mirror_view(kokkos_ids);
+
     const gno_t * gnos;
     getIDsView(gnos);
-    // TODO: Make this an unmanaged view and save the copy?
     for(size_t n = 0; n < getLocalNumIDs(); ++n) {
-      kokkos_ids(n) = gnos[n];
+      host_kokkos_ids(n) = gnos[n];
     }
+    Kokkos::deep_copy(kokkos_ids, host_kokkos_ids);
     ids = kokkos_ids;
   }
 

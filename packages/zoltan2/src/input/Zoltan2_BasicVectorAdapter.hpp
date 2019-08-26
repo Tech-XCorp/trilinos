@@ -244,7 +244,7 @@ public:
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
   void getIDsKokkosView(Kokkos::View<const gno_t *,
-    Kokkos::HostSpace> &ids) const
+    typename node_t::device_type> &ids) const
   {
     ids = this->kokkos_ids_;
   }
@@ -302,7 +302,7 @@ private:
   int numEntriesPerID_;
   ArrayRCP<StridedData<lno_t, scalar_t> > entries_ ;
 
-  Kokkos::View<gno_t *, Kokkos::HostSpace> kokkos_ids_;
+  Kokkos::View<gno_t *, typename node_t::device_type> kokkos_ids_;
 
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
@@ -321,10 +321,14 @@ private:
 
     if (numIds_){
       // make kokkos ids
-      kokkos_ids_ = Kokkos::View<gno_t *, Kokkos::HostSpace>("ids", numIds_);
+      kokkos_ids_ = Kokkos::View<gno_t *, typename node_t::device_type>(
+        Kokkos::ViewAllocateWithoutInitializing("ids"), numIds_);
+      typename decltype(kokkos_ids_)::HostMirror
+        host_kokkos_ids_ = Kokkos::create_mirror_view(kokkos_ids_);
       for(int n = 0; n < numIds_; ++n) {
-        kokkos_ids_(n) = idList_[n];
+        host_kokkos_ids_(n) = idList_[n];
       }
+      Kokkos::deep_copy(kokkos_ids_, host_kokkos_ids_);
 
       // make coordinates
       int stride = 1;
@@ -338,8 +342,9 @@ private:
       // setup kokkos entries
       // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
       kokkos_entries_ = Kokkos::View<scalar_t **, Kokkos::LayoutLeft,
-        typename node_t::device_type>
-        ("entries", numIds_, numEntriesPerID_);
+        typename node_t::device_type>(
+        Kokkos::ViewAllocateWithoutInitializing("entries"),
+        numIds_, numEntriesPerID_);
 
       size_t length;
       const scalar_t * entriesPtr;
@@ -368,7 +373,9 @@ private:
 
       // set up final view with weights
       kokkos_weights_ = Kokkos::View<scalar_t**,
-        typename node_t::device_type>("kokkos weights", numIds_, numWeights_);
+        typename node_t::device_type>(
+        Kokkos::ViewAllocateWithoutInitializing("kokkos weights"),
+        numIds_, numWeights_);
 
       // setup weights
       typename decltype(this->kokkos_weights_)::HostMirror
