@@ -76,8 +76,8 @@ int main(int narg, char *arg[]) {
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename znode_t::execution_space,
-    zlno_t> (0, numLocalIds), KOKKOS_LAMBDA (const zlno_t & i) {
-      myIds(i) = zgno_t(myFirstId + i);
+    zlno_t> (0, numLocalIds), KOKKOS_LAMBDA (zlno_t i) {
+    myIds(i) = zgno_t(myFirstId + i);
     weights(i, 0) = 1.0;
     weights(i, 1) = (nprocs - rank) / (i + 1);
   });
