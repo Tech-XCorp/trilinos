@@ -1525,7 +1525,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     inital_adjList_output_adjlist;
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
-      (0, num_total_coords), KOKKOS_LAMBDA (const mj_lno_t & i) {
+      (0, num_total_coords), KOKKOS_LAMBDA (mj_lno_t i) {
     local_coordinate_permutations(i) = local_inital_adjList_output_adjlist(i);
   });
 
@@ -1850,7 +1850,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             auto local_new_part_xadj = this->new_part_xadj;
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space,
-                mj_part_t> (0, num_parts), KOKKOS_LAMBDA(const mj_part_t & jj) {
+                mj_part_t> (0, num_parts), KOKKOS_LAMBDA(mj_part_t jj) {
                 local_new_part_xadj(
                   output_part_index + output_array_shift + jj) = 0;
             });
@@ -1922,7 +1922,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
-              (0, part_size), KOKKOS_LAMBDA (const mj_lno_t & n) {
+              (0, part_size), KOKKOS_LAMBDA (mj_lno_t n) {
               local_new_coordinate_permutations(n+coordinate_begin) =
                 local_new_coordinate_permutations(n+coordinate_begin);
             });
@@ -1947,7 +1947,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           auto local_mj_current_dim_coords = mj_current_dim_coords;
           Kokkos::parallel_for(
             Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t> (
-            0, num_parts), KOKKOS_LAMBDA (const mj_part_t & ii) {
+            0, num_parts), KOKKOS_LAMBDA (mj_part_t ii) {
             //shift it by previousCount
             local_new_part_xadj(output_part_index+ii) +=
               output_coordinate_end_index;
@@ -1998,7 +1998,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   local_coordinate_permutations = this->coordinate_permutations;
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space,
-    mj_part_t> (0, num_total_coords), KOKKOS_LAMBDA (const mj_part_t & i) {
+    mj_part_t> (0, num_total_coords), KOKKOS_LAMBDA (mj_part_t i) {
     inital_adjList_output_adjlist(i) = local_coordinate_permutations(i);
   });
 
@@ -2410,7 +2410,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_coordinate_permutations = coordinate_permutations;
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (
-    0, this->num_local_coords), KOKKOS_LAMBDA (const mj_lno_t & i) {
+    0, this->num_local_coords), KOKKOS_LAMBDA (mj_lno_t i) {
       local_coordinate_permutations(i) = i;
   });
 
@@ -2595,15 +2595,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // changes owners back to host - so we don't run them on device
   // this improves migration code but means we have to serial init here.
   // Note we might allow this to be OpenMP when available even for CUDA.
-  for(mj_lno_t j = 0; j < num_local_coords; ++j) {
-    owner_of_coordinate(j) = myActualRank;
-  }
+  Kokkos::deep_copy(owner_of_coordinate, myActualRank);
 
   auto local_current_mj_gnos = current_mj_gnos;
   auto local_initial_mj_gnos = initial_mj_gnos;
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
-    (0, num_local_coords), KOKKOS_LAMBDA (const mj_lno_t & j) {
+    (0, num_local_coords), KOKKOS_LAMBDA (mj_lno_t j) {
     local_current_mj_gnos(j) = local_initial_mj_gnos(j);
   });
 }
@@ -2635,13 +2633,13 @@ void AlgMJ<mj_scalar_t,mj_lno_t,mj_gno_t,mj_part_t,
 
   for(int i = 0; i < std::min(this->recursion_depth, this->coord_dim); ++i) {
     Kokkos::parallel_reduce("MinReduce", this->num_local_coords,
-      KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_min) {
+      KOKKOS_LAMBDA(mj_lno_t j, mj_scalar_t & running_min) {
       if(local_mj_coordinates(j,i) < running_min) {
         running_min = local_mj_coordinates(j,i);
       }
     }, Kokkos::Min<mj_scalar_t>(mins[i]));
     Kokkos::parallel_reduce("MaxReduce", this->num_local_coords,
-      KOKKOS_LAMBDA(const mj_lno_t & j, mj_scalar_t & running_max) {
+      KOKKOS_LAMBDA(mj_lno_t j, mj_scalar_t & running_max) {
       if(local_mj_coordinates(j,i) > running_max) {
         running_max = local_mj_coordinates(j,i);
       }
@@ -2724,7 +2722,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       // get min
       Kokkos::parallel_reduce("get min",
         coordinate_end_index - coordinate_begin_index,
-        KOKKOS_LAMBDA (const mj_lno_t & j, mj_scalar_t & running_min) {
+        KOKKOS_LAMBDA (mj_lno_t j, mj_scalar_t & running_min) {
         int i =
           local_coordinate_permutations(j + coordinate_begin_index);
         if(mj_current_dim_coords(i) < running_min)
@@ -2733,7 +2731,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       // get max
       Kokkos::parallel_reduce("get max",
         coordinate_end_index - coordinate_begin_index,
-        KOKKOS_LAMBDA (const mj_lno_t & j, mj_scalar_t & running_max) {
+        KOKKOS_LAMBDA (mj_lno_t j, mj_scalar_t & running_max) {
         int i =
           local_coordinate_permutations(j + coordinate_begin_index);
         if(mj_current_dim_coords(i) > running_max)
@@ -2746,7 +2744,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         my_total_weight = 0;
         Kokkos::parallel_reduce("get weight",
           coordinate_end_index - coordinate_begin_index,
-          KOKKOS_LAMBDA (const mj_lno_t & ii, mj_scalar_t & lsum) {
+          KOKKOS_LAMBDA (mj_lno_t ii, mj_scalar_t & lsum) {
           int i =
             local_coordinate_permutations(ii + coordinate_begin_index);
           lsum += local_mj_weights(i,0);
@@ -2808,7 +2806,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     mj_part_t s = 3 * current_concurrent_num_parts;
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-      (0, s), KOKKOS_LAMBDA (const mj_part_t & i) {
+      (0, s), KOKKOS_LAMBDA (mj_part_t i) {
       global_min_max_total(i) = local_min_max_total(i);
     });
   }
@@ -2881,7 +2879,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     Kokkos::parallel_for("Write num in parts",
       Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-      (0,num_cuts), KOKKOS_LAMBDA(const mj_part_t & cut) {
+      (0, num_cuts), KOKKOS_LAMBDA(mj_part_t cut) {
         // set target part weight.
         current_target_part_weights(cut) =
           device_num_in_parts(cut) * unit_part_weight;
@@ -2896,7 +2894,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::parallel_for(
         Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
           (0, num_cuts + 1),
-        KOKKOS_LAMBDA (const mj_part_t & i) {
+        KOKKOS_LAMBDA (mj_part_t i) {
         current_target_part_weights(i) =
           long(current_target_part_weights(i) + 0.5);
       });
@@ -2945,7 +2943,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
       (coordinate_begin_index, coordinate_end_index),
-      KOKKOS_LAMBDA (const mj_lno_t & ii) {
+      KOKKOS_LAMBDA (mj_lno_t ii) {
       mj_part_ids(mj_current_coordinate_permutations[ii]) = 0;
     });
   }
@@ -2956,7 +2954,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
       (coordinate_begin_index, coordinate_end_index),
-      KOKKOS_LAMBDA (const mj_lno_t & ii) {
+      KOKKOS_LAMBDA (mj_lno_t ii) {
       mj_lno_t iii = mj_current_coordinate_permutations[ii];
       mj_part_t pp =
         mj_part_t((mj_current_dim_coords[iii] - min_coordinate) / slice);
@@ -3548,7 +3546,7 @@ struct ReduceWeightsFunctor {
 
     Kokkos::parallel_for(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const index_t & ii) {
+      [=] (index_t ii) {
 #else // KOKKOS_ENABLE_CUDA
     // create the team shared data - each thread gets one of the arrays
     size_t sh_mem_size = sizeof(array_t) * (value_count_weights +
@@ -3569,7 +3567,7 @@ struct ReduceWeightsFunctor {
 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
+      [=] (size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
 #endif // KOKKOS_ENABLE_CUDA
 
       int i = permutations(ii);
@@ -4031,7 +4029,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-    (0, current_concurrent_num_parts), KOKKOS_LAMBDA(const mj_part_t & kk) {
+    (0, current_concurrent_num_parts), KOKKOS_LAMBDA(mj_part_t kk) {
     mj_part_t num_parts = local_device_num_partitioning_in_current_dim(
       current_work_part + kk);
     mj_part_t num_cuts = num_parts - 1;
@@ -4355,7 +4353,7 @@ struct ReduceArrayFunctor {
     teamMember.team_barrier();
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const index_t & ii) {
+      [=] (index_t ii) {
 #else // KOKKOS_ENABLE_CUDA
     // select the array for this thread
     Zoltan2_MJArrayType<array_t> array(&shared_ptr[teamMember.team_rank() *
@@ -4366,7 +4364,7 @@ struct ReduceArrayFunctor {
 
     Kokkos::parallel_reduce(
       Kokkos::TeamThreadRange(teamMember, begin, end),
-      [=] (const size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
+      [=] (size_t ii, Zoltan2_MJArrayType<array_t>& threadSum) {
 #endif // KOKKOS_ENABLE_CUDA
 
       index_t coordinate_index = permutations(ii);
@@ -4727,7 +4725,7 @@ mj_create_new_partitions(
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t> (
     coordinate_begin_index, coordinate_end_index),
-    KOKKOS_LAMBDA (const mj_lno_t & ii) {
+    KOKKOS_LAMBDA (mj_lno_t ii) {
     mj_lno_t i = local_coordinate_permutations(ii);
     mj_part_t p = local_assigned_part_ids(i);
     mj_lno_t idx = Kokkos::atomic_fetch_add(&local_point_counts(p), 1);
@@ -4765,7 +4763,7 @@ mj_create_new_partitions(
     }
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, begin, end),
-      [=] (const mj_lno_t & ii) {
+      [=] (mj_lno_t ii) {
       int thread = team_member.team_rank();
       mj_lno_t i = local_coordinate_permutations(ii);
       mj_part_t p = local_assigned_part_ids(i);
@@ -4811,7 +4809,7 @@ mj_create_new_partitions(
       end = coordinate_end_index;
     }
     Kokkos::parallel_for(Kokkos::TeamThreadRange(team_member, begin, end),
-      [=] (const mj_lno_t & ii) {
+      [=] (mj_lno_t ii) {
       int thread = team_member.team_rank();
       mj_lno_t i = local_coordinate_permutations(ii);
       mj_part_t p = local_assigned_part_ids(i);
@@ -4923,7 +4921,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
       kk + current_concurrent_num_parts * 2);
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-      [=] (const mj_part_t & i) {
+      [=] (mj_part_t i) {
       // if left and right closest points are not set yet,
       // set it to the cut itself.
       if(min_coordinate -
@@ -4940,7 +4938,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,
     team_member.team_barrier(); // for end of Kokkos::TeamThreadRange
 
     Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, num_cuts),
-      [=] (const mj_part_t & i) {
+      [=] (mj_part_t i) {
       // seen weight in the part
       mj_scalar_t seen_weight_in_part = 0;
       // expected weight for part.
@@ -5343,7 +5341,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::ViewAllocateWithoutInitializing("points per part"), num_parts);
   Kokkos::parallel_for("get vals on device",
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_gno_t>
-    (0, num_parts), KOKKOS_LAMBDA(const mj_gno_t & i) {
+    (0, num_parts), KOKKOS_LAMBDA(mj_gno_t i) {
     points_per_part(i) =
       local_new_part_xadj(i) - ((i == 0) ? 0 : local_new_part_xadj(i-1));
   });
@@ -6630,7 +6628,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
         (0, this->num_local_coords),
-      KOKKOS_LAMBDA(const mj_lno_t & i) {
+      KOKKOS_LAMBDA(mj_lno_t i) {
       local_new_coordinate_permutations(i) = i;
     });
     auto local_new_part_xadj = this->new_part_xadj;
@@ -6912,7 +6910,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     Kokkos::parallel_for(
       Kokkos::RangePolicy<typename mj_node_t::execution_space,
-      mj_part_t> (0, no_cuts), KOKKOS_LAMBDA (const mj_part_t & i) {
+      mj_part_t> (0, no_cuts), KOKKOS_LAMBDA (mj_part_t i) {
       // the left to be put on the left of the cut.
       mj_scalar_t left_weight = used_local_cut_line_weight_to_left(i);
       // cout << "i:" << i << " left_weight:" << left_weight << endl;
@@ -6963,7 +6961,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_thread_point_counts = this->thread_point_counts;
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-    (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & i) {
+    (0, num_parts), KOKKOS_LAMBDA (mj_part_t i) {
     local_thread_point_counts(i) = 0;
   });
 
@@ -7327,7 +7325,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       int i = team_member.league_rank();
       Kokkos::parallel_for(Kokkos::TeamThreadRange (team_member, (i != 0) ?
         local_part_xadj(i-1) : 0, local_part_xadj(i)),
-        [=] (const mj_lno_t & ii) {
+        [=] (mj_lno_t ii) {
         mj_lno_t k = local_coordinate_permutations(ii);
         local_assigned_part_ids(k) = i + output_part_begin_index;
       });
@@ -7919,7 +7917,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
             auto local_new_part_xadj = this->new_part_xadj;
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-                (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & jj) {
+                (0, num_parts), KOKKOS_LAMBDA (mj_part_t jj) {
                 local_new_part_xadj(
                   output_part_index + output_array_shift + jj) = 0;
             });
@@ -8012,7 +8010,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               this->coordinate_permutations;
             Kokkos::parallel_for(
               Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_lno_t>
-                (0, part_size), KOKKOS_LAMBDA (const mj_lno_t & n) {
+                (0, part_size), KOKKOS_LAMBDA (mj_lno_t n) {
               local_new_coordinate_permutations(n+coordinate_begin) =
                 local_coordinate_permutations(n+coordinate_begin);
             });
@@ -8037,7 +8035,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           auto local_new_part_xadj = this->new_part_xadj;
           Kokkos::parallel_for(
             Kokkos::RangePolicy<typename mj_node_t::execution_space, mj_part_t>
-            (0, num_parts), KOKKOS_LAMBDA (const mj_part_t & ii) {
+            (0, num_parts), KOKKOS_LAMBDA (mj_part_t ii) {
             local_new_part_xadj(output_part_index+ii) +=
               output_coordinate_end_index;
           });
