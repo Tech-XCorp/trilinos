@@ -8897,11 +8897,6 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
-        typename decltype(result_initial_mj_gnos_)::HostMirror
-          host_result_initial_mj_gnos =
-          Kokkos::create_mirror_view(result_initial_mj_gnos_);
-        Kokkos::deep_copy(host_result_initial_mj_gnos,
-          result_initial_mj_gnos_);
         ArrayView<const mj_gno_t> sent_gnos(host_result_initial_mj_gnos.data(),
          result_num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
