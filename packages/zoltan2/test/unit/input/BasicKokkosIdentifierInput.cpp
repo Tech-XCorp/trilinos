@@ -96,7 +96,7 @@ int main(int narg, char *arg[]) {
 
   ia.getIDsKokkosView(globalIdsIn);
 
-  ia.getWeightsKokkos2DView(weightsIn);
+  ia.getWeightsKokkosView(weightsIn);
 
   typename decltype(globalIdsIn)::HostMirror host_globalIdsIn =
     Kokkos::create_mirror_view(globalIdsIn);

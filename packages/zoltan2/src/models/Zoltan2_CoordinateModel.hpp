@@ -320,13 +320,11 @@ void CoordinateModel<Adapter>::sharedConstructor(
     ia->getIDsKokkosView(kokkos_gids_);
     ia->getCoordinatesKokkosView(kokkos_xyz_);
     if(userNumWeights_ > 0) {
-      ia->getWeightsKokkos2dView(kokkos_weights_);
+      ia->getWeightsKokkosView(kokkos_weights_);
     }
 
     const gno_t *gids=NULL;
 
-    // the derived classes will currently provide the host form
-    // we decide to keep gids host because they aren't used anywhere on device.
     ia->getIDsView(gids);
     gids_ = arcp(gids, 0, nLocalIds, false);
 

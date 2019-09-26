@@ -168,8 +168,9 @@ public:
 
   void getWeightsKokkos2dView(Kokkos::View<scalar_t **,
     typename node_t::device_type> &wgt) const {
-    wgt = Kokkos::View<scalar_t**, typename node_t::device_type>(
-      "wgts", vector_->getLocalLength(), numWeights_);
+    typedef Kokkos::View<scalar_t**, typename node_t::device_type> view_t;
+    wgt = view_t("wgts", vector_->getLocalLength(), numWeights_);
+    typename view_t::HostMirror host_wgt = Kokkos::create_mirror_view(wgt);
     for(int idx = 0; idx < numWeights_; ++idx) {
       const scalar_t * weights;
       size_t length;
@@ -177,9 +178,10 @@ public:
       weights_[idx].getStridedList(length, weights, stride);
       size_t fill_index = 0;
       for(size_t n = 0; n < length; n += stride) {
-        wgt(fill_index++,idx) = weights[n];
+        host_wgt(fill_index++,idx) = weights[n];
       }
     }
+    Kokkos::deep_copy(wgt, host_wgt);
   }
 
   ////////////////////////////////////////////////////

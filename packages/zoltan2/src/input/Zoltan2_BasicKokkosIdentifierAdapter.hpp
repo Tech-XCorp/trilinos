@@ -125,12 +125,7 @@ public:
     return weightsView_.extent(1);
   }
 
-  void getWeightsKokkosView(Kokkos::View<scalar_t *,
-    typename node_t::device_type> &wgt, int idx) const {
-    wgt = Kokkos::subview(weightsView_, Kokkos::ALL, idx);
-  }
-
-  void getWeightsKokkos2DView(Kokkos::View<scalar_t **,
+  void getWeightsKokkosView(Kokkos::View<scalar_t **,
     typename node_t::device_type> &wgts) const {
     wgts = weightsView_;
   }
