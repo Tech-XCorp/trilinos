@@ -289,6 +289,9 @@ int main(int narg, char *arg[]) {
       int *machine_extent = new int [mach_coord_dim];
       bool *machine_extent_wrap_around = new bool[mach_coord_dim];
 
+for(int n = 0; n < mach_coord_dim; ++n) {
+  machine_extent_wrap_around[n] = false;
+}
       mach.getMachineExtent(machine_extent);
       mach.getMachineExtentWrapArounds(machine_extent_wrap_around);
      
