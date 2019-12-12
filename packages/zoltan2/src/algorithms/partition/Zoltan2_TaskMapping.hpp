@@ -1498,8 +1498,8 @@ public:
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<pcoord_t**, Kokkos::LayoutLeft, device_t>
       kokkos_pcoords("pcoords", this->no_procs, procdim);
-    typename decltype(kokkos_pcoords)::HostMirror
-      host_kokkos_pcoords = Kokkos::create_mirror_view(kokkos_pcoords);
+    auto host_kokkos_pcoords =
+      Kokkos::create_mirror_view(Kokkos::HostSpace(), kokkos_pcoords);
     for(int i = 0; i < procdim; ++i) {
       for(int j = 0; j < this->no_procs; ++j) {
         host_kokkos_pcoords(j,i) = pcoords[i][j];
@@ -1509,9 +1509,9 @@ public:
 
     Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_pcoords(
       "initial_selected_coords_output_permutation_pcoords", this->no_procs);
-    typename Kokkos::View<part_t*, device_t>::HostMirror
-      host_initial_selected_coords_output_permutation_pcoords =
-        Kokkos::create_mirror_view(initial_selected_coords_output_permutation_pcoords);
+    auto host_initial_selected_coords_output_permutation_pcoords =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(),
+        initial_selected_coords_output_permutation_pcoords);
     for(int n = 0; n < this->no_procs; ++n) {
       host_initial_selected_coords_output_permutation_pcoords(n) =
         proc_adjList[n];
@@ -1578,8 +1578,8 @@ public:
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<tcoord_t**, Kokkos::LayoutLeft, device_t>
       kokkos_tcoords("tcoords", this->no_tasks, this->task_coord_dim);
-    typename decltype(kokkos_tcoords)::HostMirror
-      host_kokkos_tcoords = Kokkos::create_mirror_view(kokkos_tcoords);
+    auto host_kokkos_tcoords =
+      Kokkos::create_mirror_view(Kokkos::HostSpace(), kokkos_tcoords);
     for(int i = 0; i < this->task_coord_dim; ++i) {
       for(int j = 0; j < this->no_tasks; ++j) {
         host_kokkos_tcoords(j,i) = tcoords[i][j];
@@ -1591,9 +1591,9 @@ public:
 
     Kokkos::View<part_t*, device_t> initial_selected_coords_output_permutation_tcoords(
       "initial_selected_coords_output_permutation_tcoords", this->no_tasks);
-    typename Kokkos::View<part_t*, device_t>::HostMirror
-      host_initial_selected_coords_output_permutation_tcoords =
-        Kokkos::create_mirror_view(initial_selected_coords_output_permutation_tcoords);
+    auto host_initial_selected_coords_output_permutation_tcoords =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(),
+        initial_selected_coords_output_permutation_tcoords);
     for(int n = 0; n < this->no_tasks; ++n) {
       host_initial_selected_coords_output_permutation_tcoords(n) =
         task_adjList[n];

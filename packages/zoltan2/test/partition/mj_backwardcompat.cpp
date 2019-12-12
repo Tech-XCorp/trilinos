@@ -166,8 +166,7 @@ public:
       typedef Kokkos::View<gno_t *, typename node_t::device_type> view_ids_t;
       view_ids_t gids = view_ids_t(
         Kokkos::ViewAllocateWithoutInitializing("gids"), nids);
-      typename view_ids_t::HostMirror host_gids =
-        Kokkos::create_mirror_view(gids);
+      auto host_gids = Kokkos::create_mirror_view(Kokkos::HostSpace(), gids);
       for(size_t n = 0; n < nids; ++n) {
         host_gids(n) = gids_[n];
       }
@@ -181,8 +180,8 @@ public:
       typedef Kokkos::View<scalar_t **, typename node_t::device_type> view_weights_t;
       kokkos_weights = view_weights_t(
         Kokkos::ViewAllocateWithoutInitializing("weights"), nids, 0);
-      typename view_weights_t::HostMirror host_kokkos_weights =
-        Kokkos::create_mirror_view(kokkos_weights);
+      auto host_kokkos_weights =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(), kokkos_weights);
       for(size_t n = 0; n < nids; ++n) {
         host_kokkos_weights(n,0) = weights_[n];
       }
@@ -195,8 +194,8 @@ public:
         typename node_t::device_type> kokkos_coords_t;
       kokkos_coords = kokkos_coords_t(
         Kokkos::ViewAllocateWithoutInitializing("coords"), nids, dim);
-      typename kokkos_coords_t::HostMirror host_kokkos_coords =
-        Kokkos::create_mirror_view(kokkos_coords);
+      auto host_kokkos_coords =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(), kokkos_coords);
       for(size_t n = 0; n < nids; ++n) {
         for(int idx = 0; idx < dim; ++idx) {
           host_kokkos_coords(n,idx) = coords_[n+idx*nids];

@@ -142,7 +142,8 @@ public:
     getIDsView(ptr_ids);
     typedef Kokkos::View<gno_t *, typename node_t::device_type> view_t;
     view_t non_const_ids = view_t("ptr_ids", getLocalNumIDs());
-    typename view_t::HostMirror host_ids = Kokkos::create_mirror_view(non_const_ids);
+    auto host_ids =
+      Kokkos::create_mirror_view(Kokkos::HostSpace(), non_const_ids);
     for(size_t i = 0; i < this->getLocalNumIDs(); ++i) {
        host_ids(i) = ptr_ids[i];
     }
@@ -184,8 +185,7 @@ public:
     // Allows forward and backwards compatibility.
     wgt = Kokkos::View<scalar_t **, typename node_t::device_type>(
       "wgts", getLocalNumIDs(), getNumWeightsPerID());
-    typename Kokkos::View<scalar_t **, typename node_t::device_type>::HostMirror
-      host_wgt = Kokkos::create_mirror_view(wgt);
+    auto host_wgt = Kokkos::create_mirror_view(Kokkos::HostSpace(), wgt);
     for(int j = 0; j < this->getNumWeightsPerID(); ++j) {
       const scalar_t * ptr_wgts;
       int stride;
