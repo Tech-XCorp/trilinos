@@ -8837,8 +8837,9 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     result_initial_mj_gnos_ = Kokkos::View<mj_gno_t*, device_t>(
       Kokkos::ViewAllocateWithoutInitializing("result_initial_mj_gnos_"),
       num_incoming_gnos);
-    auto host_result_initial_mj_gnos_ =
-       Kokkos::create_mirror_view(Kokkos::HostSpace(), result_initial_mj_gnos_);
+    typename Kokkos::View<mj_gno_t*, device_t>::HostMirror
+       host_result_initial_mj_gnos_ =
+       Kokkos::create_mirror_view(result_initial_mj_gnos_);
     memcpy(host_result_initial_mj_gnos_.data(),
       received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
     Kokkos::deep_copy(result_initial_mj_gnos_, host_result_initial_mj_gnos_);
@@ -9084,8 +9085,9 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     // Reorder results so that they match the order of the input
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
-    Kokkos::View<mj_gno_t*, Kokkos::Serial> host_result_initial_mj_gnos(
-      "host_result_initial_mj_gnos", result_initial_mj_gnos_.size());
+    typename decltype(result_initial_mj_gnos_)::HostMirror
+      host_result_initial_mj_gnos =
+      Kokkos::create_mirror_view(result_initial_mj_gnos_);
     Kokkos::deep_copy(host_result_initial_mj_gnos, result_initial_mj_gnos_);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_result_initial_mj_gnos(i)] = i;
@@ -9097,8 +9099,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       host_result_assigned_part_ids =
       Kokkos::create_mirror_view(result_assigned_part_ids);
     Kokkos::deep_copy(host_result_assigned_part_ids, result_assigned_part_ids);
-    auto host_result_mj_gnos = Kokkos::create_mirror_view(
-      Kokkos::HostSpace(), result_mj_gnos);
+    typename decltype(result_mj_gnos)::HostMirror
+      host_result_mj_gnos = Kokkos::create_mirror_view(result_mj_gnos);
     Kokkos::deep_copy(host_result_mj_gnos, result_mj_gnos);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
