@@ -6511,19 +6511,19 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // migrate gnos.
     {
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
-      typename decltype(this->current_mj_gnos)::HostMirror host_current_mj_gnos =
-        Kokkos::create_mirror_view(this->current_mj_gnos);
+      auto host_current_mj_gnos = Kokkos::create_mirror_view(
+        Kokkos::HostSpace(), this->current_mj_gnos);
       Kokkos::deep_copy(host_current_mj_gnos, this->current_mj_gnos);
       ArrayView<mj_gno_t> sent_gnos(
         host_current_mj_gnos.data(), this->num_local_coords);
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>(
         Kokkos::ViewAllocateWithoutInitializing("gids"), num_incoming_gnos);
-      auto host_current_mj_gnos2 = Kokkos::create_mirror_view(
+      host_current_mj_gnos = Kokkos::create_mirror_view(
         Kokkos::HostSpace(), this->current_mj_gnos);
-      memcpy(host_current_mj_gnos2.data(),
+      memcpy(host_current_mj_gnos.data(),
         received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
-      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos2);
+      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
     }
 
     // migrate coordinates
@@ -7397,9 +7397,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       // in the future, for example could use cuda aware MPI
 
       // migrate gnos to actual owners.
-      typename decltype (this->current_mj_gnos)::HostMirror
-        host_current_mj_gnos =
-        Kokkos::create_mirror_view(this->current_mj_gnos);
+      auto host_current_mj_gnos =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(), this->current_mj_gnos);
       Kokkos::deep_copy(host_current_mj_gnos, this->current_mj_gnos);
       ArrayRCP<mj_gno_t> received_gnos(incoming);
       ArrayView<mj_gno_t> sent_gnos(host_current_mj_gnos.data(),
@@ -7407,11 +7406,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>(
         Kokkos::ViewAllocateWithoutInitializing("current_mj_gnos"), incoming);
-      auto host_current_mj_gnos2 = Kokkos::create_mirror_view(
+      host_current_mj_gnos = Kokkos::create_mirror_view(
         Kokkos::HostSpace(), this->current_mj_gnos);
-      memcpy(host_current_mj_gnos2.data(),
+      memcpy(host_current_mj_gnos.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
-      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos2);
+      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
 
       // migrate part ids to actual owners.
       typename decltype (this->assigned_part_ids)::HostMirror
