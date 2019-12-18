@@ -4829,6 +4829,15 @@ mj_create_new_partitions(
   delete [] reduce_array;
 #endif
 
+  std::vector<int> sort_track_on_cuts(track_on_cuts.size() - 1);
+  for(int n = 0; n < (int) track_on_cuts.size() - 1; ++n) {
+    sort_track_on_cuts[n] = track_on_cuts[n];
+  }
+  std::sort(sort_track_on_cuts.begin(), sort_track_on_cuts.end());
+  for(int n = 0; n < (int) track_on_cuts.size() - 1; ++n) {
+    track_on_cuts[n] = sort_track_on_cuts[n];
+  }
+
   bool uniform_weights0 = this->mj_uniform_weights(0);
   Kokkos::parallel_for(
     Kokkos::RangePolicy<typename mj_node_t::execution_space, int> (0, 1),
