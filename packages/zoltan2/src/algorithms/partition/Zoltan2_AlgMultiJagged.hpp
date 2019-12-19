@@ -6550,7 +6550,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::HostSpace(), dst_coordinates);
     auto host_src_coordinates = Kokkos::create_mirror_view(
       Kokkos::HostSpace(), this->mj_coordinates);
- //   Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
+    Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for(int i = 0; i < this->coord_dim; ++i) {
     
     /*
