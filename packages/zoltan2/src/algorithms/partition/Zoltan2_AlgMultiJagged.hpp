@@ -3517,7 +3517,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       }
     });
   }
-
+printf("Done mj1Dpart\n");
   delete reductionOp;
 }
 
@@ -4206,12 +4206,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 #endif
         );
 
+printf("Reduce weights begin...\n");
+
 #ifdef KOKKOS_ENABLE_CUDA
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
 #endif
+
+printf("Reduce weights end...\n");
 
 #ifndef KOKKOS_ENABLE_CUDA
     auto hostArray = Kokkos::create_mirror_view(Kokkos::HostSpace(), my_current_part_weights);
@@ -4283,6 +4287,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
       }
     }
   });
+
+printf("Check 2\n");
 }
 
 /*! \brief Function that reduces the result of multiple threads
@@ -4672,7 +4678,6 @@ mj_create_new_partitions(
   Kokkos::View<mj_scalar_t *, device_t> & used_local_cut_line_weight_to_left,
   Kokkos::View<mj_lno_t *, device_t> & out_part_xadj)
 {
-printf("Begin mj_create_new_partitions\n");
   // Get locals for cuda
   auto local_thread_part_weight_work = this->thread_part_weight_work;
   auto local_point_counts = this->thread_point_counts;
@@ -5046,8 +5051,6 @@ printf("Begin mj_create_new_partitions\n");
     });
   });
 #endif
-
-printf("End mj_create_new_partitions\n");
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines.
@@ -8053,6 +8056,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+printf("Check 4\n");
+
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
     long migration_reduce_all_population =
@@ -8062,6 +8067,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // we migrate if there are more partitionings to be done after this step
     // and if the migration is not forced to be avoided.
     // and the operation is not sequential.
+if(false)
     if(future_num_parts > 1 &&
       this->check_migrate_avoid_migration_option >= 0 &&
       current_world_size > 1) {
@@ -8094,6 +8100,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+printf("Check 5\n");
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8118,6 +8125,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
   }
 
+printf("Check 6\n");
   // Partitioning is done
   delete future_num_part_in_parts;
   delete next_future_num_parts_in_parts;
