@@ -6545,43 +6545,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     {
     
-    /*
-    Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
-      dst_coordinates("mj_coordinates", num_incoming_gnos, this->coord_dim);
-    auto host_dst_coordinates = Kokkos::create_mirror_view(
-      Kokkos::HostSpace(), dst_coordinates);
-    auto host_src_coordinates = Kokkos::create_mirror_view(
-      Kokkos::HostSpace(), this->mj_coordinates);
-    Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
-    */
-    
-    for(int i = 0; i < this->coord_dim; ++i) {
-    
-    /*
-    
-      Kokkos::View<mj_scalar_t*, Kokkos::Serial> sub_host_src_coordinates;
-      // view could be size 0 if graph was not distributed
-      if(host_src_coordinates.extent(0) != 0) {
-        sub_host_src_coordinates =
-          Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
-      }
-
-      auto sub_host_dst_coordinates
-        = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
-      // Note Layout Left means we can do these in contiguous blocks
-
-      ArrayView<mj_scalar_t> sent_coord(
-        sub_host_src_coordinates.data(), this->num_local_coords);
-*/
-
-      ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
-
-     // distributor.doPostsAndWaits<mj_scalar_t>(
-     //   sent_coord, 1, received_coord());
-     // memcpy(sub_host_dst_coordinates.data(),
-     //   received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
-    }
-    }
+// TEMPORARY!
+    printf("Doing temporary ArrayRCP of size: %d\n", num_incoming_gnos);
+    ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
     
     // migrate owners
     {
