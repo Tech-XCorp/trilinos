@@ -8919,8 +8919,15 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       {
         std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
         localGidToLid2.reserve(this->num_local_coords);
-        auto host_initial_mj_gnos =
-          Kokkos::create_mirror_view(Kokkos::HostSpace(), this->initial_mj_gnos);
+    //    auto host_initial_mj_gnos =
+     //     Kokkos::create_mirror_view(this->initial_mj_gnos);
+        
+        Kokkos::View<mj_gno_t*, Kokkos::Serial> host_initial_mj_gnos(
+          "temporary_host_gnos", this->initial_mj_gnos.size());
+        for(int n = 0; n < (int) this->initial_mj_gnos.size(); ++n) {
+          host_initial_mj_gnos(n) = this->initial_mj_gnos(n);
+        }
+
         Kokkos::deep_copy(host_initial_mj_gnos,
           this->initial_mj_gnos);
         for(mj_lno_t i = 0; i < this->num_local_coords; i++) {

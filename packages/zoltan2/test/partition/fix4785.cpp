@@ -149,7 +149,8 @@ void test_weights(
   int &nFail
 )
 {
-  typedef Tpetra::Map<>::node_type myNode_t;
+ // typedef Tpetra::Map<>::node_type myNode_t;
+  typedef Kokkos::Compat::KokkosSerialWrapperNode myNode_t;
 
   typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t,
     myNode_t> myTypes;
@@ -191,11 +192,9 @@ void test_weights(
     }
     std::cout << std::endl;
   }
-printf("deleting ...\n");
+
   delete metricObject;
-printf("deleting 2 ...\n");
   delete problem;
-printf("deleting 3...\n");
   delete ia;
 }
 
