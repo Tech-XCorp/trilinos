@@ -3065,8 +3065,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   Kokkos::View<mj_scalar_t*, device_t> device_cumulative(
     "device_cumulative", num_cuts);
-  typename decltype(device_cumulative)::HostMirror
-    host_cumulative = Kokkos::create_mirror_view(Kokkos::HostSpace(), device_cumulative);
+  auto host_cumulative = Kokkos::create_mirror_view(Kokkos::HostSpace(), device_cumulative);
 
   mj_scalar_t cumulative = 0;
 
