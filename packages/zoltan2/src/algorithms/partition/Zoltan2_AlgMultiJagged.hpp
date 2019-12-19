@@ -7080,9 +7080,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   auto local_current_concurrent_cut_coordinate =
     current_concurrent_cut_coordinate;
 // XXXX
-  typename decltype(local_current_concurrent_cut_coordinate)::HostMirror
-    host_current_concurrent_cut_coordinate =
-    Kokkos::create_mirror_view(local_current_concurrent_cut_coordinate);
+  auto host_current_concurrent_cut_coordinate =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), local_current_concurrent_cut_coordinate);
   Kokkos::deep_copy(host_current_concurrent_cut_coordinate,
     local_current_concurrent_cut_coordinate);
 
@@ -7103,22 +7102,18 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     host_current_concurrent_cut_coordinate);
 
   // now the actual part assigment.
-  typename decltype(coordinate_permutations)::HostMirror
-    host_coordinate_permutations =
-    Kokkos::create_mirror_view(coordinate_permutations);
+  auto host_coordinate_permutations =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), coordinate_permutations);
   Kokkos::deep_copy(host_coordinate_permutations, coordinate_permutations);
 
-  typename decltype(assigned_part_ids)::HostMirror
-    host_assigned_part_ids =
-    Kokkos::create_mirror_view(assigned_part_ids);
+  auto host_assigned_part_ids =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), assigned_part_ids);
   Kokkos::deep_copy(host_assigned_part_ids, assigned_part_ids);
 
-  typename decltype(mj_coordinates)::HostMirror
-    host_mj_coordinates = Kokkos::create_mirror_view(mj_coordinates);
+  auto host_mj_coordinates = Kokkos::create_mirror_view(Kokkos::HostSpace(), mj_coordinates);
   Kokkos::deep_copy(host_mj_coordinates, mj_coordinates);
 
-  typename decltype(thread_point_counts)::HostMirror
-    host_thread_point_counts = Kokkos::create_mirror_view(thread_point_counts);
+  auto host_thread_point_counts = Kokkos::create_mirror_view(Kokkos::HostSpace(), thread_point_counts);
   Kokkos::deep_copy(host_thread_point_counts, thread_point_counts);
 
   auto local_coord_dim = this->coord_dim;
@@ -7177,15 +7172,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   mj_part_t previous_cut_map = cut_map[0];
 
-  typename decltype(thread_cut_line_weight_to_put_left)::HostMirror
-    host_thread_cut_line_weight_to_put_left =
-    Kokkos::create_mirror_view(thread_cut_line_weight_to_put_left);
+  auto host_thread_cut_line_weight_to_put_left =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), thread_cut_line_weight_to_put_left);
   Kokkos::deep_copy(host_thread_cut_line_weight_to_put_left,
     thread_cut_line_weight_to_put_left);
 
-  typename decltype(mj_weights)::HostMirror
-    host_mj_weights =
-    Kokkos::create_mirror_view(mj_weights);
+  auto host_mj_weights =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), mj_weights);
   Kokkos::deep_copy(host_mj_weights, mj_weights);
 
   // this is how much previous part owns the weight of the current part.
@@ -7325,9 +7318,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   }
 
   auto local_out_part_xadj = out_part_xadj;
-  typename decltype(local_out_part_xadj)::HostMirror
-    host_out_part_xadj =
-    Kokkos::create_mirror_view(local_out_part_xadj);
+  auto host_out_part_xadj =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), local_out_part_xadj);
   Kokkos::deep_copy(host_out_part_xadj, out_part_xadj);
 
   // creation of part_xadj as in usual case.
