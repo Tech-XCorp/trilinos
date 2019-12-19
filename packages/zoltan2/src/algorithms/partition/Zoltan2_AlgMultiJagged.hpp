@@ -6543,6 +6543,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     
     // migrate coordinates dummy
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
+    {
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       dst_coordinates("mj_coordinates", num_incoming_gnos, this->coord_dim);
     auto host_dst_coordinates = Kokkos::create_mirror_view(
@@ -6569,7 +6570,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
      // memcpy(sub_host_dst_coordinates.data(),
      //   received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
     }
-
+    }
+    
     // migrate owners
     {
       // Note owners we kept on Serial
