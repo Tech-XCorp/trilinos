@@ -634,8 +634,7 @@ private:
     global_total_part_weight_left_right_closests;
 
   Kokkos::View<mj_part_t*, device_t> device_num_partitioning_in_current_dim;
-  typename decltype(device_num_partitioning_in_current_dim)::HostMirror
-    host_num_partitioning_in_current_dim; // for quick access on host
+  Kokkos::View<mj_part_t*, Kokkos::Serial> host_num_partitioning_in_current_dim; // for quick access on host
 
   /* \brief helper functio to calculate imbalance.
    * \param achieved balance we achieved.
