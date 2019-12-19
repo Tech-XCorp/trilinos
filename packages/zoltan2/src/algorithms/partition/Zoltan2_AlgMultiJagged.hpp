@@ -540,6 +540,7 @@ private:
 
   // beginning and end of each part.
   Kokkos::View<mj_lno_t *, device_t> part_xadj;
+  Kokkos::View<mj_lno_t *, Kokkos::Serial> host_part_xadj;
 
   // work array for beginning and end of each part.
   Kokkos::View<mj_lno_t *, device_t> new_part_xadj;
@@ -596,11 +597,7 @@ private:
   // information, if incomplete_cut_count[x]==0, then no work is done
   // for this part.
   Kokkos::View<mj_part_t *, device_t> device_incomplete_cut_count;
-  typename decltype(device_incomplete_cut_count)::HostMirror
-    incomplete_cut_count;
-
-  // Need a quick accessor for this on host
-  typename decltype (part_xadj)::HostMirror host_part_xadj;
+  Kokkos::View<mj_part_t *, Kokkos::Serial> incomplete_cut_count;
 
   // local part weights of each thread.
   Kokkos::View<double *, device_t>
@@ -2066,7 +2063,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     this->new_coordinate_permutations = tmp;
 
     this->part_xadj = this->new_part_xadj;
-    this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+    this->host_part_xadj = Kokkos::create_mirror_view(Kokkos::HostSpace(), part_xadj);
     Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
     this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty", 0);
   }
@@ -2611,7 +2608,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   // numLocalCoords.
   this->part_xadj = Kokkos::View<mj_lno_t*, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("part xadj"), 1);
-  this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+  this->host_part_xadj = Kokkos::create_mirror_view(Kokkos::HostSpace(), part_xadj);
   host_part_xadj(0) = num_local_coords;
   Kokkos::deep_copy(this->part_xadj, host_part_xadj);
 
@@ -2722,8 +2719,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   this->device_incomplete_cut_count = Kokkos::View<mj_part_t *, device_t>(
     Kokkos::ViewAllocateWithoutInitializing("device_incomplete_cut_count"),
     this->max_concurrent_part_calculation);
-  this->incomplete_cut_count =
-    Kokkos::create_mirror_view(device_incomplete_cut_count);
+  this->incomplete_cut_count = Kokkos::create_mirror_view(
+    Kokkos::HostSpace(), device_incomplete_cut_count);
 
   // local part weights of each thread.
   this->thread_part_weights = Kokkos::View<double *, device_t>(
@@ -8131,7 +8128,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     {
       this->part_xadj = this->new_part_xadj;
       local_part_xadj = this->new_part_xadj;
-      this->host_part_xadj = Kokkos::create_mirror_view(part_xadj);
+      this->host_part_xadj = Kokkos::create_mirror_view(Kokkos::HostSpace(), part_xadj);
       Kokkos::deep_copy(host_part_xadj, part_xadj); // keep in sync
 
       this->new_part_xadj = Kokkos::View<mj_lno_t*, device_t>("empty", 0);
