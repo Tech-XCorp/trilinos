@@ -220,7 +220,7 @@ int main(int narg, char *arg[])
   ///////////////////////////////////////////////////////////////////////
   // Create input data.
 
-  const size_t N = 9000000;
+  const size_t N = 9000;
   size_t maxLocalCount = N / np; // biggest test we'll run
 
   // Create coordinates that range from 0 to 999

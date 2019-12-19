@@ -8877,7 +8877,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     }
 
     this->mj_env->timerStart(MACRO_TIMERS, timer_base_string + "cleanup");
-
+printf("leaving 1\n");
     // Reorder results so that they match the order of the input
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
@@ -8887,7 +8887,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_result_initial_mj_gnos(i)] = i;
     }
-
+printf("leaving 2\n");
     ArrayRCP<mj_part_t> partId = arcp(new mj_part_t[result_num_local_coords],
         0, result_num_local_coords, true);
     auto host_result_assigned_part_ids =
@@ -8900,7 +8900,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
       partId[origLID] = host_result_assigned_part_ids(i);
     }
-
+printf("leaving 3\n");
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again.
     if(is_pre_migrated) {
@@ -8915,7 +8915,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
         throw std::logic_error("Zoltan2 - Multijagged Post Migration - "
           "num incoming is not equal to num local coords");
       }
-
+printf("leaving 4\n");
       mj_env->timerStop(MACRO_TIMERS, timer_base_string +
         "PostMigration DistributorPlanCreating");
       mj_env->timerStart(MACRO_TIMERS, timer_base_string +
@@ -8927,13 +8927,13 @@ void Zoltan2_AlgMJ<Adapter>::partition(
          result_num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
-
+printf("leaving 5\n");
       {
         ArrayView<mj_part_t> sent_partnos(partId());
         distributor.doPostsAndWaits<mj_part_t>(sent_partnos, 1,
          received_partids());
       }
-
+printf("leaving 6\n");
       partId = arcp(new mj_part_t[this->num_local_coords],
         0, this->num_local_coords, true);
 
@@ -8960,13 +8960,14 @@ void Zoltan2_AlgMJ<Adapter>::partition(
           partId[origLID] = received_partids[i];
         }
       }
-
+printf("leaving 7\n");
       {
         delete [] result_actual_owner_rank;
       }
       mj_env->timerStop(MACRO_TIMERS,
         timer_base_string + "PostMigration DistributorMigration");
     }
+printf("leaving 8\n");
     solution->setParts(partId);
     this->mj_env->timerStop(MACRO_TIMERS, timer_base_string + "cleanup");
   }
