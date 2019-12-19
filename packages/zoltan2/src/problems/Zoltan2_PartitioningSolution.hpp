@@ -1254,7 +1254,6 @@ template <typename Adapter>
 template <typename Adapter>
   void PartitioningSolution<Adapter>::setParts(ArrayRCP<part_t> &partList)
 {
-printf("Check A1\n");
   env_->debug(DETAILED_STATUS, "Entering setParts");
 
   size_t len = partList.size();
@@ -1264,45 +1263,41 @@ printf("Check A1\n");
   // (We may want to compute the imbalance of a given solution with
   // respect to a desired solution.  This solution may have more or
   // fewer parts that the desired solution.)
-printf("Check A2\n");
+
   part_t lMax = -1;
   part_t lMin = (len > 0 ? std::numeric_limits<part_t>::max() : 0);
   part_t gMax, gMin;
-printf("Check A3\n");
+
   for (size_t i = 0; i < len; i++) {
     if (partList[i] < lMin) lMin = partList[i];
     if (partList[i] > lMax) lMax = partList[i];
   }
-printf("Check A4\n");
   Teuchos::reduceAll<int, part_t>(*comm_, Teuchos::REDUCE_MIN, 1, &lMin, &gMin);
   Teuchos::reduceAll<int, part_t>(*comm_, Teuchos::REDUCE_MAX, 1, &lMax, &gMax);
-printf("Check A5\n");
+
   nGlobalPartsSolution_ = gMax - gMin + 1;
   parts_ = partList;
 
   // Now determine which process gets each object, if not one-to-one.
-printf("Check A6\n");
+
   if (!onePartPerProc_){
 
     int *procs = new int [len];
     env_->localMemoryAssertion(__FILE__, __LINE__, len, procs);
     procs_ = arcp<int>(procs, 0, len);
-printf("Check A7\n");
+
     if (len > 0) {
-printf("Check A7a\n");
       part_t *parts = partList.getRawPtr();
   
       if (procDist_.size() > 0){    // parts are not split across procs
-  printf("Check A7b\n");
+  
         int procId;
         for (size_t i=0; i < len; i++){
-          printf("Running map for i: %d\n", i);
           partToProcsMap(parts[i], procs[i], procId);
         }
-  printf("Check A7c\n");
       }
       else{  // harder - we need to split the parts across multiple procs
-  printf("Check A8\n");
+  
         lno_t *partCounter = new lno_t [nGlobalPartsSolution_];
         env_->localMemoryAssertion(__FILE__, __LINE__, nGlobalPartsSolution_,
           partCounter);
@@ -1341,7 +1336,7 @@ printf("Check A7a\n");
               procCounter[proc] = lno_t(each);
           }
         }
-  printf("Check A9\n");
+  
         delete [] partCounter;
   
         for (typename ArrayRCP<part_t>::size_type i=0; i < partList.size(); i++){
@@ -1366,11 +1361,10 @@ printf("Check A7a\n");
           env_->localBugAssertion(__FILE__, __LINE__, "part to proc",
             proc < proc2, COMPLEX_ASSERTION);
         }
-  printf("Check A10\n");
+  
         delete [] procCounter;
       }
     }
-    printf("Check A11\n");
   }
 
   // Now that parts_ info is back on home process, remap the parts.
@@ -1378,19 +1372,16 @@ printf("Check A7a\n");
   // TODO:  remapping.  This problem will go away after we separate process
   // TODO:  mapping from setParts.  But for MueLu's use case, the part
   // TODO:  remapping is all that matters; they do not use the process mapping.
-  
-printf("Check A12\n");
   bool doRemap = false;
   const Teuchos::ParameterEntry *pe =
                  env_->getParameters().getEntryPtr("remap_parts");
   if (pe) doRemap = pe->getValue(&doRemap);
   if (doRemap) RemapParts();
-printf("Check A13\n");
+
   haveSolution_ = true;
 
   env_->memory("After Solution has processed algorithm's answer");
   env_->debug(DETAILED_STATUS, "Exiting setParts");
-printf("Check A14\n");
 }
 
 
@@ -1425,20 +1416,16 @@ template <typename Adapter>
     int &procMin, int &procMax) const
 {
   if (partId >= nGlobalParts_){
-    printf("  runA\n");
     // setParts() may be given an initial solution which uses a
     // different number of parts than the desired solution.  It is
     // still a solution.  We keep it on this process.
     procMin = procMax = comm_->getRank();
   }
   else if (onePartPerProc_){
-    printf("  runB\n");
     procMin = procMax = int(partId);
   }
   else if (procDist_.size() > 0){
-      printf("  runC\n");
     if (procDistEquallySpread_) {
-        printf("  runD\n");
       // Avoid binary search.
       double fProcs = comm_->getSize();
       double fParts = nGlobalParts_;
@@ -1449,7 +1436,6 @@ template <typename Adapter>
       procMax = procMin;
     }
     else {
-        printf("  runE\n");
       // find the first p such that procDist_[p] > partId.
       // For now, do a binary search.
 
@@ -1461,7 +1447,6 @@ template <typename Adapter>
     }
   }
   else{
-      printf("  runF\n");
     procMin = partDist_[partId];
     procMax = partDist_[partId+1] - 1;
   }
