@@ -4672,6 +4672,7 @@ mj_create_new_partitions(
   Kokkos::View<mj_scalar_t *, device_t> & used_local_cut_line_weight_to_left,
   Kokkos::View<mj_lno_t *, device_t> & out_part_xadj)
 {
+printf("Begin mj_create_new_partitions\n");
   // Get locals for cuda
   auto local_thread_part_weight_work = this->thread_part_weight_work;
   auto local_point_counts = this->thread_point_counts;
@@ -4821,13 +4822,13 @@ mj_create_new_partitions(
 
   auto host_track_on_cuts = Kokkos::create_mirror_view(Kokkos::HostSpace(), track_on_cuts);
   Kokkos::deep_copy(host_track_on_cuts, track_on_cuts);
-  auto sort_length = track_on_cuts.size() - 1; // last element was an insert index
+  size_t sort_length = track_on_cuts.size() - 1; // last element was an insert index
   std::vector<int> sort_track_on_cuts(sort_length);
-  for(auto n = 0; n < sort_length; ++n) {
+  for(size_t n = 0; n < sort_length; ++n) {
     sort_track_on_cuts[n] = host_track_on_cuts[n];
   }
   std::sort(sort_track_on_cuts.begin(), sort_track_on_cuts.end());
-  for(int n = 0; n < (int) track_on_cuts.size() - 1; ++n) {
+  for(size_t n = 0; n < track_on_cuts.size() - 1; ++n) {
     host_track_on_cuts[n] = sort_track_on_cuts[n];
   }
   Kokkos::deep_copy(track_on_cuts, host_track_on_cuts);
@@ -5045,6 +5046,8 @@ mj_create_new_partitions(
     });
   });
 #endif
+
+printf("End mj_create_new_partitions\n");
 }
 
 /*! \brief Function that calculates the new coordinates for the cut lines.
