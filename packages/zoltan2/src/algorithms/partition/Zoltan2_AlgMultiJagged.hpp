@@ -1677,12 +1677,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::View<mj_scalar_t *, device_t> mj_current_dim_coords =
       Kokkos::subview(this->mj_coordinates, Kokkos::ALL, coordInd);
 
-    typename decltype(process_local_min_max_coord_total_weight)::HostMirror
-      host_process_local_min_max_coord_total_weight =
-      Kokkos::create_mirror_view(process_local_min_max_coord_total_weight);
-    typename decltype(global_min_max_coord_total_weight)::HostMirror
-      host_global_min_max_coord_total_weight =
-      Kokkos::create_mirror_view(global_min_max_coord_total_weight);
+    auto host_process_local_min_max_coord_total_weight =
+      Kokkos::create_mirror_view(Kokkos::HostSpace(), process_local_min_max_coord_total_weight);
+    auto host_global_min_max_coord_total_weight =
+      Kokkos::create_mirror_view(Kokkos::HostSpace(), global_min_max_coord_total_weight);
 
     // run for all available parts.
     for(; current_work_part < current_num_parts;
@@ -2556,7 +2554,7 @@ mj_part_t AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   device_num_partitioning_in_current_dim = Kokkos::View<
     mj_part_t*, device_t>("test", num_partitioning_in_current_dim.size());
   host_num_partitioning_in_current_dim =
-    Kokkos::create_mirror_view(device_num_partitioning_in_current_dim);
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), device_num_partitioning_in_current_dim);
   for(size_t n = 0; n < num_partitioning_in_current_dim.size(); ++n) {
     host_num_partitioning_in_current_dim(n) =
       num_partitioning_in_current_dim[n];
@@ -3068,7 +3066,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<mj_scalar_t*, device_t> device_cumulative(
     "device_cumulative", num_cuts);
   typename decltype(device_cumulative)::HostMirror
-    host_cumulative = Kokkos::create_mirror_view(device_cumulative);
+    host_cumulative = Kokkos::create_mirror_view(Kokkos::HostSpace(), device_cumulative);
 
   mj_scalar_t cumulative = 0;
 
@@ -4218,8 +4216,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 #endif
 
 #ifndef KOKKOS_ENABLE_CUDA
-    typename decltype(my_current_part_weights)::HostMirror
-      hostArray = Kokkos::create_mirror_view(my_current_part_weights);
+    auto hostArray = Kokkos::create_mirror_view(Kokkos::HostSpace(), my_current_part_weights);
 
     for(int i = 0; i < static_cast<int>(total_part_count); ++i) {
       hostArray(i) = reduce_array[i];
@@ -4227,11 +4224,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 
     Kokkos::deep_copy(my_current_part_weights, hostArray);
 
-    typename decltype(my_current_left_closest)::HostMirror
-      hostLeftArray = Kokkos::create_mirror_view(my_current_left_closest);
-    typename decltype(my_current_right_closest)::HostMirror
-      hostRightArray =
-        Kokkos::create_mirror_view(my_current_right_closest);
+    auto hostLeftArray = Kokkos::create_mirror_view(Kokkos::HostSpace(), my_current_left_closest);
+    auto hostRightArray =
+        Kokkos::create_mirror_view(Kokkos::HostSpace(), my_current_right_closest);
     for(mj_part_t cut = 0; cut < num_cuts; ++cut) {
       hostLeftArray(cut)  = reduce_array[weight_array_length + (cut+1)*2+0];
       hostRightArray(cut) = reduce_array[weight_array_length + (cut+1)*2+1];
@@ -4826,7 +4821,7 @@ mj_create_new_partitions(
   delete [] reduce_array;
 #endif
 
-  auto host_track_on_cuts = Kokkos::create_mirror_view(track_on_cuts);
+  auto host_track_on_cuts = Kokkos::create_mirror_view(Kokkos::HostSpace(), track_on_cuts);
   Kokkos::deep_copy(host_track_on_cuts, track_on_cuts);
   auto sort_length = track_on_cuts.size() - 1; // last element was an insert index
   std::vector<int> sort_track_on_cuts(sort_length);
@@ -5578,8 +5573,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     points_per_part(i) =
       local_new_part_xadj(i) - ((i == 0) ? 0 : local_new_part_xadj(i-1));
   });
-  typename decltype(points_per_part)::HostMirror
-    host_points_per_part = Kokkos::create_mirror_view(points_per_part);
+  auto host_points_per_part = Kokkos::create_mirror_view(Kokkos::HostSpace(), points_per_part);
   Kokkos::deep_copy(host_points_per_part, points_per_part);
   for(int i = 0; i < num_parts; ++i) {
     my_local_points_to_reduce_sum[i] = host_points_per_part(i);
@@ -5696,13 +5690,11 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_lno_t *send_count_to_each_proc,
   int *coordinate_destinations) {
 
-  typename decltype(this->new_part_xadj)::HostMirror
-    host_new_part_xadj = Kokkos::create_mirror_view(this->new_part_xadj);
+  auto host_new_part_xadj = Kokkos::create_mirror_view(Kokkos::HostSpace(), this->new_part_xadj);
   deep_copy(host_new_part_xadj, this->new_part_xadj);
 
-  typename decltype(this->new_coordinate_permutations)::HostMirror
-    host_new_coordinate_permutations =
-    Kokkos::create_mirror_view(this->new_coordinate_permutations);
+  auto host_new_coordinate_permutations =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), this->new_coordinate_permutations);
   deep_copy(host_new_coordinate_permutations, this->new_coordinate_permutations);
 
   for(mj_part_t p = 0; p < num_parts; ++p) {
@@ -6168,14 +6160,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t part_shift_amount = output_part_numbering_begin_index;
   mj_part_t previous_processor = -1;
 
-  typename decltype(this->new_part_xadj)::HostMirror
-    local_new_part_xadj =
-    Kokkos::create_mirror_view(this->new_part_xadj);
+  auto local_new_part_xadj =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), this->new_part_xadj);
   Kokkos::deep_copy(local_new_part_xadj, this->new_part_xadj);
 
-  typename decltype(this->new_part_xadj)::HostMirror
-    local_new_coordinate_permutations =
-    Kokkos::create_mirror_view(this->new_coordinate_permutations);
+  auto local_new_coordinate_permutations =
+    Kokkos::create_mirror_view(Kokkos::HostSpace(), this->new_coordinate_permutations);
   Kokkos::deep_copy(local_new_coordinate_permutations,
     this->new_coordinate_permutations);
 
@@ -7091,6 +7081,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   auto local_current_concurrent_cut_coordinate =
     current_concurrent_cut_coordinate;
+// XXXX
   typename decltype(local_current_concurrent_cut_coordinate)::HostMirror
     host_current_concurrent_cut_coordinate =
     Kokkos::create_mirror_view(local_current_concurrent_cut_coordinate);
