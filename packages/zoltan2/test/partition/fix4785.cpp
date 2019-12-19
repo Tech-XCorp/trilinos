@@ -101,8 +101,7 @@ void test_no_weights(
 {
   typedef Tpetra::Map<>::node_type myNode_t;
 
-  typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t,
-                                  myNode_t> myTypes;
+  typedef Zoltan2::BasicUserTypes<myScalar_t, myLocalId_t, myGlobalId_t> myTypes;
   typedef Zoltan2::BasicVectorAdapter<myTypes> inputAdapter_t;
   typedef Zoltan2::EvaluatePartition<inputAdapter_t> quality_t;
 
