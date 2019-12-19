@@ -256,12 +256,17 @@ int main(int narg, char *arg[])
   ///////////////////////////////////////////////////////////////////////
   // Test one:  No weights
   if (me == 0) std::cout << "Test:  no weights, scalar = double" << std::endl;
+
+  // 1st call passes
+  test_no_weights(comm, params, localCount, globalIds, coords, nFail);
+  
+  // 2nd call fails
   test_no_weights(comm, params, localCount, globalIds, coords, nFail);
 
   ///////////////////////////////////////////////////////////////////////
   // Test two:  weighted
-  if (me == 0) std::cout << "Test:  weights, scalar = double" << std::endl;
-  test_weights(comm, params, localCount, globalIds, coords, weights, nFail);
+//  if (me == 0) std::cout << "Test:  weights, scalar = double" << std::endl;
+//  test_weights(comm, params, localCount, globalIds, coords, weights, nFail);
 
   // Early exit when failure is detected
   int gnFail;
