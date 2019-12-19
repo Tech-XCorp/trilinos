@@ -6560,12 +6560,13 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         sub_host_src_coordinates =
           Kokkos::subview(host_src_coordinates, Kokkos::ALL, i);
       }
-/*
+
       auto sub_host_dst_coordinates
         = Kokkos::subview(host_dst_coordinates, Kokkos::ALL, i);
       // Note Layout Left means we can do these in contiguous blocks
       ArrayView<mj_scalar_t> sent_coord(
         sub_host_src_coordinates.data(), this->num_local_coords);
+/*
       ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
 */
      // distributor.doPostsAndWaits<mj_scalar_t>(
