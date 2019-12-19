@@ -6541,9 +6541,10 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
     }
     
-// TEMPORARY!
-    printf("Doing temporary ArrayRCP of size: %d\n", num_incoming_gnos);
-    ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
+    for(int i = 0; i < this->coord_dim; ++i) {
+      printf("Doing temporary ArrayRCP of size: %d\n", num_incoming_gnos);
+      ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
+    }
     
     // migrate owners
     {
