@@ -6541,10 +6541,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
     }
     
-    // migrate coordinates dummy
-    // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
-    {
-    
 // TEMPORARY!
     printf("Doing temporary ArrayRCP of size: %d\n", num_incoming_gnos);
     ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
