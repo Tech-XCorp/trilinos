@@ -7423,6 +7423,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         this->owner_of_coordinate.data(), this->num_local_coords);
       mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
 
+printf("incoming: %d\n", incoming);
+
       this->mj_env->timerStop(MACRO_TIMERS,
         mj_timer_base_string + "Final DistributorPlanCreating" );
 
