@@ -191,9 +191,11 @@ void test_weights(
     }
     std::cout << std::endl;
   }
-
+printf("deleting ...\n");
   delete metricObject;
+printf("deleting 2 ...\n");
   delete problem;
+printf("deleting 3...\n");
   delete ia;
 }
 
