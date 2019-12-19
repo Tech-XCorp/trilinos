@@ -6553,6 +6553,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for(int i = 0; i < this->coord_dim; ++i) {
     
+    /*
     
       Kokkos::View<mj_scalar_t*, Kokkos::Serial> sub_host_src_coordinates;
       // view could be size 0 if graph was not distributed
@@ -6567,6 +6568,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
       ArrayView<mj_scalar_t> sent_coord(
         sub_host_src_coordinates.data(), this->num_local_coords);
+*/
 
       ArrayRCP<mj_scalar_t> received_coord(num_incoming_gnos);
 
