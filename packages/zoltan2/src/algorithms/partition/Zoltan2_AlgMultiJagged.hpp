@@ -72,6 +72,7 @@
 #endif
 #endif
 
+// #define DEBUG_PRINTING
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
@@ -6504,6 +6505,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->num_local_coords);
     mj_lno_t num_incoming_gnos = distributor.createFromSends(destinations);
 
+#ifdef DEBUG_PRINTING
     {
       static int cycle = 0;
       std::string file_name =
@@ -6515,10 +6517,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       fclose(file);
       ++cycle;
     }
+#endif
 
     // migrate owners
     {
       // Note owners we kept on Serial
+#ifdef DEBUG_PRINTING
       {
         static int cycle = 0;
         std::string file_name =
@@ -6530,6 +6534,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         fclose(file);
         ++cycle;
       }
+#endif
 
       ArrayView<int> sent_owners(
         owner_of_coordinate.data(), this->num_local_coords);
@@ -6540,6 +6545,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       memcpy(this->owner_of_coordinate.data(),
         received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
 
+#ifdef DEBUG_PRINTING
       {
         static int cycle = 0;
         std::string file_name =
@@ -6551,6 +6557,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         fclose(file);
         ++cycle;
       }
+#endif
     }
 
     this->mj_env->timerStop(MACRO_TIMERS, mj_timer_base_string +
@@ -7487,6 +7494,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   this->mj_env->timerStop(MACRO_TIMERS,
     mj_timer_base_string + "Solution_Part_Assignment");
+  
+printf("Exiting...\n");
 }
 
 /*!\brief Multi Jagged  coordinate partitioning algorithm.
@@ -8056,18 +8065,16 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
-printf("Check 4\n");
-
     // end of this partitioning dimension
     int current_world_size = this->comm->getSize();
     long migration_reduce_all_population =
       this->total_dim_num_reduce_all * current_world_size;
     bool is_migrated_in_current_dimension = false;
 
+printf("Begin migration\n");
     // we migrate if there are more partitionings to be done after this step
     // and if the migration is not forced to be avoided.
     // and the operation is not sequential.
-if(false)
     if(future_num_parts > 1 &&
       this->check_migrate_avoid_migration_option >= 0 &&
       current_world_size > 1) {
@@ -8100,7 +8107,8 @@ if(false)
       }
     }
 
-printf("Check 5\n");
+printf("End migration\n");
+
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8147,6 +8155,8 @@ printf("Check 6\n");
   this->mj_env->timerStop(MACRO_TIMERS,
     mj_timer_base_string + "Total");
   this->mj_env->debug(3, "Out of MultiJagged");
+  
+printf("Exiting mutlijagged\n");
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
@@ -8962,6 +8972,8 @@ void Zoltan2_AlgMJ<Adapter>::partition(
   }
 
   this->mj_env->timerStop(MACRO_TIMERS, timer_base_string + "all");
+  
+printf("Exiting algorioth\n");
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
