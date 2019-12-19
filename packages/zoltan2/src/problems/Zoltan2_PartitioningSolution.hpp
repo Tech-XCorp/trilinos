@@ -1289,14 +1289,16 @@ printf("Check A6\n");
     procs_ = arcp<int>(procs, 0, len);
 printf("Check A7\n");
     if (len > 0) {
+printf("Check A7a\n");
       part_t *parts = partList.getRawPtr();
   
       if (procDist_.size() > 0){    // parts are not split across procs
-  
+  printf("Check A7b\n");
         int procId;
         for (size_t i=0; i < len; i++){
           partToProcsMap(parts[i], procs[i], procId);
         }
+  printf("Check A7c\n");
       }
       else{  // harder - we need to split the parts across multiple procs
   printf("Check A8\n");
