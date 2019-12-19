@@ -7733,7 +7733,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
     auto host_process_local_min_max_coord_total_weight =
       Kokkos::create_mirror_view(Kokkos::HostSpace(), process_local_min_max_coord_total_weight);
-   auto ost_global_min_max_coord_total_weight =
+   auto host_global_min_max_coord_total_weight =
       Kokkos::create_mirror_view(Kokkos::HostSpace(), global_min_max_coord_total_weight);
 
     // run for all available parts.
