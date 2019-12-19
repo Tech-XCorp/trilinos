@@ -1296,6 +1296,7 @@ printf("Check A7a\n");
   printf("Check A7b\n");
         int procId;
         for (size_t i=0; i < len; i++){
+          printf("Running map for i: %d\n", i);
           partToProcsMap(parts[i], procs[i], procId);
         }
   printf("Check A7c\n");
@@ -1424,16 +1425,20 @@ template <typename Adapter>
     int &procMin, int &procMax) const
 {
   if (partId >= nGlobalParts_){
+    printf("  runA\n");
     // setParts() may be given an initial solution which uses a
     // different number of parts than the desired solution.  It is
     // still a solution.  We keep it on this process.
     procMin = procMax = comm_->getRank();
   }
   else if (onePartPerProc_){
+    printf("  runB\n");
     procMin = procMax = int(partId);
   }
   else if (procDist_.size() > 0){
+      printf("  runC\n");
     if (procDistEquallySpread_) {
+        printf("  runD\n");
       // Avoid binary search.
       double fProcs = comm_->getSize();
       double fParts = nGlobalParts_;
@@ -1444,6 +1449,7 @@ template <typename Adapter>
       procMax = procMin;
     }
     else {
+        printf("  runE\n");
       // find the first p such that procDist_[p] > partId.
       // For now, do a binary search.
 
@@ -1455,6 +1461,7 @@ template <typename Adapter>
     }
   }
   else{
+      printf("  runF\n");
     procMin = partDist_[partId];
     procMax = partDist_[partId+1] - 1;
   }
