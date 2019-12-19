@@ -72,7 +72,8 @@
 #endif
 #endif
 
-// #define DEBUG_PRINTING
+#define DEBUG_PRINTING
+
 namespace Teuchos{
 
 /*! \brief Zoltan2_BoxBoundaries is a reduction operation
