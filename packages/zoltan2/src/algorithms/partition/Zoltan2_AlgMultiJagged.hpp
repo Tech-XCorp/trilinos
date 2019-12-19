@@ -3518,7 +3518,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t,mj_node_t>::mj_1D_part(
       }
     });
   }
-printf("Done mj1Dpart\n");
+
   delete reductionOp;
 }
 
@@ -4207,16 +4207,12 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t,mj_part_t, mj_node_t>::
 #endif
         );
 
-printf("Reduce weights begin...\n");
-
 #ifdef KOKKOS_ENABLE_CUDA
     Kokkos::parallel_for(policy_ReduceWeightsFunctor, teamFunctor);
 #else
     Kokkos::parallel_reduce(policy_ReduceWeightsFunctor,
       teamFunctor, reduce_array);
 #endif
-
-printf("Reduce weights end...\n");
 
 #ifndef KOKKOS_ENABLE_CUDA
     auto hostArray = Kokkos::create_mirror_view(Kokkos::HostSpace(), my_current_part_weights);
@@ -4288,8 +4284,6 @@ printf("Reduce weights end...\n");
       }
     }
   });
-
-printf("Check 2\n");
 }
 
 /*! \brief Function that reduces the result of multiple threads
@@ -7428,8 +7422,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         this->owner_of_coordinate.data(), this->num_local_coords);
       mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
 
-      printf("incoming: %d\n", (int) incoming);
-
       this->mj_env->timerStop(MACRO_TIMERS,
         mj_timer_base_string + "Final DistributorPlanCreating" );
 
@@ -7494,8 +7486,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
 
   this->mj_env->timerStop(MACRO_TIMERS,
     mj_timer_base_string + "Solution_Part_Assignment");
-  
-printf("Exiting...\n");
 }
 
 /*!\brief Multi Jagged  coordinate partitioning algorithm.
@@ -8071,7 +8061,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->total_dim_num_reduce_all * current_world_size;
     bool is_migrated_in_current_dimension = false;
 
-printf("Begin migration\n");
     // we migrate if there are more partitionings to be done after this step
     // and if the migration is not forced to be avoided.
     // and the operation is not sequential.
@@ -8107,8 +8096,6 @@ printf("Begin migration\n");
       }
     }
 
-printf("End migration\n");
-
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8133,7 +8120,6 @@ printf("End migration\n");
     }
   }
 
-printf("Check 6\n");
   // Partitioning is done
   delete future_num_part_in_parts;
   delete next_future_num_parts_in_parts;
@@ -8155,8 +8141,6 @@ printf("Check 6\n");
   this->mj_env->timerStop(MACRO_TIMERS,
     mj_timer_base_string + "Total");
   this->mj_env->debug(3, "Out of MultiJagged");
-  
-printf("Exiting mutlijagged\n");
 }
 
 template <typename mj_scalar_t, typename mj_lno_t, typename mj_gno_t,
