@@ -6514,47 +6514,6 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     }
 #endif
 
-    // migrate owners
-    {
-      // Note owners we kept on Serial
-#ifdef DEBUG_PRINTING
-      {
-        static int cycle = 0;
-        std::string file_name =
-          std::string("send_owners_of_coords_" + std::to_string(comm->getRank()) + "_" + std::to_string(cycle));
-        FILE * file = fopen(file_name.c_str(), "w");
-        for(int n = 0; n < (int) owner_of_coordinate.size(); ++n) {
-          fprintf(file, "n %d: %d\n", n, (int) this->owner_of_coordinate[n]);
-        }
-        fclose(file);
-        ++cycle;
-      }
-#endif
-
-      ArrayView<int> sent_owners(
-        owner_of_coordinate.data(), this->num_local_coords);
-      ArrayRCP<int> received_owners(num_incoming_gnos);
-      distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
-      this->owner_of_coordinate = Kokkos::View<int *, Kokkos::HostSpace>
-        ("owner_of_coordinate", num_incoming_gnos);
-      memcpy(this->owner_of_coordinate.data(),
-        received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
-
-#ifdef DEBUG_PRINTING
-      {
-        static int cycle = 0;
-        std::string file_name =
-          std::string("rec_owners_of_coords_" + std::to_string(comm->getRank()) + "_" + std::to_string(cycle));
-        FILE * file = fopen(file_name.c_str(), "w");
-        for(int n = 0; n < (int) owner_of_coordinate.size(); ++n) {
-          fprintf(file, "n %d: %d\n", n, (int) this->owner_of_coordinate[n]);
-        }
-        fclose(file);
-        ++cycle;
-      }
-#endif
-    }
-
     this->mj_env->timerStop(MACRO_TIMERS, mj_timer_base_string +
       "Migration DistributorPlanCreating-" + iteration);
     this->mj_env->timerStart(MACRO_TIMERS, mj_timer_base_string +
@@ -6649,6 +6608,47 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_weights = dst_weights;
     }
 
+    // migrate owners
+    {
+      // Note owners we kept on Serial
+#ifdef DEBUG_PRINTING
+      {
+        static int cycle = 0;
+        std::string file_name =
+          std::string("send_owners_of_coords_" + std::to_string(comm->getRank()) + "_" + std::to_string(cycle));
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) owner_of_coordinate.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) this->owner_of_coordinate[n]);
+        }
+        fclose(file);
+        ++cycle;
+      }
+#endif
+
+      ArrayView<int> sent_owners(
+        owner_of_coordinate.data(), this->num_local_coords);
+      ArrayRCP<int> received_owners(num_incoming_gnos);
+      distributor.doPostsAndWaits<int>(sent_owners, 1, received_owners());
+      this->owner_of_coordinate = Kokkos::View<int *, Kokkos::HostSpace>
+        ("owner_of_coordinate", num_incoming_gnos);
+      memcpy(this->owner_of_coordinate.data(),
+        received_owners.getRawPtr(), num_incoming_gnos * sizeof(int));
+
+#ifdef DEBUG_PRINTING
+      {
+        static int cycle = 0;
+        std::string file_name =
+          std::string("rec_owners_of_coords_" + std::to_string(comm->getRank()) + "_" + std::to_string(cycle));
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) owner_of_coordinate.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) this->owner_of_coordinate[n]);
+        }
+        fclose(file);
+        ++cycle;
+      }
+#endif
+    }
+    
     // if num procs is less than num parts,
     // we need the part assigment arrays as well, since
     // there will be multiple parts in processor.
