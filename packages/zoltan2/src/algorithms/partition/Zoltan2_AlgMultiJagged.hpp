@@ -523,7 +523,7 @@ private:
   bool divide_to_prime_first;
 
   // initial global ids of the coordinates.
-  Kokkos::View<mj_gno_t*, device_t> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos;
 
   // current global ids of the coordinates, might change during migration.
   Kokkos::View<mj_gno_t*, device_t> current_mj_gnos;
@@ -1020,7 +1020,7 @@ public:
     int coord_dim,
     mj_lno_t num_local_coords,
     mj_gno_t num_global_coords,
-    Kokkos::View<mj_gno_t*, device_t> & initial_mj_gnos,
+    Kokkos::View<const mj_gno_t*, device_t> & initial_mj_gnos,
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> & mj_coordinates,
     int num_weights_per_coord,
@@ -7560,7 +7560,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_,
-  Kokkos::View<mj_gno_t*, device_t> & initial_mj_gnos_,
+  Kokkos::View<const mj_gno_t*, device_t> & initial_mj_gnos_,
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> & mj_coordinates_,
   int num_weights_per_coord_,
@@ -8292,7 +8292,7 @@ private:
   mj_gno_t num_global_coords; //number of global coords.
 
   // initial global ids of the coordinates.
-  Kokkos::View<mj_gno_t*, device_t> initial_mj_gnos;
+  Kokkos::View<const mj_gno_t*, device_t> initial_mj_gnos;
 
   // two dimension coordinate array.
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
@@ -8369,7 +8369,7 @@ private:
     int coord_dim_,
     mj_lno_t num_local_coords_,
     mj_gno_t num_global_coords_,  size_t num_global_parts_,
-    Kokkos::View<mj_gno_t*, device_t> & initial_mj_gnos_,
+    Kokkos::View<const mj_gno_t*, device_t> & initial_mj_gnos_,
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> &
       mj_coordinates_,
@@ -8547,7 +8547,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
   int coord_dim_,
   mj_lno_t num_local_coords_,
   mj_gno_t num_global_coords_, size_t num_global_parts_,
-  Kokkos::View<mj_gno_t*, device_t> & initial_mj_gnos_,
+  Kokkos::View<const mj_gno_t*, device_t> & initial_mj_gnos_,
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t> & mj_coordinates_,
   int num_weights_per_coord_,
@@ -8613,7 +8613,7 @@ bool Zoltan2_AlgMJ<Adapter>::mj_premigrate_to_subset(
     Kokkos::View<mj_gno_t*, Kokkos::Serial> host_initial_mj_gnos
       ("host_initial_mj_gnos", initial_mj_gnos_.size());
     Kokkos::deep_copy(host_initial_mj_gnos, initial_mj_gnos_);
-    ArrayView<mj_gno_t> sent_gnos(host_initial_mj_gnos.data(),
+    ArrayView<const mj_gno_t> sent_gnos(host_initial_mj_gnos.data(),
       num_local_coords_);
     distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
 
@@ -8755,7 +8755,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       this->mj_weights;
     int *result_actual_owner_rank = NULL;
 
-    Kokkos::View<mj_gno_t*, device_t> result_initial_mj_gnos_ =
+    Kokkos::View<const mj_gno_t*, device_t> result_initial_mj_gnos_ =
       this->initial_mj_gnos;
 
     // TODO: MD 08/2017: Further discussion is required.
@@ -8915,7 +8915,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       ArrayRCP<mj_part_t> received_partids(num_incoming_gnos);
       {
-        ArrayView<mj_gno_t> sent_gnos(host_result_initial_mj_gnos.data(),
+        ArrayView<const mj_gno_t> sent_gnos(host_result_initial_mj_gnos.data(),
          result_num_local_coords);
         distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
       }
@@ -8932,8 +8932,15 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       {
         std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid2;
         localGidToLid2.reserve(this->num_local_coords);
-        auto host_initial_mj_gnos =
-          Kokkos::create_mirror_view(this->initial_mj_gnos);
+    //    auto host_initial_mj_gnos =
+     //     Kokkos::create_mirror_view(this->initial_mj_gnos);
+        
+        Kokkos::View<mj_gno_t*, Kokkos::Serial> host_initial_mj_gnos(
+          "temporary_host_gnos", this->initial_mj_gnos.size());
+        for(int n = 0; n < (int) this->initial_mj_gnos.size(); ++n) {
+          host_initial_mj_gnos(n) = this->initial_mj_gnos(n);
+        }
+
         Kokkos::deep_copy(host_initial_mj_gnos,
           this->initial_mj_gnos);
         for(mj_lno_t i = 0; i < this->num_local_coords; i++) {
@@ -8982,7 +8989,7 @@ void Zoltan2_AlgMJ<Adapter>::set_up_partitioning_data(
   this->mj_uniform_weights = Kokkos::View<bool *, Kokkos::HostSpace>(
     "uniform weights", criteria_dim);
 
-  Kokkos::View<mj_gno_t *, device_t> gnos;
+  Kokkos::View<const mj_gno_t *, device_t> gnos;
   Kokkos::View<adapter_scalar_t **, Kokkos::LayoutLeft, device_t> xyz_adapter;
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<adapter_scalar_t **, device_t> wgts_adapter;

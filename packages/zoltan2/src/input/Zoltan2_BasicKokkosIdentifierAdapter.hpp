@@ -116,7 +116,7 @@ public:
     return idsView_.extent(0);
   }
 
-  void getIDsKokkosView(Kokkos::View<gno_t *,
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
     typename node_t::device_type> &ids) const {
     ids = idsView_;
   }

@@ -124,7 +124,7 @@ public:
     // If adapter does not define getIDsView, getIDsKokkosView is called.
     // If adapter does not define getIDsKokkosView, getIDsView is called.
     // Allows forward and backwards compatibility.
-    Kokkos::View<gno_t *, typename node_t::device_type> kokkosIds;
+    Kokkos::View<const gno_t *, typename node_t::device_type> kokkosIds;
     getIDsKokkosView(kokkosIds);
     ids = kokkosIds.data();
   }
@@ -133,7 +133,7 @@ public:
       \param ids will on return point to the list of the global Ids for 
         this process.
    */
-  virtual void getIDsKokkosView(Kokkos::View<gno_t *,
+  virtual void getIDsKokkosView(Kokkos::View<const gno_t *,
     typename node_t::device_type> &ids) const {
     // If adapter does not define getIDsView, getIDsKokkosView is called.
     // If adapter does not define getIDsKokkosView, getIDsView is called.

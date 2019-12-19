@@ -243,7 +243,7 @@ public:
 
   void getIDsView(const gno_t *&ids) const {ids = idList_;}
 
-  void getIDsKokkosView(Kokkos::View<gno_t *,
+  void getIDsKokkosView(Kokkos::View<const gno_t *,
     typename node_t::device_type> &ids) const
   {
     ids = this->kokkos_ids_;

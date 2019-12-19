@@ -226,7 +226,7 @@ public:
       \return The number of ids in the Ids list
    */
   size_t getCoordinatesKokkos(
-    Kokkos::View<gno_t *, typename node_t::device_type> &Ids,
+    Kokkos::View<const gno_t *, typename node_t::device_type> &Ids,
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     Kokkos::View<scalar_t **,
       Kokkos::LayoutLeft, typename node_t::device_type> &xyz,
@@ -262,7 +262,7 @@ private:
   // this up and perhaps eliminate the non-kokkos version completely.
   // However not all tests are converted to Kokkos so keeping both forms around
   // for now is probably necessary.
-  Kokkos::View<gno_t *, typename node_t::device_type> kokkos_gids_;
+  Kokkos::View<const gno_t *, typename node_t::device_type> kokkos_gids_;
   // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
   Kokkos::View<scalar_t **, Kokkos::LayoutLeft, typename node_t::device_type> kokkos_xyz_;
   Kokkos::View<scalar_t **, typename node_t::device_type> kokkos_weights_;
