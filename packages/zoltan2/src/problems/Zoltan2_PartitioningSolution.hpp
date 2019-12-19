@@ -1254,6 +1254,7 @@ template <typename Adapter>
 template <typename Adapter>
   void PartitioningSolution<Adapter>::setParts(ArrayRCP<part_t> &partList)
 {
+printf("Check A1\n");
   env_->debug(DETAILED_STATUS, "Entering setParts");
 
   size_t len = partList.size();
@@ -1263,29 +1264,30 @@ template <typename Adapter>
   // (We may want to compute the imbalance of a given solution with
   // respect to a desired solution.  This solution may have more or
   // fewer parts that the desired solution.)
-
+printf("Check A2\n");
   part_t lMax = -1;
   part_t lMin = (len > 0 ? std::numeric_limits<part_t>::max() : 0);
   part_t gMax, gMin;
-
+printf("Check A3\n");
   for (size_t i = 0; i < len; i++) {
     if (partList[i] < lMin) lMin = partList[i];
     if (partList[i] > lMax) lMax = partList[i];
   }
+printf("Check A4\n");
   Teuchos::reduceAll<int, part_t>(*comm_, Teuchos::REDUCE_MIN, 1, &lMin, &gMin);
   Teuchos::reduceAll<int, part_t>(*comm_, Teuchos::REDUCE_MAX, 1, &lMax, &gMax);
-
+printf("Check A5\n");
   nGlobalPartsSolution_ = gMax - gMin + 1;
   parts_ = partList;
 
   // Now determine which process gets each object, if not one-to-one.
-
+printf("Check A6\n");
   if (!onePartPerProc_){
 
     int *procs = new int [len];
     env_->localMemoryAssertion(__FILE__, __LINE__, len, procs);
     procs_ = arcp<int>(procs, 0, len);
-
+printf("Check A7\n");
     if (len > 0) {
       part_t *parts = partList.getRawPtr();
   
@@ -1297,7 +1299,7 @@ template <typename Adapter>
         }
       }
       else{  // harder - we need to split the parts across multiple procs
-  
+  printf("Check A8\n");
         lno_t *partCounter = new lno_t [nGlobalPartsSolution_];
         env_->localMemoryAssertion(__FILE__, __LINE__, nGlobalPartsSolution_,
           partCounter);
@@ -1336,7 +1338,7 @@ template <typename Adapter>
               procCounter[proc] = lno_t(each);
           }
         }
-  
+  printf("Check A9\n");
         delete [] partCounter;
   
         for (typename ArrayRCP<part_t>::size_type i=0; i < partList.size(); i++){
@@ -1361,10 +1363,11 @@ template <typename Adapter>
           env_->localBugAssertion(__FILE__, __LINE__, "part to proc",
             proc < proc2, COMPLEX_ASSERTION);
         }
-  
+  printf("Check A10\n");
         delete [] procCounter;
       }
     }
+    printf("Check A11\n");
   }
 
   // Now that parts_ info is back on home process, remap the parts.
@@ -1372,16 +1375,19 @@ template <typename Adapter>
   // TODO:  remapping.  This problem will go away after we separate process
   // TODO:  mapping from setParts.  But for MueLu's use case, the part
   // TODO:  remapping is all that matters; they do not use the process mapping.
+  
+printf("Check A12\n");
   bool doRemap = false;
   const Teuchos::ParameterEntry *pe =
                  env_->getParameters().getEntryPtr("remap_parts");
   if (pe) doRemap = pe->getValue(&doRemap);
   if (doRemap) RemapParts();
-
+printf("Check A13\n");
   haveSolution_ = true;
 
   env_->memory("After Solution has processed algorithm's answer");
   env_->debug(DETAILED_STATUS, "Exiting setParts");
+printf("Check A14\n");
 }
 
 

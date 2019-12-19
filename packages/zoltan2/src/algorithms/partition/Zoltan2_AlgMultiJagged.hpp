@@ -8882,6 +8882,13 @@ printf("leaving 2\n");
     Kokkos::deep_copy(host_result_mj_gnos, result_mj_gnos);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
+      
+      if(origLID < 0 || origLID >= result_num_local_coords) {
+        printf("Boom Bad origLD!\n");
+      }
+      if(i < 0 || i >= host_result_assigned_part_ids.size()) {
+        printf("Boom Bad host_result_assigned_part_ids read!\n");
+      }
       partId[origLID] = host_result_assigned_part_ids(i);
     }
 printf("leaving 3\n");
@@ -8958,7 +8965,7 @@ printf("leaving 8\n");
 
   this->mj_env->timerStop(MACRO_TIMERS, timer_base_string + "all");
   
-printf("Exiting algorioth\n");
+printf("Exiting algorithm...\n");
 }
 
 /* \brief Sets the partitioning data for multijagged algorithm.
