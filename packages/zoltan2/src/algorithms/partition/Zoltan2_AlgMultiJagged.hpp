@@ -6544,6 +6544,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     // migrate coordinates dummy
     // coordinates in MJ are LayoutLeft since Tpetra Multivector gives LayoutLeft
     {
+    
+    /*
     Kokkos::View<mj_scalar_t**, Kokkos::LayoutLeft, device_t>
       dst_coordinates("mj_coordinates", num_incoming_gnos, this->coord_dim);
     auto host_dst_coordinates = Kokkos::create_mirror_view(
@@ -6551,6 +6553,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     auto host_src_coordinates = Kokkos::create_mirror_view(
       Kokkos::HostSpace(), this->mj_coordinates);
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
+    */
+    
     for(int i = 0; i < this->coord_dim; ++i) {
     
     /*
