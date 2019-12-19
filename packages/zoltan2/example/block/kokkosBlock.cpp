@@ -147,7 +147,7 @@ int main(int narg, char *arg[]) {
   // Check and print the solution.
   // Count number of IDs assigned to each part; compare to targetCount
 
-  Kokkos::View<const globalId_t *, typename node_t::device_type> ids;
+  Kokkos::View<globalId_t *, typename node_t::device_type> ids;
   ia.getIDsKokkosView(ids);
 
   typename decltype(ids)::HostMirror host_ids =

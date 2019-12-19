@@ -458,7 +458,7 @@ public:
     getIDsViewOf(getPrimaryEntityType(), Ids);
   }
 
-  void getIDsKokkosView(Kokkos::View<const gno_t *,
+  void getIDsKokkosView(Kokkos::View<gno_t *,
     typename node_t::device_type> &ids) const
   {
     Kokkos::View<gno_t *, typename node_t::device_type>

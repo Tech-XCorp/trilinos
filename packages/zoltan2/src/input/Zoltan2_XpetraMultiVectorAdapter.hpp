@@ -139,7 +139,7 @@ public:
   }
 
   void getIDsKokkosView(
-    Kokkos::View<const gno_t *, typename node_t::device_type> &ids) const {
+    Kokkos::View<gno_t *, typename node_t::device_type> &ids) const {
     if (map_->lib() == Xpetra::UseTpetra) {
       const xt_mvector_t *tvector =
         dynamic_cast<const xt_mvector_t *>(vector_.get());
