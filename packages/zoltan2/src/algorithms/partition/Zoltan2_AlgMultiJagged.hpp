@@ -5148,6 +5148,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t>::mj_migrate_coords(
     int *coordinate_destinations,
     mj_part_t num_parts)
 {
+printf("Confirm I am migrating\n");
+
 #ifdef ENABLE_ZOLTAN_MIGRATION
     if (sizeof(mj_lno_t) <= sizeof(int)) {
 
