@@ -121,7 +121,7 @@ IF (${PACKAGE_NAME}_ENABLE_ShyLU_NodeTacho)
 
   TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopyTachoFiles
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCE_FILES tacho_test.xml tacho_host_test.xml tacho_simple.xml tacho_host_simple.xml
+    SOURCE_FILES tacho_test.xml
     EXEDEPS Solver_Test
     )
 
@@ -134,15 +134,6 @@ IF (${PACKAGE_NAME}_ENABLE_ShyLU_NodeTacho)
     COMM serial mpi
     )
 
-IF (Kokkos_ENABLE_Cuda)
-  TRIBITS_ADD_TEST(
-    Solver_Test
-    NAME Tacho_Host_Solver_Test
-    ARGS "--xml-params=tacho_host_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
-    STANDARD_PASS_OUTPUT
-    NUM_MPI_PROCS 1 # Need to determine if we want more MPI when not running OpenMP with threads
-    COMM serial mpi
-    )
 ENDIF()
 
 ENDIF()
