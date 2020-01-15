@@ -52,6 +52,9 @@
 #ifndef AMESOS2_KOKKOS_VIEW_COPY_ASSIGN_HPP
 #define AMESOS2_KOKKOS_VIEW_COPY_ASSIGN_HPP
 
+// MDM-TODO Temporary for debugging - should be removed or better log pipeline
+// #define AMESOS2_PRINT_ASSIGN_COPY_STEPS
+
 namespace Amesos2 {
 
 // allocate dst size if necessary - 2 methods handle 1d and 2d
@@ -78,6 +81,10 @@ template<class dst_t, class src_t> // version for same memory spaces
 typename std::enable_if<std::is_same<typename dst_t::value_type,
   typename src_t::value_type>::value>::type
 implement_copy_or_assign_same_mem_check_types(dst_t & dst, const src_t & src) {
+#ifdef AMESOS2_PRINT_ASSIGN_COPY_STEPS
+  std::cout << "Assign View: " << src_t::memory_space::name() <<
+    " to " << dst_t::memory_space::name() << std::endl;
+#endif
   dst = src; // just assign the ptr - no need to copy
 }
 
@@ -86,6 +93,10 @@ template<class dst_t, class src_t> // version for same memory spaces
 typename std::enable_if<!std::is_same<typename dst_t::value_type,
   typename src_t::value_type>::value>::type
 implement_copy_or_assign_same_mem_check_types(dst_t & dst, const src_t & src) {
+#ifdef AMESOS2_PRINT_ASSIGN_COPY_STEPS
+  std::cout << "Deep Copy different types: " << src_t::memory_space::name() <<
+    " to " << dst_t::memory_space::name() << std::endl;
+#endif
   update_dst_size(dst, src); // allocates if necessary
   Kokkos::deep_copy(dst, src); // full copy
 }
@@ -105,6 +116,10 @@ template<class dst_t, class src_t> // version for different memory spaces
 typename std::enable_if<std::is_same<typename dst_t::value_type,
   typename src_t::value_type>::value>::type
 implement_copy_or_assign_diff_mem_check_types(dst_t & dst, const src_t & src) {
+#ifdef AMESOS2_PRINT_ASSIGN_COPY_STEPS
+  std::cout << "Deep Copy same types: " << src_t::memory_space::name() <<
+    " to " << dst_t::memory_space::name() << std::endl;
+#endif
   update_dst_size(dst, src); // allocates if necessary
   Kokkos::deep_copy(dst, src); // full copy
 }
@@ -131,6 +146,10 @@ template<class dst_t, class src_t> // version for different memory spaces
 typename std::enable_if<!std::is_same<typename dst_t::value_type,
   typename src_t::value_type>::value>::type
 implement_copy_or_assign_diff_mem_check_types(dst_t & dst, const src_t & src) {
+#ifdef AMESOS2_PRINT_ASSIGN_COPY_STEPS
+  std::cout << "Deep Copy different types: " << src_t::memory_space::name() <<
+    " to " << dst_t::memory_space::name() << std::endl;
+#endif
   update_dst_size(dst, src); // allocates if necessary
   // since mem space and types are different, we specify the order of operations
   // Kokkos::deep_copy won't do both since it would be a hidden deep_copy

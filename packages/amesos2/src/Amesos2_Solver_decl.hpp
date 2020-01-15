@@ -187,6 +187,15 @@ namespace Amesos2 {
      */
     virtual type& setParameters( const Teuchos::RCP<Teuchos::ParameterList> & parameterList ) = 0;
 
+    /** \brief Set the matrix file name that was used. (Probably temporary)
+     *
+     * MDM Might want to install this in the solver params so it can be read.
+     * But this is added temporarily so we can have a pure Cholmod or cuSolver
+     * test running internally as a debugging option. Probably that will all
+     * change or be removed later so I kept it a separate path to make the
+     * rip out easier later.
+     */
+    virtual void setMatrixFilePath( const std::string & mm_file ) = 0;
 
     /**
      * \brief Return a const parameter list of all of the valid parameters that

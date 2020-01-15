@@ -42,37 +42,41 @@
 // @HEADER
 
 /**
-  \file   Amesos2_Cholmod_decl.hpp
-  \author Kevin Deweese <kdewees@software.sandia.gov> 
+  \file   Amesos2_cuSOLVER_decl.hpp
+  \author John Doe <jd@sandia.gov>
   \date   Tue Aug 27 17:06:53 2013
 
-  \brief  Amesos2 CHOLMOD declarations.
+  \brief  Amesos2 cuSOLVER declarations.
 */
 
 
-#ifndef AMESOS2_CHOLMOD_DECL_HPP
-#define AMESOS2_CHOLMOD_DECL_HPP
+#ifndef AMESOS2_CUSOLVER_DECL_HPP
+#define AMESOS2_CUSOLVER_DECL_HPP
+
+// Temporary measure to switch cuSolver between host and device solve mode
+// This dictates what space x and b live in 
+//  #define AMESOS2_CUSOLVER_HOST
 
 #include "Amesos2_SolverTraits.hpp"
 #include "Amesos2_SolverCore.hpp"
-#include "Amesos2_Cholmod_FunctionMap.hpp"
+#include "Amesos2_cuSOLVER_FunctionMap.hpp"
 
 
 namespace Amesos2 {
 
 
-/** \brief Amesos2 interface to the CHOLMOD package.
+/** \brief Amesos2 interface to cuSOLVER.
  *
- * See the \ref cholmod_parameters "summary of CHOLMOD parameters"
+ * See the \ref superlu_parameters "summary of SuperLU parameters"
  * supported by this Amesos2 interface.
  *
  * \ingroup amesos2_solver_interfaces
  */
 template <class Matrix,
           class Vector>
-class Cholmod : public SolverCore<Amesos2::Cholmod, Matrix, Vector>
+class cuSOLVER : public SolverCore<Amesos2::cuSOLVER, Matrix, Vector>
 {
-  friend class SolverCore<Amesos2::Cholmod,Matrix,Vector>; // Give our base access
+  friend class SolverCore<Amesos2::cuSOLVER,Matrix,Vector>; // Give our base access
                                                           // to our private
                                                           // implementation funcs
 public:
@@ -80,8 +84,8 @@ public:
   /// Name of this solver interface.
   static const char* name;      // declaration. Initialization outside.
 
-  typedef Cholmod<Matrix,Vector>                                       type;
-  typedef SolverCore<Amesos2::Cholmod,Matrix,Vector>             super_type;
+  typedef cuSOLVER<Matrix,Vector>                                       type;
+  typedef SolverCore<Amesos2::cuSOLVER,Matrix,Vector>             super_type;
 
   // Since typedef's are not inheritted, go grab them
   typedef typename super_type::scalar_type                    scalar_type;
@@ -90,17 +94,30 @@ public:
   typedef typename super_type::global_size_type          global_size_type;
   typedef typename super_type::node_type                        node_type;
 
-  typedef TypeMap<Amesos2::Cholmod,scalar_type>                    type_map;
+  typedef TypeMap<Amesos2::cuSOLVER,scalar_type>                    type_map;
 
-  /*
-   * The CHOLMOD interface will need two other typedef's, which are:
-   * - the CHOLMOD type that corresponds to scalar_type and
-   * - the corresponding type to use for magnitude
-   */
-  typedef typename type_map::type                                 chol_type;
+  typedef typename type_map::type                             cusolver_type;
   typedef typename type_map::magnitude_type                  magnitude_type;
 
-  typedef FunctionMap<Amesos2::Cholmod,chol_type>              function_map;
+  typedef FunctionMap<Amesos2::cuSOLVER,cusolver_type>         function_map;
+
+#ifdef AMESOS2_CUSOLVER_HOST 
+  typedef Kokkos::DefaultHostExecutionSpace                 DeviceSpaceType;
+#else
+  #ifdef KOKKOS_ENABLE_CUDA
+    // special case - use UVM Off not UVM on to test the current targets
+    typedef Kokkos::CudaUVMOff                               DeviceSpaceType;
+  #else
+    typedef Kokkos::DefaultExecutionSpace                    DeviceSpaceType;
+  #endif
+#endif
+
+  typedef int                                                  ordinal_type;
+  typedef int                                                     size_type;
+
+  typedef Kokkos::View<size_type*, DeviceSpaceType>       device_size_type_array;
+  typedef Kokkos::View<ordinal_type*, DeviceSpaceType> device_ordinal_type_array;
+  typedef Kokkos::View<cusolver_type*, DeviceSpaceType>     device_value_type_array;
 
   /// \name Constructor/Destructor methods
   //@{
@@ -109,15 +126,15 @@ public:
    * \brief Initialize from Teuchos::RCP.
    *
    * \warning Should not be called directly!  Use instead
-   * Amesos2::create() to initialize a CHOLMOD interface.
+   * Amesos2::create() to initialize a cuSOLVER interface.
    */
-  Cholmod(Teuchos::RCP<const Matrix> A,
+  cuSOLVER(Teuchos::RCP<const Matrix> A,
           Teuchos::RCP<Vector>       X,
           Teuchos::RCP<const Vector> B);
 
 
   /// Destructor
-  ~Cholmod( );
+  ~cuSOLVER( );
 
   //@}
 
@@ -130,31 +147,31 @@ private:
 
 
   /**
-   * \brief Perform symbolic factorization of the matrix using CHOLMOD.
+   * \brief Perform symbolic factorization of the matrix using cuSOLVER.
    *
    * Called first in the sequence before numericFactorization.
    *
-   * \throw std::runtime_error CHOLMOD is not able to factor the matrix.
+   * \throw std::runtime_error cuSOLVER is not able to factor the matrix.
    */
   int symbolicFactorization_impl();
 
 
   /**
-   * \brief CHOLMOD specific numeric factorization
+   * \brief cuSOLVER specific numeric factorization
    *
-   * \throw std::runtime_error CHOLMOD is not able to factor the matrix
+   * \throw std::runtime_error cuSOLVER is not able to factor the matrix
    */
   int numericFactorization_impl();
 
 
   /**
-   * \brief CHOLMOD specific solve.
+   * \brief cuSOLVER specific solve.
    *
    * Uses the symbolic and numeric factorizations, along with the RHS
    * vector \c B to solve the sparse system of equations.  The
    * solution is placed in X.
    *
-   * \throw std::runtime_error CHOLMOD is not able to solve the system.
+   * \throw std::runtime_error cuSOLVER is not able to solve the system.
    *
    * \callgraph
    */
@@ -169,9 +186,10 @@ private:
 
 
   /**
-   * Currently, the following CHOLMOD parameters/options are
+   * Currently, the following cuSOLVER parameters/options are
    * recognized and acted upon:
    *
+   * MDM-TODO Update docs
    * <ul>
    *   <li> \c "Trans" : { \c "NOTRANS" | \c "TRANS" |
    *     \c "CONJ" }.  Specifies whether to solve with the transpose system.</li>
@@ -211,93 +229,62 @@ private:
   /**
    * \brief Reads matrix data into internal structures
    *
-   * \param [in] current_phase an indication of which solution phase this
+   * \param [in] cur rent_phase an indication of which solution phase this
    *                           load is being performed for.
    *
    * \return \c true if the matrix was loaded, \c false if not
    */
   bool loadA_impl(EPhase current_phase);
 
+  /**
+   * \brief can we optimize size_type and ordinal_type for straight pass through
+   */
+  bool do_optimization() const;
 
-  // struct holds all data necessary to make a cholmod factorization or solve call
-  mutable struct CholData {
-    CHOL::cholmod_sparse A; 
-    CHOL::cholmod_dense x, b;
-    CHOL::cholmod_dense *Y, *E;
-    CHOL::cholmod_factor *L;
-    CHOL::cholmod_common c;
+  // struct holds all data necessary to make a superlu factorization or solve call
+  mutable struct cuSolverData {
+    CUSOLVER::cusolverSpHandle_t A;
+    CUSOLVER::cusolverDnHandle_t x, b;
+    CUSOLVER::cusolverDnHandle_t *Y, *E;
   } data_;
- 
-  typedef Kokkos::DefaultHostExecutionSpace HostSpaceType;
-  typedef long size_type;
-  typedef long ordinal_type;
-  typedef Kokkos::View<size_type*, HostSpaceType>       host_size_type_array;
-  typedef Kokkos::View<ordinal_type*, HostSpaceType> host_ordinal_type_array;
 
-  // not using chol_type, use scalar_type - make all in trilinos type
-  // since CHOLMOD::complex is same ordering as the std::complex and since
-  // CHOLMOD just takes the ptr it will work without any conversions.
-  typedef Kokkos::View<scalar_type*, HostSpaceType>     host_value_type_array;
-  
-  // The following Views are persisting storage arrays for A, X, and B
-  /// Stores the values of the nonzero entries for CHOLMOD
-  host_value_type_array host_nzvals_view_;
-  /// Stores the location in \c Ai_ and Aval_ that starts row j
-  host_size_type_array host_rows_view_;
-  /// Stores the row indices of the nonzero entries
-  host_ordinal_type_array host_col_ptr_view_;
+  typedef Kokkos::View<cusolver_type**, Kokkos::LayoutLeft, DeviceSpaceType> device_solve_array_t;
 
-  // not using chol_type, use scalar_type - make all in trilinos type
-  // since CHOLMOD::complex is same ordering as the std::complex and since
-  // CHOLMOD just takes the ptr it will work without any conversions.
-  typedef typename Kokkos::View<scalar_type**, Kokkos::LayoutLeft, HostSpaceType>
-    host_solve_array_t;
+  mutable device_solve_array_t xValues_;
+  mutable device_solve_array_t bValues_;
 
-  /// Persisting 1D store for X
-  mutable host_solve_array_t xValues_;
-  int ldx_;
-
-  /// Persisting 1D store for B
-  mutable host_solve_array_t bValues_;
-  int ldb_;
-
-  bool firstsolve;
-  
-  // Used as a hack around cholmod doing ordering and symfact together
-  bool skip_symfact;
-
-  Teuchos::RCP<const Tpetra::Map<local_ordinal_type,global_ordinal_type,node_type> > map;
-
-  bool is_contiguous_;
-};                              // End class Cholmod
+  device_value_type_array device_nzvals_view_;
+  device_size_type_array device_row_ptr_view_;
+  device_ordinal_type_array device_cols_view_;
+};                              // End class cuSOLVER
 
 
-/* Specialize solver_traits struct for Cholmod
+/* Specialize solver_traits struct for cuSOLVER
  *
- * Based on the CHOLMOD documentation, the support for
+ * Based on the cuSOLVER documentation, the support for
  * single-precision complex numbers is unclear.  Much of the
  * discussion of complex types only makes explicit mention of 'double'
  * types.  So, be pessimistic for now and don't declare
  * single-precision complex support
  */
 template <>
-struct solver_traits<Cholmod> {
+struct solver_traits<cuSOLVER> {
 #ifdef HAVE_TEUCHOS_COMPLEX
   typedef Meta::make_list4<float,
 			   double,
                            std::complex<double>,
-                           CHOL::complex> supported_scalars;
+                           CUSOLVER::complex> supported_scalars;
 #else
   typedef Meta::make_list2<float, double> supported_scalars;
 #endif
 };
 
 template <typename Scalar, typename LocalOrdinal, typename ExecutionSpace>
-struct solver_supports_matrix<Cholmod,
+struct solver_supports_matrix<cuSOLVER,
   KokkosSparse::CrsMatrix<Scalar, LocalOrdinal, ExecutionSpace>> {
   static const bool value = true;
 };
 
 } // end namespace Amesos2
 
-#endif  // AMESOS2_CHOLMOD_DECL_HPP
+#endif  // AMESOS2_CUSOLVER_DECL_HPP

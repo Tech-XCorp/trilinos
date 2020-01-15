@@ -185,21 +185,31 @@ private:
   // Members
   int num_threads;
 
-  // The following Arrays are persisting storage arrays for A, X, and B
-  /// Stores the values of the nonzero entries for Basker
-  Teuchos::Array<slu_type> nzvals_;
+  typedef Kokkos::DefaultHostExecutionSpace HostSpaceType;
+  typedef Kokkos::View<local_ordinal_type*, HostSpaceType> host_ordinal_type_array;
+
+  typedef Kokkos::View<slu_type*, HostSpaceType>     host_value_type_array;
+
+  // The following Views are persisting storage arrays for A, X, and B
+  /// Stores the values of the nonzero entries for CHOLMOD
+  host_value_type_array host_nzvals_view_;
   /// Stores the location in \c Ai_ and Aval_ that starts row j
-  Teuchos::Array<local_ordinal_type> rowind_;
+  host_ordinal_type_array host_rows_view_;
   /// Stores the row indices of the nonzero entries
-  Teuchos::Array<local_ordinal_type> colptr_;
+  host_ordinal_type_array host_col_ptr_view_;
 
   bool is_contiguous_;
 
+  typedef typename Kokkos::View<slu_type**, Kokkos::LayoutLeft, HostSpaceType>
+    host_solve_array_t;
 
   /// Persisting 1D store for X
-  mutable Teuchos::Array<slu_type> xvals_;  local_ordinal_type ldx_;
+  mutable host_solve_array_t xValues_;
+  int ldx_;
+
   /// Persisting 1D store for B
-  mutable Teuchos::Array<slu_type> bvals_;  local_ordinal_type ldb_;
+  mutable host_solve_array_t bValues_;
+  int ldb_;
 
   /*Handle for Basker object*/
   mutable ::BaskerClassicNS::BaskerClassic<local_ordinal_type,slu_type> basker;
@@ -219,6 +229,12 @@ struct solver_traits<Basker> {
 #else
   typedef Meta::make_list2<float, double> supported_scalars;
 #endif
+};
+
+template <typename Scalar, typename LocalOrdinal, typename ExecutionSpace>
+struct solver_supports_matrix<Basker,
+  KokkosSparse::CrsMatrix<Scalar, LocalOrdinal, ExecutionSpace>> {
+  static const bool value = true;
 };
 
 } // end namespace Amesos2

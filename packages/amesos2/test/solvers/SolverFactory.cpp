@@ -322,11 +322,15 @@ namespace {
     //X_exact->describe(out, Teuchos::VERB_EXTREME);
     //B->describe(out, Teuchos::VERB_EXTREME);
 
-
-    const int numSolvers = 11;
+    const int numSolvers = 10;
+    
+    // Note that for refactor in progress of Tacho, Cholmod, and cuSolver,
+    // I have removed Cholmod from this list so we don't run MPI 4. Currently
+    // just supporting the serial case.
     const char* solverNames[numSolvers] = {"shylubasker", "basker", "klu2", "superlu_dist",
                                            "superlu_mt", "superlu", "pardiso_mkl",
-                                           "lapack", "mumps", "amesos2_cholmod", "umfpack"};
+                                           "lapack", "mumps", "umfpack"
+    };
     // The number of solvers that Amesos2::create actually supports,
     // for the current MV and MAT types.  If it doesn't support _any_
     // of the solvers, we consider this test to have failed.

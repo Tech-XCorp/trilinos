@@ -119,7 +119,10 @@ public:
 #ifdef AMESOS2_TACHO_BUILD_SOLVER
   #ifdef KOKKOS_ENABLE_CUDA
     // special case - use UVM Off not UVM on to test the current targets
-    typedef Kokkos::CudaUVMOff                               DeviceSpaceType;
+    // Note temporarily keep this on UVM space until Task Scheduler will work
+    // CudaUVMOff will work for small matrices if internal Tacho is not using GPU
+    typedef Kokkos::Cuda                               DeviceSpaceType;
+    // typedef Kokkos::CudaUVMOff                               DeviceSpaceType;
   #else
     typedef Kokkos::DefaultExecutionSpace                    DeviceSpaceType;
   #endif

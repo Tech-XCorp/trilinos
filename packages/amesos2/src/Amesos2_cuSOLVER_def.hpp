@@ -35,84 +35,96 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// Questions? Contact Sivasankaran Rajamanickam (srajama@sandia.gov)
+// Questions? Contact Michael A. Heroux (maherou@sandia.gov)
 //
 // ***********************************************************************
 //
 // @HEADER
 
-// This file is used for TachoSolver and TachoHostSolver
-// So include guards exist twice
-#if (defined(AMESOS2_TACHO_BUILD_SOLVER) && !defined(TACHO_BUILT_SOLVER_DEF_HPP)) || \
-    (defined(TACHOHOST_BUILD_SOLVER) && !defined(TACHOHOST_BUILT_SOLVER_DEF_HPP))
+/**
+   \file   Amesos2_cuSolver_def.hpp
+   \author John Doe <jd@sandia.gov>
+   \date   Wed Jul  24 15::48:51 2013
 
-#ifdef AMESOS2_TACHO_BUILD_SOLVER
-  #define TACHO_BUILT_SOLVER_DEF_HPP
-  #define TACHO_SOLVER_CHAR_NAME "Tacho"
-#endif
+   \brief  Definitions for the Amesos2 cuSOLVER solver interface
+*/
 
-#ifdef TACHOHOST_BUILD_SOLVER
-  #define TACHOHOST_BUILT_SOLVER_DEF_HPP
-  #define TACHO_SOLVER_CHAR_NAME "TachoHost"
-#endif
+
+#ifndef AMESOS2_CUSOLVER_DEF_HPP
+#define AMESOS2_CUSOLVER_DEF_HPP
 
 #include <Teuchos_Tuple.hpp>
 #include <Teuchos_ParameterList.hpp>
 #include <Teuchos_StandardParameterEntryValidators.hpp>
 
 #include "Amesos2_SolverCore_def.hpp"
-#include "Amesos2_Tacho_decl.hpp"
-#include "Amesos2_Util.hpp"
+#include "Amesos2_cuSOLVER_decl.hpp"
+
 
 namespace Amesos2 {
 
+
 template <class Matrix, class Vector>
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::AMESOS2_TACHO_SOLVER_NAME(
+cuSOLVER<Matrix,Vector>::cuSOLVER(
   Teuchos::RCP<const Matrix> A,
   Teuchos::RCP<Vector>       X,
   Teuchos::RCP<const Vector> B )
-  : SolverCore<Amesos2::AMESOS2_TACHO_SOLVER_NAME,Matrix,Vector>(A, X, B)
+  : SolverCore<Amesos2::cuSOLVER,Matrix,Vector>(A, X, B)
 {
+  // MDM-cuSolver-TODO
 }
 
 
 template <class Matrix, class Vector>
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::~AMESOS2_TACHO_SOLVER_NAME( )
+cuSOLVER<Matrix,Vector>::~cuSOLVER( )
 {
-}
-
-template <class Matrix, class Vector>
-std::string
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::description() const
-{
-  std::ostringstream oss;
-  oss << "Tacho solver interface";
-  return oss.str();
+  // MDM-cuSolver-TODO
 }
 
 template<class Matrix, class Vector>
 int
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::preOrdering_impl()
+cuSOLVER<Matrix,Vector>::preOrdering_impl()
 {
+ #ifdef HAVE_AMESOS2_TIMERS
+    Teuchos::TimeMonitor preOrderTimer(this->timers_.preOrderTime_);
+#endif
   return(0);
 }
 
+
 template <class Matrix, class Vector>
 int
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::symbolicFactorization_impl()
+cuSOLVER<Matrix,Vector>::symbolicFactorization_impl()
+{
+#ifdef HAVE_AMESOS2_TIMERS
+      Teuchos::TimeMonitor symFactTimer(this->timers_.symFactTime_);
+#endif
+
+  int status = 0;
+  if ( this->root_ ) {
+    if(do_optimization()) {
+      this->matrixA_->returnRowPtr_kokkos_view(device_row_ptr_view_);
+      this->matrixA_->returnColInd_kokkos_view(device_cols_view_);
+    }
+
+    // MDM-TODO Add cuSolver symbolic
+  }
+  return status;
+
+  return(0);
+}
+
+
+template <class Matrix, class Vector>
+int
+cuSOLVER<Matrix,Vector>::numericFactorization_impl()
 {
   int status = 0;
   if ( this->root_ ) {
     if(do_optimization()) {
-      this->matrixA_->returnRowPtr_kokkos_view(host_row_ptr_view_);
-      this->matrixA_->returnColInd_kokkos_view(host_cols_view_);
+     this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
     }
-
-    // TODO: Confirm param options
-    // data_.solver.setMaxNumberOfSuperblocks(data_.max_num_superblocks);
-
-    // Symbolic factorization currently must be done on host
-    data_.solver.analyze(this->globalNumCols_, host_row_ptr_view_, host_cols_view_);
+    // MDM-TODO numeric
   }
   return status;
 }
@@ -120,21 +132,7 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::symbolicFactorization_impl()
 
 template <class Matrix, class Vector>
 int
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::numericFactorization_impl()
-{
-  int status = 0;
-  if ( this->root_ ) {
-    if(do_optimization()) {
-      this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
-    }
-    data_.solver.factorize(device_nzvals_view_);
-  }
-  return status;
-}
-
-template <class Matrix, class Vector>
-int
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> > X,
+cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >       X,
                                    const Teuchos::Ptr<const MultiVecAdapter<Vector> > B) const
 {
   using Teuchos::as;
@@ -148,7 +146,7 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVec
   // necessary. When a copy is not necessary we'll solve directly to the x
   // values in the MV.
 
-  // MDM-DISCUSS If copying is necessaery this is going to copy x values which we
+  // MDM-DISCUSS If copying is necessary this is going to copy x values which we
   // don't care about. So need to refine this. Also the do_put below should
   // not be called at all for the case where the x get was just assigned.
   // I didn't fix this yet because the logic which determines if a copy
@@ -175,13 +173,28 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVec
 #ifdef HAVE_AMESOS2_TIMER
     Teuchos::TimeMonitor solveTimer(this->timers_.solveTime_);
 #endif
-    // Bump up the workspace size if needed
-    if (workspace_.extent(0) < this->globalNumRows_ || workspace_.extent(1) < nrhs) {
-      workspace_ = device_solve_array_t(
-        Kokkos::ViewAllocateWithoutInitializing("t"), this->globalNumRows_, nrhs);
+
+// ########
+    //initialize our test cases
+    const int size = this->globalNumRows_;
+    const int nnz = this->globalNumNonZeros_;
+    int sing = 0;
+
+
+    const double * values = device_nzvals_view_.data();
+    const int * colIdx = device_cols_view_.data();
+    const int * rowPtr = device_row_ptr_view_.data();
+
+    // for now just get a solution which works for multiple vectors
+    // then later we need to see how to batch solver
+    for(size_t n = 0; n < nrhs; ++n) {
+      const scalar_type * b = &this->bValues_.data()[n*size];
+      scalar_type * x = &this->xValues_.data()[n*size];
+
+      function_map::cusolver_solve(size, nnz, values, rowPtr, colIdx, b, 0.0, 0, x, &sing);
     }
 
-    data_.solver.solve(xValues_, bValues_, workspace_);
+// #######
   }
 
   /* All processes should have the same error code */
@@ -210,55 +223,64 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVec
 
 template <class Matrix, class Vector>
 bool
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::matrixShapeOK_impl() const
+cuSOLVER<Matrix,Vector>::matrixShapeOK_impl() const
 {
-  // Tacho can only apply the solve routines to square matrices
   return( this->matrixA_->getGlobalNumRows() == this->matrixA_->getGlobalNumCols() );
 }
 
 
 template <class Matrix, class Vector>
 void
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::setParameters_impl(const Teuchos::RCP<Teuchos::ParameterList> & parameterList )
+cuSOLVER<Matrix,Vector>::setParameters_impl(const Teuchos::RCP<Teuchos::ParameterList> & parameterList )
 {
+  using Teuchos::RCP;
+  using Teuchos::getIntegralValue;
+  using Teuchos::ParameterEntryValidator;
+
   RCP<const Teuchos::ParameterList> valid_params = getValidParameters_impl();
 
-  // TODO: Confirm param options
-  // data_.num_kokkos_threads = parameterList->get<int>("kokkos-threads", 1);
-  // data_.max_num_superblocks = parameterList->get<int>("max-num-superblocks", 4);
+
+  if( parameterList->isParameter("Trans") ){
+    RCP<const ParameterEntryValidator> trans_validator = valid_params->getEntry("Trans").validator();
+    parameterList->getEntry("Trans").setValidator(trans_validator);
+
+  }
 }
 
 
 template <class Matrix, class Vector>
 Teuchos::RCP<const Teuchos::ParameterList>
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::getValidParameters_impl() const
+cuSOLVER<Matrix,Vector>::getValidParameters_impl() const
 {
+  using std::string;
+  using Teuchos::tuple;
+  using Teuchos::ParameterList;
+  using Teuchos::EnhancedNumberValidator;
+  using Teuchos::setStringToIntegralParameter;
+  using Teuchos::stringToIntegralParameterEntryValidator;
+
   static Teuchos::RCP<const Teuchos::ParameterList> valid_params;
 
   if( is_null(valid_params) ){
     Teuchos::RCP<Teuchos::ParameterList> pl = Teuchos::parameterList();
-
-    // TODO: Confirm param options
-    // pl->set("kokkos-threads", 1, "Number of threads");
-    // pl->set("max-num-superblocks", 4, "Max number of superblocks");
-
     valid_params = pl;
   }
 
   return valid_params;
 }
 
+
 template <class Matrix, class Vector>
 bool
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::do_optimization() const {
+cuSOLVER<Matrix,Vector>::do_optimization() const {
   return (this->root_ && (this->matrixA_->getComm()->getSize() == 1));
 }
 
+
 template <class Matrix, class Vector>
 bool
-AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::loadA_impl(EPhase current_phase)
+cuSOLVER<Matrix,Vector>::loadA_impl(EPhase current_phase)
 {
-
   if(current_phase == SOLVE) {
     return(false);
   }
@@ -277,13 +299,13 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::loadA_impl(EPhase current_phase)
     if( this->root_ ) {
       device_nzvals_view_ = device_value_type_array(
         Kokkos::ViewAllocateWithoutInitializing("nzvals"), this->globalNumNonZeros_);
-      host_cols_view_ = host_ordinal_type_array(
+      device_cols_view_ = device_ordinal_type_array(
         Kokkos::ViewAllocateWithoutInitializing("colind"), this->globalNumNonZeros_);
-      host_row_ptr_view_ = host_size_type_array(
+      device_row_ptr_view_ = device_size_type_array(
         Kokkos::ViewAllocateWithoutInitializing("rowptr"), this->globalNumRows_ + 1);
     }
 
-    typename host_size_type_array::value_type nnz_ret = 0;
+    typename device_size_type_array::value_type nnz_ret = 0;
     {
   #ifdef HAVE_AMESOS2_TIMERS
       Teuchos::TimeMonitor mtxRedistTimer( this->timers_.mtxRedistTime_ );
@@ -294,11 +316,11 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::loadA_impl(EPhase current_phase)
                           "Row and column maps have different indexbase ");
 
       Util::get_crs_helper_kokkos_view<MatrixAdapter<Matrix>,
-        device_value_type_array, host_ordinal_type_array, host_size_type_array>::do_get(
+        device_value_type_array, device_ordinal_type_array, device_size_type_array>::do_get(
                                                       this->matrixA_.ptr(),
                                                       device_nzvals_view_,
-                                                      host_cols_view_,
-                                                      host_row_ptr_view_,
+                                                      device_cols_view_,
+                                                      device_row_ptr_view_,
                                                       nnz_ret,
                                                       ROOTED, ARBITRARY,
                                                       this->columnIndexBase_);
@@ -308,11 +330,11 @@ AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::loadA_impl(EPhase current_phase)
   return true;
 }
 
+
 template<class Matrix, class Vector>
-const char* AMESOS2_TACHO_SOLVER_NAME<Matrix,Vector>::name = TACHO_SOLVER_CHAR_NAME;
+const char* cuSOLVER<Matrix,Vector>::name = "cuSOLVER";
+
 
 } // end namespace Amesos2
 
-#undef TACHO_SOLVER_CHAR_NAME
-
-#endif  // AMESOS2_TACHO_DEF_HPP or AMESOS2_TACHOHOST_DEF_HPP
+#endif  // AMESOS2_CUSOLVER_DEF_HPP

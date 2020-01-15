@@ -385,7 +385,6 @@ namespace Amesos2{
                                                                    mv->getComm(),
                                                                    indexBase,
                                                                    mv->getMap());
-
       do_put(mv, kokkos_data, ldx, Teuchos::ptrInArg(*map), distribution);
     }
 

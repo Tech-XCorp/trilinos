@@ -254,6 +254,7 @@ namespace Amesos2 {
                       global_ordinal_t,
                       node_t> > source_map,
                     EDistribution distribution ) {
+
       // Convert to Host Space
       // Decide later about any further improvements - we are designating
       // Epetra low priority right now so just getting clean compile and run right now.

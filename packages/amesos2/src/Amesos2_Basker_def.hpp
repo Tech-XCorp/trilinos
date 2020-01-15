@@ -69,9 +69,6 @@ Basker<Matrix,Vector>::Basker(
   Teuchos::RCP<Vector>       X,
   Teuchos::RCP<const Vector> B )
   : SolverCore<Amesos2::Basker,Matrix,Vector>(A, X, B)
-  , nzvals_()                   // initialize to empty arrays
-  , rowind_()
-  , colptr_()
   , is_contiguous_(true)
 //  , basker()
 {
@@ -132,7 +129,7 @@ Basker<Matrix,Vector>::numericFactorization_impl()
       std::cout << "colptr_ : " << colptr_.toString() << std::endl;
   #endif
      
-      info = basker.factor(this->globalNumRows_, this->globalNumCols_, this->globalNumNonZeros_, colptr_.getRawPtr(), rowind_.getRawPtr(), nzvals_.getRawPtr());
+      info = basker.factor(this->globalNumRows_, this->globalNumCols_, this->globalNumNonZeros_, host_col_ptr_view_.data(), host_rows_view_.data(), host_nzvals_view_.data());
 
       // This is set after numeric factorization complete as pivoting can be used;
       // In this case, a discrepancy between symbolic and numeric nnz total can occur.
@@ -219,11 +216,6 @@ Basker<Matrix,Vector>::solve_impl(
   }
   else 
   {
-    const size_t val_store_size = as<size_t>(ld_rhs * nrhs);
-
-    xvals_.resize(val_store_size);
-    bvals_.resize(val_store_size);
-
     {                             // Get values from RHS B
 #ifdef HAVE_AMESOS2_TIMERS
       Teuchos::TimeMonitor mvConvTimer(this->timers_.vecConvTime_);
@@ -231,12 +223,22 @@ Basker<Matrix,Vector>::solve_impl(
 #endif
 
       if ( is_contiguous_ == true ) {
-        Util::get_1d_copy_helper<MultiVecAdapter<Vector>,
-          slu_type>::do_get(B, bvals_(), as<size_t>(ld_rhs), ROOTED, this->rowIndexBase_);
+        Util::get_1d_copy_helper_kokkos_view<MultiVecAdapter<Vector>,
+          host_solve_array_t>::do_get(B, bValues_, as<size_t>(ld_rhs), ROOTED, this->rowIndexBase_);
       }
       else {
-        Util::get_1d_copy_helper<MultiVecAdapter<Vector>,
-          slu_type>::do_get(B, bvals_(), as<size_t>(ld_rhs), CONTIGUOUS_AND_ROOTED, this->rowIndexBase_);
+        Util::get_1d_copy_helper_kokkos_view<MultiVecAdapter<Vector>,
+          host_solve_array_t>::do_get(B, bValues_, as<size_t>(ld_rhs), CONTIGUOUS_AND_ROOTED, this->rowIndexBase_);
+      }
+
+      // See Amesos2_Tacho_def.hpp for notes on why we 'get' x here.
+      if ( is_contiguous_ == true ) {
+        Util::get_1d_copy_helper_kokkos_view<MultiVecAdapter<Vector>,
+          host_solve_array_t>::do_get(X, xValues_, as<size_t>(ld_rhs), ROOTED, this->rowIndexBase_);
+      }
+      else {
+        Util::get_1d_copy_helper_kokkos_view<MultiVecAdapter<Vector>,
+          host_solve_array_t>::do_get(X, xValues_, as<size_t>(ld_rhs), CONTIGUOUS_AND_ROOTED, this->rowIndexBase_);
       }
     }
 
@@ -246,7 +248,7 @@ Basker<Matrix,Vector>::solve_impl(
         Teuchos::TimeMonitor solveTimer(this->timers_.solveTime_);
 #endif
 
-        ierr = basker.solveMultiple(nrhs, bvals_.getRawPtr(),xvals_.getRawPtr());
+        ierr = basker.solveMultiple(nrhs, bValues_.data(), xValues_.data());
       }
 
     }
@@ -267,14 +269,14 @@ Basker<Matrix,Vector>::solve_impl(
 #endif
 
       if ( is_contiguous_ == true ) {
-        Util::put_1d_data_helper<
-          MultiVecAdapter<Vector>,slu_type>::do_put(X, xvals_(),
+        Util::put_1d_data_helper_kokkos_view<
+          MultiVecAdapter<Vector>,host_solve_array_t>::do_put(X, xValues_,
               as<size_t>(ld_rhs),
               ROOTED);
       }
       else {
-        Util::put_1d_data_helper<
-          MultiVecAdapter<Vector>,slu_type>::do_put(X, xvals_(),
+        Util::put_1d_data_helper_kokkos_view<
+          MultiVecAdapter<Vector>,host_solve_array_t>::do_put(X, xValues_,
               as<size_t>(ld_rhs),
               CONTIGUOUS_AND_ROOTED);
       }
@@ -344,9 +346,12 @@ Basker<Matrix,Vector>::loadA_impl(EPhase current_phase)
 
   // Only the root image needs storage allocated
   if( this->root_ ){
-    nzvals_.resize(this->globalNumNonZeros_);
-    rowind_.resize(this->globalNumNonZeros_);
-    colptr_.resize(this->globalNumCols_ + 1);
+    host_nzvals_view_ = host_value_type_array(
+      Kokkos::ViewAllocateWithoutInitializing("nzvals"), this->globalNumNonZeros_);
+    host_rows_view_ = host_ordinal_type_array(
+      Kokkos::ViewAllocateWithoutInitializing("rowptr"), this->globalNumNonZeros_);
+    host_col_ptr_view_ = host_ordinal_type_array(
+      Kokkos::ViewAllocateWithoutInitializing("colind"), this->globalNumRows_ + 1);
   }
 
   local_ordinal_type nnz_ret = 0;
@@ -354,17 +359,17 @@ Basker<Matrix,Vector>::loadA_impl(EPhase current_phase)
   #ifdef HAVE_AMESOS2_TIMERS
     Teuchos::TimeMonitor mtxRedistTimer( this->timers_.mtxRedistTime_ );
   #endif
-
+    
     if ( is_contiguous_ == true ) {
-      Util::get_ccs_helper<
-        MatrixAdapter<Matrix>,slu_type,local_ordinal_type,local_ordinal_type>
-        ::do_get(this->matrixA_.ptr(), nzvals_(), rowind_(), colptr_(),
+      Util::get_ccs_helper_kokkos_view<
+        MatrixAdapter<Matrix>,host_value_type_array,host_ordinal_type_array,host_ordinal_type_array>
+        ::do_get(this->matrixA_.ptr(), host_nzvals_view_, host_rows_view_, host_col_ptr_view_,
             nnz_ret, ROOTED, ARBITRARY, this->rowIndexBase_);
     }
     else {
-      Util::get_ccs_helper<
-        MatrixAdapter<Matrix>,slu_type,local_ordinal_type,local_ordinal_type>
-        ::do_get(this->matrixA_.ptr(), nzvals_(), rowind_(), colptr_(),
+      Util::get_ccs_helper_kokkos_view<
+        MatrixAdapter<Matrix>,host_value_type_array,host_ordinal_type_array,host_ordinal_type_array>
+        ::do_get(this->matrixA_.ptr(), host_nzvals_view_, host_rows_view_, host_col_ptr_view_,
             nnz_ret, CONTIGUOUS_AND_ROOTED, ARBITRARY, this->rowIndexBase_);
     }
   }

@@ -41,24 +41,12 @@
 //
 // @HEADER
 
-#include "Amesos2_Basker_decl.hpp"
+#ifndef AMESOS2_CUSOLVER_HPP
+#define AMESOS2_CUSOLVER_HPP
 
-#ifdef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
-
-#include "Amesos2_Basker_def.hpp"
-#include "Amesos2_ExplicitInstantiationHelpers.hpp"
-
-namespace Amesos2 {
-
-#ifdef HAVE_AMESOS2_EPETRA
-  AMESOS2_SOLVER_EPETRA_INST(Basker);
+#include "Amesos2_cuSOLVER_decl.hpp"
+#ifndef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+#  include "Amesos2_cuSOLVER_def.hpp"
 #endif
 
-  #define AMESOS2_TPETRA_IMPL_SOLVER_NAME Basker
-  #include "Amesos2_Tpetra_Impl.hpp"
-
-  #define AMESOS2_KOKKOS_IMPL_SOLVER_NAME Basker
-  #include "Amesos2_Kokkos_Impl.hpp"
-}
-
-#endif  // HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+#endif  // AMESOS2_CUSOLVER_HPP

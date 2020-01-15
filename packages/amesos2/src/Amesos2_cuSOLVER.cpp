@@ -41,24 +41,27 @@
 //
 // @HEADER
 
-#include "Amesos2_Basker_decl.hpp"
+#include "Amesos2_config.h"
+#include "Kokkos_Core.hpp"
 
+#ifdef KOKKOS_ENABLE_CUDA
 #ifdef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
 
-#include "Amesos2_Basker_def.hpp"
+#include "Amesos2_cuSOLVER_decl.hpp"
+#include "Amesos2_cuSOLVER_def.hpp"
 #include "Amesos2_ExplicitInstantiationHelpers.hpp"
 
 namespace Amesos2 {
-
 #ifdef HAVE_AMESOS2_EPETRA
-  AMESOS2_SOLVER_EPETRA_INST(Basker);
+  AMESOS2_SOLVER_EPETRA_INST(cuSOLVER);
 #endif
 
-  #define AMESOS2_TPETRA_IMPL_SOLVER_NAME Basker
+  #define AMESOS2_TPETRA_IMPL_SOLVER_NAME cuSOLVER
   #include "Amesos2_Tpetra_Impl.hpp"
 
-  #define AMESOS2_KOKKOS_IMPL_SOLVER_NAME Basker
+  #define AMESOS2_KOKKOS_IMPL_SOLVER_NAME cuSOLVER
   #include "Amesos2_Kokkos_Impl.hpp"
 }
 
 #endif  // HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+#endif  // KOKKOS_ENABLE_CUDA

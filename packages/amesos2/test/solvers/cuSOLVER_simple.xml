@@ -1,0 +1,18 @@
+<ParameterList name="test_params">
+  <ParameterList name="nd6k.mtx">
+    <Parameter name="complex" type="bool" value="false"/>
+    <ParameterList name="cuSOLVER">
+      <ParameterList name="kokkos">
+        <ParameterList name="simple">
+          <Parameter name="Scalar" type="string" value="double"/>
+          <Parameter name="LocalOrdinal" type="string" value="int"/>
+          <Parameter name="Node" type="string" value="serial"/>
+        </ParameterList>
+      </ParameterList>
+      <ParameterList name="solver_params">
+      </ParameterList>
+    </ParameterList>
+    <ParameterList name="all_solver_params">
+    </ParameterList>
+  </ParameterList>
+</ParameterList>

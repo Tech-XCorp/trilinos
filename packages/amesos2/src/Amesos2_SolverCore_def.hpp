@@ -104,9 +104,17 @@ SolverCore<ConcreteSolver,Matrix,Vector>::preOrdering()
 
   loadA(PREORDERING);
 
+  // Some temporary clocks to track solve times
+  auto startTime = std::chrono::system_clock::now();
+
   static_cast<solver_type*>(this)->preOrdering_impl();
   ++status_.numPreOrder_;
   status_.last_phase_ = PREORDERING;
+
+  // Some temporary clocks to track solve times
+  auto endTime = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+  printf("Ran preOrdering_impl with time %d ms\n", (int) ms);
 
   return *this;
 }
@@ -127,9 +135,17 @@ SolverCore<ConcreteSolver,Matrix,Vector>::symbolicFactorization()
     loadA(SYMBFACT);
   }
 
+  // Some temporary clocks to track solve times
+  auto startTime = std::chrono::system_clock::now();
+
   static_cast<solver_type*>(this)->symbolicFactorization_impl();
   ++status_.numSymbolicFact_;
   status_.last_phase_ = SYMBFACT;
+
+  // Some temporary clocks to track solve times
+  auto endTime = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+  printf("Ran symbolic with time %d ms\n", (int) ms);
 
   return *this;
 }
@@ -150,9 +166,17 @@ SolverCore<ConcreteSolver,Matrix,Vector>::numericFactorization()
     loadA(NUMFACT);
   }
 
+  // Some temporary clocks to track solve times
+  auto startTime = std::chrono::system_clock::now();
+
   static_cast<solver_type*>(this)->numericFactorization_impl();
   ++status_.numNumericFact_;
   status_.last_phase_ = NUMFACT;
+
+  // Some temporary clocks to track solve times
+  auto endTime = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+  printf("Ran numeric with time %d ms\n", (int) ms);
 
   return *this;
 }
@@ -162,7 +186,15 @@ template <template <class,class> class ConcreteSolver, class Matrix, class Vecto
 void
 SolverCore<ConcreteSolver,Matrix,Vector>::solve()
 {
+  // Some temporary clocks to track solve times
+  auto startTime = std::chrono::system_clock::now();
+
   solve(multiVecX_.ptr(), multiVecB_.ptr());
+
+  // Some temporary clocks to track solve times
+  auto endTime = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+  printf("Ran solve with time %d ms\n", (int) ms);
 }
 
 template <template <class,class> class ConcreteSolver, class Matrix, class Vector >
@@ -307,7 +339,6 @@ SolverCore<ConcreteSolver,Matrix,Vector>::setParameters(
 
   return *this;
 }
-
 
 template <template <class,class> class ConcreteSolver, class Matrix, class Vector >
 Teuchos::RCP<const Teuchos::ParameterList>
@@ -516,7 +547,15 @@ template <template <class,class> class ConcreteSolver, class Matrix, class Vecto
 void
 SolverCore<ConcreteSolver,Matrix,Vector>::loadA(EPhase current_phase)
 {
+  // Some temporary clocks to track solve times
+  auto startTime = std::chrono::system_clock::now();
+
   matrix_loaded_ = static_cast<solver_type*>(this)->loadA_impl(current_phase);
+
+  // Some temporary clocks to track solve times
+  auto endTime = std::chrono::system_clock::now();
+  auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+  printf("Ran loadA with time %d ms\n", (int) ms);
 }
 
 

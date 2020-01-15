@@ -416,6 +416,7 @@ test_mat_with_solver (const string& mm_file,
           *fos << "    Testing Kokkos objects" << endl;
         }
         const ParameterList tpetra_runs = Teuchos::getValue<ParameterList> (test_params.entry (object_it));
+
         bool kokkosSuccess = test_kokkos(mm_file, solver_name, tpetra_runs, solve_params);
 
         if (verbosity > 1) {
@@ -509,6 +510,8 @@ struct solution_checker<Kokkos::View<Scalar**, Kokkos::LayoutLeft, ExecutionSpac
     for(int i = 0; i < static_cast<int>(host_given_solution.extent(0)); ++i) {
       for(int j = 0; j < static_cast<int>(host_given_solution.extent(1)); ++j) {
         Scalar delta = host_given_solution(i,j) - host_true_solution(i,j);
+        
+        printf("Compare: %.4f - %.4f    Delta: %.4f\n", (float) host_given_solution(i,j), (float) host_true_solution(i,j), (float) delta);
         if(delta > epsilon || delta < -epsilon) {
           return false;
         }
@@ -607,7 +610,8 @@ do_solve_routine(const string& solver_name,
                  const RCP<Vector> x2,
                  const RCP<Vector> b2,
                  const size_t num_vecs,
-                 ParameterList solve_params)
+                 ParameterList solve_params,
+                 const string& mm_file)
 {
   using std::endl;
   typedef typename ArrayView<const RCP<Vector> >::iterator rhs_it_t;
@@ -623,6 +627,12 @@ do_solve_routine(const string& solver_name,
     solver = Amesos2::create<Matrix,Vector> (solver_name, A1);
     //JDB: We should really use the parameters the user gives
     solver->setParameters( rcpFromRef(solve_params) );
+    
+    // MDM-TODO this may be temporary - used for making some debug code for
+    // CHOLMOD and cuSolver which loads and solves independent of the Amesos2
+    // steps.
+    solver->setMatrixFilePath( "../matrices/" + mm_file );
+
     switch (phase) {
     case Amesos2::CLEAN:
       break;
@@ -671,6 +681,11 @@ do_solve_routine(const string& solver_name,
 
     solver->setParameters( rcpFromRef(solve_params) );
 
+    // MDM-TODO this may be temporary - used for making some debug code for
+    // CHOLMOD and cuSolver which loads and solves independent of the Amesos2
+    // steps.
+    solver->setMatrixFilePath( "../matrices/" + mm_file );
+  
     // Do first solve according to our current style
     switch( style ){
     case SOLVE_VERBOSE:
@@ -714,8 +729,6 @@ do_solve_routine(const string& solver_name,
     }
 
     if( refactor ){
-
-
       // Keep the symbolic factorization from A1
       solver->setA(A2, Amesos2::SYMBFACT);
 
@@ -847,7 +860,7 @@ bool do_epetra_test(const string& mm_file,
     A2->ExtractMyRowCopy(0, l_fst_row_nnz, l_fst_row_nnz,
                          values.getRawPtr(), indices.getRawPtr());
     for( int i = 0; i < l_fst_row_nnz; ++i ){
-      values[i] = values[i] * values[i];
+      values[i] = values[i] * 0.5;
     }
     A2->ReplaceMyValues(0, l_fst_row_nnz, values.getRawPtr(), indices.getRawPtr());
 
@@ -856,7 +869,7 @@ bool do_epetra_test(const string& mm_file,
 
   const bool result = do_solve_routine<MAT,MV>(solver_name, A_rcp, A2,
                                                Xhat, x(), b(), x2, b2,
-                                               numRHS, solve_params);
+                                               numRHS, solve_params, mm_file);
 
   if (!result) {
     if( verbosity > 1 ){
@@ -1029,7 +1042,7 @@ bool do_tpetra_test_with_types(const string& mm_file,
     Array<Scalar> values(l_fst_row_nnz);
     A2->getLocalRowCopy(0, indices, values, l_fst_row_nnz);
     for( size_t i = 0; i < l_fst_row_nnz; ++i ){
-      values[i] = values[i] * values[i];
+      values[i] = values[i] * 0.5; //  values[i];
     }
     A2->resumeFill ();
     A2->replaceLocalValues (0, indices, values);
@@ -1040,7 +1053,7 @@ bool do_tpetra_test_with_types(const string& mm_file,
 
   return do_solve_routine<MAT,MV>(solver_name, A, A2,
                                   Xhat, x(), b(), x2, b2,
-                                  numRHS, solve_params);
+                                  numRHS, solve_params, mm_file);
 }
 
 
@@ -1516,6 +1529,8 @@ bool do_kokkos_test_with_types(const string& mm_file,
     tpetraM->apply(*xMV[i], *bMV[i], trans);
   }
 
+  // MDM - Odd to have Views in RCPs but this allows us to reuse the current
+  // do_solve_routine API. So will need to discuss how we want to design it.
   Array<RCP<view_t>> x(numRHS);
   Array<RCP<view_t>> b(numRHS);
   for( size_t i = 0; i < numRHS; ++i ){
@@ -1542,6 +1557,7 @@ bool do_kokkos_test_with_types(const string& mm_file,
       xMV = rcp(new MV(dmnmap,numVecs));
       bMV = rcp(new MV(rngmap,numVecs));
     }
+
     xMV->randomize();
     tpetraM->apply(*xMV, *bMV, trans);
 
@@ -1552,9 +1568,10 @@ bool do_kokkos_test_with_types(const string& mm_file,
   RCP<tpetra_crsmatrix_t> temp_tpetraM =
     Tpetra::MatrixMarket::Reader<tpetra_crsmatrix_t>::readSparseFile (path, comm);
 
+
   RCP<MAT> A2;
   RCP<view_t> Xhat, x2, b2;
-
+ 
   if (transpose) {
     Xhat = rcp(new view_t("Xhat", num_rows, numVecs));
     if (refactor) {
@@ -1583,11 +1600,12 @@ bool do_kokkos_test_with_types(const string& mm_file,
     Array<Scalar> values(l_fst_row_nnz);
     tpetraM2->getLocalRowCopy(0, indices, values, l_fst_row_nnz);
     for( size_t i = 0; i < l_fst_row_nnz; ++i ){
-      values[i] = values[i] * values[i];
+      values[i] = values[i] * 0.5;
     }
     tpetraM2->resumeFill ();
     tpetraM2->replaceLocalValues (0, indices, values);
     tpetraM2->fillComplete (tpetraM->getDomainMap (), tpetraM->getRangeMap ());
+
 
     // Make a deep copy of the entire CrsMatrix.
     // originalNode can be null; only needed for type deduction.
@@ -1633,7 +1651,7 @@ bool do_kokkos_test_with_types(const string& mm_file,
 
   return do_solve_routine<MAT,view_t>(solver_name, A, A2,
                                   Xhat, x, b, x2, b2,
-                                  numRHS, solve_params);
+                                  numRHS, solve_params, mm_file);
 }
 
 bool test_kokkos(const string& mm_file,
