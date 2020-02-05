@@ -121,7 +121,7 @@ IF (${PACKAGE_NAME}_ENABLE_ShyLU_NodeTacho)
 
   TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopyTachoFiles
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
-    SOURCE_FILES tacho_test.xml
+    SOURCE_FILES tacho_test.xml tacho_simple.xml
     EXEDEPS Solver_Test
     )
 
@@ -136,11 +136,9 @@ IF (${PACKAGE_NAME}_ENABLE_ShyLU_NodeTacho)
 
 ENDIF()
 
-ENDIF()
-
 ##### cuSOLVER Tests #####
 
-IF (Kokkos_ENABLE_Cuda)
+IF (${PACKAGE_NAME}_ENABLE_CUSOLVER)
 
   TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopycuSOLVERFiles
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}

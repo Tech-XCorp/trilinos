@@ -62,6 +62,8 @@
 #include <Teuchos_TimeMonitor.hpp>
 #include <Teuchos_Comm.hpp>
 
+#include "KokkosBlas.hpp"
+
 #include <Tpetra_Core.hpp>
 #include <Tpetra_Map.hpp>
 #include <Tpetra_MultiVector.hpp>
@@ -69,8 +71,6 @@
 #include <MatrixMarket_Tpetra.hpp> // For reading matrix-market files
 
 #include "Amesos2.hpp"          // includes everything from Amesos2
-
-#include "KokkosBlas.hpp"
 
 // #ifdef HAVE_TPETRA_INST_INT_INT
 #if defined(HAVE_AMESOS2_EPETRA) && defined(HAVE_AMESOS2_EPETRAEXT)
@@ -507,7 +507,6 @@ struct solution_checker<Kokkos::View<Scalar**, Kokkos::LayoutLeft, ExecutionSpac
       gs_norms[k] = KokkosBlas::nrm2_squared(
         Kokkos::subview(*given_solution, Kokkos::ALL, k));
     }
-
     return Teuchos::compareFloatingArrays(ts_norms, "true_solution",
                                           gs_norms, "given_solution",
                                           Teuchos::as<mag_t> (0.005), *compare_fos);

@@ -61,6 +61,18 @@ TachoSolver<Matrix,Vector>::TachoSolver(
   Teuchos::RCP<const Vector> B )
   : SolverCore<Amesos2::TachoSolver,Matrix,Vector>(A, X, B)
 {
+
+  int sym = 3;
+  int posdef = 1;
+  int small_problem_thres = 1024;
+
+// temp try some values
+data_.solver.setMaxNumberOfSuperblocks(32);
+data_.solver.setSmallProblemThresholdsize(small_problem_thres);
+data_.solver.setBlocksize(64);
+data_.solver.setPanelsize(32);
+data_.solver.setMatrixType(sym, posdef);
+
 }
 
 

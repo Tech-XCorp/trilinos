@@ -103,7 +103,7 @@ namespace Amesos2 {
       CUSOLVER::cusparseSetMatType(descr,CUSOLVER::CUSPARSE_MATRIX_TYPE_GENERAL);
 
       csp = CUSOLVER::cusparseSetMatIndexBase(descr,CUSOLVER::CUSPARSE_INDEX_BASE_ZERO);
-      TEUCHOS_TEST_FOR_EXCEPTION(csp != CUSOLVER::CUSOLVER_STATUS_SUCCESS, std::runtime_error,
+      TEUCHOS_TEST_FOR_EXCEPTION(csp != CUSOLVER::CUSPARSE_STATUS_SUCCESS, std::runtime_error,
         "cuSolver failed to set description.");
 
 #ifdef AMESOS2_CUSOLVER_HOST
@@ -132,8 +132,23 @@ namespace Amesos2 {
 
 #ifdef HAVE_TEUCHOS_COMPLEX
   template <>
-  struct FunctionMap<cuSOLVER,CUSOLVER::complex>
+  struct FunctionMap<cuSOLVER,Kokkos::complex<double>>
   {
+    static void cusolver_solve(
+                 int size,
+                 int nnz,
+                 const Kokkos::complex<double> *values,
+                 const int *rowPtr,
+                 const int *colIdx,
+                 const Kokkos::complex<double> *b,
+                 double tol,
+                 int reorder,
+                 Kokkos::complex<double> *x,
+                 int *singularity)
+    {
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+        "cuSOLVER complex not set up yet.");
+    }
   };
 #endif
 

@@ -136,7 +136,7 @@
 #include "Amesos2_Cholmod.hpp"
 #endif
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HAVE_AMESOS2_CUSOLVER
 #include "Amesos2_cuSOLVER.hpp"
 #endif
 
@@ -663,7 +663,7 @@ struct throw_no_matrix_support_exception {
       return handle_solver_matrix_and_type_support<Cholmod,Matrix,Vector>::apply(A, X, B);
 #endif
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HAVE_AMESOS2_CUSOLVER
     if(solverName == "amesos2_cusolver" || solverName == "cusolver")
       return handle_solver_matrix_and_type_support<cuSOLVER,Matrix,Vector>::apply(A, X, B);
 #endif

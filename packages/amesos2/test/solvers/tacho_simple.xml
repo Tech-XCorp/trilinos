@@ -1,5 +1,5 @@
 <ParameterList name="test_params">
-  <ParameterList name="nd6k.mtx">
+  <ParameterList name="A_20x20x20_elasticity.mtx">
     <Parameter name="complex" type="bool" value="false"/>
     <ParameterList name="Tacho">
       <ParameterList name="kokkos">

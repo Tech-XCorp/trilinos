@@ -166,7 +166,14 @@ namespace Amesos2 {
   template <>
   struct TypeMap<cuSOLVER,std::complex<double> >
   {
-    typedef CUSOLVER::complex type;
+    typedef Kokkos::complex<double> type;
+    typedef double magnitude_type;
+  };
+
+  template <>
+  struct TypeMap<cuSOLVER,Kokkos::complex<double> >
+  {
+    typedef Kokkos::complex<double> type;
     typedef double magnitude_type;
   };
 

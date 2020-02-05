@@ -106,7 +106,7 @@ public:
 #else
   #ifdef KOKKOS_ENABLE_CUDA
     // special case - use UVM Off not UVM on to test the current targets
-    typedef Kokkos::CudaUVMOff                               DeviceSpaceType;
+    typedef Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace>  DeviceSpaceType;
   #else
     typedef Kokkos::DefaultExecutionSpace                    DeviceSpaceType;
   #endif
@@ -258,21 +258,13 @@ private:
   device_ordinal_type_array device_cols_view_;
 };                              // End class cuSOLVER
 
-
-/* Specialize solver_traits struct for cuSOLVER
- *
- * Based on the cuSOLVER documentation, the support for
- * single-precision complex numbers is unclear.  Much of the
- * discussion of complex types only makes explicit mention of 'double'
- * types.  So, be pessimistic for now and don't declare
- * single-precision complex support
- */
 template <>
 struct solver_traits<cuSOLVER> {
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list4<float,
+  typedef Meta::make_list5<float,
 			   double,
                            std::complex<double>,
+                           Kokkos::complex<double>,
                            CUSOLVER::complex> supported_scalars;
 #else
   typedef Meta::make_list2<float, double> supported_scalars;

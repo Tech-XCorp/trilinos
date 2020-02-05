@@ -44,7 +44,7 @@
 #include "Amesos2_config.h"
 #include "Kokkos_Core.hpp"
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HAVE_AMESOS2_CUSOLVER
 #ifdef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
 
 #include "Amesos2_cuSOLVER_decl.hpp"
@@ -64,4 +64,4 @@ namespace Amesos2 {
 }
 
 #endif  // HAVE_AMESOS2_EXPLICIT_INSTANTIATION
-#endif  // KOKKOS_ENABLE_CUDA
+#endif  // HAVE_AMESOS2_CUSOLVER

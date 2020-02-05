@@ -24,7 +24,7 @@ int main(int argc, char*argv[])
 {
   Tpetra::ScopeGuard tpetraScope(&argc,&argv);
 
-#ifdef KOKKOS_ENABLE_CUDA
+#ifdef HAVE_AMESOS2_CUSOLVER
     //initialize our test cases
     const int size = 3; // this->globalNumRows_
     const int nnz = 6; // this->globalNumNonZeros_
@@ -40,7 +40,7 @@ int main(int argc, char*argv[])
     cusolverStatus_t cso;
     cusolverSpHandle_t solver_handle ;
     cso = cusolverSpCreate(&solver_handle) ;
-    assert(cso == CUSOLVER::CUSOLVER_STATUS_SUCCESS);
+    assert(cso == CUSOLVER_STATUS_SUCCESS);
     cusparseStatus_t csp;
     cusparseMatDescr_t descr = 0;
 

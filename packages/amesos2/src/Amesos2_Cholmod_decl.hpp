@@ -283,9 +283,10 @@ private:
 template <>
 struct solver_traits<Cholmod> {
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list4<float,
+  typedef Meta::make_list5<float,
 			   double,
                            std::complex<double>,
+                           Kokkos::complex<double>,
                            CHOL::complex> supported_scalars;
 #else
   typedef Meta::make_list2<float, double> supported_scalars;

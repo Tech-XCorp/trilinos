@@ -122,7 +122,7 @@ cuSOLVER<Matrix,Vector>::numericFactorization_impl()
   int status = 0;
   if ( this->root_ ) {
     if(do_optimization()) {
-     this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
+      this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
     }
     // MDM-TODO numeric
   }
@@ -157,6 +157,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     Teuchos::TimeMonitor mvConvTimer(this->timers_.vecConvTime_);
     Teuchos::TimeMonitor redistTimer(this->timers_.vecRedistTime_);
 #endif
+
     Util::get_1d_copy_helper_kokkos_view<MultiVecAdapter<Vector>,
                              device_solve_array_t>::do_get(B, this->bValues_,
                                                as<size_t>(ld_rhs),
@@ -174,34 +175,103 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     Teuchos::TimeMonitor solveTimer(this->timers_.solveTime_);
 #endif
 
-// ########
-    //initialize our test cases
     const int size = this->globalNumRows_;
     const int nnz = this->globalNumNonZeros_;
     int sing = 0;
 
-
-    const double * values = device_nzvals_view_.data();
+    const cusolver_type * values = device_nzvals_view_.data();
     const int * colIdx = device_cols_view_.data();
     const int * rowPtr = device_row_ptr_view_.data();
 
+//#define USE_TEST
+#ifdef USE_TEST
+
+
+    static void cusolver_solve(
+                 int size,
+                 int nnz,
+                 const double *values,
+                 const int *rowPtr,
+                 const int *colIdx,
+                 const double *b,
+                 double tol,
+                 int reorder,
+                 double *x,
+                 int *singularity)
+
+    for(size_t n = 0; n < nrhs; ++n) {
+      const cusolver_type * b = &this->bValues_.data()[n*size];
+      cusolver_type * x = &this->xValues_.data()[n*size];
+//      function_map::cusolver_solve(size, nnz, values, rowPtr, colIdx, b, 0.0, 0, x, &sing);
+
+    cusolverDnHandle_t handle,
+    int n = nnz;
+    const double *Acopy,
+    int lda,
+{
+    cusolverDnHandle_t handle;
+
+    int
+    int bufferSize = 0;
+    int *info = NULL;
+    double *buffer = NULL;
+    double *A = NULL;
+    int *ipiv = NULL; // pivoting sequence
+    int h_info = 0;
+    double start, stop;
+    double time_solve;
+
+    checkCudaErrors(cusolverDnDgetrf_bufferSize(handle, n, n, (double*)Acopy, lda, &bufferSize));
+
+    checkCudaErrors(cudaMalloc(&info, sizeof(int)));
+    checkCudaErrors(cudaMalloc(&buffer, sizeof(double)*bufferSize));
+    checkCudaErrors(cudaMalloc(&A, sizeof(double)*lda*n));
+    checkCudaErrors(cudaMalloc(&ipiv, sizeof(int)*n));
+
+
+    // prepare a copy of A because getrf will overwrite A with L
+    checkCudaErrors(cudaMemcpy(A, Acopy, sizeof(double)*lda*n, cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cudaMemset(info, 0, sizeof(int)));
+
+    start = second();
+    start = second();
+
+    checkCudaErrors(cusolverDnDgetrf(handle, n, n, A, lda, buffer, ipiv, info));
+    checkCudaErrors(cudaMemcpy(&h_info, info, sizeof(int), cudaMemcpyDeviceToHost));
+
+    if ( 0 != h_info ){
+        fprintf(stderr, "Error: LU factorization failed\n");
+    }
+
+    checkCudaErrors(cudaMemcpy(x, b, sizeof(double)*n, cudaMemcpyDeviceToDevice));
+    checkCudaErrors(cusolverDnDgetrs(handle, CUBLAS_OP_N, n, 1, A, lda, ipiv, x, n, info));
+    checkCudaErrors(cudaDeviceSynchronize());
+    stop = second();
+
+    time_solve = stop - start;
+    fprintf (stdout, "timing: LU = %10.6f sec\n", time_solve);
+
+    if (info  ) { checkCudaErrors(cudaFree(info  )); }
+    if (buffer) { checkCudaErrors(cudaFree(buffer)); }
+    if (A     ) { checkCudaErrors(cudaFree(A)); }
+    if (ipiv  ) { checkCudaErrors(cudaFree(ipiv));}
+
+#else
     // for now just get a solution which works for multiple vectors
     // then later we need to see how to batch solver
     for(size_t n = 0; n < nrhs; ++n) {
-      const scalar_type * b = &this->bValues_.data()[n*size];
-      scalar_type * x = &this->xValues_.data()[n*size];
-
+      const cusolver_type * b = &this->bValues_.data()[n*size];
+      cusolver_type * x = &this->xValues_.data()[n*size];
       function_map::cusolver_solve(size, nnz, values, rowPtr, colIdx, b, 0.0, 0, x, &sing);
     }
-
-// #######
+#endif
   }
 
   /* All processes should have the same error code */
   Teuchos::broadcast(*(this->getComm()), 0, &ierr);
 
   TEUCHOS_TEST_FOR_EXCEPTION( ierr != 0, std::runtime_error,
-    "tacho_solve has error code: " << ierr );
+    "cusolver has error code: " << ierr );
 
   /* Update X's global values */
   {
@@ -314,6 +384,7 @@ cuSOLVER<Matrix,Vector>::loadA_impl(EPhase current_phase)
       TEUCHOS_TEST_FOR_EXCEPTION( this->rowIndexBase_ != this->columnIndexBase_,
                           std::runtime_error,
                           "Row and column maps have different indexbase ");
+
 
       Util::get_crs_helper_kokkos_view<MatrixAdapter<Matrix>,
         device_value_type_array, device_ordinal_type_array, device_size_type_array>::do_get(

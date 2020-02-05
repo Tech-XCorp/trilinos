@@ -151,9 +151,11 @@ namespace Amesos2 {
     }
 #endif
 
+#ifdef HAVE_AMESOS2_CUSOLVER
     if (solverName == "amesos2_cusolver" || solverName == "cusolver") {
       return true;
     }
+#endif
 
     // Otherwise, the solver is not available
     return false;

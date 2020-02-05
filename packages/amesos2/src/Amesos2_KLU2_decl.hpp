@@ -277,8 +277,10 @@ private:
 template <>
 struct solver_traits<KLU2> {
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list4<float,
+  typedef Meta::make_list6<float,
                            double,
+                           Kokkos::complex<float>,
+                           Kokkos::complex<double>,
                            std::complex<float>,
                            std::complex<double> > supported_scalars;
 #else
