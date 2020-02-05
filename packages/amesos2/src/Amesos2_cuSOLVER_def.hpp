@@ -185,76 +185,49 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
 
 //#define USE_TEST
 #ifdef USE_TEST
+    CUSOLVER::cusolverSpHandle_t _handle;
+    CUSOLVER::csrcholInfo_t _chol_info;
+    CUSOLVER::cusparseMatDescr_t _desc;
+    int _status;
 
+    _status = CUSOLVER::cusolverSpCreate(&_handle);
+    CUSOLVER::checkStatus("cusolverSpCreate");
 
-    static void cusolver_solve(
-                 int size,
-                 int nnz,
-                 const double *values,
-                 const int *rowPtr,
-                 const int *colIdx,
-                 const double *b,
-                 double tol,
-                 int reorder,
-                 double *x,
-                 int *singularity)
+    _status = CUSOLVER::cusolverSpCreateCsrcholInfo(&_chol_info);
+    CUSOLVER::checkStatus("cusolverSpCreateCsrcholInfo");
 
-    for(size_t n = 0; n < nrhs; ++n) {
-      const cusolver_type * b = &this->bValues_.data()[n*size];
-      cusolver_type * x = &this->xValues_.data()[n*size];
-//      function_map::cusolver_solve(size, nnz, values, rowPtr, colIdx, b, 0.0, 0, x, &sing);
+    _status = CUSOLVER::cusparseCreateMatDescr(&_desc); CUSOLVER::checkStatus("cusparseCreateMatDescr");
 
-    cusolverDnHandle_t handle,
-    int n = nnz;
-    const double *Acopy,
-    int lda,
-{
-    cusolverDnHandle_t handle;
+   // symbolic
+   _status = CUSOLVER::cusolverSpXcsrcholAnalysis(_handle, size, nnz, _desc, rowPtr, colIdx, _chol_info);
+   checkStatus("cusolverSpXcsrcholAnalysis");
 
-    int
-    int bufferSize = 0;
-    int *info = NULL;
-    double *buffer = NULL;
-    double *A = NULL;
-    int *ipiv = NULL; // pivoting sequence
-    int h_info = 0;
-    double start, stop;
-    double time_solve;
+   // numeric
+   size_t internalDataInBytes, workspaceInBytes;
+   _status = CUSOLVER::cusolverSpDcsrcholBufferInfo(_handle, 
+                                              size, nnz, _desc,
+                                              values, rowPtr, colIdx),
+                                              _chol_info,
+                                              &internalDataInBytes,
+                                              &workspaceInBytes);
 
-    checkCudaErrors(cusolverDnDgetrf_bufferSize(handle, n, n, (double*)Acopy, lda, &bufferSize));
+  const size_t bufsize = workspaceInBytes / sizeof(cusolver_type);
+  if(bufsize > _buf.extent(0)) {
+    buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
+  }
 
-    checkCudaErrors(cudaMalloc(&info, sizeof(int)));
-    checkCudaErrors(cudaMalloc(&buffer, sizeof(double)*bufferSize));
-    checkCudaErrors(cudaMalloc(&A, sizeof(double)*lda*n));
-    checkCudaErrors(cudaMalloc(&ipiv, sizeof(int)*n));
+  for(size_t i = 0; i <nrhs; ++i) {
+    const cusolver_type * b = &this->bValues_.data()[n*size];
+    cusolver_type * x = &this->xValues_.data()[n*size];
 
-
-    // prepare a copy of A because getrf will overwrite A with L
-    checkCudaErrors(cudaMemcpy(A, Acopy, sizeof(double)*lda*n, cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cudaMemset(info, 0, sizeof(int)));
-
-    start = second();
-    start = second();
-
-    checkCudaErrors(cusolverDnDgetrf(handle, n, n, A, lda, buffer, ipiv, info));
-    checkCudaErrors(cudaMemcpy(&h_info, info, sizeof(int), cudaMemcpyDeviceToHost));
-
-    if ( 0 != h_info ){
-        fprintf(stderr, "Error: LU factorization failed\n");
-    }
-
-    checkCudaErrors(cudaMemcpy(x, b, sizeof(double)*n, cudaMemcpyDeviceToDevice));
-    checkCudaErrors(cusolverDnDgetrs(handle, CUBLAS_OP_N, n, 1, A, lda, ipiv, x, n, info));
-    checkCudaErrors(cudaDeviceSynchronize());
-    stop = second();
-
-    time_solve = stop - start;
-    fprintf (stdout, "timing: LU = %10.6f sec\n", time_solve);
-
-    if (info  ) { checkCudaErrors(cudaFree(info  )); }
-    if (buffer) { checkCudaErrors(cudaFree(buffer)); }
-    if (A     ) { checkCudaErrors(cudaFree(A)); }
-    if (ipiv  ) { checkCudaErrors(cudaFree(ipiv));}
+    _status = cusolverSpDcsrcholSolve(_handle, 
+                                           _m, 
+                                           b, x,
+                                           _chol_info,
+                                           buffer_.data());
+    checkStatus("cusolverSpDcsrcholSolve");
+printf("Did run rhs: %d\n", i);
+  }
 
 #else
     // for now just get a solution which works for multiple vectors
