@@ -1304,7 +1304,7 @@ public:
     Kokkos::View<mj_scalar_t *, device_t> & mj_current_dim_coords,
     Kokkos::View<mj_scalar_t *, device_t> & current_concurrent_cut_coordinate,
     Kokkos::View<mj_scalar_t *, device_t> & used_local_cut_line_weight_to_left,
-    Kokkos::View<mj_lno_t *, device_t> & out_part_xadj);
+    Kokkos::View<mj_lno_t *, device_t> & out_part_xadj, int rd, int run_index);
 
   /*! \brief Function that calculates the new coordinates for the cut lines.
    * Function is called inside the parallel region. Write the new cut
@@ -1429,7 +1429,7 @@ public:
     mj_part_t current_num_parts,
     mj_part_t output_part_begin_index,
     RCP<mj_partBoxVector_t> &output_part_boxes,
-    bool is_data_ever_migrated);
+    bool is_data_ever_migrated, int rd, int run_index);
 };
 
 /*! \brief Multi Jagged coordinate partitioning algorithm default constructor.
@@ -4672,7 +4672,8 @@ mj_create_new_partitions(
   Kokkos::View<mj_scalar_t *, device_t> & mj_current_dim_coords,
   Kokkos::View<mj_scalar_t *, device_t> & current_concurrent_cut_coordinate,
   Kokkos::View<mj_scalar_t *, device_t> & used_local_cut_line_weight_to_left,
-  Kokkos::View<mj_lno_t *, device_t> & out_part_xadj)
+  Kokkos::View<mj_lno_t *, device_t> & out_part_xadj,
+  int rd, int run_index)
 {
   // Get locals for cuda
   auto local_thread_part_weight_work = this->thread_part_weight_work;
@@ -4960,6 +4961,42 @@ mj_create_new_partitions(
     local_new_coordinate_permutations(coordinate_begin_index + idx) = i;
   });
 
+  // sort them
+  for(int n = 0; n < num_parts; ++n) {
+    auto begin = (n == 0) ? 0 : local_point_counts(n-1);
+    auto end = local_point_counts(n);
+    std::vector<mj_lno_t> sort_vector(end-begin);
+    for(int q = begin; q < end; ++q) {
+      sort_vector[q-begin] = local_new_coordinate_permutations(coordinate_begin_index+q);
+    }
+    std::sort(sort_vector.begin(), sort_vector.end());
+    for(int q = begin; q < end; ++q) {
+      local_new_coordinate_permutations(coordinate_begin_index+q) = sort_vector[q-begin];
+    }   
+  }
+
+/*
+#ifdef DEBUG_PRINTING
+      if(rd < 2)
+      {
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("new_coordinate_permutations7Check3_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(rd) + "_"  + std::to_string(cycle[rd]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) new_coordinate_permutations.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) new_coordinate_permutations[n]);
+        }
+        fclose(file);
+        ++cycle[rd];
+      }
+#endif
+*/
 #else
 
 #ifdef KOKKOS_HAVE_OPENMP
@@ -6527,6 +6564,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       ArrayRCP<mj_gno_t> received_gnos(num_incoming_gnos);
       auto host_current_mj_gnos =
         Kokkos::create_mirror_view(Kokkos::HostSpace(), this->current_mj_gnos);
+      Kokkos::fence();
       Kokkos::deep_copy(host_current_mj_gnos, this->current_mj_gnos);
       ArrayView<mj_gno_t> sent_gnos(
         host_current_mj_gnos.data(), this->num_local_coords);
@@ -6538,6 +6576,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         Kokkos::HostSpace(), this->current_mj_gnos);
       memcpy(host_current_mj_gnos.data(),
         received_gnos.getRawPtr(), num_incoming_gnos * sizeof(mj_gno_t));
+      Kokkos::fence();
       Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
     }
     
@@ -6563,6 +6602,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
 #endif
 
+printf("Mig owners with incoming size: %d\n", (int) num_incoming_gnos);
       ArrayView<int> sent_owners(
         owner_of_coordinate.data(), this->num_local_coords);
       ArrayRCP<int> received_owners(num_incoming_gnos);
@@ -6595,6 +6635,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       Kokkos::HostSpace(), dst_coordinates);
     auto host_src_coordinates = Kokkos::create_mirror_view(
       Kokkos::HostSpace(), this->mj_coordinates);
+      Kokkos::fence();
     Kokkos::deep_copy(host_src_coordinates, this->mj_coordinates);
     for(int i = 0; i < this->coord_dim; ++i) {
       Kokkos::View<mj_scalar_t*, Kokkos::Serial> sub_host_src_coordinates;
@@ -6615,6 +6656,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       memcpy(sub_host_dst_coordinates.data(),
         received_coord.getRawPtr(), num_incoming_gnos * sizeof(mj_scalar_t));
     }
+      Kokkos::fence();
     deep_copy(dst_coordinates, host_dst_coordinates);
     this->mj_coordinates = dst_coordinates;
 
@@ -6627,6 +6669,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         Kokkos::HostSpace(), dst_weights);
       auto host_src_weights = Kokkos::create_mirror_view(
         Kokkos::HostSpace(), this->mj_weights);
+      Kokkos::fence();
       Kokkos::deep_copy(host_src_weights, this->mj_weights);
       for(int i = 0; i < this->num_weights_per_coord; ++i) {
         auto sub_host_src_weights
@@ -6651,6 +6694,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           sub_host_dst_weights(n) = received_weight[n];
         }
       }
+      Kokkos::fence();
       Kokkos::deep_copy(dst_weights, host_dst_weights);
       this->mj_weights = dst_weights;
     }
@@ -6661,6 +6705,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
     if(num_procs < num_parts) {
       auto host_assigned_part_ids =
         Kokkos::create_mirror_view(Kokkos::HostSpace(), this->assigned_part_ids);
+      Kokkos::fence();
       Kokkos::deep_copy(host_assigned_part_ids, assigned_part_ids);
       ArrayView<mj_part_t> sent_partids(
         host_assigned_part_ids.data(), this->num_local_coords);
@@ -6675,6 +6720,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         host_assigned_part_ids.data(),
         received_partids.getRawPtr(),
         num_incoming_gnos * sizeof(mj_part_t));
+      Kokkos::fence();
       Kokkos::deep_copy(this->assigned_part_ids, host_assigned_part_ids);
     }
     else {
@@ -7389,7 +7435,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   mj_part_t current_num_parts,
   mj_part_t output_part_begin_index,
   RCP<mj_partBoxVector_t> &output_part_boxes,
-  bool is_data_ever_migrated)
+  bool is_data_ever_migrated, int rd, int run_index)
 {
     this->mj_env->timerStart(MACRO_TIMERS,
       mj_timer_base_string + "Part_Assignment");
@@ -7429,6 +7475,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
         this->owner_of_coordinate.data(), this->num_local_coords);
       mj_lno_t incoming = distributor.createFromSends(owners_of_coords);
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = rd;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("mig_owners_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) owners_of_coords.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) owners_of_coords[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
 printf("incoming: %d\n", incoming);
 
       this->mj_env->timerStop(MACRO_TIMERS,
@@ -7439,25 +7507,84 @@ printf("incoming: %d\n", incoming);
 
       // MPI buffers should be Kokkos::HostSpace, not Kokkos::CudaUVMSpace
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = rd;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("mig_pre_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->current_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) current_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
       // migrate gnos to actual owners.
       auto host_current_mj_gnos = Kokkos::create_mirror_view(
         Kokkos::HostSpace(), this->current_mj_gnos);
+
+      Kokkos::fence();
       Kokkos::deep_copy(host_current_mj_gnos, this->current_mj_gnos);
       ArrayRCP<mj_gno_t> received_gnos(incoming);
+
+
+//      ArrayRCP<mj_gno_t> sent_gnos(host_current_mj_gnos.size());
+//      for(int n = 0; n < this->num_local_coords; ++n) {
+//        sent_gnos[n] = host_current_mj_gnos[n];
+//      }	
       ArrayView<mj_gno_t> sent_gnos(host_current_mj_gnos.data(),
         this->num_local_coords);
-      distributor.doPostsAndWaits<mj_gno_t>(sent_gnos, 1, received_gnos());
-      this->current_mj_gnos = Kokkos::View<mj_gno_t*, device_t>(
+
+
+
+      distributor.doPostsAndWaits<mj_gno_t>(sent_gnos(), 1, received_gnos());
+      auto dst_mj_gnos = Kokkos::View<mj_gno_t*, device_t>(
         Kokkos::ViewAllocateWithoutInitializing("current_mj_gnos"), incoming);
       host_current_mj_gnos = Kokkos::create_mirror_view(
-        Kokkos::HostSpace(), this->current_mj_gnos);
+        Kokkos::HostSpace(), dst_mj_gnos);
       memcpy(host_current_mj_gnos.data(),
         received_gnos.getRawPtr(), incoming * sizeof(mj_gno_t));
-      Kokkos::deep_copy(this->current_mj_gnos, host_current_mj_gnos);
+      Kokkos::fence();
+      Kokkos::deep_copy(dst_mj_gnos, host_current_mj_gnos);
+      this->current_mj_gnos = dst_mj_gnos;
+      Kokkos::fence();
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = rd;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("mig_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->current_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) current_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
 
       // migrate part ids to actual owners.
       auto host_assigned_part_ids =
         Kokkos::create_mirror_view(Kokkos::HostSpace(), this->assigned_part_ids);
+      Kokkos::fence();
       Kokkos::deep_copy(host_assigned_part_ids, this->assigned_part_ids);
       ArrayView<mj_part_t> sent_partids(host_assigned_part_ids.data(),
         this->num_local_coords);
@@ -7472,8 +7599,10 @@ printf("incoming: %d\n", incoming);
         Kokkos::create_mirror_view(Kokkos::HostSpace(), this->assigned_part_ids);
       memcpy( host_assigned_part_ids.data(),
         received_partids.getRawPtr(), incoming * sizeof(mj_part_t));
+      Kokkos::fence();
       deep_copy(this->assigned_part_ids, host_assigned_part_ids);
       this->num_local_coords = incoming;
+      Kokkos::fence();
 
       this->mj_env->timerStop(MACRO_TIMERS,
         mj_timer_base_string + "Final DistributorPlanComm");
@@ -7578,6 +7707,8 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   Kokkos::View<mj_part_t *, device_t> & result_assigned_part_ids_,
   Kokkos::View<mj_gno_t*, device_t> & result_mj_gnos_)
 {
+static int run_index = -1;
+run_index += 1;
 
   // see comment above for Zoltan2_AlgMJ_TrackCallsCounter
   int execute_counter = Zoltan2_AlgMJ_TrackCallsCounter::get_counter_AlgMJ();
@@ -7896,6 +8027,27 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           view_rectilinear_cut_count,
           view_total_reduction_size);
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("assigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->assigned_part_ids.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
         this->mj_env->timerStop(MACRO_TIMERS,
           mj_timer_base_string + "Problem_Partitioning Get Part Weights");
       }
@@ -7988,7 +8140,7 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
               mj_current_dim_coords,
               current_concurrent_cut_coordinate,
               used_local_cut_line_weight_to_left,
-              sub_new_part_xadj);
+              sub_new_part_xadj, i, run_index);
           }
           else {
 
@@ -8062,6 +8214,9 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
           output_part_index += num_parts;
         }
       }
+
+
+
     }
 
     // end of this partitioning dimension
@@ -8105,6 +8260,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       }
     }
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("post_mig_current_mj_gnos_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) current_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) current_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
     // swap the coordinate permutations for the next dimension.
     Kokkos::View<mj_lno_t*, device_t> tmp =
       this->coordinate_permutations;
@@ -8127,6 +8304,28 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
       this->mj_env->timerStop(MACRO_TIMERS,
         mj_timer_base_string + "Problem_Partitioning_" + istring);
     }
+
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("Bassigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->assigned_part_ids.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
   }
 
   // Partitioning is done
@@ -8139,11 +8338,100 @@ void AlgMJ<mj_scalar_t, mj_lno_t, mj_gno_t, mj_part_t, mj_node_t>::
   //get the final parts of each initial coordinate
   //the results will be written to
   //this->assigned_part_ids for gnos given in this->current_mj_gnos
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("Before_assigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->assigned_part_ids.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("check1__current_mj_gnos_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) current_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) current_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
   this->set_final_parts(
     current_num_parts,
     output_part_begin_index,
     output_part_boxes,
-    is_data_ever_migrated);
+    is_data_ever_migrated, 0, run_index);
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("After_assigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->assigned_part_ids.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("exit_current_mj_gnos_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) current_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) current_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
 
   result_assigned_part_ids_ = this->assigned_part_ids;
   result_mj_gnos_ = this->current_mj_gnos;
@@ -8727,6 +9015,9 @@ template <typename Adapter>
 void Zoltan2_AlgMJ<Adapter>::partition(
   const RCP<PartitioningSolution<Adapter> > &solution)
 {
+      static int run_index = -1;
+      run_index += 1;
+
   // purpose of this code is to validate node and UVM status for the tests
   // std::cout << "Memory Space: " << mj_node_t::memory_space::name() << "  "
   //           << "Execution Space: " << mj_node_t::execution_space::name()
@@ -8869,13 +9160,61 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       );
     }
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("result_assigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) this->num_local_coords; ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) result_assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
     this->mj_env->timerStart(MACRO_TIMERS, timer_base_string + "cleanup");
 
     // Reorder results so that they match the order of the input
     std::unordered_map<mj_gno_t, mj_lno_t> localGidToLid;
     localGidToLid.reserve(result_num_local_coords);
+
+//    auto host_result_initial_mj_gnos =
+//      Kokkos::create_mirror_view(Kokkos::HostSpace(), result_initial_mj_gnos_);
+
     Kokkos::View<mj_gno_t*, Kokkos::Serial> host_result_initial_mj_gnos
       ("host_result_initial_mj_gnos", result_initial_mj_gnos_.size());
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("before_copy_current_mj_gnos_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+  
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) result_initial_mj_gnos_.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) result_initial_mj_gnos_[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
     Kokkos::deep_copy(host_result_initial_mj_gnos, result_initial_mj_gnos_);
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       localGidToLid[host_result_initial_mj_gnos(i)] = i;
@@ -8886,9 +9225,80 @@ void Zoltan2_AlgMJ<Adapter>::partition(
     auto host_result_assigned_part_ids =
       Kokkos::create_mirror_view(Kokkos::HostSpace(), result_assigned_part_ids);
     Kokkos::deep_copy(host_result_assigned_part_ids, result_assigned_part_ids);
+
     Kokkos::View<mj_gno_t*, Kokkos::Serial> host_result_mj_gnos
       ("host_result_mj_gnos", result_mj_gnos.size());
     Kokkos::deep_copy(host_result_mj_gnos, result_mj_gnos);
+
+
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("host_result_mj_gnos_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) host_result_mj_gnos.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) host_result_mj_gnos[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0; 
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("host_result_assigned_part_ids_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) host_result_assigned_part_ids.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) host_result_assigned_part_ids[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }   
+#endif   
+
+#ifdef DEBUG_PRINTING
+      //if( < 2) 
+      {
+        int i = 0; 
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("localGidToLid_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) localGidToLid.size(); ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) localGidToLid[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }   
+#endif   
+    
+
     for(mj_lno_t i = 0; i < result_num_local_coords; i++) {
       mj_lno_t origLID = localGidToLid[host_result_mj_gnos(i)];
       
@@ -8901,9 +9311,34 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       partId[origLID] = host_result_assigned_part_ids(i);
     }
 
+#ifdef DEBUG_PRINTING
+      //if( < 2)
+      {
+        int i = 0;
+        static int cycle[] = { 0, 0, 0 };
+        static bool bWaitingFirstB = true;
+        if(run_index == 1 && bWaitingFirstB) {
+          bWaitingFirstB = false;
+          cycle[0] = 0; cycle[1] = 0; cycle[2] = 0;
+        }
+        std::string file_name = std::string("partIds_" + std::to_string(this->mj_problemComm->getRank()) + "_" + std::to_string(i) + "_"  + std::to_string(cycle[i]));
+
+        file_name += (run_index == 0) ? "_A" : "_B";
+        FILE * file = fopen(file_name.c_str(), "w");
+        for(int n = 0; n < (int) result_num_local_coords; ++n) {
+          fprintf(file, "n %d: %d\n", n, (int) partId[n]);
+        }
+        fclose(file);
+        ++cycle[i];
+      }
+#endif
+
     //now the results are reordered. but if premigration occured,
     //then we need to send these ids to actual owners again.
     if(is_pre_migrated) {
+printf("Boo1\n");
+std::terminate();
+
       this->mj_env->timerStart(MACRO_TIMERS, timer_base_string +
         "PostMigration DistributorPlanCreating");
       Tpetra::Distributor distributor(this->mj_problemComm);
@@ -8966,6 +9401,7 @@ void Zoltan2_AlgMJ<Adapter>::partition(
       mj_env->timerStop(MACRO_TIMERS,
         timer_base_string + "PostMigration DistributorMigration");
     }
+
     solution->setParts(partId);
     this->mj_env->timerStop(MACRO_TIMERS, timer_base_string + "cleanup");
   }

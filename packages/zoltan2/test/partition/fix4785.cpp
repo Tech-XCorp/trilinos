@@ -260,8 +260,6 @@ int main(int narg, char *arg[])
 
   // 1st call passes
   test_no_weights(comm, params, localCount, globalIds, coords, nFail);
-  
-  // 2nd call fails
   test_no_weights(comm, params, localCount, globalIds, coords, nFail);
 
   ///////////////////////////////////////////////////////////////////////
