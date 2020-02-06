@@ -183,51 +183,75 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     const int * colIdx = device_cols_view_.data();
     const int * rowPtr = device_row_ptr_view_.data();
 
-//#define USE_TEST
+#define USE_TEST
 #ifdef USE_TEST
     CUSOLVER::cusolverSpHandle_t _handle;
     CUSOLVER::csrcholInfo_t _chol_info;
     CUSOLVER::cusparseMatDescr_t _desc;
-    int _status;
+    CUSOLVER::cusolverStatus_t status;
+    CUSOLVER::cusparseStatus_t sparse_status;
 
-    _status = CUSOLVER::cusolverSpCreate(&_handle);
-    CUSOLVER::checkStatus("cusolverSpCreate");
+    status = CUSOLVER::cusolverSpCreate(&_handle);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpCreate failed");
 
-    _status = CUSOLVER::cusolverSpCreateCsrcholInfo(&_chol_info);
-    CUSOLVER::checkStatus("cusolverSpCreateCsrcholInfo");
+    status = CUSOLVER::cusolverSpCreateCsrcholInfo(&_chol_info);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpCreateCsrcholInfo failed");
 
-    _status = CUSOLVER::cusparseCreateMatDescr(&_desc); CUSOLVER::checkStatus("cusparseCreateMatDescr");
+    sparse_status = CUSOLVER::cusparseCreateMatDescr(&_desc);
+    TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
+      std::runtime_error, "cusparseCreateMatDescr failed");
 
-   // symbolic
-   _status = CUSOLVER::cusolverSpXcsrcholAnalysis(_handle, size, nnz, _desc, rowPtr, colIdx, _chol_info);
-   checkStatus("cusolverSpXcsrcholAnalysis");
+    // symbolic
+    status = CUSOLVER::cusolverSpXcsrcholAnalysis(_handle, size, nnz, _desc, rowPtr, colIdx, _chol_info);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpXcsrcholAnalysis failed");
 
-   // numeric
-   size_t internalDataInBytes, workspaceInBytes;
-   _status = CUSOLVER::cusolverSpDcsrcholBufferInfo(_handle, 
+    // numeric
+    size_t internalDataInBytes, workspaceInBytes;
+    status = CUSOLVER::cusolverSpDcsrcholBufferInfo(_handle, 
                                               size, nnz, _desc,
-                                              values, rowPtr, colIdx),
+                                              values, rowPtr, colIdx,
                                               _chol_info,
                                               &internalDataInBytes,
                                               &workspaceInBytes);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpDcsrcholBufferInfo failed");
 
-  const size_t bufsize = workspaceInBytes / sizeof(cusolver_type);
-  if(bufsize > _buf.extent(0)) {
-    buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
-  }
+    const size_t bufsize = workspaceInBytes / sizeof(cusolver_type);
+    if(bufsize > buffer_.extent(0)) {
+      buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
+    }
 
-  for(size_t i = 0; i <nrhs; ++i) {
-    const cusolver_type * b = &this->bValues_.data()[n*size];
-    cusolver_type * x = &this->xValues_.data()[n*size];
+    status = cusolverSpDcsrcholFactor(_handle,
+                                         size, nnz, _desc,
+                                         values, rowPtr, colIdx,
+                                         _chol_info,
+                                         buffer_.data());
 
-    _status = cusolverSpDcsrcholSolve(_handle, 
-                                           _m, 
-                                           b, x,
-                                           _chol_info,
-                                           buffer_.data());
-    checkStatus("cusolverSpDcsrcholSolve");
-printf("Did run rhs: %d\n", i);
-  }
+    for(size_t n = 0; n < nrhs; ++n) {
+      const cusolver_type * b = this->bValues_.data() + n * size;
+      cusolver_type * x = this->xValues_.data() + n * size;
+
+      status = CUSOLVER::cusolverSpDcsrcholSolve(
+        _handle, size, b, x, _chol_info, buffer_.data());
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
+    }
+
+    sparse_status = cusparseDestroyMatDescr(_desc);
+    TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
+      std::runtime_error, "cusparseDestroyMatDescr failed");
+
+    status = cusolverSpDestroyCsrcholInfo(_chol_info);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpDestroyCsrcholInfo failed");
+
+    status = cusolverSpDestroy(_handle);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpDestroy failed");
 
 #else
     // for now just get a solution which works for multiple vectors

@@ -253,7 +253,7 @@ private:
   mutable device_solve_array_t xValues_;
   mutable device_solve_array_t bValues_;
 
-  device_value_type_array buffer_;
+  mutable device_value_type_array buffer_;
 
   device_value_type_array device_nzvals_view_;
   device_size_type_array device_row_ptr_view_;
