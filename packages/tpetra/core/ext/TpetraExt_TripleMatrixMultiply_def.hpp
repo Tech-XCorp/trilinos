@@ -506,6 +506,8 @@ namespace Tpetra {
           }
         });
 
+      Kokkos::fence(); // not verified via a test yet but I think we need this for CUDA_LAUNCH_BLOCKING unset
+
       // Call the actual kernel.  We'll rely on partial template specialization to call the correct one ---
       // Either the straight-up Tpetra code (SerialNode) or the KokkosKernels one (other NGP node types)
       KernelWrappers3<Scalar,LocalOrdinal,GlobalOrdinal,Node,lo_view_t>::
@@ -606,6 +608,8 @@ namespace Tpetra {
 
           }
         });
+
+      Kokkos::fence(); // TpetraCore_MatrixMatrix_UnitTests_MPI_4 will fail with CUDA_LAUNCH_BLOCKING unset without this
 
       // Call the actual kernel.  We'll rely on partial template specialization to call the correct one ---
       // Either the straight-up Tpetra code (SerialNode) or the KokkosKernels one (other NGP node types)
@@ -758,7 +762,9 @@ namespace Tpetra {
       // Run through all the hash table lookups once and for all
       lo_view_t targetMapToOrigRow(Kokkos::ViewAllocateWithoutInitializing("targetMapToOrigRow"),Aview.colMap->getNodeNumElements());
       lo_view_t targetMapToImportRow(Kokkos::ViewAllocateWithoutInitializing("targetMapToImportRow"),Aview.colMap->getNodeNumElements());
-      Kokkos::fence();
+
+      Kokkos::fence(); // if this fence is needed we probably need them for the other similar spots in this file.
+
       Kokkos::parallel_for("Tpetra::mult_R_A_P_newmatrix::construct_tables",range_type(Aview.colMap->getMinLocalIndex(), Aview.colMap->getMaxLocalIndex()+1),KOKKOS_LAMBDA(const LO i) {
           GO aidx = Acolmap_local.getGlobalElement(i);
           LO P_LID = Prowmap_local.getLocalElement(aidx);
@@ -771,6 +777,8 @@ namespace Tpetra {
             targetMapToImportRow(i) = I_LID;
           }
         });
+
+      Kokkos::fence(); // not verified via a test yet but I think we need this for CUDA_LAUNCH_BLOCKING unset
 
       // Call the actual kernel.  We'll rely on partial template specialization to call the correct one ---
       // Either the straight-up Tpetra code (SerialNode) or the KokkosKernels one (other NGP node types)
@@ -870,6 +878,8 @@ namespace Tpetra {
 
           }
         });
+
+      Kokkos::fence(); // not verified via a test yet but I think we need this for CUDA_LAUNCH_BLOCKING unset
 
       // Call the actual kernel.  We'll rely on partial template specialization to call the correct one ---
       // Either the straight-up Tpetra code (SerialNode) or the KokkosKernels one (other NGP node types)
