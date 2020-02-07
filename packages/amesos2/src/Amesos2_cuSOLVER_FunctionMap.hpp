@@ -71,7 +71,6 @@ namespace Amesos2 {
 #    include <cusolverDn.h>
 #    include <cusparse.h>
 #    include <cuComplex.h>
-
 #    include <cusolverSp_LOWLEVEL_PREVIEW.h>  // MDM-TODO may remove - for csrcholInfo_t
   }
 

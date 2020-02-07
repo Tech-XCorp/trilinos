@@ -60,25 +60,44 @@
 #include "Amesos2_SolverCore_def.hpp"
 #include "Amesos2_cuSOLVER_decl.hpp"
 
-
 namespace Amesos2 {
-
 
 template <class Matrix, class Vector>
 cuSOLVER<Matrix,Vector>::cuSOLVER(
   Teuchos::RCP<const Matrix> A,
   Teuchos::RCP<Vector>       X,
   Teuchos::RCP<const Vector> B )
-  : SolverCore<Amesos2::cuSOLVER,Matrix,Vector>(A, X, B)
+  : SolverCore<Amesos2::cuSOLVER,Matrix,Vector>(A, X, B),
+    bReorder_(false)
 {
-  // MDM-cuSolver-TODO
+  auto status = CUSOLVER::cusolverSpCreate(&data_.handle);
+  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+    std::runtime_error, "cusolverSpCreate failed");
+
+  status = CUSOLVER::cusolverSpCreateCsrcholInfo(&data_.chol_info);
+  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+    std::runtime_error, "cusolverSpCreateCsrcholInfo failed");
+
+  auto sparse_status = CUSOLVER::cusparseCreateMatDescr(&data_.desc);
+  TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
+    std::runtime_error, "cusparseCreateMatDescr failed");
 }
 
 
 template <class Matrix, class Vector>
 cuSOLVER<Matrix,Vector>::~cuSOLVER( )
 {
-  // MDM-cuSolver-TODO
+  auto sparse_status = cusparseDestroyMatDescr(data_.desc);
+  TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
+    std::runtime_error, "cusparseDestroyMatDescr failed");
+
+  auto status = cusolverSpDestroyCsrcholInfo(data_.chol_info);
+  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+    std::runtime_error, "cusolverSpDestroyCsrcholInfo failed");
+
+  status = cusolverSpDestroy(data_.handle);
+  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+    std::runtime_error, "cusolverSpDestroy failed");
 }
 
 template<class Matrix, class Vector>
@@ -88,6 +107,18 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
  #ifdef HAVE_AMESOS2_TIMERS
     Teuchos::TimeMonitor preOrderTimer(this->timers_.preOrderTime_);
 #endif
+
+  if(do_optimization()) {
+    // reorder to optimize cuda
+    if(bReorder_) {
+    }
+    else {
+      this->matrixA_->returnRowPtr_kokkos_view(device_row_ptr_view_);
+      this->matrixA_->returnColInd_kokkos_view(device_cols_view_);
+      this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
+    }
+  }
+
   return(0);
 }
 
@@ -102,16 +133,16 @@ cuSOLVER<Matrix,Vector>::symbolicFactorization_impl()
 
   int status = 0;
   if ( this->root_ ) {
-    if(do_optimization()) {
-      this->matrixA_->returnRowPtr_kokkos_view(device_row_ptr_view_);
-      this->matrixA_->returnColInd_kokkos_view(device_cols_view_);
-    }
 
-    // MDM-TODO Add cuSolver symbolic
+    const int size = this->globalNumRows_;
+    const int nnz = this->globalNumNonZeros_;
+    const int * colIdx = device_cols_view_.data();
+    const int * rowPtr = device_row_ptr_view_.data();
+    auto status = CUSOLVER::cusolverSpXcsrcholAnalysis(data_.handle, size, nnz, data_.desc, rowPtr, colIdx, data_.chol_info);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpXcsrcholAnalysis failed");
   }
   return status;
-
-  return(0);
 }
 
 
@@ -121,10 +152,32 @@ cuSOLVER<Matrix,Vector>::numericFactorization_impl()
 {
   int status = 0;
   if ( this->root_ ) {
-    if(do_optimization()) {
-      this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
+    const int size = this->globalNumRows_;
+    const int nnz = this->globalNumNonZeros_;
+    const cusolver_type * values = device_nzvals_view_.data();
+    const int * colIdx = device_cols_view_.data();
+    const int * rowPtr = device_row_ptr_view_.data();
+
+    size_t internalDataInBytes, workspaceInBytes;
+    auto status = CUSOLVER::cusolverSpDcsrcholBufferInfo(data_.handle,
+                                              size, nnz, data_.desc,
+                                              values, rowPtr, colIdx,
+                                              data_.chol_info,
+                                              &internalDataInBytes,
+                                              &workspaceInBytes);
+    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+      std::runtime_error, "cusolverSpDcsrcholBufferInfo failed");
+
+    const size_t bufsize = workspaceInBytes / sizeof(cusolver_type);
+    if(bufsize > buffer_.extent(0)) {
+      buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
     }
-    // MDM-TODO numeric
+
+    status = cusolverSpDcsrcholFactor(data_.handle,
+                                         size, nnz, data_.desc,
+                                         values, rowPtr, colIdx,
+                                         data_.chol_info,
+                                         buffer_.data());
   }
   return status;
 }
@@ -176,92 +229,25 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
 #endif
 
     const int size = this->globalNumRows_;
-    const int nnz = this->globalNumNonZeros_;
-    int sing = 0;
 
-    const cusolver_type * values = device_nzvals_view_.data();
-    const int * colIdx = device_cols_view_.data();
-    const int * rowPtr = device_row_ptr_view_.data();
-
-#define USE_TEST
-#ifdef USE_TEST
-    CUSOLVER::cusolverSpHandle_t _handle;
-    CUSOLVER::csrcholInfo_t _chol_info;
-    CUSOLVER::cusparseMatDescr_t _desc;
-    CUSOLVER::cusolverStatus_t status;
-    CUSOLVER::cusparseStatus_t sparse_status;
-
-    status = CUSOLVER::cusolverSpCreate(&_handle);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpCreate failed");
-
-    status = CUSOLVER::cusolverSpCreateCsrcholInfo(&_chol_info);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpCreateCsrcholInfo failed");
-
-    sparse_status = CUSOLVER::cusparseCreateMatDescr(&_desc);
-    TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
-      std::runtime_error, "cusparseCreateMatDescr failed");
-
-    // symbolic
-    status = CUSOLVER::cusolverSpXcsrcholAnalysis(_handle, size, nnz, _desc, rowPtr, colIdx, _chol_info);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpXcsrcholAnalysis failed");
-
-    // numeric
-    size_t internalDataInBytes, workspaceInBytes;
-    status = CUSOLVER::cusolverSpDcsrcholBufferInfo(_handle, 
-                                              size, nnz, _desc,
-                                              values, rowPtr, colIdx,
-                                              _chol_info,
-                                              &internalDataInBytes,
-                                              &workspaceInBytes);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpDcsrcholBufferInfo failed");
-
-    const size_t bufsize = workspaceInBytes / sizeof(cusolver_type);
-    if(bufsize > buffer_.extent(0)) {
-      buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
-    }
-
-    status = cusolverSpDcsrcholFactor(_handle,
-                                         size, nnz, _desc,
-                                         values, rowPtr, colIdx,
-                                         _chol_info,
-                                         buffer_.data());
+    // Some temporary clocks to track solve times
+    auto startTime = std::chrono::system_clock::now();
 
     for(size_t n = 0; n < nrhs; ++n) {
       const cusolver_type * b = this->bValues_.data() + n * size;
       cusolver_type * x = this->xValues_.data() + n * size;
 
-      status = CUSOLVER::cusolverSpDcsrcholSolve(
-        _handle, size, b, x, _chol_info, buffer_.data());
+      auto status = CUSOLVER::cusolverSpDcsrcholSolve(
+        data_.handle, size, b, x, data_.chol_info, buffer_.data());
 
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
     }
 
-    sparse_status = cusparseDestroyMatDescr(_desc);
-    TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
-      std::runtime_error, "cusparseDestroyMatDescr failed");
-
-    status = cusolverSpDestroyCsrcholInfo(_chol_info);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpDestroyCsrcholInfo failed");
-
-    status = cusolverSpDestroy(_handle);
-    TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-      std::runtime_error, "cusolverSpDestroy failed");
-
-#else
-    // for now just get a solution which works for multiple vectors
-    // then later we need to see how to batch solver
-    for(size_t n = 0; n < nrhs; ++n) {
-      const cusolver_type * b = &this->bValues_.data()[n*size];
-      cusolver_type * x = &this->xValues_.data()[n*size];
-      function_map::cusolver_solve(size, nnz, values, rowPtr, colIdx, b, 0.0, 0, x, &sing);
-    }
-#endif
+    // Some temporary clocks to track solve times
+    auto endTime = std::chrono::system_clock::now();
+    auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
+    printf("Ran solve %d rhs vectors with time %d ms\n", (int) nrhs, (int) ms);
   }
 
   /* All processes should have the same error code */
@@ -305,7 +291,6 @@ cuSOLVER<Matrix,Vector>::setParameters_impl(const Teuchos::RCP<Teuchos::Paramete
   using Teuchos::ParameterEntryValidator;
 
   RCP<const Teuchos::ParameterList> valid_params = getValidParameters_impl();
-
 
   if( parameterList->isParameter("Trans") ){
     RCP<const ParameterEntryValidator> trans_validator = valid_params->getEntry("Trans").validator();
@@ -353,6 +338,11 @@ cuSOLVER<Matrix,Vector>::loadA_impl(EPhase current_phase)
   }
 
   if(!do_optimization()) {
+
+    TEUCHOS_TEST_FOR_EXCEPTION( true, std::runtime_error,
+      "cuSolver matrix reordered and the distributed matrix not resolved yet.");
+
+/*
 #ifdef HAVE_AMESOS2_TIMERS
   Teuchos::TimeMonitor convTimer(this->timers_.mtxConvTime_);
 #endif
@@ -393,6 +383,7 @@ cuSOLVER<Matrix,Vector>::loadA_impl(EPhase current_phase)
                                                       ROOTED, ARBITRARY,
                                                       this->columnIndexBase_);
     }
+*/
   }
 
   return true;

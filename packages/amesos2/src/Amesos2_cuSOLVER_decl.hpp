@@ -117,7 +117,12 @@ public:
 
   typedef Kokkos::View<size_type*, DeviceSpaceType>       device_size_type_array;
   typedef Kokkos::View<ordinal_type*, DeviceSpaceType> device_ordinal_type_array;
-  typedef Kokkos::View<cusolver_type*, DeviceSpaceType>     device_value_type_array;
+  typedef Kokkos::View<cusolver_type*, DeviceSpaceType>  device_value_type_array;
+
+  typedef Kokkos::DefaultHostExecutionSpace                    HostDeviceSpaceType;
+  typedef Kokkos::View<size_type*, HostDeviceSpaceType>       host_size_type_array;
+  typedef Kokkos::View<ordinal_type*, HostDeviceSpaceType> host_ordinal_type_array;
+  typedef Kokkos::View<cusolver_type*, HostDeviceSpaceType>  host_value_type_array;
 
   /// \name Constructor/Destructor methods
   //@{
@@ -243,21 +248,22 @@ private:
 
   // struct holds all data necessary to make a superlu factorization or solve call
   mutable struct cuSolverData {
-    CUSOLVER::cusolverSpHandle_t A;
-    CUSOLVER::cusolverDnHandle_t x, b;
-    CUSOLVER::cusolverDnHandle_t *Y, *E;
+    CUSOLVER::cusolverSpHandle_t handle;
+    CUSOLVER::csrcholInfo_t chol_info;
+    CUSOLVER::cusparseMatDescr_t desc;
   } data_;
 
   typedef Kokkos::View<cusolver_type**, Kokkos::LayoutLeft, DeviceSpaceType> device_solve_array_t;
 
   mutable device_solve_array_t xValues_;
   mutable device_solve_array_t bValues_;
-
   mutable device_value_type_array buffer_;
 
   device_value_type_array device_nzvals_view_;
   device_size_type_array device_row_ptr_view_;
   device_ordinal_type_array device_cols_view_;
+
+  bool bReorder_; // temp - probably delete this later - used to test both ways
 };                              // End class cuSOLVER
 
 template <>
