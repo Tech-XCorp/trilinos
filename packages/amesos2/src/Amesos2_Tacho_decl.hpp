@@ -53,6 +53,11 @@
 #include "Tacho.hpp"
 #include "Tacho_Solver.hpp"
 
+#ifdef HAVE_AMESOS2_METIS
+// MDM-TODO namespace? Move locations?
+#include "metis.h"
+#endif
+
 namespace Amesos2 {
 
 /** \brief Amesos2 interface to the Tacho package.
@@ -110,6 +115,13 @@ public:
   // do everything in device space if source was device, then deep_copy
   typedef Kokkos::View<size_type*, HostSpaceType>          host_size_type_array;
   typedef Kokkos::View<ordinal_type*, HostSpaceType>    host_ordinal_type_array;
+  typedef Kokkos::View<tacho_type*, HostSpaceType>        host_value_type_array; // MDM-TODO final may not need this typedef - delete
+
+#ifdef HAVE_AMESOS2_METIS
+  typedef Kokkos::View<idx_t*, HostSpaceType>                  host_metis_array;
+  host_metis_array perm;
+  host_metis_array peri;
+#endif
 
   /// \name Constructor/Destructor methods
   //@{

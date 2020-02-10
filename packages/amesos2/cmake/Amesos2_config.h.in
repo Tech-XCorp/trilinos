@@ -127,6 +127,9 @@
 /* Defined if you want to enable amesos2-MUMPS */
 #cmakedefine HESM
 
+/* Defined if you want to enable amesos2-METIS */
+#cmakedefine HAVE_AMESOS2_METIS
+
 /* For experimental Basker in ShyLU*/
 #cmakedefine HAVE_AMESOS2_KOKKOS
 
