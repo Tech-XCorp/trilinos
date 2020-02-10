@@ -14,11 +14,13 @@
 #include <Tpetra_MultiVector.hpp>
 #include <Tpetra_CrsMatrix.hpp>
 
+#ifdef HAVE_AMESOS2_CUSOLVER
 #    include <cuda.h>
 #    include <cusolverSp.h>
 #    include <cusolverDn.h>
 #    include <cusparse.h>
 #    include <cuComplex.h>
+#endif
 
 int main(int argc, char*argv[])
 {
