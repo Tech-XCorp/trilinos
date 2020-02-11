@@ -122,13 +122,12 @@ public:
   typedef Kokkos::DefaultHostExecutionSpace                    HostDeviceSpaceType;
   typedef Kokkos::View<size_type*, HostDeviceSpaceType>       host_size_type_array;
   typedef Kokkos::View<ordinal_type*, HostDeviceSpaceType> host_ordinal_type_array;
-  typedef Kokkos::View<cusolver_type*, HostDeviceSpaceType>  host_value_type_array;
 
 
 #ifdef HAVE_AMESOS2_METIS // data for reordering
-  typedef Kokkos::View<idx_t*, HostSpaceType>                  host_metis_array;
-  host_metis_array perm;
-  host_metis_array peri;
+  typedef Kokkos::View<idx_t*, DeviceSpaceType>               device_metis_array;
+  device_metis_array device_perm;
+  device_metis_array device_peri;
 #endif
   
   /// \name Constructor/Destructor methods

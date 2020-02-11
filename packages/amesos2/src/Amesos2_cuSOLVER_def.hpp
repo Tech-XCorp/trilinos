@@ -111,117 +111,123 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
   if(do_optimization()) {
     // reorder to optimize cuda
     if(bReorder_) {
-      #ifndef HAVE_AMESOS2_METIS
-        TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
-          "Cannot reorder for cuSolver because no METIS is available.");
-      #else
-        const ordinal_type size = this->globalNumRows_;
+    #ifndef HAVE_AMESOS2_METIS
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+        "Cannot reorder for cuSolver because no METIS is available.");
+    #else
+      const ordinal_type size = this->globalNumRows_;
 
-        host_size_type_array row_ptr;
-        host_ordinal_type_array cols;
-        
-        this->matrixA_->returnRowPtr_kokkos_view(row_ptr);
-        this->matrixA_->returnColInd_kokkos_view(cols);
+      // MDM-TODO maybe set this up on device, strip diagonals on device,
+      // then copy to host snd run METIS resort. Not sure if that can
+      // improve efficiency here.
 
-        // strip out the diagonals - metis will just crash with them in
-        host_size_type_array strip_diag_row_ptr(
-          Kokkos::ViewAllocateWithoutInitializing("strip_diag_row_ptr"), row_ptr.size());
-        host_ordinal_type_array strip_diag_cols( // will strip diagonals so n drops by size
-          Kokkos::ViewAllocateWithoutInitializing("strip_diag_cols"), cols.size() - size);
-        size_type new_nnz = 0;
-        for(ordinal_type i = 0; i < size; ++i) {
-          strip_diag_row_ptr(i) = new_nnz;
-          for(size_type j = row_ptr(i); j < row_ptr(i+1); ++j) {
-            if (i != cols(j)) {
-              strip_diag_cols(new_nnz++) = cols(j);
-            }
+      // begin on host where we'll run metis reorder
+      host_size_type_array host_row_ptr;
+      host_ordinal_type_array host_cols;
+      
+      this->matrixA_->returnRowPtr_kokkos_view(host_row_ptr);
+      this->matrixA_->returnColInd_kokkos_view(host_cols);
+
+      // strip out the diagonals - metis will just crash with them in
+      host_size_type_array host_strip_diag_row_ptr(
+        Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_row_ptr"), host_row_ptr.size());
+      host_ordinal_type_array host_strip_diag_cols( // will strip diagonals so n drops by size
+        Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_cols"), host_cols.size() - size);
+      size_type new_nnz = 0;
+      for(ordinal_type i = 0; i < size; ++i) {
+        host_strip_diag_row_ptr(i) = new_nnz;
+        for(size_type j = host_row_ptr(i); j < host_row_ptr(i+1); ++j) {
+          if (i != host_cols(j)) {
+            host_strip_diag_cols(new_nnz++) = host_cols(j);
           }
         }
-        strip_diag_row_ptr(size) = new_nnz;
+      }
+      host_strip_diag_row_ptr(size) = new_nnz;
 
-        host_metis_array metis_row_ptr;
-        host_metis_array metis_cols;
+      // now convert to metis index type if necessary
+      typedef Kokkos::View<idx_t*, HostDeviceSpaceType>          host_metis_array;
+      host_metis_array host_metis_row_ptr;
+      host_metis_array host_metis_cols;
+      deep_copy_or_assign_view(host_metis_row_ptr, host_strip_diag_row_ptr);
+      deep_copy_or_assign_view(host_metis_cols, host_strip_diag_cols);
 
-        deep_copy_or_assign_view(metis_row_ptr, strip_diag_row_ptr);
-        deep_copy_or_assign_view(metis_cols, strip_diag_cols);
+      idx_t metis_size = size;
 
-        idx_t metis_size = size;
+      // we'll get original permutations on host
+      typedef Kokkos::View<idx_t*, HostDeviceSpaceType>     host_metis_array;
+      host_metis_array host_perm(
+        Kokkos::ViewAllocateWithoutInitializing("host_perm"), size);
+      host_metis_array host_peri(
+        Kokkos::ViewAllocateWithoutInitializing("host_peri"), size);
 
-        perm = host_metis_array(
-          Kokkos::ViewAllocateWithoutInitializing("perm"), size);
-        peri = host_metis_array(
-          Kokkos::ViewAllocateWithoutInitializing("peri"), size);
+      // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
+      // For cuSolver this could be a more elegant way to set things up.
+      int err = METIS_NodeND(&metis_size, host_metis_row_ptr.data(), host_metis_cols.data(),
+        NULL, NULL, host_perm.data(), host_peri.data());
+      
+      TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
+        "METIS_NodeND failed to sort matrix.");
 
-        // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
-        // For cuSolver this could be a more elegant way to set things up.
-        int err = METIS_NodeND(&metis_size, metis_row_ptr.data(), metis_cols.data(),
-          NULL, NULL, perm.data(), peri.data());
-        
-        TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
-          "METIS_NodeND failed to sort matrix.");
+      // put the permutations on our saved device ptrs
+      // these will be used to permute x and b when we solve
+      deep_copy_or_assign_view(device_perm, host_perm);
+      deep_copy_or_assign_view(device_peri, host_peri);
+      
+      // now get matrix values on device
+      device_size_type_array row_ptr;
+      device_ordinal_type_array cols;
+      device_value_type_array values;
+      this->matrixA_->returnRowPtr_kokkos_view(row_ptr);
+      this->matrixA_->returnColInd_kokkos_view(cols);
+      this->matrixA_->returnValues_kokkos_view(values);
+    
+      // we'll permute matrix on device to a new set of arrays
+      device_row_ptr_view_ = device_size_type_array(
+        Kokkos::ViewAllocateWithoutInitializing("device_row_ptr_view_"), row_ptr.size());
+      device_cols_view_ = device_ordinal_type_array(
+        Kokkos::ViewAllocateWithoutInitializing("device_cols_view_"), cols.size());
+      device_nzvals_view_ = device_value_type_array(
+        Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
 
-        // First we'll convert on host but we could mirror perm and peri to the exec
-        // space of the matrix and then do this there
-        typedef  Kokkos::DefaultHostExecutionSpace device_exec_memory_space;
-        
-        host_value_type_array values;
-        this->matrixA_->returnValues_kokkos_view(values);
-        
-        host_size_type_array new_row_ptr(
-          Kokkos::ViewAllocateWithoutInitializing("new_row_ptr"), row_ptr.size());
-        host_ordinal_type_array new_cols(
-          Kokkos::ViewAllocateWithoutInitializing("new_cols"), cols.size());
-        host_value_type_array new_values(
-          Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
-        
-        auto device_perm = Kokkos::create_mirror_view(device_exec_memory_space(), perm);
-        Kokkos::deep_copy(device_perm, perm);
-        auto device_peri = Kokkos::create_mirror_view(device_exec_memory_space(), peri);
-        Kokkos::deep_copy(device_peri, peri);
-        
-        // permute row indices
-        Kokkos::RangePolicy<device_exec_memory_space> policy_row(0, row_ptr.size());
-        Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
-          ordinal_type i, size_type & update, const bool &final) {
-          if(final) {
-            new_row_ptr(i) = update;
-          }
-          if(i < size) {
-            ordinal_type count = 0;
-            const ordinal_type row = device_perm(i);
-            for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
-              const ordinal_type j = device_peri(cols(k)); /// col in A
-              count += (i >= j); /// lower triangular
-            }
-            update += count;
-          }
-        });
-        
-        // permute col indices
-        Kokkos::RangePolicy<device_exec_memory_space> policy_col(0, size);
-        Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
-          const ordinal_type kbeg = new_row_ptr(i);
+      // permute row indices
+      Kokkos::RangePolicy<DeviceSpaceType> policy_row(0, row_ptr.size());
+      Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
+        ordinal_type i, size_type & update, const bool &final) {
+        if(final) {
+          device_row_ptr_view_(i) = update;
+        }
+        if(i < size) {
+          ordinal_type count = 0;
           const ordinal_type row = device_perm(i);
-          const ordinal_type col_beg = row_ptr(row);
-          const ordinal_type col_end = row_ptr(row + 1);
-          const ordinal_type nk = col_end - col_beg;
-
-          for(ordinal_type k = 0, t = 0; k < nk; ++k) {
-            const ordinal_type tk = kbeg + t;
-            const ordinal_type sk = col_beg + k;
-            const ordinal_type j = device_peri(cols(sk));
-            if(i >= j) {
-              new_cols(tk) = j;
-              new_values(tk) = values(sk);
-              ++t;
-            }
+          for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
+            const ordinal_type j = device_peri(cols(k)); /// col in A
+            count += (i >= j); /// lower triangular
           }
-        });
-        
-        deep_copy_or_assign_view(host_row_ptr_view_, new_row_ptr);
-        deep_copy_or_assign_view(host_cols_view_, new_cols);
-        deep_copy_or_assign_view(device_nzvals_view_, new_values);
-      #endif
+          update += count;
+        }
+      });
+      
+      // permute col indices
+      Kokkos::RangePolicy<DeviceSpaceType> policy_col(0, size);
+      Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
+        const ordinal_type kbeg = device_row_ptr_view_(i);
+        const ordinal_type row = device_perm(i);
+        const ordinal_type col_beg = row_ptr(row);
+        const ordinal_type col_end = row_ptr(row + 1);
+        const ordinal_type nk = col_end - col_beg;
+
+        for(ordinal_type k = 0, t = 0; k < nk; ++k) {
+          const ordinal_type tk = kbeg + t;
+          const ordinal_type sk = col_beg + k;
+          const ordinal_type j = device_peri(cols(sk));
+          if(i >= j) {
+            device_cols_view_(tk) = j;
+            device_nzvals_view_(tk) = values(sk);
+            ++t;
+          }
+        }
+      });
+    #endif
     }
     else {
       this->matrixA_->returnRowPtr_kokkos_view(device_row_ptr_view_);
@@ -349,6 +355,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
       cusolver_type * x = this->xValues_.data() + n * size;
 
       // permute b
+      /*
       if(bReorder) {
         #ifdef HAVE_AMESOS2_METIS
           // permute x
@@ -359,11 +366,13 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
           });
         #endif
       }
+      */
 
       auto status = CUSOLVER::cusolverSpDcsrcholSolve(
         data_.handle, size, b, x, data_.chol_info, buffer_.data());
 
       // permute x
+      /*
       if(bReorder) {
         #ifdef HAVE_AMESOS2_METIS
           // permute x
@@ -374,6 +383,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
           });
         #endif
       }
+      */
 
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
