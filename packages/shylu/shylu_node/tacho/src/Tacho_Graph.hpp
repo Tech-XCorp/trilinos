@@ -49,7 +49,9 @@ namespace Tacho {
             if (i != col) _cidx(_nnz++) = col;
           }
         }
-        _rptr(_m) = _nnz;        
+        _rptr(_m) = _nnz;
+        
+printf("m: %d  nnz: %d  final-nnz: %d\n", (int) m, (int) nnz, (int) _nnz);
       }
 
     public:

@@ -117,12 +117,6 @@ public:
   typedef Kokkos::View<ordinal_type*, HostSpaceType>    host_ordinal_type_array;
   typedef Kokkos::View<tacho_type*, HostSpaceType>        host_value_type_array; // MDM-TODO final may not need this typedef - delete
 
-#ifdef HAVE_AMESOS2_METIS
-  typedef Kokkos::View<idx_t*, HostSpaceType>                  host_metis_array;
-  host_metis_array perm;
-  host_metis_array peri;
-#endif
-
   /// \name Constructor/Destructor methods
   //@{
 

@@ -111,6 +111,117 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
   if(do_optimization()) {
     // reorder to optimize cuda
     if(bReorder_) {
+      #ifndef HAVE_AMESOS2_METIS
+        TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+          "Cannot reorder for cuSolver because no METIS is available.");
+      #else
+        const ordinal_type size = this->globalNumRows_;
+
+        host_size_type_array row_ptr;
+        host_ordinal_type_array cols;
+        
+        this->matrixA_->returnRowPtr_kokkos_view(row_ptr);
+        this->matrixA_->returnColInd_kokkos_view(cols);
+
+        // strip out the diagonals - metis will just crash with them in
+        host_size_type_array strip_diag_row_ptr(
+          Kokkos::ViewAllocateWithoutInitializing("strip_diag_row_ptr"), row_ptr.size());
+        host_ordinal_type_array strip_diag_cols( // will strip diagonals so n drops by size
+          Kokkos::ViewAllocateWithoutInitializing("strip_diag_cols"), cols.size() - size);
+        size_type new_nnz = 0;
+        for(ordinal_type i = 0; i < size; ++i) {
+          strip_diag_row_ptr(i) = new_nnz;
+          for(size_type j = row_ptr(i); j < row_ptr(i+1); ++j) {
+            if (i != cols(j)) {
+              strip_diag_cols(new_nnz++) = cols(j);
+            }
+          }
+        }
+        strip_diag_row_ptr(size) = new_nnz;
+
+        host_metis_array metis_row_ptr;
+        host_metis_array metis_cols;
+
+        deep_copy_or_assign_view(metis_row_ptr, strip_diag_row_ptr);
+        deep_copy_or_assign_view(metis_cols, strip_diag_cols);
+
+        idx_t metis_size = size;
+
+        perm = host_metis_array(
+          Kokkos::ViewAllocateWithoutInitializing("perm"), size);
+        peri = host_metis_array(
+          Kokkos::ViewAllocateWithoutInitializing("peri"), size);
+
+        // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
+        // For cuSolver this could be a more elegant way to set things up.
+        int err = METIS_NodeND(&metis_size, metis_row_ptr.data(), metis_cols.data(),
+          NULL, NULL, perm.data(), peri.data());
+        
+        TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
+          "METIS_NodeND failed to sort matrix.");
+
+        // First we'll convert on host but we could mirror perm and peri to the exec
+        // space of the matrix and then do this there
+        typedef  Kokkos::DefaultHostExecutionSpace device_exec_memory_space;
+        
+        host_value_type_array values;
+        this->matrixA_->returnValues_kokkos_view(values);
+        
+        host_size_type_array new_row_ptr(
+          Kokkos::ViewAllocateWithoutInitializing("new_row_ptr"), row_ptr.size());
+        host_ordinal_type_array new_cols(
+          Kokkos::ViewAllocateWithoutInitializing("new_cols"), cols.size());
+        host_value_type_array new_values(
+          Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
+        
+        auto device_perm = Kokkos::create_mirror_view(device_exec_memory_space(), perm);
+        Kokkos::deep_copy(device_perm, perm);
+        auto device_peri = Kokkos::create_mirror_view(device_exec_memory_space(), peri);
+        Kokkos::deep_copy(device_peri, peri);
+        
+        // permute row indices
+        Kokkos::RangePolicy<device_exec_memory_space> policy_row(0, row_ptr.size());
+        Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
+          ordinal_type i, size_type & update, const bool &final) {
+          if(final) {
+            new_row_ptr(i) = update;
+          }
+          if(i < size) {
+            ordinal_type count = 0;
+            const ordinal_type row = device_perm(i);
+            for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
+              const ordinal_type j = device_peri(cols(k)); /// col in A
+              count += (i >= j); /// lower triangular
+            }
+            update += count;
+          }
+        });
+        
+        // permute col indices
+        Kokkos::RangePolicy<device_exec_memory_space> policy_col(0, size);
+        Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
+          const ordinal_type kbeg = new_row_ptr(i);
+          const ordinal_type row = device_perm(i);
+          const ordinal_type col_beg = row_ptr(row);
+          const ordinal_type col_end = row_ptr(row + 1);
+          const ordinal_type nk = col_end - col_beg;
+
+          for(ordinal_type k = 0, t = 0; k < nk; ++k) {
+            const ordinal_type tk = kbeg + t;
+            const ordinal_type sk = col_beg + k;
+            const ordinal_type j = device_peri(cols(sk));
+            if(i >= j) {
+              new_cols(tk) = j;
+              new_values(tk) = values(sk);
+              ++t;
+            }
+          }
+        });
+        
+        deep_copy_or_assign_view(host_row_ptr_view_, new_row_ptr);
+        deep_copy_or_assign_view(host_cols_view_, new_cols);
+        deep_copy_or_assign_view(device_nzvals_view_, new_values);
+      #endif
     }
     else {
       this->matrixA_->returnRowPtr_kokkos_view(device_row_ptr_view_);
@@ -237,8 +348,32 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
       const cusolver_type * b = this->bValues_.data() + n * size;
       cusolver_type * x = this->xValues_.data() + n * size;
 
+      // permute b
+      if(bReorder) {
+        #ifdef HAVE_AMESOS2_METIS
+          // permute x
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
+            for(ordinal_type j = 0; j < n; ++j) {
+              A(i, j) = B(p(i), j);
+            }
+          });
+        #endif
+      }
+
       auto status = CUSOLVER::cusolverSpDcsrcholSolve(
         data_.handle, size, b, x, data_.chol_info, buffer_.data());
+
+      // permute x
+      if(bReorder) {
+        #ifdef HAVE_AMESOS2_METIS
+          // permute x
+          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
+            for(ordinal_type j = 0; j < n; ++j) {
+              A(i, j) = B(p(i), j);
+            }
+          });
+        #endif
+      }
 
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
