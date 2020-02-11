@@ -53,11 +53,6 @@
 #include "Tacho.hpp"
 #include "Tacho_Solver.hpp"
 
-#ifdef HAVE_AMESOS2_METIS
-// MDM-TODO namespace? Move locations?
-#include "metis.h"
-#endif
-
 namespace Amesos2 {
 
 /** \brief Amesos2 interface to the Tacho package.

@@ -61,6 +61,10 @@
 #include "Amesos2_SolverCore.hpp"
 #include "Amesos2_cuSOLVER_FunctionMap.hpp"
 
+#ifdef HAVE_AMESOS2_METIS
+// MDM-TODO namespace? Move locations?
+#include "metis.h"
+#endif
 
 namespace Amesos2 {
 
