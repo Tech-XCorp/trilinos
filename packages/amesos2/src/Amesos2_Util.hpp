@@ -66,6 +66,7 @@
 
 #include "Amesos2_TypeDecl.hpp"
 #include "Amesos2_Meta.hpp"
+#include "Amesos2_Kokkos_View_Copy_Assign.hpp"
 
 #ifdef HAVE_AMESOS2_EPETRA
 #include <Epetra_Map.h>
@@ -1121,7 +1122,7 @@ namespace Amesos2 {
           }
           if(i < size) {
             ordinal_type count = 0;
-            const ordinal_type row = l_perm(i);
+            const ordinal_type row = device_perm(i);
             for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
               const ordinal_type j = device_peri(cols(k)); /// col in A
               count += (i >= j); /// lower triangular
@@ -1134,7 +1135,7 @@ namespace Amesos2 {
         Kokkos::RangePolicy<device_space> policy_col(0, size);
         Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
           const ordinal_type kbeg = new_row_ptr(i);
-          const ordinal_type row = l_perm(i);
+          const ordinal_type row = device_perm(i);
           const ordinal_type col_beg = row_ptr(row);
           const ordinal_type col_end = row_ptr(row + 1);
           const ordinal_type nk = col_end - col_beg;
@@ -1142,7 +1143,7 @@ namespace Amesos2 {
           for(ordinal_type k = 0, t = 0; k < nk; ++k) {
             const ordinal_type tk = kbeg + t;
             const ordinal_type sk = col_beg + k;
-            const ordinal_type j = l_peri(cols(sk));
+            const ordinal_type j = device_peri(cols(sk));
             if(i >= j) {
               new_cols(tk) = j;
               new_values(tk) = values(sk);
