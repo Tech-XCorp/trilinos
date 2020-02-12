@@ -158,6 +158,27 @@ namespace Amesos2 {
   template <>
   struct FunctionMap<cuSOLVER,Kokkos::complex<double>>
   {
+    static void numeric(
+                 CUSOLVER::cusolverSpHandle_t handle,
+                 int size,
+                 int nnz,
+                 CUSOLVER::cusparseMatDescr_t & desc,
+                 const cuDoubleComplex * values,
+                 const int * rowPtr,
+                 const int * colIdx,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
+    {
+      auto status = cusolverSpZcsrcholFactor(handle,
+                                           size, nnz, desc,
+                                           values, rowPtr, colIdx,
+                                           chol_info,
+                                           buffer);
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpZcsrcholFactor failed with error: " << status);
+    }
+
     static void solve(
                  CUSOLVER::cusolverSpHandle_t handle,
                  int size,
