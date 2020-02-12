@@ -77,6 +77,27 @@ namespace Amesos2 {
   template <>
   struct FunctionMap<cuSOLVER,double>
   {
+    static void numeric(
+                 CUSOLVER::cusolverSpHandle_t handle,
+                 int size,
+                 int nnz,
+                 CUSOLVER::cusparseMatDescr_t & desc,
+                 const double * values
+                 const int * rowPtr,
+                 const int & colIdx,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
+    {
+      status = cusolverSpDcsrcholFactor(handle,
+                                           size, nnz, desc,
+                                           values, rowPtr, colIdx,
+                                           data_.chol_info,
+                                           buffer);
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
+    }
+  
     static void solve(
                  CUSOLVER::cusolverSpHandle_t handle,
                  int size,
@@ -96,6 +117,27 @@ namespace Amesos2 {
   template <>
   struct FunctionMap<cuSOLVER,float>
   {
+    static void numeric(
+                 CUSOLVER::cusolverSpHandle_t handle,
+                 int size,
+                 int nnz,
+                 CUSOLVER::cusparseMatDescr_t & desc,
+                 const float * values
+                 const int * rowPtr,
+                 const int & colIdx,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
+    {
+      status = cusolverSpScsrcholFactor(handle,
+                                           size, nnz, desc,
+                                           values, rowPtr, colIdx,
+                                           data_.chol_info,
+                                           buffer);
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpScsrcholFactor failed with error: " << status);
+    }
+    
     static void solve(
                  CUSOLVER::cusolverSpHandle_t handle,
                  int size,

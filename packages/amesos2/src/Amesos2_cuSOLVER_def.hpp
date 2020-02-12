@@ -286,11 +286,8 @@ cuSOLVER<Matrix,Vector>::numericFactorization_impl()
       buffer_ = device_value_type_array(Kokkos::ViewAllocateWithoutInitializing("cusolver buf"), bufsize);
     }
 
-    status = cusolverSpDcsrcholFactor(data_.handle,
-                                         size, nnz, data_.desc,
-                                         values, rowPtr, colIdx,
-                                         data_.chol_info,
-                                         buffer_.data());
+    function_map::numeric(data_.handle, size, nnz, data_.desc,
+      values, rowPtr, colIdx, data_.chol_info, buffer_.data());
   }
   return status;
 }
