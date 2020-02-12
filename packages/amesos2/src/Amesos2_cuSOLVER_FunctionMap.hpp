@@ -77,78 +77,58 @@ namespace Amesos2 {
   template <>
   struct FunctionMap<cuSOLVER,double>
   {
-
-    static void cusolver_solve(
+    static void solve(
+                 CUSOLVER::cusolverSpHandle_t handle,
                  int size,
-                 int nnz,
-                 const double *values,
-                 const int *rowPtr,
-                 const int *colIdx,
-                 const double *b,
-                 double tol,
-                 int reorder,
-                 double *x,
-                 int *singularity)
-{
-      // MDM-TODO move this to data_ or into a new method - don't duplicate for float
-      CUSOLVER::cusolverStatus_t cso;
-      CUSOLVER::cusolverSpHandle_t solver_handle;
-      cso = CUSOLVER::cusolverSpCreate(&solver_handle);
-      TEUCHOS_TEST_FOR_EXCEPTION(cso != CUSOLVER::CUSOLVER_STATUS_SUCCESS, std::runtime_error,
-        "cuSolver failed to create solver handle.");
+                 const double * b,
+                 double * x,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
+    {
+      auto status = CUSOLVER::cusolverSpDcsrcholSolve(
+        handle, size, b, x, chol_info, buffer);
 
-      CUSOLVER::cusparseStatus_t csp;
-      CUSOLVER::cusparseMatDescr_t descr = 0;
-
-      CUSOLVER::cusparseCreateMatDescr(&descr);
-      CUSOLVER::cusparseSetMatType(descr,CUSOLVER::CUSPARSE_MATRIX_TYPE_GENERAL);
-
-      csp = CUSOLVER::cusparseSetMatIndexBase(descr,CUSOLVER::CUSPARSE_INDEX_BASE_ZERO);
-      TEUCHOS_TEST_FOR_EXCEPTION(csp != CUSOLVER::CUSPARSE_STATUS_SUCCESS, std::runtime_error,
-        "cuSolver failed to set description.");
-
-#ifdef AMESOS2_CUSOLVER_HOST
-      // Time for solve using bcsstk18.mtx (on a GTX-960)
-      // cusolverSpDcsrlsvluHost     ~11s
-      // cusolverSpDcsrlsvqrHost     ~11s 
-      // cusolverSpDcsrlsvcholHost   ~2.4s
-      cso = CUSOLVER::cusolverSpDcsrlsvcholHost(solver_handle, size, nnz, descr, values, rowPtr, colIdx, b, tol, reorder, x, singularity);
-#else
-      // Time for solve using bcsstk18.mtx (on a GTX-960)
-      // cusolverSpDcsrlsvlu         Host only
-      // cusolverSpDcsrlsvqr         ~17s 
-      // cusolverSpDcsrlsvchol       ~2s
-      cso = CUSOLVER::cusolverSpDcsrlsvchol(solver_handle, size, nnz, descr, values, rowPtr, colIdx, b, tol, reorder, x, singularity);
-#endif
-
-      TEUCHOS_TEST_FOR_EXCEPTION(cso != CUSOLVER::CUSOLVER_STATUS_SUCCESS, std::runtime_error,
-        "cuSOLVER internal error. cusolverSpDcsrlsvqr failed.");
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
     }
   };
 
   template <>
   struct FunctionMap<cuSOLVER,float>
   {
+    static void solve(
+                 CUSOLVER::cusolverSpHandle_t handle,
+                 int size,
+                 const float * b,
+                 float * x,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
+    {
+      auto status = CUSOLVER::cusolverSpScsrcholSolve(
+        handle, size, b, x, chol_info, buffer);
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpScsrcholSolve failed with error: " << status);
+    }
   };
 
 #ifdef HAVE_TEUCHOS_COMPLEX
   template <>
   struct FunctionMap<cuSOLVER,Kokkos::complex<double>>
   {
-    static void cusolver_solve(
+    static void solve(
+                 CUSOLVER::cusolverSpHandle_t handle,
                  int size,
-                 int nnz,
-                 const Kokkos::complex<double> *values,
-                 const int *rowPtr,
-                 const int *colIdx,
-                 const Kokkos::complex<double> *b,
-                 double tol,
-                 int reorder,
-                 Kokkos::complex<double> *x,
-                 int *singularity)
+                 const cuDoubleComplex * b,
+                 cuDoubleComplex * x,
+                 CUSOLVER::csrcholInfo_t & chol_info,
+                 void * buffer)
     {
-      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
-        "cuSOLVER complex not set up yet.");
+      auto status = CUSOLVER::cusolverSpZcsrcholSolve(
+        handle, size, b, x, chol_info, buffer);
+
+      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
+        std::runtime_error, "cusolverSpZcsrcholSolve failed with error: " << status);
     }
   };
 #endif

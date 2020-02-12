@@ -371,11 +371,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     for(size_t n = 0; n < nrhs; ++n) {
       const cusolver_type * b = this->bValues_.data() + n * size;
       cusolver_type * x = this->xValues_.data() + n * size;
-      auto status = CUSOLVER::cusolverSpDcsrcholSolve(
-        data_.handle, size, b, x, data_.chol_info, buffer_.data());
-
-      TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-        std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
+      function_map::solve(handle, size, b, x, chol_info, buffer);
     }
 
     if(data_.bReorder) {

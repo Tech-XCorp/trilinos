@@ -36,7 +36,7 @@ namespace Tacho {
            const SizeTypeArray &ap,
            const OrdinalTypeArray &aj) {
         _rptr = size_type_array(do_not_initialize_tag("Graph::rptr"), m + 1);
-        _cidx = ordinal_type_array(do_not_initialize_tag("Graph::cidx"), nnz);
+        _cidx = ordinal_type_array(do_not_initialize_tag("Graph::cidx"), nnz - m);
 
         _m = m;
         _nnz = 0;
