@@ -67,8 +67,7 @@ cuSOLVER<Matrix,Vector>::cuSOLVER(
   Teuchos::RCP<const Matrix> A,
   Teuchos::RCP<Vector>       X,
   Teuchos::RCP<const Vector> B )
-  : SolverCore<Amesos2::cuSOLVER,Matrix,Vector>(A, X, B),
-    bReorder_(false)
+  : SolverCore<Amesos2::cuSOLVER,Matrix,Vector>(A, X, B)
 {
   auto status = CUSOLVER::cusolverSpCreate(&data_.handle);
   TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
@@ -87,30 +86,21 @@ cuSOLVER<Matrix,Vector>::cuSOLVER(
 template <class Matrix, class Vector>
 cuSOLVER<Matrix,Vector>::~cuSOLVER( )
 {
-  auto sparse_status = cusparseDestroyMatDescr(data_.desc);
-  TEUCHOS_TEST_FOR_EXCEPTION( sparse_status != CUSOLVER::CUSPARSE_STATUS_SUCCESS,
-    std::runtime_error, "cusparseDestroyMatDescr failed");
-
-  auto status = cusolverSpDestroyCsrcholInfo(data_.chol_info);
-  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-    std::runtime_error, "cusolverSpDestroyCsrcholInfo failed");
-
-  status = cusolverSpDestroy(data_.handle);
-  TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
-    std::runtime_error, "cusolverSpDestroy failed");
+  cusparseDestroyMatDescr(data_.desc);
+  cusolverSpDestroyCsrcholInfo(data_.chol_info);
+  cusolverSpDestroy(data_.handle);
 }
 
 template<class Matrix, class Vector>
 int
 cuSOLVER<Matrix,Vector>::preOrdering_impl()
 {
- #ifdef HAVE_AMESOS2_TIMERS
+#ifdef HAVE_AMESOS2_TIMERS
     Teuchos::TimeMonitor preOrderTimer(this->timers_.preOrderTime_);
 #endif
-
   if(do_optimization()) {
     // reorder to optimize cuda
-    if(bReorder_) {
+    if(data_.bReorder) {
     #ifndef HAVE_AMESOS2_METIS
       TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
         "Cannot reorder for cuSolver because no METIS is available.");
@@ -189,18 +179,25 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
       device_nzvals_view_ = device_value_type_array(
         Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
 
+      // need local access
+      auto new_row_ptr = device_row_ptr_view_;
+      auto new_cols = device_cols_view_;
+      auto new_values = device_nzvals_view_;
+      auto l_perm = device_perm;
+      auto l_peri = device_peri;
+
       // permute row indices
-      Kokkos::RangePolicy<DeviceSpaceType> policy_row(0, row_ptr.size());
+      Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy_row(0, row_ptr.size());
       Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
         ordinal_type i, size_type & update, const bool &final) {
         if(final) {
-          device_row_ptr_view_(i) = update;
+          new_row_ptr(i) = update;
         }
         if(i < size) {
           ordinal_type count = 0;
-          const ordinal_type row = device_perm(i);
+          const ordinal_type row = l_perm(i);
           for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
-            const ordinal_type j = device_peri(cols(k)); /// col in A
+            const ordinal_type j = l_peri(cols(k)); /// col in A
             count += (i >= j); /// lower triangular
           }
           update += count;
@@ -208,10 +205,10 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
       });
       
       // permute col indices
-      Kokkos::RangePolicy<DeviceSpaceType> policy_col(0, size);
+      Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy_col(0, size);
       Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
-        const ordinal_type kbeg = device_row_ptr_view_(i);
-        const ordinal_type row = device_perm(i);
+        const ordinal_type kbeg = new_row_ptr(i);
+        const ordinal_type row = l_perm(i);
         const ordinal_type col_beg = row_ptr(row);
         const ordinal_type col_end = row_ptr(row + 1);
         const ordinal_type nk = col_end - col_beg;
@@ -219,10 +216,10 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
         for(ordinal_type k = 0, t = 0; k < nk; ++k) {
           const ordinal_type tk = kbeg + t;
           const ordinal_type sk = col_beg + k;
-          const ordinal_type j = device_peri(cols(sk));
+          const ordinal_type j = l_peri(cols(sk));
           if(i >= j) {
-            device_cols_view_(tk) = j;
-            device_nzvals_view_(tk) = values(sk);
+            new_cols(tk) = j;
+            new_values(tk) = values(sk);
             ++t;
           }
         }
@@ -245,12 +242,11 @@ int
 cuSOLVER<Matrix,Vector>::symbolicFactorization_impl()
 {
 #ifdef HAVE_AMESOS2_TIMERS
-      Teuchos::TimeMonitor symFactTimer(this->timers_.symFactTime_);
+  Teuchos::TimeMonitor symFactTimer(this->timers_.symFactTime_);
 #endif
 
   int status = 0;
   if ( this->root_ ) {
-
     const int size = this->globalNumRows_;
     const int nnz = this->globalNumNonZeros_;
     const int * colIdx = device_cols_view_.data();
@@ -350,43 +346,57 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     // Some temporary clocks to track solve times
     auto startTime = std::chrono::system_clock::now();
 
+    // permute b
+    if(data_.bReorder) {
+      #ifdef HAVE_AMESOS2_METIS
+        // permute b
+        if(this->bValues_sort_.extent(0) != this->bValues_.extent(0) || this->bValues_sort_.extent(1) != this->bValues_.extent(1)) {
+          this->bValues_sort_ = device_solve_array_t(
+            Kokkos::ViewAllocateWithoutInitializing("bValues_sort_"), this->bValues_.extent(0), this->bValues_.extent(1));
+        }
+        Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->bValues_.extent(0));
+        auto l_orig_b = this->bValues_;
+        auto l_sort_b = this->bValues_sort_;
+        auto l_perm = this->device_perm;
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
+          for(ordinal_type j = 0; j < nrhs; ++j) {
+            l_sort_b(i, j) = l_orig_b(l_perm(i), j);
+          }
+        });
+        // be careful don't let these end up pointing to the same thing
+        Kokkos::deep_copy(this->bValues_, this->bValues_sort_);
+      #endif
+    }
+
     for(size_t n = 0; n < nrhs; ++n) {
       const cusolver_type * b = this->bValues_.data() + n * size;
       cusolver_type * x = this->xValues_.data() + n * size;
-
-      // permute b
-      /*
-      if(bReorder) {
-        #ifdef HAVE_AMESOS2_METIS
-          // permute x
-          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
-            for(ordinal_type j = 0; j < n; ++j) {
-              A(i, j) = B(p(i), j);
-            }
-          });
-        #endif
-      }
-      */
-
       auto status = CUSOLVER::cusolverSpDcsrcholSolve(
         data_.handle, size, b, x, data_.chol_info, buffer_.data());
 
-      // permute x
-      /*
-      if(bReorder) {
-        #ifdef HAVE_AMESOS2_METIS
-          // permute x
-          Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
-            for(ordinal_type j = 0; j < n; ++j) {
-              A(i, j) = B(p(i), j);
-            }
-          });
-        #endif
-      }
-      */
-
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
+    }
+
+    if(data_.bReorder) {
+      #ifdef HAVE_AMESOS2_METIS
+        // permute x
+        if(this->xValues_sort_.extent(0) != this->xValues_.extent(0) || this->xValues_sort_.extent(1) != this->xValues_.extent(1)) {
+          this->xValues_sort_ = device_solve_array_t(
+            Kokkos::ViewAllocateWithoutInitializing("xValues_sort_"), this->xValues_.extent(0), this->xValues_.extent(1));;
+        }
+        Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->xValues_.extent(0));
+        auto l_orig_x = this->xValues_;
+        auto l_sort_x = this->xValues_sort_;
+        auto l_peri = this->device_peri;
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
+          for(ordinal_type j = 0; j < nrhs; ++j) {
+            l_sort_x(i, j) = l_orig_x(l_peri(i), j);
+          }
+        });
+        // be careful don't let these end up pointing to the same thing
+        Kokkos::deep_copy(this->xValues_, this->xValues_sort_);
+      #endif
     }
 
     // Some temporary clocks to track solve times
@@ -440,8 +450,14 @@ cuSOLVER<Matrix,Vector>::setParameters_impl(const Teuchos::RCP<Teuchos::Paramete
   if( parameterList->isParameter("Trans") ){
     RCP<const ParameterEntryValidator> trans_validator = valid_params->getEntry("Trans").validator();
     parameterList->getEntry("Trans").setValidator(trans_validator);
-
   }
+
+  if( parameterList->isParameter("Reorder") ){
+    RCP<const ParameterEntryValidator> reorder_validator = valid_params->getEntry("Reorder").validator();
+    parameterList->getEntry("Reorder").setValidator(reorder_validator);
+  }
+
+  data_.bReorder = parameterList->get<bool>("Reorder", true);
 }
 
 
@@ -460,6 +476,9 @@ cuSOLVER<Matrix,Vector>::getValidParameters_impl() const
 
   if( is_null(valid_params) ){
     Teuchos::RCP<Teuchos::ParameterList> pl = Teuchos::parameterList();
+
+    pl->set("Reorder", true, "Whether GIDs contiguous");
+
     valid_params = pl;
   }
 

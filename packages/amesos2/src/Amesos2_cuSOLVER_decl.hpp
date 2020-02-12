@@ -127,13 +127,6 @@ public:
   typedef Kokkos::View<size_type*, HostDeviceSpaceType>       host_size_type_array;
   typedef Kokkos::View<ordinal_type*, HostDeviceSpaceType> host_ordinal_type_array;
 
-
-#ifdef HAVE_AMESOS2_METIS // data for reordering
-  typedef Kokkos::View<idx_t*, DeviceSpaceType>               device_metis_array;
-  device_metis_array device_perm;
-  device_metis_array device_peri;
-#endif
-  
   /// \name Constructor/Destructor methods
   //@{
 
@@ -153,13 +146,28 @@ public:
 
   //@}
 
-private:
+public: // preOrdering_impl and solve_impl are running cuda kernels - so public - MDM-TODO see how to improve this
 
   /**
    * \brief Performs pre-ordering on the matrix to increase efficiency.
    */
   int preOrdering_impl();
 
+  /**
+   * \brief cuSOLVER specific solve.
+   *
+   * Uses the symbolic and numeric factorizations, along with the RHS
+   * vector \c B to solve the sparse system of equations.  The
+   * solution is placed in X.
+   *
+   * \throw std::runtime_error cuSOLVER is not able to solve the system.
+   *
+   * \callgraph
+   */
+  int solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >       X,
+                 const Teuchos::Ptr<const MultiVecAdapter<Vector> > B) const;
+
+private:
 
   /**
    * \brief Perform symbolic factorization of the matrix using cuSOLVER.
@@ -177,22 +185,6 @@ private:
    * \throw std::runtime_error cuSOLVER is not able to factor the matrix
    */
   int numericFactorization_impl();
-
-
-  /**
-   * \brief cuSOLVER specific solve.
-   *
-   * Uses the symbolic and numeric factorizations, along with the RHS
-   * vector \c B to solve the sparse system of equations.  The
-   * solution is placed in X.
-   *
-   * \throw std::runtime_error cuSOLVER is not able to solve the system.
-   *
-   * \callgraph
-   */
-  int solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >       X,
-                 const Teuchos::Ptr<const MultiVecAdapter<Vector> > B) const;
-
 
   /**
    * \brief Determines whether the shape of the matrix is OK for this solver.
@@ -261,6 +253,7 @@ private:
     CUSOLVER::cusolverSpHandle_t handle;
     CUSOLVER::csrcholInfo_t chol_info;
     CUSOLVER::cusparseMatDescr_t desc;
+    bool bReorder;
   } data_;
 
   typedef Kokkos::View<cusolver_type**, Kokkos::LayoutLeft, DeviceSpaceType> device_solve_array_t;
@@ -273,7 +266,14 @@ private:
   device_size_type_array device_row_ptr_view_;
   device_ordinal_type_array device_cols_view_;
 
-  bool bReorder_; // temp - probably delete this later - used to test both ways
+
+#ifdef HAVE_AMESOS2_METIS // data for reordering
+  typedef Kokkos::View<idx_t*, DeviceSpaceType>               device_metis_array;
+  device_metis_array device_perm;
+  device_metis_array device_peri;
+  mutable device_solve_array_t xValues_sort_;
+  mutable device_solve_array_t bValues_sort_;
+#endif
 };                              // End class cuSOLVER
 
 template <>
