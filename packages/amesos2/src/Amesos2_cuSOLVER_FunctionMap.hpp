@@ -88,12 +88,8 @@ namespace Amesos2 {
                  CUSOLVER::csrcholInfo_t & chol_info,
                  void * buffer)
     {
-      auto status = cusolverSpDcsrcholFactor(handle,
-                                           size, nnz, desc,
-                                           values, rowPtr, colIdx,
-                                           chol_info,
-                                           buffer);
-
+      auto status = cusolverSpDcsrcholFactor(
+        handle, size, nnz, desc, values, rowPtr, colIdx, chol_info, buffer);
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
     }
@@ -108,7 +104,6 @@ namespace Amesos2 {
     {
       auto status = CUSOLVER::cusolverSpDcsrcholSolve(
         handle, size, b, x, chol_info, buffer);
-
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpDcsrcholSolve failed with error: " << status);
     }
@@ -128,12 +123,8 @@ namespace Amesos2 {
                  CUSOLVER::csrcholInfo_t & chol_info,
                  void * buffer)
     {
-      auto status = cusolverSpScsrcholFactor(handle,
-                                           size, nnz, desc,
-                                           values, rowPtr, colIdx,
-                                           chol_info,
-                                           buffer);
-
+      auto status = cusolverSpScsrcholFactor(
+        handle, size, nnz, desc, values, rowPtr, colIdx, chol_info, buffer);
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpScsrcholFactor failed with error: " << status);
     }
@@ -169,12 +160,8 @@ namespace Amesos2 {
                  CUSOLVER::csrcholInfo_t & chol_info,
                  void * buffer)
     {
-      auto status = cusolverSpZcsrcholFactor(handle,
-                                           size, nnz, desc,
-                                           values, rowPtr, colIdx,
-                                           chol_info,
-                                           buffer);
-
+      auto status = cusolverSpZcsrcholFactor(
+        handle, size, nnz, desc, values, rowPtr, colIdx, chol_info, buffer);
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpZcsrcholFactor failed with error: " << status);
     }
@@ -189,7 +176,6 @@ namespace Amesos2 {
     {
       auto status = CUSOLVER::cusolverSpZcsrcholSolve(
         handle, size, b, x, chol_info, buffer);
-
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
         std::runtime_error, "cusolverSpZcsrcholSolve failed with error: " << status);
     }

@@ -251,7 +251,8 @@ cuSOLVER<Matrix,Vector>::symbolicFactorization_impl()
     const int nnz = this->globalNumNonZeros_;
     const int * colIdx = device_cols_view_.data();
     const int * rowPtr = device_row_ptr_view_.data();
-    auto status = CUSOLVER::cusolverSpXcsrcholAnalysis(data_.handle, size, nnz, data_.desc, rowPtr, colIdx, data_.chol_info);
+    auto status = CUSOLVER::cusolverSpXcsrcholAnalysis(
+      data_.handle, size, nnz, data_.desc, rowPtr, colIdx, data_.chol_info);
     TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
       std::runtime_error, "cusolverSpXcsrcholAnalysis failed");
   }
