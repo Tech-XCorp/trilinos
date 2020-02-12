@@ -304,7 +304,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
   using Teuchos::as;
 
   const global_size_type ld_rhs = this->root_ ? X->getGlobalLength() : 0;
-  const size_t nrhs = X->getGlobalNumVectors();
+  const ordinal_type nrhs = X->getGlobalNumVectors();
 
   // don't allocate b since it's handled by the copy manager and might just be
   // be assigned, not copied anyways.
@@ -368,10 +368,10 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
       #endif
     }
 
-    for(size_t n = 0; n < nrhs; ++n) {
+    for(ordinal_type n = 0; n < nrhs; ++n) {
       const cusolver_type * b = this->bValues_.data() + n * size;
       cusolver_type * x = this->xValues_.data() + n * size;
-      function_map::solve(handle, size, b, x, chol_info, buffer);
+      function_map::solve(data_.handle, size, b, x, data_.chol_info, buffer_.data());
     }
 
     if(data_.bReorder) {
