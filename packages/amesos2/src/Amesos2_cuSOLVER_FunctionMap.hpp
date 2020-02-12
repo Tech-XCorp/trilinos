@@ -82,16 +82,16 @@ namespace Amesos2 {
                  int size,
                  int nnz,
                  CUSOLVER::cusparseMatDescr_t & desc,
-                 const double * values
+                 const double * values,
                  const int * rowPtr,
-                 const int & colIdx,
+                 const int * colIdx,
                  CUSOLVER::csrcholInfo_t & chol_info,
                  void * buffer)
     {
-      status = cusolverSpDcsrcholFactor(handle,
+      auto status = cusolverSpDcsrcholFactor(handle,
                                            size, nnz, desc,
                                            values, rowPtr, colIdx,
-                                           data_.chol_info,
+                                           chol_info,
                                            buffer);
 
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
@@ -122,16 +122,16 @@ namespace Amesos2 {
                  int size,
                  int nnz,
                  CUSOLVER::cusparseMatDescr_t & desc,
-                 const float * values
+                 const float * values,
                  const int * rowPtr,
-                 const int & colIdx,
+                 const int * colIdx,
                  CUSOLVER::csrcholInfo_t & chol_info,
                  void * buffer)
     {
-      status = cusolverSpScsrcholFactor(handle,
+      auto status = cusolverSpScsrcholFactor(handle,
                                            size, nnz, desc,
                                            values, rowPtr, colIdx,
-                                           data_.chol_info,
+                                           chol_info,
                                            buffer);
 
       TEUCHOS_TEST_FOR_EXCEPTION( status != CUSOLVER::CUSOLVER_STATUS_SUCCESS,
