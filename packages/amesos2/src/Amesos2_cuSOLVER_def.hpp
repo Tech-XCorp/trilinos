@@ -126,7 +126,7 @@ cuSOLVER<Matrix,Vector>::symbolicFactorization_impl()
   int status = 0;
   if ( this->root_ ) {
     const int size = this->globalNumRows_;
-    const int nnz = this->globalNumNonZeros_;
+    const int nnz = this->globalNumNonZeros_ - (data_.bReorder ? size : 0); // reordered to symmetric format. Is always ok?
     const int * colIdx = device_cols_view_.data();
     const int * rowPtr = device_row_ptr_view_.data();
     auto status = CUSOLVER::cusolverSpXcsrcholAnalysis(
@@ -145,7 +145,7 @@ cuSOLVER<Matrix,Vector>::numericFactorization_impl()
   int status = 0;
   if ( this->root_ ) {
     const int size = this->globalNumRows_;
-    const int nnz = this->globalNumNonZeros_;
+    const int nnz = this->globalNumNonZeros_ - (data_.bReorder ? size : 0); // reordered to symmetric format. Is always ok?
     const cusolver_type * values = device_nzvals_view_.data();
     const int * colIdx = device_cols_view_.data();
     const int * rowPtr = device_row_ptr_view_.data();
@@ -420,9 +420,9 @@ cuSOLVER<Matrix,Vector>::loadA_impl(EPhase current_phase)
     // manager and then these allocations can go away.
     if( this->root_ ) {
       device_nzvals_view_ = device_value_type_array(
-        Kokkos::ViewAllocateWithoutInitializing("nzvals"), this->globalNumNonZeros_);
+        Kokkos::ViewAllocateWithoutInitializing("nzvals"), this->globalNumNonZeros_); // reminder reordering changes to symmetric - reduce nnz by size
       device_cols_view_ = device_ordinal_type_array(
-        Kokkos::ViewAllocateWithoutInitializing("colind"), this->globalNumNonZeros_);
+        Kokkos::ViewAllocateWithoutInitializing("colind"), this->globalNumNonZeros_);  // reminder reordering changes to symmetric - reduce nnz by size
       device_row_ptr_view_ = device_size_type_array(
         Kokkos::ViewAllocateWithoutInitializing("rowptr"), this->globalNumRows_ + 1);
     }
