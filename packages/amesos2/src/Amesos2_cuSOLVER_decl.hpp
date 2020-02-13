@@ -61,10 +61,7 @@
 #include "Amesos2_SolverCore.hpp"
 #include "Amesos2_cuSOLVER_FunctionMap.hpp"
 
-#ifdef HAVE_AMESOS2_METIS
-// MDM-TODO namespace? Move locations?
-#include "metis.h"
-#endif
+
 
 namespace Amesos2 {
 
@@ -266,14 +263,12 @@ private:
   device_size_type_array device_row_ptr_view_;
   device_ordinal_type_array device_cols_view_;
 
-
-#ifdef HAVE_AMESOS2_METIS // data for reordering
-  typedef Kokkos::View<idx_t*, DeviceSpaceType>               device_metis_array;
-  device_metis_array device_perm;
-  device_metis_array device_peri;
+  // data for reordering
+  typedef Kokkos::View<ordinal_type*, DeviceSpaceType>       per_array_t;
+  per_array_t device_perm_;
+  per_array_t device_peri_;
   mutable device_solve_array_t xValues_sort_;
   mutable device_solve_array_t bValues_sort_;
-#endif
 };                              // End class cuSOLVER
 
 template <>

@@ -71,6 +71,10 @@
 #include <Epetra_Map.h>
 #endif
 
+#ifdef HAVE_AMESOS2_METIS
+// MDM-TODO namespace? Move locations? Discuss TPL linkage
+#include "metis.h"
+#endif
 
 namespace Amesos2 {
 
@@ -1021,6 +1025,144 @@ namespace Amesos2 {
       }
     }
 
+    template<class values_view_t, class row_ptr_view_t, class cols_view_t, class per_view_t>
+    void
+    resort(values_view_t & values, row_ptr_view_t & row_ptr, cols_view_t cols,
+           per_view_t & perm, per_view_t & peri)
+    {
+      #ifndef HAVE_AMESOS2_METIS
+        TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+          "Cannot reorder for cuSolver because no METIS is available.");
+      #else
+  
+        typedef typename cols_view_t::value_type ordinal_type;
+        typedef typename row_ptr_view_t::value_type size_type;
+
+        const ordinal_type size = row_ptr.size() - 1;
+
+        // MDM-TODO maybe set this up on device, strip diagonals on device,
+        // then copy to host snd run METIS resort. Not sure if that can
+        // improve efficiency here.
+
+        // begin on host where we'll run metis reorder
+        auto host_row_ptr = Kokkos::create_mirror_view(row_ptr);
+        auto host_cols = Kokkos::create_mirror_view(cols);
+        Kokkos::deep_copy(host_row_ptr, row_ptr);
+        Kokkos::deep_copy(host_cols, cols);
+
+        // strip out the diagonals - metis will just crash with them in
+        // make space for the stripped version
+        typename row_ptr_view_t::HostMirror host_strip_diag_row_ptr(
+          Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_row_ptr"),
+          row_ptr.size());
+        typename cols_view_t::HostMirror host_strip_diag_cols(
+          Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_cols"),
+          cols.size() - size); // dropping diagonals. Always positive?
+        
+        size_type new_nnz = 0;
+        for(ordinal_type i = 0; i < size; ++i) {
+          host_strip_diag_row_ptr(i) = new_nnz;
+          for(size_type j = host_row_ptr(i); j < host_row_ptr(i+1); ++j) {
+            if (i != host_cols(j)) {
+              host_strip_diag_cols(new_nnz++) = host_cols(j);
+            }
+          }
+        }
+        host_strip_diag_row_ptr(size) = new_nnz;
+
+        // now convert to metis index type if necessary
+        typedef Kokkos::View<idx_t*, Kokkos::HostSpace>         host_metis_array;
+        host_metis_array host_metis_row_ptr;
+        host_metis_array host_metis_cols;
+        deep_copy_or_assign_view(host_metis_row_ptr, host_strip_diag_row_ptr);
+        deep_copy_or_assign_view(host_metis_cols, host_strip_diag_cols);
+
+        idx_t metis_size = size;
+
+        // we'll get original permutations on host
+        host_metis_array host_perm(
+          Kokkos::ViewAllocateWithoutInitializing("host_perm"), size);
+        host_metis_array host_peri(
+          Kokkos::ViewAllocateWithoutInitializing("host_peri"), size);
+
+        // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
+        // For cuSolver this could be a more elegant way to set things up.
+        int err = METIS_NodeND(&metis_size, host_metis_row_ptr.data(), host_metis_cols.data(),
+          NULL, NULL, host_perm.data(), host_peri.data());
+        
+        TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
+          "METIS_NodeND failed to sort matrix.");
+
+        // we're assuming input views are in the device space
+        // this might be a bit fragile - maybe template that in?
+        typedef typename values_view_t::execution_space device_space;
+        // put the permutations on our saved device ptrs
+        // these will be used to permute x and b when we solve
+        auto device_perm = Kokkos::create_mirror_view(device_space(), host_perm);
+        auto device_peri = Kokkos::create_mirror_view(device_space(), host_peri);
+
+        deep_copy_or_assign_view(device_perm, host_perm);
+        deep_copy_or_assign_view(device_peri, host_peri);
+
+        // we'll permute matrix on device to a new set of arrays
+        row_ptr_view_t new_row_ptr(
+          Kokkos::ViewAllocateWithoutInitializing("new_row_ptr"), row_ptr.size());
+        cols_view_t new_cols(
+          Kokkos::ViewAllocateWithoutInitializing("new_cols"), cols.size());
+        values_view_t new_values(
+          Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
+
+        // permute row indices
+        Kokkos::RangePolicy<device_space> policy_row(0, row_ptr.size());
+        Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
+          ordinal_type i, size_type & update, const bool &final) {
+          if(final) {
+            new_row_ptr(i) = update;
+          }
+          if(i < size) {
+            ordinal_type count = 0;
+            const ordinal_type row = l_perm(i);
+            for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
+              const ordinal_type j = device_peri(cols(k)); /// col in A
+              count += (i >= j); /// lower triangular
+            }
+            update += count;
+          }
+        });
+        
+        // permute col indices
+        Kokkos::RangePolicy<device_space> policy_col(0, size);
+        Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
+          const ordinal_type kbeg = new_row_ptr(i);
+          const ordinal_type row = l_perm(i);
+          const ordinal_type col_beg = row_ptr(row);
+          const ordinal_type col_end = row_ptr(row + 1);
+          const ordinal_type nk = col_end - col_beg;
+
+          for(ordinal_type k = 0, t = 0; k < nk; ++k) {
+            const ordinal_type tk = kbeg + t;
+            const ordinal_type sk = col_beg + k;
+            const ordinal_type j = l_peri(cols(sk));
+            if(i >= j) {
+              new_cols(tk) = j;
+              new_values(tk) = values(sk);
+              ++t;
+            }
+          }
+        });
+        
+        // finally set the inputs to the new sorted arrays
+        row_ptr = new_row_ptr;
+        cols = new_cols;
+        values = new_values;
+        
+        // also set the permutation
+        // we copy because may need to change the type from Metis to the ordinal type
+        deep_copy_or_assign_view(perm, device_perm);
+        deep_copy_or_assign_view(peri, device_peri);
+      #endif
+    }
+      
     /** @} */
 
   } // end namespace Util
