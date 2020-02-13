@@ -1105,6 +1105,11 @@ namespace Amesos2 {
         values_view_t new_values(
           Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size());
 
+
+Kokkos::deep_copy(new_row_ptr, row_ptr);
+Kokkos::deep_copy(new_cols, cols);
+Kokkos::deep_copy(new_values, values);
+
         // permute row indices
         Kokkos::RangePolicy<device_space> policy_row(0, row_ptr.size());
         Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
