@@ -1052,10 +1052,11 @@ namespace Amesos2 {
 
         // strip out the diagonals - metis will just crash with them in
         // make space for the stripped version
-        typename row_ptr_view_t::HostMirror host_strip_diag_row_ptr(
+        typedef Kokkos::View<idx_t*, Kokkos::HostSpace>         host_metis_array;
+        host_metis_array host_strip_diag_row_ptr(
           Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_row_ptr"),
           row_ptr.size());
-        typename cols_view_t::HostMirror host_strip_diag_cols(
+        host_metis_array host_strip_diag_cols(
           Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_cols"),
           cols.size() - size); // dropping diagonals. Always positive?
         
@@ -1070,15 +1071,6 @@ namespace Amesos2 {
         }
         host_strip_diag_row_ptr(size) = new_nnz;
 
-        // now convert to metis index type if necessary
-        typedef Kokkos::View<idx_t*, Kokkos::HostSpace>         host_metis_array;
-        host_metis_array host_metis_row_ptr;
-        host_metis_array host_metis_cols;
-        deep_copy_or_assign_view(host_metis_row_ptr, host_strip_diag_row_ptr);
-        deep_copy_or_assign_view(host_metis_cols, host_strip_diag_cols);
-
-        idx_t metis_size = size;
-
         // we'll get original permutations on host
         host_metis_array host_perm(
           Kokkos::ViewAllocateWithoutInitializing("host_perm"), size);
@@ -1087,7 +1079,8 @@ namespace Amesos2 {
 
         // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
         // For cuSolver this could be a more elegant way to set things up.
-        int err = METIS_NodeND(&metis_size, host_metis_row_ptr.data(), host_metis_cols.data(),
+        idx_t metis_size = size;
+        int err = METIS_NodeND(&metis_size, host_strip_diag_row_ptr.data(), host_strip_diag_cols.data(),
           NULL, NULL, host_perm.data(), host_peri.data());
         
         TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
@@ -1100,9 +1093,8 @@ namespace Amesos2 {
         // these will be used to permute x and b when we solve
         auto device_perm = Kokkos::create_mirror_view(device_space(), host_perm);
         auto device_peri = Kokkos::create_mirror_view(device_space(), host_peri);
-
-        deep_copy_or_assign_view(device_perm, host_perm);
-        deep_copy_or_assign_view(device_peri, host_peri);
+        deep_copy(device_perm, host_perm);
+        deep_copy(device_peri, host_peri);
 
         // we'll permute matrix on device to a new set of arrays
         row_ptr_view_t new_row_ptr(
@@ -1121,7 +1113,7 @@ namespace Amesos2 {
           }
           if(i < size) {
             ordinal_type count = 0;
-            const ordinal_type row = l_perm(i);
+            const ordinal_type row = device_perm(i);
             for(ordinal_type k = row_ptr(row); k < row_ptr(row + 1); ++k) {
               const ordinal_type j = device_peri(cols(k)); /// col in A
               count += (i >= j); /// lower triangular
@@ -1134,7 +1126,7 @@ namespace Amesos2 {
         Kokkos::RangePolicy<device_space> policy_col(0, size);
         Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
           const ordinal_type kbeg = new_row_ptr(i);
-          const ordinal_type row = l_perm(i);
+          const ordinal_type row = device_perm(i);
           const ordinal_type col_beg = row_ptr(row);
           const ordinal_type col_end = row_ptr(row + 1);
           const ordinal_type nk = col_end - col_beg;
@@ -1142,7 +1134,7 @@ namespace Amesos2 {
           for(ordinal_type k = 0, t = 0; k < nk; ++k) {
             const ordinal_type tk = kbeg + t;
             const ordinal_type sk = col_beg + k;
-            const ordinal_type j = l_peri(cols(sk));
+            const ordinal_type j = device_peri(cols(sk));
             if(i >= j) {
               new_cols(tk) = j;
               new_values(tk) = values(sk);
@@ -1156,8 +1148,8 @@ namespace Amesos2 {
         cols = new_cols;
         values = new_values;
         
-        // also set the permutation
-        // we copy because may need to change the type from Metis to the ordinal type
+        // also set the permutation which may need to convert the type from
+        // metis to the native ordinal_type
         deep_copy_or_assign_view(perm, device_perm);
         deep_copy_or_assign_view(peri, device_peri);
       #endif
