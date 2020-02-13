@@ -233,7 +233,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
         Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->bValues_.extent(0));
         auto l_orig_b = this->bValues_;
         auto l_sort_b = this->bValues_sort_;
-        auto l_perm = this->device_perm;
+        auto l_perm = this->device_perm_;
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
           for(ordinal_type j = 0; j < nrhs; ++j) {
             l_sort_b(i, j) = l_orig_b(l_perm(i), j);
@@ -260,7 +260,7 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
         Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->xValues_.extent(0));
         auto l_orig_x = this->xValues_;
         auto l_sort_x = this->xValues_sort_;
-        auto l_peri = this->device_peri;
+        auto l_peri = this->device_peri_;
         Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
           for(ordinal_type j = 0; j < nrhs; ++j) {
             l_sort_x(i, j) = l_orig_x(l_peri(i), j);

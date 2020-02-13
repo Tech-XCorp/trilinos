@@ -66,6 +66,7 @@
 
 #include "Amesos2_TypeDecl.hpp"
 #include "Amesos2_Meta.hpp"
+#include "Amesos2_Kokkos_View_Copy_Assign.hpp"
 
 #ifdef HAVE_AMESOS2_EPETRA
 #include <Epetra_Map.h>
