@@ -1026,10 +1026,11 @@ namespace Amesos2 {
       }
     }
 
-    template<class values_view_t, class row_ptr_view_t, class cols_view_t, class per_view_t>
+    template<class values_view_t, class row_ptr_view_t, class cols_view_t,
+             class per_view_t, class exec_space_t>
     void
-    resort(values_view_t & values, row_ptr_view_t & row_ptr, cols_view_t & cols,
-           per_view_t & perm, per_view_t & peri)
+    reorder(values_view_t & values, row_ptr_view_t & row_ptr, cols_view_t & cols,
+            per_view_t & perm, per_view_t & peri, const exec_space_t & space)
     {
       #ifndef HAVE_AMESOS2_METIS
         TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
@@ -1080,6 +1081,11 @@ namespace Amesos2 {
 
         // MDM - note cuSolver has cusolverSpXcsrmetisnd() which wraps METIS_NodeND
         // For cuSolver this could be a more elegant way to set things up.
+        
+        // MDM-TODO move this to a cpp - move the include metis.h to a cpp?
+        // Don't want to expose the header
+        // Need to decide how to handle the conversion to idx_t which we need to
+        // happen before leaving the templated header here.
         idx_t metis_size = size;
         int err = METIS_NodeND(&metis_size, host_strip_diag_row_ptr.data(), host_strip_diag_cols.data(),
           NULL, NULL, host_perm.data(), host_peri.data());
@@ -1087,13 +1093,10 @@ namespace Amesos2 {
         TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
           "METIS_NodeND failed to sort matrix.");
 
-        // we're assuming input views are in the device space
-        // this might be a bit fragile - maybe template that in?
-        typedef typename values_view_t::execution_space device_space;
         // put the permutations on our saved device ptrs
         // these will be used to permute x and b when we solve
-        auto device_perm = Kokkos::create_mirror_view(device_space(), host_perm);
-        auto device_peri = Kokkos::create_mirror_view(device_space(), host_peri);
+        auto device_perm = Kokkos::create_mirror_view(exec_space_t(), host_perm);
+        auto device_peri = Kokkos::create_mirror_view(exec_space_t(), host_peri);
         deep_copy(device_perm, host_perm);
         deep_copy(device_peri, host_peri);
 
@@ -1106,7 +1109,7 @@ namespace Amesos2 {
           Kokkos::ViewAllocateWithoutInitializing("new_values"), values.size() - size);
 
         // permute row indices
-        Kokkos::RangePolicy<device_space> policy_row(0, row_ptr.size());
+        Kokkos::RangePolicy<exec_space_t> policy_row(0, row_ptr.size());
         Kokkos::parallel_scan(policy_row, KOKKOS_LAMBDA(
           ordinal_type i, size_type & update, const bool &final) {
           if(final) {
@@ -1124,7 +1127,7 @@ namespace Amesos2 {
         });
         
         // permute col indices
-        Kokkos::RangePolicy<device_space> policy_col(0, size);
+        Kokkos::RangePolicy<exec_space_t> policy_col(0, size);
         Kokkos::parallel_for(policy_col, KOKKOS_LAMBDA(ordinal_type i) {
           const ordinal_type kbeg = new_row_ptr(i);
           const ordinal_type row = device_perm(i);
@@ -1154,6 +1157,30 @@ namespace Amesos2 {
         deep_copy_or_assign_view(perm, device_perm);
         deep_copy_or_assign_view(peri, device_peri);
 
+      #endif
+    }
+
+    template<class array_view_t, class per_view_t, class exec_space_t>
+    void
+    apply_reorder_permutation(const array_view_t & array, array_view_t & working_buffer,
+      const per_view_t & permutation, const exec_space_t & space) {
+      #ifndef HAVE_AMESOS2_METIS
+        TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+          "Cannot apply_reorder_permutation for cuSolver because no METIS is available.");
+      #else
+        if(working_buffer.extent(0) != array.extent(0) || working_buffer.extent(1) != array.extent(1)) {
+          working_buffer = array_view_t(
+            Kokkos::ViewAllocateWithoutInitializing("bValues_sort_"),
+            array.extent(0), array.extent(1));
+        }
+        Kokkos::RangePolicy<exec_space_t> policy(0, array.extent(0));
+        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(size_t i) {
+          for(size_t j = 0; j < array.extent(1); ++j) {
+            working_buffer(i, j) = array(permutation(i), j);
+          }
+        });
+        // Keep array and working_buffer separate - do not assign
+        Kokkos::deep_copy(array, working_buffer);
       #endif
     }
       

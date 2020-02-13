@@ -267,8 +267,7 @@ private:
   typedef Kokkos::View<ordinal_type*, DeviceSpaceType>       per_array_t;
   per_array_t device_perm_;
   per_array_t device_peri_;
-  mutable device_solve_array_t xValues_sort_;
-  mutable device_solve_array_t bValues_sort_;
+  mutable device_solve_array_t permute_working_buffer_;
 };                              // End class cuSOLVER
 
 template <>

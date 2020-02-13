@@ -105,9 +105,9 @@ cuSOLVER<Matrix,Vector>::preOrdering_impl()
 
     // reorder to optimize cuda
     if(data_.bReorder) {
-      Amesos2::Util::resort(
+      Amesos2::Util::reorder(
         device_nzvals_view_, device_row_ptr_view_, device_cols_view_,
-        device_perm_, device_peri_);
+        device_perm_, device_peri_, DeviceSpaceType());
     }
   }
 
@@ -224,24 +224,8 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
 
     // permute b
     if(data_.bReorder) {
-      #ifdef HAVE_AMESOS2_METIS
-        // permute b
-        if(this->bValues_sort_.extent(0) != this->bValues_.extent(0) || this->bValues_sort_.extent(1) != this->bValues_.extent(1)) {
-          this->bValues_sort_ = device_solve_array_t(
-            Kokkos::ViewAllocateWithoutInitializing("bValues_sort_"), this->bValues_.extent(0), this->bValues_.extent(1));
-        }
-        Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->bValues_.extent(0));
-        auto l_orig_b = this->bValues_;
-        auto l_sort_b = this->bValues_sort_;
-        auto l_perm = this->device_perm_;
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
-          for(ordinal_type j = 0; j < nrhs; ++j) {
-            l_sort_b(i, j) = l_orig_b(l_perm(i), j);
-          }
-        });
-        // be careful don't let these end up pointing to the same thing
-        Kokkos::deep_copy(this->bValues_, this->bValues_sort_);
-      #endif
+      Amesos2::Util::apply_reorder_permutation(
+        this->bValues_, this->permute_working_buffer_, this->device_perm_);
     }
 
     for(ordinal_type n = 0; n < nrhs; ++n) {
@@ -251,24 +235,8 @@ cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >
     }
 
     if(data_.bReorder) {
-      #ifdef HAVE_AMESOS2_METIS
-        // permute x
-        if(this->xValues_sort_.extent(0) != this->xValues_.extent(0) || this->xValues_sort_.extent(1) != this->xValues_.extent(1)) {
-          this->xValues_sort_ = device_solve_array_t(
-            Kokkos::ViewAllocateWithoutInitializing("xValues_sort_"), this->xValues_.extent(0), this->xValues_.extent(1));;
-        }
-        Kokkos::RangePolicy<DeviceSpaceType::execution_space> policy(0, this->xValues_.extent(0));
-        auto l_orig_x = this->xValues_;
-        auto l_sort_x = this->xValues_sort_;
-        auto l_peri = this->device_peri_;
-        Kokkos::parallel_for(policy, KOKKOS_LAMBDA(const ordinal_type &i) {
-          for(ordinal_type j = 0; j < nrhs; ++j) {
-            l_sort_x(i, j) = l_orig_x(l_peri(i), j);
-          }
-        });
-        // be careful don't let these end up pointing to the same thing
-        Kokkos::deep_copy(this->xValues_, this->xValues_sort_);
-      #endif
+      Amesos2::Util::apply_reorder_permutation(
+        this->xValues_, this->permute_working_buffer_, this->device_peri_);
     }
 
     // Some temporary clocks to track solve times
