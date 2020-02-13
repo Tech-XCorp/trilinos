@@ -1175,10 +1175,10 @@ namespace Amesos2 {
       for(int n = 0; n < (int) values.size(); ++n) printf("%.3f ", (float) h_values(n));
       printf("\n");
       printf("perm: ");
-      for(int n = 0; n < (int) h_perm.size(); ++n) printf("%.3f ", (int) h_perm(n));
+      for(int n = 0; n < (int) h_perm.size(); ++n) printf("%d ", (int) h_perm(n));
       printf("\n");
       printf("peri: ");
-      for(int n = 0; n < (int) h_peri.size(); ++n) printf("%.3f ", (int) h_peri(n));
+      for(int n = 0; n < (int) h_peri.size(); ++n) printf("%d ", (int) h_peri(n));
       printf("\n");
 
       #endif
