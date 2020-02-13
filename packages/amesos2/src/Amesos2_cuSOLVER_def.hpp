@@ -177,6 +177,35 @@ int
 cuSOLVER<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >       X,
                                    const Teuchos::Ptr<const MultiVecAdapter<Vector> > B) const
 {
+
+      auto h_row_ptr = Kokkos::create_mirror_view(device_row_ptr_view_);
+      auto h_cols = Kokkos::create_mirror_view(device_cols_view_);
+      auto h_values = Kokkos::create_mirror_view(device_nzvals_view_);
+      auto h_perm = Kokkos::create_mirror_view(device_perm_);
+      auto h_peri = Kokkos::create_mirror_view(device_peri_);
+      Kokkos::deep_copy(h_row_ptr, device_row_ptr_view_);
+      Kokkos::deep_copy(h_cols, device_cols_view_);
+      Kokkos::deep_copy(h_values, device_nzvals_view_);
+      Kokkos::deep_copy(h_perm, device_perm_);
+      Kokkos::deep_copy(h_peri, device_peri_);
+
+      printf("row_ptr: ");
+      for(int n = 0; n < (int) h_row_ptr.size(); ++n) printf("%d ", (int) h_row_ptr(n));
+      printf("\n");
+      printf("cols: ");
+      for(int n = 0; n < (int) h_cols.size(); ++n) printf("%d ", (int) h_cols(n));
+      printf("\n");
+      printf("values: ");
+      for(int n = 0; n < (int) h_values.size(); ++n) printf("%.3f ", (float) h_values(n));
+      printf("\n");
+      printf("perm: ");
+      for(int n = 0; n < (int) h_perm.size(); ++n) printf("%d ", (int) h_perm(n));
+      printf("\n");
+      printf("peri: ");
+      for(int n = 0; n < (int) h_peri.size(); ++n) printf("%d ", (int) h_peri(n));
+      printf("\n");
+
+
   using Teuchos::as;
 
   const global_size_type ld_rhs = this->root_ ? X->getGlobalLength() : 0;

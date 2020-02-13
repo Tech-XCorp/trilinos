@@ -1028,7 +1028,7 @@ namespace Amesos2 {
 
     template<class values_view_t, class row_ptr_view_t, class cols_view_t, class per_view_t>
     void
-    resort(values_view_t & values, row_ptr_view_t & row_ptr, cols_view_t cols,
+    resort(values_view_t & values, row_ptr_view_t & row_ptr, cols_view_t & cols,
            per_view_t & perm, per_view_t & peri)
     {
       #ifndef HAVE_AMESOS2_METIS
@@ -1158,33 +1158,6 @@ Kokkos::deep_copy(new_values, values);
         // metis to the native ordinal_type
         deep_copy_or_assign_view(perm, device_perm);
         deep_copy_or_assign_view(peri, device_peri);
-        
-      auto h_row_ptr = Kokkos::create_mirror_view(row_ptr);
-      auto h_cols = Kokkos::create_mirror_view(cols);
-      auto h_values = Kokkos::create_mirror_view(values);
-      auto h_perm = Kokkos::create_mirror_view(perm);
-      auto h_peri = Kokkos::create_mirror_view(peri);
-      Kokkos::deep_copy(h_row_ptr, row_ptr);
-      Kokkos::deep_copy(h_cols, cols);
-      Kokkos::deep_copy(h_values, values);
-      Kokkos::deep_copy(h_perm, perm);
-      Kokkos::deep_copy(h_peri, peri);
-
-      printf("row_ptr: ");
-      for(int n = 0; n < (int) row_ptr.size(); ++n) printf("%d ", (int) h_row_ptr(n));
-      printf("\n");
-      printf("cols: ");
-      for(int n = 0; n < (int) cols.size(); ++n) printf("%d ", (int) h_cols(n));
-      printf("\n");
-      printf("values: ");
-      for(int n = 0; n < (int) values.size(); ++n) printf("%.3f ", (float) h_values(n));
-      printf("\n");
-      printf("perm: ");
-      for(int n = 0; n < (int) h_perm.size(); ++n) printf("%d ", (int) h_perm(n));
-      printf("\n");
-      printf("peri: ");
-      for(int n = 0; n < (int) h_peri.size(); ++n) printf("%d ", (int) h_peri(n));
-      printf("\n");
 
       #endif
     }
