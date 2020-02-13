@@ -1153,6 +1153,23 @@ namespace Amesos2 {
         // metis to the native ordinal_type
         deep_copy_or_assign_view(perm, device_perm);
         deep_copy_or_assign_view(peri, device_peri);
+        
+      printf("row_ptr: ");
+      for(int n = 0; n < (int) row_ptr.size(); ++n) printf("%d ", (int) row_ptr(n));
+      printf("\n");
+      printf("cols: ");
+      for(int n = 0; n < (int) cols.size(); ++n) printf("%d ", (int) cols(n));
+      printf("\n");
+      printf("values: ");
+      for(int n = 0; n < (int) values.size(); ++n) printf("%.3f ", (float) values(n));
+      printf("\n");
+      printf("device_perm: ");
+      for(int n = 0; n < (int) device_perm.size(); ++n) printf("%.3f ", (int) device_perm(n));
+      printf("\n");
+      printf("device_peri: ");
+      for(int n = 0; n < (int) device_peri.size(); ++n) printf("%.3f ", (int) device_peri(n));
+      printf("\n");
+
       #endif
     }
       
