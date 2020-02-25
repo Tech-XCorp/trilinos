@@ -179,9 +179,9 @@ namespace Amesos2 {
     void get1dCopy( const Teuchos::ArrayView<scalar_t>& A,
                     size_t lda,
                     Teuchos::Ptr<
-                    const Tpetra::Map<local_ordinal_t,
-                    global_ordinal_t,
-                    node_t> > distribution_map,
+                      const Tpetra::Map<local_ordinal_t,
+                      global_ordinal_t,
+                      node_t> > distribution_map,
         EDistribution distribution) const;
 
     template<typename KV>

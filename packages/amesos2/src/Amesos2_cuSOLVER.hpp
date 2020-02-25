@@ -41,13 +41,12 @@
 //
 // @HEADER
 
+#ifndef AMESOS2_CUSOLVER_HPP
+#define AMESOS2_CUSOLVER_HPP
 
-#ifndef AMESOS2_CONCRETEMATRIXADAPTER_DEF_HPP
-#define AMESOS2_CONCRETEMATRIXADAPTER_DEF_HPP
-
-#include "Amesos2_AbstractConcreteMatrixAdapter_def.hpp"
-
-#include "Amesos2_TpetraCrsMatrix_MatrixAdapter_def.hpp"
-#include "Amesos2_KokkosCrsMatrix_MatrixAdapter_def.hpp"
-
+#include "Amesos2_cuSOLVER_decl.hpp"
+#ifndef HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+#  include "Amesos2_cuSOLVER_def.hpp"
 #endif
+
+#endif  // AMESOS2_CUSOLVER_HPP

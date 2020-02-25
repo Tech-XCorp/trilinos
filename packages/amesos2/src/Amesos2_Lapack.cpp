@@ -55,6 +55,10 @@ namespace Amesos2 {
 }
 #endif
 
+// MDM-DISCUSS Moved this Tpetra ETI into a dedicated file so we could share it
+// for different solvers. Decide if this is ok. As we add the other solvers we
+// can switch them to this file to avoid the duplication.
+
 #ifdef HAVE_TPETRA_INST_INT_INT
 namespace Amesos2 {
 #ifdef HAVE_TPETRA_INST_FLOAT
@@ -127,10 +131,16 @@ namespace Amesos2 {
 #include "Kokkos_DefaultNode.hpp"
 #include "TpetraCore_ETIHelperMacros.h"
 
+<<<<<<< HEAD:packages/amesos2/src/Amesos2_Lapack.cpp
 #define AMESOS2_LAPACK_LOCAL_INSTANT(S,LO,GO,N)                        \
   template class Amesos2::Lapack<Tpetra::CrsMatrix<S, LO, GO, N>,      \
                                   Tpetra::MultiVector<S, LO, GO,  N> >;
 
+=======
+#define AMESOS2_TACHO_LOCAL_INSTANT(S,LO,GO,N)                        \
+  template class Amesos2::TACHO_SOLVER_NAME<Tpetra::CrsMatrix<S, LO, GO, N>,      \
+                                      Tpetra::MultiVector<S, LO, GO,  N> >;
+>>>>>>> Amesos2: Kokkos adapter:packages/amesos2/src/Amesos2_Tacho_Impl.hpp
 TPETRA_ETI_MANGLING_TYPEDEFS()
 
 #if defined(HAVE_TPETRA_INST_SERIAL) && !defined(HAVE_TPETRA_DEFAULTNODE_SERIALWRAPPERNODE) && defined(HAVE_TPETRA_INST_DOUBLE) && defined(TPETRA_HAVE_KOKKOS_REFACTOR)
@@ -376,4 +386,11 @@ TPETRA_ETI_MANGLING_TYPEDEFS()
 #endif
 #undef NODETYPE
 #endif
+<<<<<<< HEAD:packages/amesos2/src/Amesos2_Lapack.cpp
 #endif  // HAVE_AMESOS2_EXPLICIT_INSTANTIATION
+=======
+
+
+#define KOKKOS_IMPL_SOLVER_NAME TACHO_SOLVER_NAME
+#include "Amesos2_Kokkos_Impl.hpp"
+>>>>>>> Amesos2: Kokkos adapter:packages/amesos2/src/Amesos2_Tacho_Impl.hpp

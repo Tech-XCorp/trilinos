@@ -61,6 +61,18 @@ TachoSolver<Matrix,Vector>::TachoSolver(
   Teuchos::RCP<const Vector> B )
   : SolverCore<Amesos2::TachoSolver,Matrix,Vector>(A, X, B)
 {
+
+  int sym = 3;
+  int posdef = 1;
+  int small_problem_thres = 1024;
+
+// temp try some values
+data_.solver.setMaxNumberOfSuperblocks(32);
+data_.solver.setSmallProblemThresholdsize(small_problem_thres);
+data_.solver.setBlocksize(64);
+data_.solver.setPanelsize(32);
+data_.solver.setMatrixType(sym, posdef);
+
 }
 
 
@@ -77,6 +89,7 @@ TachoSolver<Matrix,Vector>::description() const
   oss << "Tacho solver interface";
   return oss.str();
 }
+
 
 template<class Matrix, class Vector>
 int
@@ -113,7 +126,7 @@ TachoSolver<Matrix,Vector>::numericFactorization_impl()
   int status = 0;
   if ( this->root_ ) {
     if(do_optimization()) {
-     this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
+      this->matrixA_->returnValues_kokkos_view(device_nzvals_view_);
     }
     data_.solver.factorize(device_nzvals_view_);
   }
@@ -168,11 +181,6 @@ TachoSolver<Matrix,Vector>::solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector
     }
 
     data_.solver.solve(xValues_, bValues_, workspace_);
-
-    int status = 0; // TODO: determine what error handling will be
-    if(status != 0) {
-      ierr = status;
-    }
   }
 
   /* All processes should have the same error code */
@@ -265,7 +273,7 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
     // now so I didn't complete refactoring the matrix code for the parallel
     // case. If we added that later, we should have it hooked up to the copy
     // manager and then these allocations can go away.
-    if( this->root_ ) {
+    if(this->root_) {
       device_nzvals_view_ = device_value_type_array(
         Kokkos::ViewAllocateWithoutInitializing("nzvals"), this->globalNumNonZeros_);
       host_cols_view_ = host_ordinal_type_array(
@@ -284,8 +292,11 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
                           std::runtime_error,
                           "Row and column maps have different indexbase ");
 
-      Util::get_crs_helper_kokkos_view<MatrixAdapter<Matrix>,
-        device_value_type_array, host_ordinal_type_array, host_size_type_array>::do_get(
+      TEUCHOS_TEST_FOR_EXCEPTION(true, std::runtime_error,
+        "Temporary disabled - needs support for resort method first.");
+/*
+      Util::get_crs_helper_kokkos_view<
+      MatrixAdapter<Matrix>,device_value_type_array,device_ordinal_type_array,device_size_type_array>::do_get(
                                                       this->matrixA_.ptr(),
                                                       device_nzvals_view_,
                                                       host_cols_view_,
@@ -293,6 +304,7 @@ TachoSolver<Matrix,Vector>::loadA_impl(EPhase current_phase)
                                                       nnz_ret,
                                                       ROOTED, ARBITRARY,
                                                       this->columnIndexBase_);
+*/
     }
   }
 

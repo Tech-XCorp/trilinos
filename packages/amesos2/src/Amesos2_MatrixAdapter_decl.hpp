@@ -139,6 +139,16 @@ namespace Amesos2 {
 		EStorage_Ordering ordering=ARBITRARY,
 		EDistribution distribution=ROOTED) const; // This was placed as last argument to preserve API
 
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void getCrs_kokkos_view(KV_S & nzval,
+    KV_GO & colind,
+    KV_GS & rowptr,
+    global_size_t& nnz,
+    const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+    EStorage_Ordering ordering=ARBITRARY,
+    EDistribution distribution=ROOTED) const; // This was placed as last argument to preserve API
+
+
     /**
      * Convenience overload for the getCrs function that uses an enum
      * to describe some of the most basic distributions that could be
@@ -186,6 +196,15 @@ namespace Amesos2 {
 		const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > colmap,
 		EStorage_Ordering ordering=ARBITRARY,
 		EDistribution distribution=ROOTED) const; // This was placed as last argument to preserve API
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void getCcs_kokkos_view(KV_S & nzval,
+    KV_GO & colind,
+    KV_GS & rowptr,
+    global_size_t& nnz,
+    const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > colmap,
+    EStorage_Ordering ordering=ARBITRARY,
+    EDistribution distribution=ROOTED) const; // This was placed as last argument to preserve API
 
     /**
      * Convenience overload for the getCcs function that uses an enum
@@ -296,6 +315,26 @@ namespace Amesos2 {
 		     EStorage_Ordering ordering,
 		     no_special_impl nsi) const;
 
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void help_getCrs_kokkos_view(KV_S & nzval,
+         KV_GO & colind,
+         KV_GS & rowptr,
+         global_size_t& nnz,
+         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+         EDistribution distribution,
+         EStorage_Ordering ordering,
+         has_special_impl hsi) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void help_getCrs_kokkos_view(KV_S & nzval,
+         KV_GO & colind,
+         KV_GS & rowptr,
+         global_size_t& nnz,
+         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+         EDistribution distribution,
+         EStorage_Ordering ordering,
+         no_special_impl nsi) const;
+
     void do_getCrs(const Teuchos::ArrayView<scalar_t> nzval,
         const Teuchos::ArrayView<global_ordinal_t> colind,
         const Teuchos::ArrayView<global_size_t> rowptr,
@@ -308,6 +347,26 @@ namespace Amesos2 {
     void do_getCrs(const Teuchos::ArrayView<scalar_t> nzval,
         const Teuchos::ArrayView<global_ordinal_t> colind,
         const Teuchos::ArrayView<global_size_t> rowptr,
+        global_size_t& nnz,
+        const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+        EDistribution distribution,
+        EStorage_Ordering ordering,
+        col_access ca) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void do_getCrs_kokkos_view(KV_S & nzval,
+        KV_GO & colind,
+        KV_GS & rowptr,
+        global_size_t& nnz,
+        const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+        EDistribution distribution,
+        EStorage_Ordering ordering,
+        row_access ra) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void do_getCrs_kokkos_view(KV_S & nzval,
+        KV_GO & colind,
+        KV_GS & rowptr,
         global_size_t& nnz,
         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
         EDistribution distribution,
@@ -332,6 +391,26 @@ namespace Amesos2 {
 		     EStorage_Ordering ordering,
 		     no_special_impl nsi) const;
 
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void help_getCcs_kokkos_view(KV_S & nzval,
+         KV_GO & colind,
+         KV_GS & rowptr,
+         global_size_t& nnz,
+         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+         EDistribution distribution,
+         EStorage_Ordering ordering,
+         has_special_impl hsi) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void help_getCcs_kokkos_view(KV_S & nzval,
+         KV_GO & colind,
+         KV_GS & rowptr,
+         global_size_t& nnz,
+         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+         EDistribution distribution,
+         EStorage_Ordering ordering,
+         no_special_impl nsi) const;
+
     void do_getCcs(const Teuchos::ArrayView<scalar_t> nzval,
         const Teuchos::ArrayView<global_ordinal_t> rowind,
         const Teuchos::ArrayView<global_size_t> colptr,
@@ -346,6 +425,26 @@ namespace Amesos2 {
         const Teuchos::ArrayView<global_size_t> colptr,
         global_size_t& nnz,
         const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > colmap,
+        EDistribution distribution,
+        EStorage_Ordering ordering,
+        col_access ca) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void do_getCcs_kokkos_view(KV_S & nzval,
+        KV_GO & rowind,
+        KV_GS & colptr,
+        global_size_t& nnz,
+        const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
+        EDistribution distribution,
+        EStorage_Ordering ordering,
+        row_access ra) const;
+
+    template<typename KV_S, typename KV_GO, typename KV_GS>
+    void do_getCcs_kokkos_view(KV_S & nzval,
+        KV_GO & rowind,
+        KV_GS & colptr,
+        global_size_t& nnz,
+        const Teuchos::Ptr<const Tpetra::Map<local_ordinal_t,global_ordinal_t,node_t> > rowmap,
         EDistribution distribution,
         EStorage_Ordering ordering,
         col_access ca) const;

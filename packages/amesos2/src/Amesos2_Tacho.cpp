@@ -54,13 +54,13 @@ namespace Amesos2 {
   AMESOS2_SOLVER_EPETRA_INST(TachoSolver);
 #endif
 
-#define AMESOS2_TACHO_LOCAL_INSTANT(S,LO,GO,N) \
-template class Amesos2::TachoSolver<Tpetra::CrsMatrix<S, LO, GO, N>, \
+  #define AMESOS2_TACHO_LOCAL_INSTANT(S,LO,GO,N) \
+  template class Amesos2::TachoSolver<Tpetra::CrsMatrix<S, LO, GO, N>, \
                                 Tpetra::MultiVector<S, LO, GO, N> >;
 
-TPETRA_ETI_MANGLING_TYPEDEFS()
+  TPETRA_ETI_MANGLING_TYPEDEFS()
 
-TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR(AMESOS2_TACHO_LOCAL_INSTANT)
+  TPETRA_INSTANTIATE_SLGN_NO_ORDINAL_SCALAR(AMESOS2_TACHO_LOCAL_INSTANT)
 
   #define AMESOS2_KOKKOS_IMPL_SOLVER_NAME TachoSolver
   #include "Amesos2_Kokkos_Impl.hpp"

@@ -302,6 +302,17 @@ namespace Amesos2 {
     super_type& setParameters(
 			      const Teuchos::RCP<Teuchos::ParameterList> & parameterList );
 
+    /** \brief Set the matrix file name that was used. (Probably temporary)
+     *
+     * MDM Might want to install this in the solver params so it can be read.
+     * But this is added temporarily so we can have a pure Cholmod or cuSolver
+     * test running internally as a debugging option. Probably that will all
+     * change or be removed later so I kept it a separate path to make the
+     * rip out easier later.
+     */
+    void setMatrixFilePath( const std::string & mm_file_path ) {
+      this->matrix_file_path = mm_file_path;
+    };
 
     /**
      * \brief Return a const parameter list of all of the valid parameters that
@@ -507,6 +518,13 @@ namespace Amesos2 {
 
     /// Number of process images in the matrix communicator
     int nprocs_;
+
+    // the matrix file name path used for the test
+    // this wss added to make some debug setups for CHOLMOD and cuSolver where
+    // they could load and run the solve independently of the Amesos2
+    // steps. Not necessarily expecting we would even keep this but need it
+    // to resolve some issues during the refactor.
+    std::string matrix_file_path; // MDM-TODO delete me when done
 
   };				// End class Amesos2::SolverCore
 

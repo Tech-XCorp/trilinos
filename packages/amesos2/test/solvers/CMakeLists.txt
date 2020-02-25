@@ -20,6 +20,22 @@ IF (${PACKAGE_NAME}_ENABLE_KLU2)
     NUM_MPI_PROCS 2
     STANDARD_PASS_OUTPUT
     )
+
+  TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopyKlu2Files
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCE_FILES klu2_test.xml
+    EXEDEPS Solver_Test
+    )
+
+  TRIBITS_ADD_TEST(
+    Solver_Test
+    NAME KLU2_Solver_Test
+    ARGS "--xml-params=klu2_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
+    STANDARD_PASS_OUTPUT
+    NUM_MPI_PROCS 1
+    COMM serial mpi
+    )
+
 ENDIF()
 
 ##### SuperLu Tests #####
@@ -106,6 +122,43 @@ IF (${PACKAGE_NAME}_ENABLE_ShyLU_NodeTacho)
     ARGS "--xml-params=tacho_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
     STANDARD_PASS_OUTPUT
     NUM_MPI_PROCS 1 # Need to determine if we want more MPI when not running OpenMP with threads
+    COMM serial mpi
+    )
+
+ENDIF()
+
+##### cuSOLVER Tests #####
+
+IF (${PACKAGE_NAME}_ENABLE_CUSOLVER)
+
+  TRIBITS_ADD_TEST(
+    Solver_Test
+    NAME cuSOLVER_Solver_Test
+    ARGS "--xml-params=cuSOLVER_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
+    STANDARD_PASS_OUTPUT
+    NUM_MPI_PROCS 1 # Need to determine if we want more MPI when not running OpenMP with threads
+    COMM serial mpi
+    )
+
+ENDIF()
+
+##### CHOLMOD Tests #####
+
+ASSERT_DEFINED(${PACKAGE_NAME}_ENABLE_Cholmod)
+IF (${PACKAGE_NAME}_ENABLE_Cholmod)
+
+  TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCholmodFiles
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCE_FILES cholmod_test.xml
+    EXEDEPS Solver_Test
+    )
+
+  TRIBITS_ADD_TEST(
+    Solver_Test
+    NAME Cholmod_Solver_Test
+    ARGS "--xml-params=cholmod_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
+    STANDARD_PASS_OUTPUT
+    NUM_MPI_PROCS 1
     COMM serial mpi
     )
 
@@ -200,7 +253,22 @@ IF (${PACKAGE_NAME}_ENABLE_Basker)
     NUM_MPI_PROCS 2
     STANDARD_PASS_OUTPUT
     )
-    
+
+  TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopyBaskerFiles
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCE_FILES Basker_test.xml
+    EXEDEPS Solver_Test
+    )
+
+  TRIBITS_ADD_TEST(
+    Solver_Test
+    NAME Basker_Solver_Test
+    ARGS "--xml-params=Basker_test.xml --filedir=${CMAKE_CURRENT_BINARY_DIR}/../matrices/ --multiple-solves --refactor"
+    STANDARD_PASS_OUTPUT
+    NUM_MPI_PROCS 1
+    COMM serial mpi
+    )
+
 ENDIF()
 
 ####   SHYLUBASKER Tests ####

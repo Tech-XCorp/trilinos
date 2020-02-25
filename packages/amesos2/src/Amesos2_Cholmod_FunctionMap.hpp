@@ -52,8 +52,8 @@
            MultiVectors
 */
 
-#ifndef AMESOS2_NEWSOLVER_FUNCTIONMAP_HPP
-#define AMESOS2_NEWSOLVER_FUNCTIONMAP_HPP
+#ifndef AMESOS2_CHOLMOD_FUNCTIONMAP_HPP
+#define AMESOS2_CHOLMOD_FUNCTIONMAP_HPP
 
 #ifdef HAVE_TEUCHOS_COMPLEX
 #include <complex>
@@ -83,7 +83,7 @@ namespace Amesos2 {
       sparse->ncol = ncol;
       sparse->nzmax = nzmax;
       sparse->stype = 1;
-      sparse->itype = CHOLMOD_INT;
+      sparse->itype = CHOLMOD_LONG;
       sparse->sorted = 0;
       sparse->packed = 1;
       sparse->xtype = CHOLMOD_REAL;
@@ -102,6 +102,8 @@ namespace Amesos2 {
       dense->xtype = CHOLMOD_REAL;
       dense->dtype = CHOLMOD_DOUBLE;
       dense->x = x;
+      dense->nzmax = 0; // always written before read?
+      dense->z = NULL;
     }
   };
 
@@ -116,7 +118,7 @@ namespace Amesos2 {
       sparse->ncol = ncol;
       sparse->nzmax = nzmax;
       sparse->stype = 1;
-      sparse->itype = CHOLMOD_INT;
+      sparse->itype = CHOLMOD_LONG;
       sparse->sorted = 0;
       sparse->packed = 1;
       sparse->xtype = CHOLMOD_REAL;
@@ -136,6 +138,8 @@ namespace Amesos2 {
       dense->xtype = CHOLMOD_REAL;
       dense->dtype = CHOLMOD_SINGLE;
       dense->x = x;
+      dense->nzmax = 0; // always written before read?
+      dense->z = NULL;
     }
   };
 
@@ -152,7 +156,7 @@ namespace Amesos2 {
       sparse->ncol = ncol;
       sparse->nzmax = nzmax;
       sparse->stype = 1;
-      sparse->itype = CHOLMOD_INT;
+      sparse->itype = CHOLMOD_LONG;
       sparse->sorted = 0;
       sparse->packed = 1;
       sparse->xtype = CHOLMOD_COMPLEX;

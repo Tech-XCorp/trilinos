@@ -192,6 +192,23 @@ struct TypeMap<KLU2,std::complex<double> >
   typedef double magnitude_type;
 };
 
+template <>
+struct TypeMap<KLU2,Kokkos::complex<float> >
+{
+  static std::complex<double> dtype;
+  typedef std::complex<double> type;
+  typedef double magnitude_type;
+};
+
+
+template <>
+struct TypeMap<KLU2,Kokkos::complex<double> >
+{
+  static std::complex<double> dtype;
+  typedef std::complex<double> type;
+  typedef double magnitude_type;
+};
+
 
 #endif  // HAVE_TEUCHOS_COMPLEX
 

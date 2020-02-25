@@ -89,6 +89,9 @@ namespace Amesos2 {
     typedef Node                            node_t;
     typedef Tpetra::global_size_t           global_size_t;
 
+    typedef typename node_t::device_type::execution_space              execution_space_t;
+    typedef Kokkos::View<scalar_t**, Kokkos::LayoutLeft, execution_space_t> kokkos_view_t;
+
     friend Teuchos::RCP<MultiVecAdapter<multivec_t> > createMultiVecAdapter<> (Teuchos::RCP<multivec_t>);
     friend Teuchos::RCP<const MultiVecAdapter<multivec_t> > createConstMultiVecAdapter<> (Teuchos::RCP<const multivec_t>);
 

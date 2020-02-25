@@ -544,6 +544,13 @@ namespace Amesos2 {
         // needs to keep the source Map, we have to make a copy of the
         // latter in order to ensure that it will stick around past the
         // scope of this function call.  (Ptr is not reference counted.)
+        
+        // Note that if we restored cholmod to the Amesos2_SolverFactory_UnitTests
+        // it's going to run MPI 4 and hang here since the non-root ranks are empty.
+        // I didn't resolve this yet - just removed it from Amesos2_SolverFactory_UnitTests
+        // since we are currently just refactoring for Serial. Note Tacho does
+        // not run in the Amesos2_SolverFactory_UnitTests as well.
+        // MDM-TODO - Come back to this if we have parallel.
         srcMap = rcp(new map_type(*source_map));
         importer_ = rcp (new import_type (srcMap, this->getMap ()));
       }

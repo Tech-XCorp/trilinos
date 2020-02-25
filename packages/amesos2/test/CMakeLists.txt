@@ -18,5 +18,9 @@ TRIBITS_COPY_FILES_TO_BINARY_DIR(CopyMatrixTestFiles
                ./matrices/amesos2_test_mat4.mtx
                ./matrices/tacho_test.mtx
                ./matrices/tacho_test_complex.mtx
+               ./matrices/cholmod_test.mtx
+               ./matrices/cholmod_test_epetra.mtx
+               ./matrices/cholmod_test_complex.mtx
+               ./matrices/bcsstk18.mtx
   )
 

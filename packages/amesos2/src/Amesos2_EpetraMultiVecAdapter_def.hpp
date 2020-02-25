@@ -226,17 +226,17 @@ void MultiVecAdapter<Epetra_MultiVector>::get1dCopy(
 #ifdef HAVE_AMESOS2_DEBUG
   const size_t requested_vector_length = distribution_map->getNodeNumElements();
   TEUCHOS_TEST_FOR_EXCEPTION( lda < requested_vector_length,
-		      std::invalid_argument,
-		      "Given stride is not large enough for local vector length" );
+          std::invalid_argument,
+          "Given stride is not large enough for local vector length" );
   TEUCHOS_TEST_FOR_EXCEPTION( as<size_t>(av.size()) < (num_vecs-1) * lda + requested_vector_length,
-		      std::invalid_argument,
-		      "MultiVector storage not large enough given leading dimension "
-		      "and number of vectors" );
+          std::invalid_argument,
+          "MultiVector storage not large enough given leading dimension "
+          "and number of vectors" );
 #endif
 
   // Optimization for ROOTED and single MPI process
   if ( num_vecs == 1 && mv_->Comm().MyPID() == 0 && mv_->Comm().NumProc() == 1 ) {
-	  mv_->ExtractCopy(av.getRawPtr(), lda);
+    mv_->ExtractCopy(av.getRawPtr(), lda);
   }
   else {
   Epetra_Map e_dist_map
@@ -252,7 +252,6 @@ void MultiVecAdapter<Epetra_MultiVector>::get1dCopy(
   // Finally, do copy
   redist_mv.ExtractCopy(av.getRawPtr(), lda);
   }
-
 }
 
 void MultiVecAdapter<Epetra_MultiVector>::get1dCopy_kokkos_view_host(

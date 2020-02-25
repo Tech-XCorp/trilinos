@@ -42,35 +42,42 @@
 // @HEADER
 
 /**
-  \file   Amesos2_KLU2_decl.hpp
-  \author Siva Rajamanickam <srajama@sandia.gov>
+  \file   Amesos2_cuSOLVER_decl.hpp
+  \author John Doe <jd@sandia.gov>
+  \date   Tue Aug 27 17:06:53 2013
 
-  \brief  Amesos2 KLU2 declarations.
+  \brief  Amesos2 cuSOLVER declarations.
 */
 
 
-#ifndef AMESOS2_KLU2_DECL_HPP
-#define AMESOS2_KLU2_DECL_HPP
+#ifndef AMESOS2_CUSOLVER_DECL_HPP
+#define AMESOS2_CUSOLVER_DECL_HPP
+
+// Temporary measure to switch cuSolver between host and device solve mode
+// This dictates what space x and b live in 
+//  #define AMESOS2_CUSOLVER_HOST
 
 #include "Amesos2_SolverTraits.hpp"
 #include "Amesos2_SolverCore.hpp"
-#include "Amesos2_KLU2_FunctionMap.hpp"
+#include "Amesos2_cuSOLVER_FunctionMap.hpp"
+
+
 
 namespace Amesos2 {
 
 
-/** \brief Amesos2 interface to the KLU2 package.
+/** \brief Amesos2 interface to cuSOLVER.
  *
- * See the \ref KLU2_parameters "summary of KLU2 parameters"
+ * See the \ref superlu_parameters "summary of SuperLU parameters"
  * supported by this Amesos2 interface.
  *
  * \ingroup amesos2_solver_interfaces
  */
 template <class Matrix,
           class Vector>
-class KLU2 : public SolverCore<Amesos2::KLU2, Matrix, Vector>
+class cuSOLVER : public SolverCore<Amesos2::cuSOLVER, Matrix, Vector>
 {
-  friend class SolverCore<Amesos2::KLU2,Matrix,Vector>; // Give our base access
+  friend class SolverCore<Amesos2::cuSOLVER,Matrix,Vector>; // Give our base access
                                                           // to our private
                                                           // implementation funcs
 public:
@@ -78,29 +85,44 @@ public:
   /// Name of this solver interface.
   static const char* name;      // declaration. Initialization outside.
 
-  typedef KLU2<Matrix,Vector>                                       type;
-  typedef SolverCore<Amesos2::KLU2,Matrix,Vector>             super_type;
+  typedef cuSOLVER<Matrix,Vector>                                       type;
+  typedef SolverCore<Amesos2::cuSOLVER,Matrix,Vector>             super_type;
 
   // Since typedef's are not inheritted, go grab them
-  typedef typename super_type::scalar_type                      scalar_type;
-  typedef typename super_type::local_ordinal_type        local_ordinal_type;
-  typedef typename super_type::global_ordinal_type      global_ordinal_type;
-  typedef typename super_type::global_size_type            global_size_type;
+  typedef typename super_type::scalar_type                    scalar_type;
+  typedef typename super_type::local_ordinal_type      local_ordinal_type;
+  typedef typename super_type::global_ordinal_type    global_ordinal_type;
+  typedef typename super_type::global_size_type          global_size_type;
+  typedef typename super_type::node_type                        node_type;
 
-  typedef TypeMap<Amesos2::KLU2,scalar_type>                    type_map;
+  typedef TypeMap<Amesos2::cuSOLVER,scalar_type>                    type_map;
 
-  /*
-   * The KLU2 interface will need two other typedef's, which are:
-   * - the KLU2 type that corresponds to scalar_type and
-   * - the corresponding type to use for magnitude
-   */
-  typedef typename type_map::type                                  slu_type;
+  typedef typename type_map::type                             cusolver_type;
   typedef typename type_map::magnitude_type                  magnitude_type;
 
-  typedef FunctionMap<Amesos2::KLU2,slu_type>               function_map;
+  typedef FunctionMap<Amesos2::cuSOLVER,cusolver_type>         function_map;
 
-  typedef Matrix                                                matrix_type;
-  typedef MatrixAdapter<matrix_type>                    matrix_adapter_type;
+#ifdef AMESOS2_CUSOLVER_HOST 
+  typedef Kokkos::DefaultHostExecutionSpace                 DeviceSpaceType;
+#else
+  #ifdef KOKKOS_ENABLE_CUDA
+    // special case - use UVM Off not UVM on to test the current targets
+    typedef Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace>  DeviceSpaceType;
+  #else
+    typedef Kokkos::DefaultExecutionSpace                    DeviceSpaceType;
+  #endif
+#endif
+
+  typedef int                                                  ordinal_type;
+  typedef int                                                     size_type;
+
+  typedef Kokkos::View<size_type*, DeviceSpaceType>       device_size_type_array;
+  typedef Kokkos::View<ordinal_type*, DeviceSpaceType> device_ordinal_type_array;
+  typedef Kokkos::View<cusolver_type*, DeviceSpaceType>  device_value_type_array;
+
+  typedef Kokkos::DefaultHostExecutionSpace                    HostDeviceSpaceType;
+  typedef Kokkos::View<size_type*, HostDeviceSpaceType>       host_size_type_array;
+  typedef Kokkos::View<ordinal_type*, HostDeviceSpaceType> host_ordinal_type_array;
 
   /// \name Constructor/Destructor methods
   //@{
@@ -109,66 +131,57 @@ public:
    * \brief Initialize from Teuchos::RCP.
    *
    * \warning Should not be called directly!  Use instead
-   * Amesos2::create() to initialize a KLU2 interface.
+   * Amesos2::create() to initialize a cuSOLVER interface.
    */
-  KLU2(Teuchos::RCP<const Matrix> A,
+  cuSOLVER(Teuchos::RCP<const Matrix> A,
           Teuchos::RCP<Vector>       X,
           Teuchos::RCP<const Vector> B);
 
 
   /// Destructor
-  ~KLU2( );
+  ~cuSOLVER( );
 
   //@}
 
-private:
-
- /**
-  * \brief can we optimize size_type and ordinal_type for straight pass through,
-  * also check that is_contiguous_ flag set to true
-  */
-  bool single_proc_optimization() const;
+public: // preOrdering_impl and solve_impl are running cuda kernels - so public - MDM-TODO see how to improve this
 
   /**
    * \brief Performs pre-ordering on the matrix to increase efficiency.
-   *
-   * KLU2 does not support pre-ordering, so this method does nothing.
    */
   int preOrdering_impl();
 
-
   /**
-   * \brief Perform symbolic factorization of the matrix using KLU2.
-   *
-   * Called first in the sequence before numericFactorization.
-   *
-   * \throw std::runtime_error KLU2 is not able to factor the matrix.
-   */
-  int symbolicFactorization_impl();
-
-
-  /**
-   * \brief KLU2 specific numeric factorization
-   *
-   * \throw std::runtime_error KLU2 is not able to factor the matrix
-   */
-  int numericFactorization_impl();
-
-
-  /**
-   * \brief KLU2 specific solve.
+   * \brief cuSOLVER specific solve.
    *
    * Uses the symbolic and numeric factorizations, along with the RHS
    * vector \c B to solve the sparse system of equations.  The
    * solution is placed in X.
    *
-   * \throw std::runtime_error KLU2 is not able to solve the system.
+   * \throw std::runtime_error cuSOLVER is not able to solve the system.
    *
    * \callgraph
    */
   int solve_impl(const Teuchos::Ptr<MultiVecAdapter<Vector> >       X,
                  const Teuchos::Ptr<const MultiVecAdapter<Vector> > B) const;
 
+private:
+
+  /**
+   * \brief Perform symbolic factorization of the matrix using cuSOLVER.
+   *
+   * Called first in the sequence before numericFactorization.
+   *
+   * \throw std::runtime_error cuSOLVER is not able to factor the matrix.
+   */
+  int symbolicFactorization_impl();
+
+
+  /**
+   * \brief cuSOLVER specific numeric factorization
+   *
+   * \throw std::runtime_error cuSOLVER is not able to factor the matrix
+   */
+  int numericFactorization_impl();
 
   /**
    * \brief Determines whether the shape of the matrix is OK for this solver.
@@ -177,15 +190,16 @@ private:
 
 
   /**
-   * Currently, the following KLU2 parameters/options are
+   * Currently, the following cuSOLVER parameters/options are
    * recognized and acted upon:
    *
+   * MDM-TODO Update docs
    * <ul>
    *   <li> \c "Trans" : { \c "NOTRANS" | \c "TRANS" |
    *     \c "CONJ" }.  Specifies whether to solve with the transpose system.</li>
    *   <li> \c "Equil" : { \c true | \c false }.  Specifies whether
    *     the solver to equilibrate the matrix before solving.</li>
-   *   <li> \c "IterRefine" : { \c "NO" | \c "SINGLE" | \c "DOUBLE" | \c "EXTRA"
+   *   <li> \c "IterRefine" : { \c "NO" | \c "SLU_SINGLE" | \c "SLU_DOUBLE" | \c "EXTRA"
    *     }. Specifies whether to perform iterative refinement, and in
    *     what precision to compute the residual.</li>
    *   <li> \c "SymmetricMode" : { \c true | \c false }.</li>
@@ -219,81 +233,62 @@ private:
   /**
    * \brief Reads matrix data into internal structures
    *
-   * \param [in] current_phase an indication of which solution phase this
+   * \param [in] cur rent_phase an indication of which solution phase this
    *                           load is being performed for.
    *
    * \return \c true if the matrix was loaded, \c false if not
    */
   bool loadA_impl(EPhase current_phase);
 
-  // struct holds all data necessary for KLU2 factorization or solve call
-  mutable struct KLU2Data {
-      ::KLU2::klu_symbolic<slu_type, local_ordinal_type> *symbolic_;
-      ::KLU2::klu_numeric<slu_type, local_ordinal_type> *numeric_;
-      ::KLU2::klu_common<slu_type, local_ordinal_type> common_;
-  } data_ ;
+  /**
+   * \brief can we optimize size_type and ordinal_type for straight pass through
+   */
+  bool do_optimization() const;
 
-  typedef Kokkos::DefaultHostExecutionSpace HostSpaceType;
-  typedef Kokkos::View<local_ordinal_type*, HostSpaceType> host_ordinal_type_array;
+  // struct holds all data necessary to make a superlu factorization or solve call
+  mutable struct cuSolverData {
+    CUSOLVER::cusolverSpHandle_t handle;
+    CUSOLVER::csrcholInfo_t chol_info;
+    CUSOLVER::cusparseMatDescr_t desc;
+    bool bReorder;
+  } data_;
 
-  typedef Kokkos::View<slu_type*, HostSpaceType>     host_value_type_array;
+  typedef Kokkos::View<cusolver_type**, Kokkos::LayoutLeft, DeviceSpaceType> device_solve_array_t;
 
-  // The following Views are persisting storage arrays for A, X, and B
-  /// Stores the values of the nonzero entries for CHOLMOD
-  host_value_type_array host_nzvals_view_;
-  /// Stores the location in \c Ai_ and Aval_ that starts row j
-  host_ordinal_type_array host_rows_view_;
-  /// Stores the row indices of the nonzero entries
-  host_ordinal_type_array host_col_ptr_view_;
+  mutable device_solve_array_t xValues_;
+  mutable device_solve_array_t bValues_;
+  mutable device_value_type_array buffer_;
 
-  typedef typename Kokkos::View<slu_type**, Kokkos::LayoutLeft, HostSpaceType>
-    host_solve_array_t;
+  device_value_type_array device_nzvals_view_;
+  device_size_type_array device_row_ptr_view_;
+  device_ordinal_type_array device_cols_view_;
 
-  /// Persisting 1D store for X
-  // MDM-TODO Klu2 can solve b into it's own space but in the new kokkos setup
-  // we want to optimize so if the types and memory match, getting b is going
-  // to be a pointer directly to the multivector. In that case we don't want
-  // to write into the multivector so I've switched the klu2 solver to use the
-  // option where b solves into a separate x space (like the other solvers).
-  // Need to discuss if this is going to be ok or negate an important feature
-  // of klu2.
-  mutable host_solve_array_t xValues_;
-  int ldx_;
+  // data for reordering
+  typedef Kokkos::View<ordinal_type*, DeviceSpaceType>       per_array_t;
+  per_array_t device_perm_;
+  per_array_t device_peri_;
+  mutable device_solve_array_t permute_working_buffer_;
+};                              // End class cuSOLVER
 
-  /// Persisting 1D store for B
-  mutable host_solve_array_t bValues_;
-  local_ordinal_type ldb_;
-
-  /// Transpose flag
-  /// 0: Non-transpose, 1: Transpose, 2: Conjugate-transpose
-  int transFlag_;
-
-  bool is_contiguous_;
-};                              // End class KLU2
-
-
-// Specialize solver_traits struct for KLU2
-// TODO
 template <>
-struct solver_traits<KLU2> {
+struct solver_traits<cuSOLVER> {
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list6<float,
-                           double,
-                           Kokkos::complex<float>,
+  typedef Meta::make_list5<float,
+			   double,
+                           std::complex<double>,
                            Kokkos::complex<double>,
-                           std::complex<float>,
-                           std::complex<double> > supported_scalars;
+                           CUSOLVER::complex> supported_scalars;
 #else
   typedef Meta::make_list2<float, double> supported_scalars;
 #endif
 };
 
 template <typename Scalar, typename LocalOrdinal, typename ExecutionSpace>
-struct solver_supports_matrix<KLU2,
+struct solver_supports_matrix<cuSOLVER,
   KokkosSparse::CrsMatrix<Scalar, LocalOrdinal, ExecutionSpace>> {
   static const bool value = true;
 };
 
 } // end namespace Amesos2
 
-#endif  // AMESOS2_KLU2_DECL_HPP
+#endif  // AMESOS2_CUSOLVER_DECL_HPP

@@ -71,8 +71,7 @@ namespace Amesos2 {
   MultiVecAdapter<
     Kokkos::View<Scalar**, Kokkos::LayoutLeft, ExecutionSpace> >::getMVPointer_impl() const
   {
-    TEUCHOS_TEST_FOR_EXCEPTION( true, std::runtime_error, "getMVPointer_impl not implemented.");
-    return NULL;
+    return mv_->data();
   }
 
   template <typename Scalar, typename ExecutionSpace >
