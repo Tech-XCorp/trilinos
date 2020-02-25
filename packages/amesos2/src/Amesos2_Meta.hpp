@@ -211,6 +211,11 @@ namespace Amesos2 {
       : type_list<T1, type_list<T2, type_list<T3, type_list<T4, type_list<T5, type_list<T6,nil_t> > > > > >
     { };
 
+    template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
+    struct make_list7
+      : type_list<T1, type_list<T2, type_list<T3, type_list<T4, type_list<T5, type_list<T6, type_list<T7, nil_t> > > > > > >
+    { };
+
     /* More declarations for larger type lists may be added if necessary */
 
 

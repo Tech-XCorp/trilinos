@@ -164,20 +164,34 @@ namespace Amesos2 {
 
 #ifdef HAVE_TEUCHOS_COMPLEX
 
-  template <>
-  struct TypeMap<Cholmod,std::complex<double> >
-  {
-    typedef CHOL::complex type;
-    typedef double magnitude_type;
-  };
+ template <>
+ struct TypeMap<Cholmod,std::complex<double> >
+ {
+   typedef CHOL::complex type;
+   typedef double magnitude_type;
+ };
 
-  template <>
-  struct TypeMap<Cholmod,Kokkos::complex<double> >
-  {
-    typedef CHOL::complex type;
-    typedef double magnitude_type;
-  };
-  
+ template <>
+ struct TypeMap<Cholmod,Kokkos::complex<double> >
+ {
+   typedef CHOL::complex type;
+   typedef double magnitude_type;
+ };
+
+ template <>
+ struct TypeMap<Cholmod,std::complex<float> >
+ {
+   typedef CHOL::complex type;
+   typedef double magnitude_type;
+ };
+
+ template <>
+ struct TypeMap<Cholmod,Kokkos::complex<float> >
+ {
+   typedef CHOL::complex type;
+   typedef double magnitude_type;
+ };
+
 #endif  // HAVE_TEUCHOS_COMPLEX
 
   /* \endcond Choldmod_type_specializations */

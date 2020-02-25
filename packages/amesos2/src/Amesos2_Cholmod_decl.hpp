@@ -234,10 +234,7 @@ private:
   typedef Kokkos::View<size_type*, HostSpaceType>       host_size_type_array;
   typedef Kokkos::View<ordinal_type*, HostSpaceType> host_ordinal_type_array;
 
-  // not using chol_type, use scalar_type - make all in trilinos type
-  // since CHOLMOD::complex is same ordering as the std::complex and since
-  // CHOLMOD just takes the ptr it will work without any conversions.
-  typedef Kokkos::View<scalar_type*, HostSpaceType>     host_value_type_array;
+  typedef Kokkos::View<chol_type*, HostSpaceType>     host_value_type_array;
   
   // The following Views are persisting storage arrays for A, X, and B
   /// Stores the values of the nonzero entries for CHOLMOD
@@ -247,10 +244,7 @@ private:
   /// Stores the row indices of the nonzero entries
   host_ordinal_type_array host_col_ptr_view_;
 
-  // not using chol_type, use scalar_type - make all in trilinos type
-  // since CHOLMOD::complex is same ordering as the std::complex and since
-  // CHOLMOD just takes the ptr it will work without any conversions.
-  typedef typename Kokkos::View<scalar_type**, Kokkos::LayoutLeft, HostSpaceType>
+  typedef typename Kokkos::View<chol_type**, Kokkos::LayoutLeft, HostSpaceType>
     host_solve_array_t;
 
   /// Persisting 1D store for X
@@ -283,8 +277,10 @@ private:
 template <>
 struct solver_traits<Cholmod> {
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list5<float,
-			   double,
+  typedef Meta::make_list7<float,
+			                     double,
+                           std::complex<float>,
+                           Kokkos::complex<float>,
                            std::complex<double>,
                            Kokkos::complex<double>,
                            CHOL::complex> supported_scalars;

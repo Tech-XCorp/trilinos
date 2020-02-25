@@ -150,7 +150,7 @@ template <class, class> class Basker;
 template <>
 struct TypeMap<Basker,float>
 {
-  static float dtype;
+  static double dtype;
   typedef float type;
   typedef float magnitude_type;
 };
@@ -170,9 +170,9 @@ struct TypeMap<Basker,double>
 template <>
 struct TypeMap<Basker,std::complex<float> >
 {
-  static std::complex<double> dtype; // TODO Intentional double?
-  typedef std::complex<double> type;
-  typedef double magnitude_type;
+  static std::complex<double> dtype;
+  typedef std::complex<float> type;
+  typedef float magnitude_type;
 };
 
 
@@ -187,9 +187,9 @@ struct TypeMap<Basker,std::complex<double> >
 template <>
 struct TypeMap<Basker,Kokkos::complex<float> >
 {
-  static std::complex<double> dtype; // TODO Intentional double above for std::complex<float>? - also fix this then.
-  typedef std::complex<double> type;
-  typedef double magnitude_type;
+  static std::complex<double> dtype;
+  typedef std::complex<float> type;
+  typedef float magnitude_type;
 };
 
 

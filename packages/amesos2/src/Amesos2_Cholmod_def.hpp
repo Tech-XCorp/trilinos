@@ -112,11 +112,9 @@ Cholmod<Matrix,Vector>::preOrdering_impl()
 #ifdef HAVE_AMESOS2_TIMERS
   Teuchos::TimeMonitor preOrderTimer(this->timers_.preOrderTime_);
 #endif
-printf("Check 1\n");
 
   if(this->root_) {
     if(data_.L != NULL) {
-printf("Check 2\n");
       CHOL::cholmod_l_free_factor(&(data_.L), &(data_.c));
     }
 
@@ -125,7 +123,7 @@ printf("Check 2\n");
     data_.L->is_ll=1;
     skip_symfact = true;
   }
-printf("Check 3\n");
+
   return(0);
 }
 
@@ -134,7 +132,6 @@ template <class Matrix, class Vector>
 int
 Cholmod<Matrix,Vector>::symbolicFactorization_impl()
 {
-printf("Check 4\n");
   if (!skip_symfact && this->root_) {
 #ifdef HAVE_AMESOS2_TIMERS
     Teuchos::TimeMonitor symFactTimer(this->timers_.symFactTime_);
@@ -149,7 +146,6 @@ printf("Check 4\n");
     skip_symfact = false;
   }
 
-printf("Check 5\n");
   return(0);
 }
 

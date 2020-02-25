@@ -23,7 +23,7 @@
         <ParameterList name="run1">
           <Parameter name="Scalar" type="string" value="float"/>
           <Parameter name="LocalOrdinal" type="string" value="int"/>
-          <Parameter name="GlobalOrdinal" type="string" value="long int"/>
+          <Parameter name="GlobalOrdinal" type="string" value="long long int"/>
         </ParameterList>
         <ParameterList name="run2">
           <Parameter name="Scalar" type="string" value="double"/>
@@ -31,11 +31,6 @@
           <Parameter name="GlobalOrdinal" type="string" value="int"/>
         </ParameterList>
         <ParameterList name="run3">
-          <Parameter name="Scalar" type="string" value="double"/>
-          <Parameter name="LocalOrdinal" type="string" value="int"/>
-          <Parameter name="GlobalOrdinal" type="string" value="long int"/>
-        </ParameterList>
-        <ParameterList name="run4-long-long">
           <Parameter name="Scalar" type="string" value="double"/>
           <Parameter name="LocalOrdinal" type="string" value="int"/>
           <Parameter name="GlobalOrdinal" type="string" value="long long int"/>
@@ -97,7 +92,7 @@
         </ParameterList>
         <ParameterList name="run0-1">
           <Parameter name="LocalOrdinal" type="string" value="int"/>
-          <Parameter name="GlobalOrdinal" type="string" value="long int"/>
+          <Parameter name="GlobalOrdinal" type="string" value="long long int"/>
           <Parameter name="Scalar" type="string" value="complex"/>
           <!-- "Magnitude" parameter only checked if the value of "Scalar" is "complex" -->
           <Parameter name="Magnitude" type="string" value="float"/>
@@ -109,12 +104,6 @@
           <Parameter name="Magnitude" type="string" value="double"/>
         </ParameterList>
         <ParameterList name="run1-1">
-          <Parameter name="LocalOrdinal" type="string" value="int"/>
-          <Parameter name="GlobalOrdinal" type="string" value="long int"/>
-          <Parameter name="Scalar" type="string" value="complex"/>
-          <Parameter name="Magnitude" type="string" value="double"/>
-        </ParameterList>
-        <ParameterList name="run-long-long">
           <Parameter name="LocalOrdinal" type="string" value="int"/>
           <Parameter name="GlobalOrdinal" type="string" value="long long int"/>
           <Parameter name="Scalar" type="string" value="complex"/>
