@@ -131,6 +131,12 @@ ENDIF()
 
 IF (${PACKAGE_NAME}_ENABLE_CUSOLVER)
 
+  TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestcuSolverFiles
+    SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
+    SOURCE_FILES cuSOLVER_test.xml
+    EXEDEPS Solver_Test
+    )
+
   TRIBITS_ADD_TEST(
     Solver_Test
     NAME cuSOLVER_Solver_Test
