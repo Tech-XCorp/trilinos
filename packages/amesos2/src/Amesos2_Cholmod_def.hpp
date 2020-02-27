@@ -84,8 +84,6 @@ Cholmod<Matrix,Vector>::Cholmod(
   data_.c.nmethods = 9;
   data_.c.quick_return_if_not_posdef = 1;
   data_.c.itype = CHOLMOD_LONG;
-  // data_.c.method[0].ordering=CHOLMOD_NATURAL;
-  // data_.c.print=5;
 
   data_.L = NULL;
   data_.Y = NULL;
@@ -113,16 +111,30 @@ Cholmod<Matrix,Vector>::preOrdering_impl()
   Teuchos::TimeMonitor preOrderTimer(this->timers_.preOrderTime_);
 #endif
 
+  int info = 0;
+
   if(this->root_) {
     if(data_.L != NULL) {
       CHOL::cholmod_l_free_factor(&(data_.L), &(data_.c));
     }
 
     data_.L = CHOL::cholmod_l_analyze(&data_.A, &(data_.c));
-    // data_.L->is_super=1;
-    data_.L->is_ll=1;
+    info = data_.c.status;
+    
+    if(info == 0) { // otherwise error thrown below
+      // data_.L->is_super=1;
+      data_.L->is_ll=1;
+    }
+
     skip_symfact = true;
   }
+
+  /* All processes should have the same error code */
+  Teuchos::broadcast(*(this->matrixA_->getComm()), 0, &info);
+  
+  TEUCHOS_TEST_FOR_EXCEPTION(info != 0,
+    std::runtime_error,
+    "Amesos2 cholmod_l_analyze failure in Cholmod preOrdering_impl");
 
   return(0);
 }
@@ -132,11 +144,14 @@ template <class Matrix, class Vector>
 int
 Cholmod<Matrix,Vector>::symbolicFactorization_impl()
 {
+  int info = 0;
+
   if (!skip_symfact && this->root_) {
 #ifdef HAVE_AMESOS2_TIMERS
     Teuchos::TimeMonitor symFactTimer(this->timers_.symFactTime_);
 #endif
     CHOL::cholmod_l_resymbol (&data_.A, NULL, 0, true, data_.L, &(data_.c));
+    info = data_.c.status;
   } else {
     /*
      * Symbolic factorization has already occured in preOrdering_impl,
@@ -145,6 +160,13 @@ Cholmod<Matrix,Vector>::symbolicFactorization_impl()
      */
     skip_symfact = false;
   }
+
+  /* All processes should have the same error code */
+  Teuchos::broadcast(*(this->matrixA_->getComm()), 0, &info);
+  
+  TEUCHOS_TEST_FOR_EXCEPTION(info != 0,
+    std::runtime_error,
+    "Amesos2 cholmod_l_resymbol failure in Cholmod symbolicFactorization_impl");
 
   return(0);
 }
@@ -172,14 +194,30 @@ Cholmod<Matrix,Vector>::numericFactorization_impl()
 #endif
 
 #ifdef HAVE_AMESOS2_VERBOSE_DEBUG
+
+/*  // Needs complex print support as well - View method available?
+    
     std::cout << "Cholmod:: Before numeric factorization" << std::endl;
-    std::cout << "nzvals_ : " << nzvals_.toString() << std::endl;
-    std::cout << "rowind_ : " << rowind_.toString() << std::endl;
-    std::cout << "colptr_ : " << colptr_.toString() << std::endl;
+    printf("host_nzvals_view_: ");
+    for(size_t n = 0; n < host_nzvals_view_.size(); ++n) {
+      printf("%.2f ", (float) host_nzvals_view_(n));
+    }
+    printf("\n");
+    printf("host_rows_view_: ");
+    for(size_t n = 0; n < host_rows_view_.size(); ++n) {
+      printf("%d ", (int) host_rows_view_(n));
+    }
+    printf("\n");
+    printf("host_col_ptr_view_: ");
+    for(size_t n = 0; n < host_col_ptr_view_.size(); ++n) {
+      printf("%d ", (int) host_col_ptr_view_(n));
+    }
+    printf("\n");
+*/
 #endif
 
     CHOL::cholmod_l_factorize(&data_.A, data_.L, &(data_.c));
-    info = (&data_.c)->status;
+    info = data_.c.status;
   }
 
   /* All processes should have the same error code */
@@ -188,6 +226,10 @@ Cholmod<Matrix,Vector>::numericFactorization_impl()
   TEUCHOS_TEST_FOR_EXCEPTION(info == 2,
     std::runtime_error,
     "Memory allocation failure in Cholmod factorization");
+
+  TEUCHOS_TEST_FOR_EXCEPTION(info != 0,
+    std::runtime_error,
+    "Amesos2 cholmod_l_factorize failure in Cholmod factorization");
 
   return(info);
 }
@@ -419,7 +461,7 @@ Cholmod<Matrix,Vector>::loadA_impl(EPhase current_phase)
     TEUCHOS_TEST_FOR_EXCEPTION(nnz_ret != Teuchos::as<long>(this->globalNumNonZeros_),
              std::runtime_error,
              "Did not get the expected number of non-zero vals");
-
+    
     function_map::cholmod_init_sparse(Teuchos::as<size_t>(this->globalNumRows_),
               Teuchos::as<size_t>(this->globalNumCols_),
               Teuchos::as<size_t>(this->globalNumNonZeros_),

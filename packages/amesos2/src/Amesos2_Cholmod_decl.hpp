@@ -276,16 +276,20 @@ private:
  */
 template <>
 struct solver_traits<Cholmod> {
+
+// Note that Cholmod compiles with float but doesn't support it yet.
+// See cholmod_internal.h line 173 for documentation on this issue.
+// When float is supported those cases should be added here.
+// Otherwise this solver should be all ready to support float.
+// Using float will currently give errors for numeric cholmod_l_factorize
+// and then result in garbage data.
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list7<float,
-			                     double,
-                           std::complex<float>,
-                           Kokkos::complex<float>,
+  typedef Meta::make_list4<double,
                            std::complex<double>,
                            Kokkos::complex<double>,
                            CHOL::complex> supported_scalars;
 #else
-  typedef Meta::make_list2<float, double> supported_scalars;
+  typedef Meta::make_list1<double> supported_scalars;
 #endif
 };
 
