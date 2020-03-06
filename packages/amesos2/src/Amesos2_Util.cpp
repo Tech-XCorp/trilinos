@@ -61,6 +61,34 @@
 #  include <Epetra_SerialComm.h>
 #endif // HAVE_AMESOS2_EPETRA
 
+#ifdef HAVE_AMESOS2_METIS
+#include "metis.h"
+#endif
+
+#ifdef HAVE_AMESOS2_METIS
+void
+Amesos2::Util::metis_resort(host_metis_array & row_ptr, host_metis_array & cols,
+  host_metis_array & perm, host_metis_array & peri) {
+  // idx_t is the type metis was built with and the input arrays will be type
+  // int64_t, which should match idx_t, meaning no actual copies here.
+  // In case metis is using int32_t, copies here will convert it.
+  typedef Kokkos::View<idx_t*, Kokkos::HostSpace>  metis_view_t;
+  metis_view_t metis_row_ptr;
+  metis_view_t metis_cols;
+  deep_copy_or_assign_view(metis_row_ptr, row_ptr);
+  deep_copy_or_assign_view(metis_cols, cols);
+  metis_view_t metis_perm(Kokkos::ViewAllocateWithoutInitializing("metis_perm"), perm.size());
+  metis_view_t metis_peri(Kokkos::ViewAllocateWithoutInitializing("metis_peri"), peri.size());
+  idx_t metis_size;
+  int err = METIS_NodeND(&metis_size, metis_row_ptr.data(), metis_cols.data(),
+    NULL, NULL, metis_perm.data(), metis_peri.data());
+  TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
+    "METIS_NodeND failed to sort matrix.");
+  deep_copy_or_assign_view(perm, metis_perm);
+  deep_copy_or_assign_view(peri, metis_peri);
+}
+#endif
+
 #ifdef HAVE_AMESOS2_EPETRA
 const Teuchos::RCP<const Teuchos::Comm<int> >
 Amesos2::Util::to_teuchos_comm(Teuchos::RCP<const Epetra_Comm> c)

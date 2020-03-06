@@ -72,9 +72,6 @@
 #include <Epetra_Map.h>
 #endif
 
-#ifdef HAVE_AMESOS2_METIS
-#include "metis.h" // to discuss, remove from header?
-#endif
 
 namespace Amesos2 {
 
@@ -91,6 +88,10 @@ namespace Amesos2 {
 
     using Meta::is_same;
     using Meta::if_then_else;
+
+    // to avoid having metis.h in this header, assume it's using the 64-bit type
+    // and then do metis in the cpp. If metis uses 32-bit, the cpp converts.
+    typedef Kokkos::View<int64_t*, Kokkos::HostSpace>  host_metis_array;
 
     /**
      * \brief Gets a Tpetra::Map described by the EDistribution.
@@ -1027,6 +1028,13 @@ namespace Amesos2 {
       }
     }
 
+#ifdef HAVE_AMESOS2_METIS
+    // move the actual metis sort call into the cpp so metis.h is not included here
+    void
+    metis_resort(host_metis_array & row_ptr, host_metis_array & cols,
+      host_metis_array & perm, host_metis_array & peri);
+#endif
+
     template<class values_view_t, class row_ptr_view_t,
       class cols_view_t, class per_view_t>
     void
@@ -1048,7 +1056,6 @@ namespace Amesos2 {
 
         // strip out the diagonals - metis will just crash with them included.
         // make space for the stripped version
-        typedef Kokkos::View<idx_t*, Kokkos::HostSpace>         host_metis_array;
         const ordinal_type size = row_ptr.size() - 1;
         host_metis_array host_strip_diag_row_ptr(
           Kokkos::ViewAllocateWithoutInitializing("host_strip_diag_row_ptr"),
@@ -1074,14 +1081,8 @@ namespace Amesos2 {
         host_metis_array host_peri(
           Kokkos::ViewAllocateWithoutInitializing("host_peri"), size);
 
-        // If we want to remove metis.h included in this header we can move this
-        // to the cpp, but we need to decide how to handle the idx_t declaration.
-        idx_t metis_size = size;
-        int err = METIS_NodeND(&metis_size, host_strip_diag_row_ptr.data(), host_strip_diag_cols.data(),
-          NULL, NULL, host_perm.data(), host_peri.data());
-
-        TEUCHOS_TEST_FOR_EXCEPTION(err != METIS_OK, std::runtime_error,
-          "METIS_NodeND failed to sort matrix.");
+        metis_resort(host_strip_diag_row_ptr, host_strip_diag_cols,
+          host_perm, host_peri);
 
         // exec space to resort the matrix
         // right now we're assuming all three vectors are in fact on the same
