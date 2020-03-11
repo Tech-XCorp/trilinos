@@ -75,6 +75,9 @@
 /* Define if we want Epetra matrix and multivector support */
 #cmakedefine HAVE_AMESOS2_EPETRA
 
+/* Define if we want Zoltan2 ordering support */
+#cmakedefine HAVE_AMESOS2_ZOLTAN2
+
 /****************************
  * Solver Interface Defines *
  ****************************/
@@ -127,8 +130,8 @@
 /* Defined if you want to enable amesos2-cuSOLVER */
 #cmakedefine HAVE_AMESOS2_CUSOLVER
 
-/* Defined if you want to enable amesos2-Metis */
-#cmakedefine HAVE_AMESOS2_METIS
+/* Defined if you want to enable amesos2-AMD for ordering with Zoltan2 */
+#cmakedefine HAVE_AMESOS2_AMD
 
 /* For experimental Basker in ShyLU*/
 #cmakedefine HAVE_AMESOS2_KOKKOS
