@@ -191,6 +191,8 @@ namespace { // (anonymous)
     out << "transform on MultiVector's execution space: 418 -> 777" << endl;
     transform ("419 -> 777", device_execution_space (), Y, X,
                KOKKOS_LAMBDA (const double& X_ij) { return X_ij + 359.0; });
+    Kokkos::fence(); // repair this - fence in transform? Only for device_execution_space is broken?
+
     {
       Y.sync_host ();
       auto Y_lcl = Y.getLocalViewHost ();
@@ -345,6 +347,7 @@ namespace { // (anonymous)
     out << "transform on MultiVector's execution space: 418 -> 777" << endl;
     transform ("419 -> 777", device_execution_space (), Y, X,
                KOKKOS_LAMBDA (const double& X_i) { return X_i + 359.0; });
+    Kokkos::fence(); // repair this - fence in transform? Only for device_execution_space is broken?
     {
       Y.sync_host ();
       auto Y_lcl = Y.getLocalViewHost ();
