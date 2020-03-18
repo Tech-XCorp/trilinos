@@ -323,6 +323,7 @@ namespace Tpetra {
              range_type range (execSpace, 0, lclNumRows);
 
              Kokkos::parallel_for (kernelLabel, range, g);
+             Kokkos::fence(); // Need to discuss
            },
            readOnly (input).on (memSpace).at (execSpace),
            writeOnly (output).on (memSpace).at (execSpace));
@@ -358,6 +359,7 @@ namespace Tpetra {
             range_type range (execSpace, 0, lclNumRows);
 
             Kokkos::parallel_for (kernelLabel, range, g);
+            Kokkos::fence(); // need to discuss
           },
           readOnly (input).on (memSpace).at (execSpace),
           writeOnly (output).on (memSpace).at (execSpace));

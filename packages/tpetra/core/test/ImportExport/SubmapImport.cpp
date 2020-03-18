@@ -110,6 +110,7 @@ TestTpetra (const Teuchos::ArrayView<const Tpetra::Map<>::global_ordinal_type>& 
     err << os.str ();
   }
   destVector->putScalar (-1);
+  Kokkos::fence(); // why is this not getting called!
 
   Tpetra::Import<> importer (srcMap, destMap);
   {
