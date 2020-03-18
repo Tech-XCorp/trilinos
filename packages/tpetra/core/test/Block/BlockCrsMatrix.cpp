@@ -537,6 +537,7 @@ namespace {
       BMV X (* (graph.getDomainMap ()), blockSize, numVecs);
       BMV Y (* (graph.getRangeMap ()), blockSize, numVecs);
       Y.putScalar (STS::zero ());
+      Kokkos::fence(); // Why? Should not be needed. And others in this file.
 
       const map_type& meshDomainMap = * (graph.getDomainMap ());
       for (LO lclDomIdx = meshDomainMap.getMinLocalIndex ();
@@ -648,6 +649,7 @@ namespace {
       BV X (* (graph.getDomainMap ()), blockSize);
       BV Y (* (graph.getRangeMap ()), blockSize);
       Y.putScalar (STS::zero ());
+      Kokkos::fence(); // Why? Should not be needed. And others in this file.
 
       const map_type& meshDomainMap = * (graph.getDomainMap ());
       for (LO lclDomIdx = meshDomainMap.getMinLocalIndex ();
@@ -763,6 +765,7 @@ namespace {
       BMV X (* (graph.getDomainMap ()), blockSize, numVecs);
       BMV Y (* (graph.getRangeMap ()), blockSize, numVecs);
       Y.putScalar (STS::zero ());
+      Kokkos::fence(); // Why? Should not be needed. And others in this file.
 
       const map_type& meshDomainMap = * (graph.getDomainMap ());
       for (LO lclDomIdx = meshDomainMap.getMinLocalIndex ();
