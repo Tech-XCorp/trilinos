@@ -78,6 +78,7 @@ TestTpetra (const Teuchos::ArrayView<const Tpetra::Map<>::global_ordinal_type>& 
   RCP<Tpetra::Vector<int> >  srcVector (new Tpetra::Vector<int> (srcMap));
   RCP<Tpetra::Vector<int> > destVector (new Tpetra::Vector<int> (destMap));
   destVector->putScalar (-1);
+  Kokkos::fence(); // why is this not getting called?
 
   Tpetra::Export<> exporter (srcMap, destMap);
   destVector->doExport (*srcVector, exporter, Tpetra::INSERT);
