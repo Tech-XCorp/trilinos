@@ -163,7 +163,10 @@ namespace Tpetra {
       static master_local_view_type
       getOwningPreActions(local_access_type& LA)
       {
+printf("---- Call getOwningPreActions: %s\n", execution_space::name());
+
         if (! LA.isValid()) { // return "null" Kokkos::View
+printf("  -- INVALID!\n");
           return master_local_view_type();
         }
         else {
@@ -174,6 +177,7 @@ namespace Tpetra {
             LA.G_.clear_sync_state();
           }
 
+          printf("  -- write_only: %s\n", is_write_only ? "true" : "false");
           // Given that Tpetra::(Multi)Vector currently uses
           // Kokkos::DualView, here is how get() must behave:
           //
@@ -202,9 +206,12 @@ namespace Tpetra {
           // Kokkos::DefaultHostExecutionSpace != the MultiVector's
           // execution space, but the latter is still a host space
           // (e.g., Kokkos::OpenMP vs. Kokkos::Serial).
-
           if (LA.G_.template need_sync<execution_space>()) {
+            printf("  -- call syn<execution_space> for memory: %s\n", execution_space::memory_space::name());
             LA.G_.template sync<execution_space>();
+          }
+          else {
+            printf("  -- need_sync<execution_space> false - skipping syn<execution_space>: execution_space memory_space: %s\n", execution_space::memory_space::name());
           }
 
           constexpr bool is_read_only =
@@ -217,6 +224,7 @@ namespace Tpetra {
           auto G_lcl_2d =
             LA.G_.template getLocalView<execution_space>();
           // This converts the View to const if applicable.
+printf("---- Done getOwningPreActions: %s\n", execution_space::name());
           return master_local_view_type(G_lcl_2d);
         }
       }

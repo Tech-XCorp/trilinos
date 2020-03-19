@@ -321,8 +321,10 @@ namespace Tpetra {
              const LO lclNumRows = static_cast<LO> (input_lcl.extent (0));
              using range_type = Kokkos::RangePolicy<ExecutionSpace, LO>;
              range_type range (execSpace, 0, lclNumRows);
-
+Kokkos::fence();
+             printf("Calling parallel_for 1\n");
              Kokkos::parallel_for (kernelLabel, range, g);
+Kokkos::fence();
            },
            readOnly (input).on (memSpace).at (execSpace),
            writeOnly (output).on (memSpace).at (execSpace));
@@ -356,8 +358,10 @@ namespace Tpetra {
             const LO lclNumRows = static_cast<LO> (input_lcl.extent (0));
             using range_type = Kokkos::RangePolicy<ExecutionSpace, LO>;
             range_type range (execSpace, 0, lclNumRows);
-
+Kokkos::fence();
+             printf("Calling parallel_for 2 on memory_space: %s\n", ExecutionSpace::memory_space::name());
             Kokkos::parallel_for (kernelLabel, range, g);
+// Kokkos::fence(); // !
           },
           readOnly (input).on (memSpace).at (execSpace),
           writeOnly (output).on (memSpace).at (execSpace));
@@ -521,7 +525,10 @@ namespace Tpetra {
                     rw_output_view_type,
                     BinaryFunctionType, LO>;
                   functor_type functor (output_lcl, output_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 3\n");
                   Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
                 },
                 readWrite (output_j_ref).on (memSpace).at (execSpace));
             }
@@ -535,7 +542,10 @@ namespace Tpetra {
                     wo_output_view_type,
                     BinaryFunctionType, LO>;
                   functor_type functor (input1_lcl, input1_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_fori 4\n");
                   Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
                 },
                 readOnly (input1_j_ref).on (memSpace).at (execSpace),
                 writeOnly (output_j_ref).on (memSpace).at (execSpace));
@@ -550,7 +560,10 @@ namespace Tpetra {
                     rw_output_view_type,
                     BinaryFunctionType, LO>;
                   functor_type functor (output_lcl, input2_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 5\n");
                   Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
                 },
                 readOnly (input2_j_ref).on (memSpace).at (execSpace),
                 readWrite (output_j_ref).on (memSpace).at (execSpace));
@@ -565,7 +578,10 @@ namespace Tpetra {
                     rw_output_view_type,
                     BinaryFunctionType, LO>;
                   functor_type functor (input1_lcl, output_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 6\n");
                   Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
                 },
                 readOnly (input1_j_ref).on (memSpace).at (execSpace),
                 readWrite (output_j_ref).on (memSpace).at (execSpace));
@@ -581,7 +597,10 @@ namespace Tpetra {
                     wo_output_view_type,
                     BinaryFunctionType, LO>;
                   functor_type functor (input1_lcl, input2_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 7\n");
                   Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
                 },
                 readOnly (input1_j_ref).on (memSpace).at (execSpace),
                 readOnly (input2_j_ref).on (memSpace).at (execSpace),
@@ -624,7 +643,10 @@ namespace Tpetra {
                   rw_output_view_type,
                   BinaryFunctionType, LO>;
                 functor_type functor (output_lcl, output_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 8\n");
                 Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
               },
               readWrite (output).on (memSpace).at (execSpace));
           }
@@ -638,7 +660,10 @@ namespace Tpetra {
                   wo_output_view_type,
                   BinaryFunctionType, LO>;
                 functor_type functor (input1_lcl, input1_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 9\n");
                 Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
               },
               readOnly (input1).on (memSpace).at (execSpace),
               writeOnly (output).on (memSpace).at (execSpace));
@@ -653,7 +678,10 @@ namespace Tpetra {
                   rw_output_view_type,
                   BinaryFunctionType, LO>;
                 functor_type functor (output_lcl, input2_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 10\n");
                 Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
               },
               readOnly (input2).on (memSpace).at (execSpace),
               readWrite (output).on (memSpace).at (execSpace));
@@ -668,7 +696,10 @@ namespace Tpetra {
                   rw_output_view_type,
                   BinaryFunctionType, LO>;
                 functor_type functor (input1_lcl, output_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 11\n");
                 Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
               },
               readOnly (input1).on (memSpace).at (execSpace),
               readWrite (output).on (memSpace).at (execSpace));
@@ -684,7 +715,10 @@ namespace Tpetra {
                   wo_output_view_type,
                   BinaryFunctionType, LO>;
                 functor_type functor (input1_lcl, input2_lcl, output_lcl, f);
+Kokkos::fence();
+             printf("Calling parallel_for 12\n");
                 Kokkos::parallel_for (kernelLabel, range, functor);
+Kokkos::fence();
               },
               readOnly (input1).on (memSpace).at (execSpace),
               readOnly (input2).on (memSpace).at (execSpace),

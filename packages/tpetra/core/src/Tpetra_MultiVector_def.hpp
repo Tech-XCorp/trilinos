@@ -4181,6 +4181,7 @@ namespace Tpetra {
   void
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   sync_host () {
+    printf("MV Calling sync_host\n");
     view_.sync_host ();
   }
 
@@ -4188,6 +4189,7 @@ namespace Tpetra {
   void
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   sync_device () {
+    printf("MV Calling sync_device\n");
     view_.sync_device ();
   }
 
@@ -4209,6 +4211,7 @@ namespace Tpetra {
   void
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   modify_device () {
+    printf("MV Calling modify_device\n");
     view_.modify_device ();
   }
 
@@ -4216,6 +4219,7 @@ namespace Tpetra {
   void
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   modify_host () {
+    printf("MV Calling modify_host\n");
     view_.modify_host ();
   }
 

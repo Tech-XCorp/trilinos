@@ -474,6 +474,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
                               typename traits::non_const_data_type>::value) ||
                     (std::is_same<Device, int>::value),
                 int>::type& = 0) {
+printf("DualView calls sync on memory: %s\n", Device::memory_space::name());
     if (modified_flags.data() == NULL) return;
 
     int dev = get_device_side<Device>();
@@ -492,6 +493,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
     }
     if (std::is_same<typename t_host::memory_space,
                      typename t_dev::memory_space>::value) {
+printf("Dual view is fencing!\n");
       typename t_dev::execution_space().fence();
       typename t_host::execution_space().fence();
     }
@@ -503,6 +505,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
                                typename traits::non_const_data_type>::value) ||
                     (std::is_same<Device, int>::value),
                 int>::type& = 0) {
+printf("DO NOTHING DualView calls sync on memory: %s\n", Device::memory_space::name());
     if (modified_flags.data() == NULL) return;
 
     int dev = get_device_side<Device>();
@@ -528,6 +531,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
           "Calling sync_host on a DualView with a const datatype.");
     if (modified_flags.data() == NULL) return;
     if (modified_flags(1) > modified_flags(0)) {
+printf("DualView sync_host calls deep_copy\n");
       deep_copy(h_view, d_view);
       modified_flags(1) = modified_flags(0) = 0;
     }
@@ -540,6 +544,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
           "Calling sync_device on a DualView with a const datatype.");
     if (modified_flags.data() == NULL) return;
     if (modified_flags(0) > modified_flags(1)) {
+printf("DualView sync_device calls deep_copy\n");
       deep_copy(d_view, h_view);
       modified_flags(1) = modified_flags(0) = 0;
     }
@@ -580,6 +585,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
   /// data as modified.
   template <class Device>
   void modify() {
+printf("DualView calls modify on memory: %s\n", Device::memory_space::name());
     if (modified_flags.data() == NULL) return;
     int dev = get_device_side<Device>();
 
@@ -611,6 +617,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
   }
 
   inline void modify_host() {
+printf("DualView calls modify_host\n");
     if (modified_flags.data() != NULL) {
       modified_flags(0) =
           (modified_flags(1) > modified_flags(0) ? modified_flags(1)
@@ -630,6 +637,7 @@ class DualView : public ViewTraits<DataType, Arg1Type, Arg2Type, Arg3Type> {
   }
 
   inline void modify_device() {
+printf("DualView calls modify_device\n");
     if (modified_flags.data() != NULL) {
       modified_flags(1) =
           (modified_flags(1) > modified_flags(0) ? modified_flags(1)

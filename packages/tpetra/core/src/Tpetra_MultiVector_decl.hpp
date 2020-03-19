@@ -1429,6 +1429,7 @@ namespace Tpetra {
     ///   template parameter.
     template<class TargetDeviceType>
     void sync () {
+      printf("MV sync on memory: %s\n", TargetDeviceType::memory_space::name());
       view_.template sync<TargetDeviceType> ();
     }
 
@@ -1457,6 +1458,8 @@ namespace Tpetra {
     /// Otherwise, mark the host's data as modified.
     template<class TargetDeviceType>
     void modify () {
+      printf("MV Calling modify on memory: %s\n", TargetDeviceType::memory_space::name());
+
       view_.template modify<TargetDeviceType> ();
     }
 

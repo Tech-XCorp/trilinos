@@ -378,9 +378,13 @@ void finalize_internal(const bool all_spaces = false) {
 }
 
 void fence_internal() {
+
+  printf("Kokkos is calling fence internal\n");
+
 #if defined(KOKKOS_ENABLE_CUDA)
   if (std::is_same<Kokkos::Cuda, Kokkos::DefaultExecutionSpace>::value) {
     Kokkos::Cuda::impl_static_fence();
+      printf("Kokkos::Cuda::impl_static_fence called\n");
   }
 #endif
 
