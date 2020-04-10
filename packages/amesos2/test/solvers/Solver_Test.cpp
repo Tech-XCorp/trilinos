@@ -1820,7 +1820,7 @@ bool test_kokkos(const string& mm_file,
         else if( scalar == "complex" ){
           if( mag == "float" ){
   #ifdef HAVE_TPETRA_INST_COMPLEX_FLOAT
-            typedef Kokkos::complex<float> cmplx_float;
+            typedef std::complex<float> cmplx_float;
             typedef std::complex<float> tpetra_cmplx_float;
             if( lo == "int" ){
               if( node == "default" ) {
@@ -1865,7 +1865,7 @@ bool test_kokkos(const string& mm_file,
 
           if( mag == "double" ){
   #ifdef HAVE_TPETRA_INST_COMPLEX_DOUBLE
-            typedef Kokkos::complex<double> cmplx_double;
+            typedef std::complex<double> cmplx_double;
             typedef std::complex<double> tpetra_cmplx_double;
             if( lo == "int" ){
               if( node == "default" ) {

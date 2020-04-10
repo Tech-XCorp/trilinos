@@ -93,12 +93,14 @@ namespace Amesos2 {
    typedef double magnitude_type;
  };
 
+/*
  template <>
  struct TypeMap<Cholmod,Kokkos::complex<double> >
  {
    typedef Kokkos::complex<double> type;
    typedef double magnitude_type;
  };
+*/
 
  template <>
  struct TypeMap<Cholmod,std::complex<float> > // Cholmod does not support float yet
@@ -107,12 +109,14 @@ namespace Amesos2 {
    typedef float magnitude_type;
  };
 
+/*
  template <>
  struct TypeMap<Cholmod,Kokkos::complex<float> > // Cholmod does not support float yet
  {
    typedef Kokkos::complex<float> type;
    typedef float magnitude_type;
  };
+*/
 
 #endif  // HAVE_TEUCHOS_COMPLEX
 

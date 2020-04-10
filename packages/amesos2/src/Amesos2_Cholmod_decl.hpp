@@ -279,8 +279,7 @@ struct solver_traits<Cholmod> {
 
 // Cholmod does not yet support float.
 #ifdef HAVE_TEUCHOS_COMPLEX
-  typedef Meta::make_list3<double, std::complex<double>,
-                           Kokkos::complex<double>> supported_scalars;
+  typedef Meta::make_list2<double, std::complex<double>> supported_scalars;
 #else
   typedef Meta::make_list1<double> supported_scalars;
 #endif
