@@ -118,6 +118,14 @@ namespace SLU {
 #endif
 
       extern void
+      sCreate_CompCol_Matrix(SuperMatrix *, int, int, int, float *,
+             int *, int *, Stype_t, Dtype_t, Mtype_t);
+               
+      extern void
+      sCompRow_to_CompCol(int, int, int, float*, int*, int*,
+             float **, int **, int **);
+    
+      extern void
       sgssvx(SLU::superlu_options_t *, SLU::SuperMatrix *, int *, int *, int *,
              char *, float *, float *, SLU::SuperMatrix *, SLU::SuperMatrix *,
              void *, int, SLU::SuperMatrix *, SLU::SuperMatrix *,
@@ -196,6 +204,14 @@ namespace SLU {
 		} GlobalLU_t;
 #endif
 
+      extern void
+      dCreate_CompCol_Matrix(SuperMatrix *, int, int, int, double *,
+            int *, int *, Stype_t, Dtype_t, Mtype_t);
+           
+      extern void
+      dCompRow_to_CompCol(int, int, int, double*, int*, int*,
+             double **, int **, int **);
+           
       extern void
       dgssvx(SLU::superlu_options_t *, SLU::SuperMatrix *, int *, int *, int *,
              char *, double *, double *, SLU::SuperMatrix *, SLU::SuperMatrix *,
@@ -277,6 +293,14 @@ namespace SLU {
 #endif
 
       extern void
+      cCreate_CompCol_Matrix(SuperMatrix *, int, int, int, complex *,
+            int *, int *, Stype_t, Dtype_t, Mtype_t);
+         
+      extern void
+      cCompRow_to_CompCol(int, int, int, complex*, int*, int*,
+            complex **, int **, int **);
+          
+      extern void
       cgssvx(SLU::superlu_options_t *, SLU::SuperMatrix *, int *, int *, int *,
              char *, float *, float *, SLU::SuperMatrix *, SLU::SuperMatrix *,
              void *, int, SLU::SuperMatrix *, SLU::SuperMatrix *,
@@ -355,6 +379,14 @@ namespace SLU {
 		} GlobalLU_t;
 #endif
 
+      extern void
+      zCreate_CompCol_Matrix(SuperMatrix *, int, int, int, doublecomplex *,
+            int *, int *, Stype_t, Dtype_t, Mtype_t);
+          
+      extern void
+      zCompRow_to_CompCol(int, int, int, doublecomplex*, int*, int*,
+            doublecomplex **, int **, int **);
+          
       extern void
       zgssvx(SLU::superlu_options_t *, SLU::SuperMatrix *, int *, int *, int *,
              char *, double *, double *, SLU::SuperMatrix *, SLU::SuperMatrix *,
