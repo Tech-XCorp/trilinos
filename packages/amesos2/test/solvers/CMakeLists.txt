@@ -53,6 +53,14 @@ ENDIF()
 
 IF (${PACKAGE_NAME}_ENABLE_SuperLU)
 
+  TRIBITS_ADD_EXECUTABLE_AND_TEST(
+    KernelsSuperLUTRSV
+    SOURCES KokkosSparse_sptrsv_superlu.cpp KokkosSparse_sptrsv_aux.hpp
+    COMM serial mpi
+    ARGS "-f ../matrices/tacho_test_complex.mtx --test superlu-etree"
+    STANDARD_PASS_OUTPUT
+  )
+
   TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCopySuperLUFiles
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
     SOURCE_FILES superlu_test.xml
@@ -141,6 +149,14 @@ ENDIF()
 
 ASSERT_DEFINED(${PACKAGE_NAME}_ENABLE_Cholmod)
 IF (${PACKAGE_NAME}_ENABLE_Cholmod)
+
+  TRIBITS_ADD_EXECUTABLE_AND_TEST(
+    KernelsCholmodTRSV
+    SOURCES KokkosSparse_sptrsv_cholmod.cpp KokkosSparse_sptrsv_aux.hpp
+    COMM serial mpi
+    ARGS "-f ../matrices/tacho_test.mtx --test cholmod-etree"
+    STANDARD_PASS_OUTPUT
+  )
 
   TRIBITS_COPY_FILES_TO_BINARY_DIR(SolverTestCholmodFiles
     SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}
