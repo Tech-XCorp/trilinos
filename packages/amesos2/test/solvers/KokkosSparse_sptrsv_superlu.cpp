@@ -475,8 +475,10 @@ int test_sptrsv_perf (std::vector<int> tests, bool verbose, std::string &filenam
           //> create the known solution and set to all 1's ** on host **
           host_scalar_view_t sol_host ("sol_host", nrows);
           //Kokkos::deep_copy (sol_host, ONE);
-          Kokkos::Random_XorShift64_Pool<host_execution_space> random(13718);
-          Kokkos::fill_random(sol_host, random, scalar_type(1));
+          Kokkos::Random_XorShift64_Pool<host_execution_space> random(9000);
+          Kokkos::fill_random(sol_host, random, -scalar_type(1), scalar_type(1));
+
+scalar_type norm_given = KokkosBlas::nrm2 (sol_host);
 
           // > create the rhs ** on host **
           // A*sol generates rhs: rhs is dense, use spmv
@@ -517,6 +519,11 @@ int test_sptrsv_perf (std::vector<int> tests, bool verbose, std::string &filenam
           // apply backward-pivot
           backwardP_supernode<scalar_type> (nrows, perm_c, 1, tmp_host.data(), nrows, sol_host.data(), nrows);
 
+scalar_type norm_sol = KokkosBlas::nrm2 (sol_host);
+
+auto diff = std::abs(norm_sol - norm_given) / std::max(norm_given, norm_sol);
+
+std::cout << "CHecl: " << diff << std::endl;
 
           // ==============================================
           // Error Check ** on host **
