@@ -168,6 +168,18 @@ void factor_superlu (bool symm_mode, bool metis,
                             reinterpret_cast <double*> (nzvals_tran), colind_tran, rowptr_tran,
                             SLU::SLU_NC, SLU::SLU_D, SLU::SLU_GE);
   }
+  else if (std::is_same<scalar_type, float>::value == true) {
+    if (std::is_same<scalar_type, float>::value == true) {
+      if (!symm_mode) {
+        SLU::S::sCompRow_to_CompCol (nrow, nrow, nnz,
+                             reinterpret_cast <float*> (nzvals), colind, rowptr,
+                             reinterpret_cast <float**> (&nzvals_tran), &colind_tran, &rowptr_tran);
+      }
+      SLU::S::sCreate_CompCol_Matrix (&A, nrow, nrow, nnz,
+                              reinterpret_cast <float*> (nzvals_tran), colind_tran, rowptr_tran,
+                              SLU::SLU_NC, SLU::SLU_S, SLU::SLU_GE);
+    }
+  }
 #ifdef HAVE_TEUCHOS_COMPLEX
   else if (std::is_same<scalar_type, std::complex<double>>::value == true ||
              std::is_same<scalar_type, Kokkos::complex<double>>::value == true) {
@@ -179,6 +191,17 @@ void factor_superlu (bool symm_mode, bool metis,
     SLU::Z::zCreate_CompCol_Matrix (&A, nrow, nrow, nnz,
                             reinterpret_cast <SLU::Z::doublecomplex*> (nzvals_tran), colind_tran, rowptr_tran,
                             SLU::SLU_NC, SLU::SLU_Z, SLU::SLU_GE);
+  }
+  else if (std::is_same<scalar_type, std::complex<float>>::value == true ||
+             std::is_same<scalar_type, Kokkos::complex<float>>::value == true) {
+    if (!symm_mode) {
+      SLU::C::cCompRow_to_CompCol (nrow, nrow, nnz,
+                           reinterpret_cast <SLU::C::complex*> (nzvals), colind, rowptr,
+                           reinterpret_cast <SLU::C::complex**> (&nzvals_tran), &colind_tran, &rowptr_tran);
+    }
+    SLU::C::cCreate_CompCol_Matrix (&A, nrow, nrow, nnz,
+                            reinterpret_cast <SLU::C::complex*> (nzvals_tran), colind_tran, rowptr_tran,
+                            SLU::SLU_NC, SLU::SLU_C, SLU::SLU_GE);
   }
 #endif
 
@@ -216,9 +239,17 @@ void factor_superlu (bool symm_mode, bool metis,
 #endif
             &stat, &info);
   }
+  else if (std::is_same<scalar_type, float>::value == true) {
+    SLU::S::sgstrf (&options, &AC, relax_size, panel_size, etree,
+            NULL, lwork, *perm_c, *perm_r, &L, &U,
+#ifdef HAVE_AMESOS2_SUPERLU5_API
+            &Glu,
+#endif
+            &stat, &info);
+  }
   else {
 #ifdef HAVE_TEUCHOS_COMPLEX
-    SLU::Z::zgstrf (&options, &AC, relax_size, panel_size, etree,
+    SLU::C::cgstrf (&options, &AC, relax_size, panel_size, etree,
             NULL, lwork, *perm_c, *perm_r, &L, &U,
 #ifdef HAVE_AMESOS2_SUPERLU5_API
             &Glu,
@@ -750,14 +781,14 @@ int main(int argc, char **argv) {
   // If eti-type complex<double> is enabled at compile time, this is what
   // the perf_test will use
   #if defined(KOKKOSKERNELS_INST_COMPLEX_DOUBLE)
-    using scalar_t = Kokkos::complex<double>;
-    scalarTypeString = "(scalar_t = Kokkos::complex<double>)";
+    using scalar_t = Kokkos::complex<float>;
+    scalarTypeString = "(scalar_t = Kokkos::complex<float>)";
   #else
     // If eti-type double is enabled at compile time, this is what
     // the perf_test will use
     #if defined(KOKKOSKERNELS_INST_DOUBLE)
-      using scalar_t = double;
-      scalarTypeString = "(scalar_t = double)";
+      using scalar_t = float;
+      scalarTypeString = "(scalar_t = float)";
     #else
       #error "Invalid type specified in KOKKOSKERNELS_SCALARS, supported types are "double,complex<double>""
     #endif
