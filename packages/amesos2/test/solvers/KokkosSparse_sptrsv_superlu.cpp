@@ -479,6 +479,12 @@ int test_sptrsv_perf (std::vector<int> tests, bool verbose, std::string &filenam
           
           Kokkos::fill_random(sol_host, random, -scalar_type(1), scalar_type(1));
 
+printf("Random: ");
+for(int n = 0; n < sol_host.size(); ++n) {
+  printf("%.2f ", (float) sol_host(n));
+}
+printf("\n");
+
 scalar_type norm_given = KokkosBlas::nrm2 (sol_host);
 
           // > create the rhs ** on host **
