@@ -1031,8 +1031,6 @@ namespace Tpetra {
     //   White:   Not checked since failure already confirmed on GTX960.
     //   Plan:    Keep fence or refactor UVM access.
     //   Notes:   Need to update fence information - determine exact fail points here/
-
-    // Confirmed on GTX960 for TpetraCore_SubmapImportTests_MPI_2
     Kokkos::fence(); // source.getLocalElement is UVM access
 
     for (LO tgtLid = numSameGids; tgtLid < numTgtLids; ++tgtLid) {
