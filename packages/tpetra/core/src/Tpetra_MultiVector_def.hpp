@@ -3951,6 +3951,13 @@ namespace Tpetra {
 
     // If Case 2 then sum up *this and distribute it to all processes.
     if (Case2) {
+      // FENCE REVIEW - CONFIRMED FAILURE
+      //   Testing: This code is exercised by unit tests.
+      //   GTX960:  Fails with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_MultiVector_UnitTests_MPI_4
+      //   White:   Not checked since failure already confirmed on GTX960.
+      //   Plan:    Investigate the reduce - determine failure point - probably we need the fence for a host conversion.
+      //   Notes:
+
       Kokkos::fence();
       this->reduce ();
     }
@@ -4200,6 +4207,14 @@ namespace Tpetra {
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   sync_host () {
     view_.sync_host ();
+
+    // FENCE REVIEW - CONFIRMED FAILURE
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_Transform_MPI_4
+    //   White:
+    //   Plan:    Keep this fence.
+    //   Notes:   See notes below, this fence should not be a performance issue
+    //            since it is specific to sync_host only.
 
     // This fence was motivated by the following specific situation:
     // For transform Y to X:

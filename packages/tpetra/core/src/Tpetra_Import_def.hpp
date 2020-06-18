@@ -357,6 +357,13 @@ namespace Tpetra {
         Array<int> newRemotePIDs(indexIntoRemotePIDs-cnt);
         cnt = 0;
 
+        // FENCE REVIEW - NOT TESTED
+        //   Testing: This code is NOT exercised by unit tests.
+        //   GTX960:  N/A
+        //   White:   N/A
+        //   Plan:    Potentially add unit testing. Then potentialy remove fence.
+        //   Notes:
+
         Kokkos::fence(); // target->getLocalElement is UVM access
 
         for (size_type j = 0; j < indexIntoRemotePIDs; ++j)
@@ -907,6 +914,13 @@ namespace Tpetra {
       typename decltype (this->TransferData_->exportLIDs_)::t_host
         exportLIDs (view_alloc_no_init ("exportLIDs"), numExportIDs);
 
+      // FENCE REVIEW - NOW PASSING
+      //   Testing: This code is exercised by unit tests.
+      //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   Plan:    Passes likely false oks. Loop is UVM access so refactor or keep fence.
+      //   Notes:   Did not look at makeDualViewFromOwningHostView carefully yet but that may be fine.
+
       Kokkos::fence(); // sourceMap->getLocalElement is UVm access
 
       for (size_type k = 0; k < numExportIDs; ++k) {
@@ -1011,6 +1025,14 @@ namespace Tpetra {
     const LO numTgtLids = as<LO> (numTgtGids);
     LO numPermutes = 0;
 
+    // FENCE REVIEW - CONFIRMED FAILURE
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_SubmapImportTests_MPI_2
+    //   White:   Not checked since failure already confirmed on GTX960.
+    //   Plan:    Keep fence or refactor UVM access.
+    //   Notes:   Need to update fence information - determine exact fail points here/
+
+    // Confirmed on GTX960 for TpetraCore_SubmapImportTests_MPI_2
     Kokkos::fence(); // source.getLocalElement is UVM access
 
     for (LO tgtLid = numSameGids; tgtLid < numTgtLids; ++tgtLid) {
@@ -1302,6 +1324,14 @@ namespace Tpetra {
         exportLIDs (view_alloc_no_init ("exportLIDs"), numExportIDs);
       ArrayView<const GO> expGIDs = exportGIDs ();
 
+      // FENCE REVIEW - NOW PASSING
+      //   Testing: This code is exercised by unit tests.
+      //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   Plan:    Probably keep fence or refactor.
+      //   Notes:   source.getLocalElement should fail for UVM use of glMap_.
+      //            Need to verify if that path is tested.
+
       Kokkos::fence(); // source.getLocalElement is UVM access
 
       for (size_type k = 0; k < numExportIDs; ++k) {
@@ -1542,6 +1572,14 @@ namespace Tpetra {
     // Convert the permute GIDs to permute-from LIDs in the source Map.
     Array<LO> permuteToLIDsUnion(numPermuteIDsUnion);
     Array<LO> permuteFromLIDsUnion(numPermuteIDsUnion);
+
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Probably keep fence or refactor.
+    //   Notes:   source.getLocalElement should fail for UVM use of glMap_.
+    //            Need to verify if that path is tested.
 
     Kokkos::fence(); // srcMap->getLocalElement is UVM access
 
@@ -1838,6 +1876,13 @@ namespace Tpetra {
     if (debug) {
       badIndices = std::unique_ptr<std::vector<size_t>> (new std::vector<size_t>);
     }
+
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Probably keep fence or refactor.
+    //   Notes:   remoteTarget->getLocalElement should fail for UVM use of glMap_.
 
     Kokkos::fence(); // remoteTarget->getLocalElement is UVM access
 

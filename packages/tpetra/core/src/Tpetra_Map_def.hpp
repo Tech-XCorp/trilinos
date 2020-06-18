@@ -1721,7 +1721,15 @@ namespace Tpetra {
         std::cerr << os.str();
       }
 
-      Kokkos::fence(); // following create_mirror_view fails with CUDA_LAUNCH_BLOCKING=0 due to above FillLgMap parallel_for
+      // FENCE REVIEW - CONFIRMED FAILURE
+      //   Testing: This code is exercised by unit tests.
+      //   GTX960:  Many failures with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   White:   Not checked since failure already confirmed on GTX960.
+      //   Plan:    Determine if we even could remove this.
+      //   Notes:   Following create_mirror_view fails with CUDA_LAUNCH_BLOCKING=0
+      //            due to above FillLgMap parallel_for
+
+      Kokkos::fence();
 
       auto lgMapHost =
         Kokkos::create_mirror_view (Kokkos::HostSpace (), lgMap);
