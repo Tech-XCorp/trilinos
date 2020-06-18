@@ -233,7 +233,19 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         }
         auto result_j = subview (result, j);
         KokkosBlas::dot (result_j, X_j_1d, Y_j_1d);
-        Kokkos::fence();
+
+        // FENCE REVIEW - NOW PASSING
+        //   Testing: This code is exercised by unit tests.
+        //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+        //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+        //   Plan:    Investigate - perhaps remove.
+        //   Notes:   I think I confirmed a test failure a while ago to motivate this fence.
+        //            But maybe something else has changed with the KokkosBlas.
+        //            Seems likely it is required. Verify the current asynchronous state
+        //            of the dot call and determine downstream failure point.
+        //            This might be an intermittent failiure - will check some cycles.
+
+        // Kokkos::fence();
       }
     } // for each column j of X and Y
   }
@@ -287,6 +299,14 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         auto Y_lcl_1d = subview (Y_lcl, rowRange, 0);
         auto result_0d = subview (result, 0);
         KokkosBlas::dot (result_0d, X_lcl_1d, Y_lcl_1d);
+
+        // FENCE REVIEW - CONFIRMED FAILURE
+        //   Testing: This code is exercised by unit tests.
+        //   GTX960:  Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+        //   White:   Not checked since failure already confirmed on GTX960.
+        //   Plan:    May consider downstream failure point and move fence.
+        //   Notes:
+
         Kokkos::fence();
       }
       else {
@@ -295,6 +315,14 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         auto Y_lcl_2d = subview (Y_lcl, rowRange,
                                  pair_type (0, Y_numVecs));
         KokkosBlas::dot (result, X_lcl_2d, Y_lcl_2d);
+
+        // FENCE REVIEW - CONFIRMED FAILURE
+        //   Testing: This code is exercised by unit tests.
+        //   GTX960:  Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+        //   White:   Not checked since failure already confirmed on GTX960.
+        //   Plan:    May consider downstream failure point and move fence.
+        //   Notes:
+
         Kokkos::fence();
       }
     } // host or device?

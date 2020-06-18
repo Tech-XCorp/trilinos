@@ -5233,13 +5233,20 @@ namespace Tpetra {
       new padding_type(myRank, numSameIDs,
                        permuteFromLIDs.extent(0)));
 
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Remove this fence.
+    //   Notes:   computeCrsPaddingForSameIDs and computeCrsPaddingForPermutedIDs look ok.
+
     // We're accessing data on host, so make sure all device
     // computations on the graphs' data are done.
     //
     // NOTE (mfh 08 Feb 2020) If we ever get rid of this fence, look
     // carefully in computeCrsPaddingFor{Same,Permuted}IDs to see if
     // we need a fence there.
-    Kokkos::fence();
+    // Kokkos::fence();
 
     computeCrsPaddingForSameIDs(*padding, source,
                                 static_cast<LO>(numSameIDs));
@@ -5417,7 +5424,15 @@ namespace Tpetra {
     } ();
     std::unique_ptr<padding_type> padding(
       new padding_type(myRank, numImports));
-    Kokkos::fence(); // Make sure device sees changes made by host
+
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Remove this fence. But review first.
+    //   Notes:   Not sure what comments below refer to. Need to investigate. May be fine now.
+
+    // Kokkos::fence(); // Make sure device sees changes made by host
     if (imports.need_sync_host()) {
       imports.sync_host();
     }
@@ -5514,7 +5529,15 @@ namespace Tpetra {
     } ();
     std::unique_ptr<padding_type> padding(
       new padding_type(myRank, numImports));
-    Kokkos::fence(); // Make sure host sees changes made by device
+
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Remove this fence. But review first.
+    //   Notes:   Not sure what comments below refer to. Need to investigate. May be fine now.
+
+    // Kokkos::fence(); // Make sure host sees changes made by device
     if (imports.need_sync_host()) {
       imports.sync_host();
     }
@@ -5788,6 +5811,15 @@ namespace Tpetra {
        "exportLIDs.size() = " << numExportLIDs << " != numPacketsPerLID.size()"
        " = " << numPacketsPerLID.size () << ".");
 
+    // FENCE REVIEW - NOT TESTED
+    //   Testing: This code is NOT exercised by unit tests.
+    //   GTX960:  N/A
+    //   White:   N/A
+    //   Plan:    Determine if we should add unit testing, then refactor, then remove fence.
+    //   Notes:   rowMap.getGlobalElement for example below would be a
+    //            UVM access of lgMap_ but need to investigate this path in detail.
+    //            parallel_reduce below is on host.
+
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
     device_execution_space().fence ();
@@ -5952,6 +5984,13 @@ namespace Tpetra {
         }
       });
 
+    // FENCE REVIEW - NOT TESTED
+    //   Testing: This code is NOT exercised by unit tests.
+    //   GTX960:  N/A
+    //   White:   N/A
+    //   Plan:    Determine if we should add unit testing, then remove fence after above code is refactored.
+    //   Notes:
+
     // We may have accessed UVM data on host above, so ensure that the
     // device sees these changes.
     device_execution_space().fence ();
@@ -6010,6 +6049,14 @@ namespace Tpetra {
        << numPacketsPerLID.extent (0) << ".");
     TEUCHOS_ASSERT( ! exportLIDs.need_sync_host () );
     auto exportLIDs_h = exportLIDs.view_host ();
+
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Keep this fence. Refactor code below first.
+    //   Notes:   parallel_reduce is on host and it looks like lines like
+    //            rowMap.getGlobalElement will be UVM
 
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
@@ -6109,10 +6156,20 @@ namespace Tpetra {
     exports.modify_host ();
     auto exports_h = exports.view_host ();
 
+    // FENCE REVIEW - NOW PASSING
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+    //   Plan:    Remove this fence assuming we keep the above fence. But need to review more carefully.
+    //   Notes:   This is passing without the fence but and it's not clear why
+    //            we should need an additional fence if above fence was already
+    //            called. Above kernel and below kernel are both on host.
+    //            Don't understand the below commment entirely yet - need to review.
+
     // The graph may store its data in UVM memory, so make sure that
     // any device kernels are done modifying the graph's data before
     // reading the data.
-    device_execution_space().fence ();
+    // device_execution_space().fence ();
 
     errCount = 0;
     Kokkos::parallel_scan

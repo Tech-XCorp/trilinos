@@ -4201,6 +4201,14 @@ namespace Tpetra {
   sync_host () {
     view_.sync_host ();
 
+    // FENCE REVIEW - CONFIRMED FAILURE
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_Transform_MPI_4
+    //   White:
+    //   Plan:    Keep this fence.
+    //   Notes:   See notes below, this fence should not be a performance issue
+    //            since it is specific to sync_host only.
+
     // This fence was motivated by the following specific situation:
     // For transform Y to X:
     //  Y.putScalar()    // acts on device
