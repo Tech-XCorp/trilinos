@@ -243,16 +243,14 @@ outOfBounds (const IntegerType x, const IntegerType exclusiveUpperBound)
          PackArraySingleColumnWithBoundsCheck (dst, src, idx, col),
          errorCount);
 
-      // FENCE REVIEW - CONFIRMED FAILURE
+      // FENCE REVIEW - NOW PASSING
       //   Testing: This code is exercised by unit tests.
-      //   GTX960:  Passed (confirmed) with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-      //   White:   Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-          // TpetraCore_CrsMatrix_ReplaceDomainMapAndImporter_MPI_4
-          // TpetraCore_ImportExport2_UnitTests_MPI_4
-      //   Plan:    Need to determine downstream failure point. Fix and remove this fence.
+      //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
+      //   Plan:
       //   Notes:
 
-      Kokkos::fence();
+      // Kokkos::fence();
 
       if (errorCount != 0) {
         // Go back and find the out-of-bounds entries in the index
