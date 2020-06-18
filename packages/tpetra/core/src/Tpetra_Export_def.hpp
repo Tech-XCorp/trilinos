@@ -243,6 +243,13 @@ namespace Tpetra {
     LO numPermutes = 0;
     LO numExports = 0;
 
+    // FENCE REVIEW - CONFIRMED FAILURE
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Fails with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_SubmapExportTests_MPI_2
+    //   White:   Not checked since failure already confirmed on GTX960.
+    //   Plan:    Potentially refactor UVM access below and remove fence.
+    //   Notes:
+
     Kokkos::fence(); // target.getLocalElement will be UVM access
 
     for (LO srcLid = numSameGids; srcLid < numSrcLids; ++srcLid) {
@@ -516,6 +523,13 @@ namespace Tpetra {
       typename decltype (this->TransferData_->remoteLIDs_)::t_host;
     host_remote_lids_type remoteLIDs
       (view_alloc_no_init ("remoteLIDs"), numRemoteIDs);
+
+    // FENCE REVIEW - CONFIRMED FAILURE
+    //   Testing: This code is exercised by unit tests.
+    //   GTX960:  Fails with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_SubmapExportTests_MPI_2
+    //   White:   Not checked since failure already confirmed on GTX960.
+    //   Plan:    Potentially refactor UVM access below and remove fence.
+    //   Notes:
 
     Kokkos::fence(); // tgtMap.getLocalElement will be UVM access
 
