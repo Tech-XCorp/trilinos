@@ -84,7 +84,7 @@ public:
     contiguous_ (false)
   {}
   LocalMap (const ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type>& glMapHost,
-            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type>& lgMapHost,
+            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, device_type>& lgMap,
             const GlobalOrdinal indexBase,
             const GlobalOrdinal myMinGid,
             const GlobalOrdinal myMaxGid,
@@ -93,7 +93,7 @@ public:
             const LocalOrdinal numLocalElements,
             const bool contiguous) :
     glMapHost_ (glMapHost),
-    lgMapHost_ (lgMapHost),
+    lgMap_ (lgMap),
     indexBase_ (indexBase),
     myMinGid_ (myMinGid),
     myMaxGid_ (myMaxGid),
@@ -179,7 +179,7 @@ public:
       return getMinGlobalIndex () + localIndex;
     }
     else {
-      return lgMapHost_(localIndex);
+      return lgMap_(localIndex);
     }
   }
 
@@ -200,7 +200,7 @@ private:
   /// LayoutRight because LayoutRight is the default on non-CUDA
   /// Devices, and we want to make sure we catch assignment or
   /// copying from the default to the nondefault layout.
-  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> lgMapHost_;
+  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, device_type> lgMap_;
   GlobalOrdinal indexBase_;
   GlobalOrdinal myMinGid_;
   GlobalOrdinal myMaxGid_;

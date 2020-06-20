@@ -1362,7 +1362,7 @@ namespace Tpetra {
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   getLocalMap () const
   {
-    return local_map_type (glMapHost_, lgMapHost_, getIndexBase (),
+    return local_map_type (glMapHost_, lgMap_, getIndexBase (),
                            getMinGlobalIndex (), getMaxGlobalIndex (),
                            firstContiguousGID_, lastContiguousGID_,
                            getNodeNumElements (), isContiguous ());
