@@ -83,8 +83,8 @@ public:
     numLocalElements_ (0),
     contiguous_ (false)
   {}
-  LocalMap (const ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type>& glMap,
-            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type>& lgMap,
+  LocalMap (const ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type>& glMapHost,
+            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type>& lgMapHost,
             const GlobalOrdinal indexBase,
             const GlobalOrdinal myMinGid,
             const GlobalOrdinal myMaxGid,
@@ -92,8 +92,8 @@ public:
             const GlobalOrdinal lastContiguousGid,
             const LocalOrdinal numLocalElements,
             const bool contiguous) :
-    glMap_ (glMap),
-    lgMap_ (lgMap),
+    glMapHost_ (glMapHost),
+    lgMapHost_ (lgMapHost),
     indexBase_ (indexBase),
     myMinGid_ (myMinGid),
     myMaxGid_ (myMaxGid),
@@ -164,7 +164,7 @@ public:
     else {
       // If the given global index is not in the table, this returns
       // the same value as OrdinalTraits<LocalOrdinal>::invalid().
-      return glMap_.get (globalIndex);
+      return glMapHost_.get (globalIndex);
     }
   }
 
@@ -179,13 +179,13 @@ public:
       return getMinGlobalIndex () + localIndex;
     }
     else {
-      return lgMap_(localIndex);
+      return lgMapHost_(localIndex);
     }
   }
 
 private:
   //! Table that maps from global index to local index.
-  ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type> glMap_;
+  ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type> glMapHost_;
   /// \brief Mapping from local indices to global indices.
   ///
   /// If this is empty, then it could be either that the Map is
@@ -200,7 +200,7 @@ private:
   /// LayoutRight because LayoutRight is the default on non-CUDA
   /// Devices, and we want to make sure we catch assignment or
   /// copying from the default to the nondefault layout.
-  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> lgMap_;
+  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> lgMapHost_;
   GlobalOrdinal indexBase_;
   GlobalOrdinal myMinGid_;
   GlobalOrdinal myMaxGid_;
