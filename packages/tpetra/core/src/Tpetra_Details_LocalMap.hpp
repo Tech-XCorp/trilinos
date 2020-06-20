@@ -83,8 +83,8 @@ public:
     numLocalElements_ (0),
     contiguous_ (false)
   {}
-  LocalMap (const ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, DeviceType>& glMap,
-            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, DeviceType>& lgMap,
+  LocalMap (const ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type>& glMap,
+            const ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type>& lgMap,
             const GlobalOrdinal indexBase,
             const GlobalOrdinal myMinGid,
             const GlobalOrdinal myMaxGid,
@@ -185,7 +185,7 @@ public:
 
 private:
   //! Table that maps from global index to local index.
-  ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, DeviceType> glMap_;
+  ::Tpetra::Details::FixedHashTable<GlobalOrdinal, LocalOrdinal, Kokkos::HostSpace::device_type> glMap_;
   /// \brief Mapping from local indices to global indices.
   ///
   /// If this is empty, then it could be either that the Map is
@@ -200,7 +200,7 @@ private:
   /// LayoutRight because LayoutRight is the default on non-CUDA
   /// Devices, and we want to make sure we catch assignment or
   /// copying from the default to the nondefault layout.
-  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, DeviceType> lgMap_;
+  ::Kokkos::View<const GlobalOrdinal*, ::Kokkos::LayoutLeft, Kokkos::HostSpace::device_type> lgMap_;
   GlobalOrdinal indexBase_;
   GlobalOrdinal myMinGid_;
   GlobalOrdinal myMaxGid_;

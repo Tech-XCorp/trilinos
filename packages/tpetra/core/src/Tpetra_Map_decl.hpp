@@ -1279,14 +1279,14 @@ namespace Tpetra {
     /// noncontiguous map constructor.  For noncontiguous maps, the
     /// getLocalElement() and isNodeGlobalElement() methods use
     /// this mapping.
-    global_to_local_table_type glMap_;
+    // global_to_local_table_type glMapXXX_;
 
     //! Type of a mapping from global IDs to local IDs on host.
     typedef ::Tpetra::Details::FixedHashTable<
       global_ordinal_type, local_ordinal_type, Kokkos::HostSpace::device_type>
       global_to_local_table_host_type;
 
-    /// \brief Host View of glMap_.
+    /// \brief Host View of map hash.
     ///
     /// Used by getLocalElement() (which is a host method, and therefore
     /// requires a host View) if necessary (only noncontiguous Maps
@@ -1552,7 +1552,6 @@ namespace Tpetra {
       // defined operator= to do this, but that would violate
       // expectations.  (Kokkos::View::operator= only does a shallow
       // copy, EVER.)
-      mapOut.glMap_ = out_table_type (mapIn.glMap_);
       mapOut.glMapHost_ = out_table_host_type (mapIn.glMapHost_);
 
       // We could cleverly clone the Directory here if it is

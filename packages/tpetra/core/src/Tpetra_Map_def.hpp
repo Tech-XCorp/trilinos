@@ -719,12 +719,12 @@ namespace Tpetra {
                          nonContigGids_host.size ());
         Kokkos::deep_copy (nonContigGids, nonContigGids_host);
 
-        glMap_ = global_to_local_table_type (nonContigGids,
+        auto glMap = global_to_local_table_type (nonContigGids,
                                              firstContiguousGID_,
                                              lastContiguousGID_,
                                              static_cast<LO> (i));
         // use copy constructor to make host version
-        glMapHost_ = global_to_local_table_host_type(glMap_);
+        glMapHost_ = global_to_local_table_host_type(glMap);
       }
 
       // FIXME (mfh 10 Oct 2016) When we construct the global-to-local
@@ -763,7 +763,7 @@ namespace Tpetra {
       // with no local elements.
       firstContiguousGID_ = indexBase_+1;
       lastContiguousGID_ = indexBase_;
-      // glMap_ was default constructed, so it's already empty.
+      // glMapHost_ was default constructed, so it's already empty.
     }
 
     // Compute the min and max of all processes' GIDs.  If
@@ -1103,12 +1103,12 @@ namespace Tpetra {
            << entryList.extent (0) << " - " << i
            << ".  Please report this bug to the Tpetra developers.");
 
-        glMap_ = global_to_local_table_type (nonContigGids,
+        auto glMap = global_to_local_table_type (nonContigGids,
                                              firstContiguousGID_,
                                              lastContiguousGID_,
                                              static_cast<LO> (i));
         // use copy constructor to make host version
-        glMapHost_ = global_to_local_table_host_type(glMap_);
+        glMapHost_ = global_to_local_table_host_type(glMap);
       }
 
       // FIXME (mfh 10 Oct 2016) When we construct the global-to-local
@@ -1147,7 +1147,7 @@ namespace Tpetra {
       // with no local elements.
       firstContiguousGID_ = indexBase_+1;
       lastContiguousGID_ = indexBase_;
-      // glMap_ was default constructed, so it's already empty.
+      // glMapHost_ was default constructed, so it's already empty.
     }
 
     // Compute the min and max of all processes' GIDs.  If
@@ -1362,7 +1362,7 @@ namespace Tpetra {
   Map<LocalOrdinal,GlobalOrdinal,Node>::
   getLocalMap () const
   {
-    return local_map_type (glMap_, lgMap_, getIndexBase (),
+    return local_map_type (glMapHost_, lgMapHost_, getIndexBase (),
                            getMinGlobalIndex (), getMaxGlobalIndex (),
                            firstContiguousGID_, lastContiguousGID_,
                            getNodeNumElements (), isContiguous ());
@@ -1967,7 +1967,6 @@ namespace Tpetra {
       newMap->distributed_ = false;
       newMap->lgMap_ = this->lgMap_;
       newMap->lgMapHost_ = this->lgMapHost_;
-      newMap->glMap_ = this->glMap_;
       newMap->glMapHost_ = this->glMapHost_;
       // It's OK not to initialize the new Map's Directory.
       // This is initialized lazily, on first call to getRemoteIndexList.
@@ -2105,7 +2104,6 @@ namespace Tpetra {
 
       map->lgMap_ = lgMap_;
       map->lgMapHost_ = lgMapHost_;
-      map->glMap_ = glMap_;
       map->glMapHost_ = glMapHost_;
 
       // Map's default constructor creates an uninitialized Directory.
