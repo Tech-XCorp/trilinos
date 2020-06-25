@@ -233,7 +233,6 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         }
         auto result_j = subview (result, j);
         KokkosBlas::dot (result_j, X_j_1d, Y_j_1d);
-        Kokkos::fence();
       }
     } // for each column j of X and Y
   }
@@ -287,7 +286,6 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         auto Y_lcl_1d = subview (Y_lcl, rowRange, 0);
         auto result_0d = subview (result, 0);
         KokkosBlas::dot (result_0d, X_lcl_1d, Y_lcl_1d);
-        Kokkos::fence();
       }
       else {
         auto X_lcl_2d = subview (X_lcl, rowRange,
@@ -295,7 +293,6 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
         auto Y_lcl_2d = subview (Y_lcl, rowRange,
                                  pair_type (0, Y_numVecs));
         KokkosBlas::dot (result, X_lcl_2d, Y_lcl_2d);
-        Kokkos::fence();
       }
     } // host or device?
   } // multivector with nonconstant stride?
@@ -316,7 +313,7 @@ lclDotRaw (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* const resul
 // SKIP DOWN TO HERE
 //
 
-/// \brief Nonblocking dot product, with either Tpetra::MultiVector or
+/// \brief dot product, with either Tpetra::MultiVector or
 ///   Tpetra::Vector inputs, and raw pointer or raw array output.
 ///
 /// This implements the following cases:
@@ -384,6 +381,7 @@ idot (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* resultRaw,
   typedef View<dot_type*, device_type> result_dev_view_type;
   typedef typename result_dev_view_type::HostMirror result_host_view_type;
   typedef typename device_type::memory_space dev_memory_space;
+  typedef typename device_type::execution_space dev_execution_space;
 
   auto map = X.getMap ();
   auto comm = map.is_null () ? Teuchos::null : map->getComm ();
@@ -417,11 +415,14 @@ idot (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* resultRaw,
   const bool resultOnDevice =
     MemorySpaceAccess<dev_memory_space, HostSpace>::accessible;
   if (resultOnDevice) {
+    // Note this code path is not tested.in Tpetra unit tests.
     result_dev_view_type gblResult (resultRaw, numVecs);
     result_dev_view_type lclResult = needCopy ?
       result_dev_view_type ("lclResult", numVecs) :
       gblResult;
     Details::lclDotRaw (lclResult.data (), X, Y, resultOnDevice);
+    // though fence not necesary if lclDotRaw was run on host since it would deep_copy to device
+    dev_execution_space().fence();
     return iallreduce (lclResult, gblResult, ::Teuchos::REDUCE_SUM, *comm);
   }
   else {
@@ -434,7 +435,7 @@ idot (typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_type* resultRaw,
   }
 }
 
-/// \brief Nonblocking dot product, with Tpetra::Vector inputs, and
+/// \brief dot product, with Tpetra::Vector inputs, and
 ///   rank-0 (single value) Kokkos::View output.
 ///
 /// This function computes result() = dot(X,Y).
@@ -489,6 +490,7 @@ idot (const Kokkos::View<typename ::Tpetra::Vector<SC, LO, GO, NT>::dot_type,
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
+  typedef typename device_type::execution_space dev_execution_space;
   typedef View<dot_type, device_type> result_view_type;
 
   auto map = X.getMap ();
@@ -508,10 +510,11 @@ idot (const Kokkos::View<typename ::Tpetra::Vector<SC, LO, GO, NT>::dot_type,
     result_view_type ("lclResult") :
     gblResult;
   Details::lclDotRaw (lclResult.data (), X, Y, resultOnDevice);
+  dev_execution_space().fence();
   return iallreduce (lclResult, gblResult, ::Teuchos::REDUCE_SUM, *comm);
 }
 
-/// \brief Nonblocking dot product, with Tpetra::MultiVector inputs,
+/// \brief dot product, with Tpetra::MultiVector inputs,
 ///   and rank-1 (one-dimensional array) Kokkos::View output.
 ///
 /// This implements the following cases:
@@ -587,6 +590,7 @@ idot (const Kokkos::View<typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_typ
   typedef ::Tpetra::MultiVector<SC, LO, GO, NT> MV;
   typedef typename MV::dot_type dot_type;
   typedef typename MV::device_type device_type;
+  typedef typename device_type::execution_space execution_space;
   typedef View<dot_type*, device_type> result_view_type;
 
   auto map = X.getMap ();
@@ -623,6 +627,7 @@ idot (const Kokkos::View<typename ::Tpetra::MultiVector<SC, LO, GO, NT>::dot_typ
     result_view_type ("lclResult", result.extent (0)) :
     gblResult;
   Details::lclDotRaw (lclResult.data (), X, Y, resultOnDevice);
+  execution_space().fence();
   return iallreduce (lclResult, gblResult, ::Teuchos::REDUCE_SUM, *comm);
 }
 
