@@ -5237,8 +5237,9 @@ namespace Tpetra {
     //   Testing: This code is exercised by unit tests.
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-    //   Plan:    Remove this fence.
-    //   Notes:   computeCrsPaddingForSameIDs and computeCrsPaddingForPermutedIDs look ok.
+    //   Plan:    Track if graph is safe and fence based on that.
+    //   Notes:   computeCrsPaddingForSameIDs and computeCrsPaddingForPermutedIDs
+    //            have getGlobalRowCopy which would need UVM protection.
 
     // We're accessing data on host, so make sure all device
     // computations on the graphs' data are done.
@@ -5246,7 +5247,7 @@ namespace Tpetra {
     // NOTE (mfh 08 Feb 2020) If we ever get rid of this fence, look
     // carefully in computeCrsPaddingFor{Same,Permuted}IDs to see if
     // we need a fence there.
-    // Kokkos::fence();
+    Kokkos::fence();
 
     computeCrsPaddingForSameIDs(*padding, source,
                                 static_cast<LO>(numSameIDs));
@@ -5429,10 +5430,10 @@ namespace Tpetra {
     //   Testing: This code is exercised by unit tests.
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-    //   Plan:    Remove this fence. But review first.
-    //   Notes:   Not sure what comments below refer to. Need to investigate. May be fine now.
+    //   Plan:    Track if graph is safe and fence based on that.
+    //   Notes:   We need fence for getRowGraphGlobalRow UVM access.
 
-    // Kokkos::fence(); // Make sure device sees changes made by host
+    Kokkos::fence(); // Make sure device sees changes made by host
     if (imports.need_sync_host()) {
       imports.sync_host();
     }
@@ -5534,10 +5535,10 @@ namespace Tpetra {
     //   Testing: This code is exercised by unit tests.
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-    //   Plan:    Remove this fence. But review first.
-    //   Notes:   Not sure what comments below refer to. Need to investigate. May be fine now.
+    //   Plan:    Track if graph is safe and fence based on that.
+    //   Notes:   Need fence for getRowGraphGlobalRow
 
-    // Kokkos::fence(); // Make sure host sees changes made by device
+    Kokkos::fence(); // Make sure host sees changes made by device
     if (imports.need_sync_host()) {
       imports.sync_host();
     }
@@ -5815,12 +5816,12 @@ namespace Tpetra {
     //   Testing: This code is NOT exercised by unit tests.
     //   GTX960:  N/A
     //   White:   N/A
-    //   Plan:    Determine if we should add unit testing. Remove fence.
-    //   Notes:   Unclear about comments, why is fence needed for host UVM writes.
+    //   Plan:    Track if graph is safe and fence based on that.
+    //   Notes:   Need fence for getLocalViewRawConst and getGlobalViewRawConst
 
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
-    // device_execution_space().fence ();
+    device_execution_space().fence ();
 
     const map_type& rowMap = * (this->getRowMap ());
     const map_type* const colMapPtr = this->colMap_.getRawPtr ();
@@ -5986,8 +5987,8 @@ namespace Tpetra {
     //   Testing: This code is NOT exercised by unit tests.
     //   GTX960:  N/A
     //   White:   N/A
-    //   Plan:    Determine if we should add unit testing. Remove fence.
-    //   Notes:   Unclear about comments, why is fence needed for host UVM writes.
+    //   Plan:    Remove fence.
+    //   Notes:   Not clear why we would fence after host operations to UVM.
 
     // We may have accessed UVM data on host above, so ensure that the
     // device sees these changes.
@@ -6052,12 +6053,13 @@ namespace Tpetra {
     //   Testing: This code is exercised by unit tests.
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-    //   Plan:    Keep this fence. Refactor code below first.
-    //   Notes:
+    //   Plan:    Remove fence
+    //   Notes:   exportLIDs_h has to be safe for access since exportLIDs.need_sync_host
+    //            is validated. getGlobalElement is host only.
 
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
-    device_execution_space().fence ();
+    // device_execution_space().fence ();
 
     const map_type& rowMap = * (this->getRowMap ());
     const map_type* const colMapPtr = this->colMap_.getRawPtr ();
@@ -6157,16 +6159,13 @@ namespace Tpetra {
     //   Testing: This code is exercised by unit tests.
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-    //   Plan:    Remove this fence assuming we keep the above fence. But need to review more carefully.
-    //   Notes:   This is passing without the fence but and it's not clear why
-    //            we should need an additional fence if above fence was already
-    //            called. Above kernel and below kernel are both on host.
-    //            Don't understand the below commment entirely yet - need to review.
+    //   Plan:    Track if graph is safe and fence based on that.
+    //   Notes:   UVM access in getRowInfoFromGlobalRowIndex
 
     // The graph may store its data in UVM memory, so make sure that
     // any device kernels are done modifying the graph's data before
     // reading the data.
-    // device_execution_space().fence ();
+    device_execution_space().fence ();
 
     errCount = 0;
     Kokkos::parallel_scan
