@@ -1215,14 +1215,6 @@ namespace Tpetra {
 
       // Necessary until following UVM host accesses are changed - for example Crowptr
       // Also probably needed in mult_R_A_P_newmatrix_kernel_wrapper - did not demonstrate this in test failure yet
-
-      // FENCE REVIEW - CONFIRMED FAILURE
-      //   Testing: This code is exercised by unit tests.
-      //   GTX960:  Fails with CUDA_LAUNCH_BLOCKING=0 and fence removed. TpetraCore_MatrixMatrix_UnitTests_MPI_4
-      //   White:   Not checked since failure already confirmed on GTX960.
-      //   Plan:    Decide if we want to refactor and remove.
-      //   Notes:
-
       Kokkos::fence();
 
       // For each row of R
