@@ -5816,8 +5816,7 @@ namespace Tpetra {
     //   GTX960:  N/A
     //   White:   N/A
     //   Plan:    Determine if we should add unit testing, then refactor, then remove fence.
-    //   Notes:   rowMap.getGlobalElement for example below would be a
-    //            UVM access of lgMap_ but need to investigate this path in detail.
+    //   Notes:   But need to investigate this path in detail.
     //            parallel_reduce below is on host.
 
     // We may be accessing UVM data on host below, so ensure that the
@@ -6055,8 +6054,7 @@ namespace Tpetra {
     //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
     //   Plan:    Keep this fence. Refactor code below first.
-    //   Notes:   parallel_reduce is on host and it looks like lines like
-    //            rowMap.getGlobalElement will be UVM
+    //   Notes:
 
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
