@@ -5815,13 +5815,12 @@ namespace Tpetra {
     //   Testing: This code is NOT exercised by unit tests.
     //   GTX960:  N/A
     //   White:   N/A
-    //   Plan:    Determine if we should add unit testing, then refactor, then remove fence.
-    //   Notes:   But need to investigate this path in detail.
-    //            parallel_reduce below is on host.
+    //   Plan:    Determine if we should add unit testing. Remove fence.
+    //   Notes:   Unclear about comments, why is fence needed for host UVM writes.
 
     // We may be accessing UVM data on host below, so ensure that the
     // device is done accessing it.
-    device_execution_space().fence ();
+    // device_execution_space().fence ();
 
     const map_type& rowMap = * (this->getRowMap ());
     const map_type* const colMapPtr = this->colMap_.getRawPtr ();
@@ -5987,12 +5986,12 @@ namespace Tpetra {
     //   Testing: This code is NOT exercised by unit tests.
     //   GTX960:  N/A
     //   White:   N/A
-    //   Plan:    Determine if we should add unit testing, then remove fence after above code is refactored.
-    //   Notes:
+    //   Plan:    Determine if we should add unit testing. Remove fence.
+    //   Notes:   Unclear about comments, why is fence needed for host UVM writes.
 
     // We may have accessed UVM data on host above, so ensure that the
     // device sees these changes.
-    device_execution_space().fence ();
+    // device_execution_space().fence ();
 
     TEUCHOS_TEST_FOR_EXCEPTION_CLASS_FUNC
       (errCount != 0, std::logic_error, "Packing encountered "
