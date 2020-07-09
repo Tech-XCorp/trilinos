@@ -148,18 +148,6 @@ outOfBounds (const IntegerType x, const IntegerType exclusiveUpperBound)
         ("Tpetra::MultiVector pack one col",
          range_type (0, idx.size ()),
          PackArraySingleColumn (dst, src, idx, col));
-
-      // FENCE REVIEW - CONFIRMED FAILURE
-      //   Testing: This code is exercised by unit tests.
-      //   GTX960:  Passed (confirmed) with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-      //   White:   Failed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-          // TpetraCore_CrsMatrix_ReplaceDomainMapAndImporter_MPI_4
-          // TpetraCore_ImportExport2_UnitTests_MPI_4
-          // TpetraCore_MatrixMatrix_UnitTests_MPI_4
-      //   Plan:    Need to determine downstream failure point. Fix and remove this fence.
-      //   Notes:
-
-      Kokkos::fence();
     }
   };
 
@@ -242,15 +230,6 @@ outOfBounds (const IntegerType x, const IntegerType exclusiveUpperBound)
          range_type (0, idx.size ()),
          PackArraySingleColumnWithBoundsCheck (dst, src, idx, col),
          errorCount);
-
-      // FENCE REVIEW - NOW PASSING
-      //   Testing: This code is exercised by unit tests.
-      //   GTX960:  Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-      //   White:   Passed with CUDA_LAUNCH_BLOCKING=0 and fence removed.
-      //   Plan:
-      //   Notes:
-
-      // Kokkos::fence();
 
       if (errorCount != 0) {
         // Go back and find the out-of-bounds entries in the index

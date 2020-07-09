@@ -1077,6 +1077,7 @@ namespace Tpetra {
             }
           }
           else { // pack on device
+            Kokkos::fence();
             this->imports_.modify_device ();
             if (revOp == DoReverse) {
               distor.doReversePostsAndWaits
@@ -1137,6 +1138,7 @@ namespace Tpetra {
             }
           }
           else { // pack on device
+            Kokkos::fence();
             this->imports_.modify_device ();
             if (revOp == DoReverse) {
               distor.doReversePostsAndWaits
