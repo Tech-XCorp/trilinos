@@ -131,6 +131,8 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Chebyshev, Test0, Scalar, LocalOrdinal,
 
   typename Teuchos::ScalarTraits<Scalar>::magnitudeType trial_tol = 1.e-13;
   typename Teuchos::ScalarTraits<Scalar>::magnitudeType tol = std::max(trial_tol, Teuchos::ScalarTraits<Scalar>::eps());
+
+  y.sync_host();
   TEST_COMPARE_FLOATING_ARRAYS(yview, halfs(), tol);
 
   //If I now increase the degree of the polynomial to 4 the solve won't be
@@ -140,6 +142,8 @@ TEUCHOS_UNIT_TEST_TEMPLATE_3_DECL(Ifpack2Chebyshev, Test0, Scalar, LocalOrdinal,
   prec.apply(x, y);
 
   tol = 1.e-4;
+
+  y.sync_host();
   TEST_COMPARE_FLOATING_ARRAYS(yview, halfs(), tol);
 }
 

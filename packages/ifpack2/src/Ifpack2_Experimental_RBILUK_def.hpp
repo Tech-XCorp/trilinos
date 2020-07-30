@@ -869,6 +869,8 @@ apply (const Tpetra::MultiVector<scalar_type,local_ordinal_type,global_ordinal_t
         // Solve D R = C. Note that D has been replaced by D^{-1} at this point.
         D_block_->applyBlock(cBlock, rBlock);
 
+        Kokkos::fence();
+
         // Solve U Y = R.
         for (local_ordinal_type imv = 0; imv < numVectors; ++imv)
         {
