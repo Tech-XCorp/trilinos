@@ -98,6 +98,7 @@ public:
           const MV_in& X_in,
           const Teuchos::ArrayView<const LO> perm) const
   {
+std::terminate();
     using Teuchos::ArrayRCP;
     const size_t numRows = X_out.getLocalLength ();
     const size_t numVecs = X_in.getNumVectors ();
@@ -121,6 +122,7 @@ public:
         const Teuchos::ArrayView<const LO> perm,
         LO blockSize) const
   {
+std::terminate();
     using Teuchos::ArrayRCP;
     const size_t numBlocks = X_out.getLocalLength() / blockSize;
     const size_t numVecs = X_in.getNumVectors ();
@@ -141,6 +143,7 @@ public:
            const MV_out& X_out,
            const Teuchos::ArrayView<const LO> perm) const
   {
+std::terminate();
     using Teuchos::ArrayRCP;
     const size_t numRows = X_out.getLocalLength();
     const size_t numVecs = X_in.getNumVectors();
@@ -161,6 +164,7 @@ public:
         const Teuchos::ArrayView<const LO> perm,
         LO blockSize) const
   {
+std::terminate();
     using Teuchos::ArrayRCP;
     const size_t numBlocks = X_out.getLocalLength() / blockSize;
     const size_t numVecs = X_in.getNumVectors ();
@@ -185,12 +189,14 @@ public:
                         const Teuchos::ArrayView<const LO> perm) const
   {
     //note: j is col, i is row
-    for(size_t j = 0; j < X_out.extent(1); ++j) {
-      for(size_t i = 0; i < X_out.extent(0); ++i) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename OutView::execution_space, size_t> (0, X_out.size()),
+      KOKKOS_LAMBDA (size_t n) {
+        size_t j = n / X_out.extent(0);
+        size_t i = n % X_out.extent(0);
         const LO i_perm = perm[i];
         X_out(i, j) = X_in(i_perm, j);
-      }
-    }
+    });
   }
 
   template<typename InView, typename OutView>
@@ -198,12 +204,14 @@ public:
                          const OutView X_out,
                          const Teuchos::ArrayView<const LO> perm) const
   {
-    for(size_t j = 0; j < X_out.extent(1); ++j) {
-      for(size_t i = 0; i < X_out.extent(0); ++i) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename OutView::execution_space, size_t> (0, X_out.size()),
+      KOKKOS_LAMBDA (size_t n) {
+        size_t j = n / X_out.extent(0);
+        size_t i = n % X_out.extent(0);
         const LO i_perm = perm[i];
         X_in(i_perm, j) = X_out(i, j);
-      }
-    }
+    });
   }
 
   template<typename InView, typename OutView>
@@ -214,14 +222,16 @@ public:
   {
     //note: j is col, i is row
     size_t numBlocks = X_out.extent(0) / blockSize;
-    for(size_t j = 0; j < X_out.extent(1); ++j) {
-      for(size_t i = 0; i < numBlocks; ++i) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename OutView::execution_space, size_t> (0, X_out.extent(1) * numBlocks),
+      KOKKOS_LAMBDA (size_t n) {
+        size_t j = n / numBlocks;
+        size_t i = n % numBlocks;
         const LO i_perm = perm[i];
         for(LO k = 0; k < blockSize; k++) {
           X_out(i * blockSize + k, j) = X_in(i_perm * blockSize + k, j);
         }
-      }
-    }
+    });
   }
 
   template<typename InView, typename OutView>
@@ -231,15 +241,16 @@ public:
                               LO blockSize) const
   {
     //note: j is col, i is row
-    size_t numBlocks = X_out.extent(0) / blockSize;
-    for(size_t j = 0; j < X_out.extent(1); ++j) {
-      for(size_t i = 0; i < numBlocks; ++i) {
+    Kokkos::parallel_for(
+      Kokkos::RangePolicy<typename OutView::execution_space, size_t> (0, X_out.size()),
+      KOKKOS_LAMBDA (size_t n) {
+        size_t j = n / X_out.extent(0);
+        size_t q = n % X_out.extent(0);
+        size_t i = q / blockSize;
+        size_t k = q % blockSize;
         const LO i_perm = perm[i];
-        for(LO k = 0; k < blockSize; k++) {
-          X_in(i_perm * blockSize + k, j) = X_out(i * blockSize + k, j);
-        }
-      }
-    }
+        X_in(i_perm * blockSize + k, j) = X_out(i * blockSize + k, j);
+    });
   }
 
   /*******************************/
@@ -250,6 +261,7 @@ public:
                       InView X_in,
                       const Teuchos::ArrayView<const LO> perm) const
   {
+std::terminate();
     //note: j is col, i is row
     size_t numRows = X_out.getLocalLength();
     for(size_t j = 0; j < X_out.getNumVectors(); ++j) {
@@ -266,6 +278,7 @@ public:
                        MV_out X_out,
                        const Teuchos::ArrayView<const LO> perm) const
   {
+std::terminate();
     size_t numRows = X_out.getLocalLength(); 
     for(size_t j = 0; j < X_in.extent(1); ++j) {
       Teuchos::ArrayRCP<const OutScalar> X_out_j = X_out.getData(j);
@@ -282,6 +295,7 @@ public:
                            const Teuchos::ArrayView<const LO> perm,
                            LO blockSize) const
   {
+std::terminate();
     //note: j is col, i is row
     size_t numBlocks = X_out.getLocalLength() / blockSize;
     for(size_t j = 0; j < X_out.getNumVectors(); ++j) {
@@ -301,6 +315,7 @@ public:
                             const Teuchos::ArrayView<const LO> perm,
                             LO blockSize) const
   {
+std::terminate();
     size_t numBlocks = X_out.getLocalLength() / blockSize;
     for(size_t j = 0; j < X_in.extent(1); ++j) {
       Teuchos::ArrayRCP<const OutScalar> X_out_j = X_out.getData(j);
