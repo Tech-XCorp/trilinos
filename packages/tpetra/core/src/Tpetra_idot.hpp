@@ -187,6 +187,7 @@ void blockingDotImpl(
   using result_mirror_view_type = typename result_dev_view_type::HostMirror;
   using result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace>;
   using dev_mem_space = typename result_dev_view_type::memory_space;
+  using dev_exec_space = typename result_dev_view_type::execution_space;
   using mirror_mem_space = typename result_mirror_view_type::memory_space;
   using unmanaged_result_dev_view_type = Kokkos::View<dot_type*, dev_mem_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
   using unmanaged_result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
@@ -205,8 +206,7 @@ void blockingDotImpl(
     //compute local result on temporary device view, then copy that to host.
     result_dev_view_type localDeviceResult(Kokkos::ViewAllocateWithoutInitializing("DeviceLocalDotResult"), numVecs);
     idotLocal<SC, LO, GO, NT, result_dev_view_type, mirror_mem_space>(localDeviceResult, X, Y);
-    //NOTE: no fence is required: deep_copy will fence.
-    Kokkos::deep_copy(localHostResult, localDeviceResult);
+    Kokkos::deep_copy(dev_exec_space(), localHostResult, localDeviceResult);
   }
   result_host_view_type globalHostResultOwning;
   unmanaged_result_host_view_type globalHostResultNonowning;
@@ -219,8 +219,9 @@ void blockingDotImpl(
     globalHostResultOwning = result_host_view_type(Kokkos::ViewAllocateWithoutInitializing("HostGlobalDotResult"), numVecs);
     globalHostResultNonowning = unmanaged_result_host_view_type(globalHostResultOwning.data(), numVecs);
   }
+  Kokkos::fence();
   Teuchos::reduceAll<int, dot_type> (*X.getMap()->getComm(), Teuchos::REDUCE_SUM, numVecs, localHostResult.data(), globalHostResultNonowning.data());
-  Kokkos::deep_copy(globalResult, globalHostResultNonowning);
+  Kokkos::deep_copy(dev_exec_space(), globalResult, globalHostResultNonowning);
 }
 
 /// \brief Internal (common) version of idot, a global dot product
@@ -244,6 +245,7 @@ idotImpl(const ResultView& globalResult,
   using result_mirror_view_type = typename result_dev_view_type::HostMirror;
   using result_host_view_type = Kokkos::View<dot_type*, Kokkos::HostSpace>;
   using dev_mem_space = typename result_dev_view_type::memory_space;
+  using dev_exec_space = typename result_dev_view_type::execution_space;
   using mirror_mem_space = typename result_mirror_view_type::memory_space;
   using unmanaged_result_dev_view_type = Kokkos::View<dot_type*, dev_mem_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
   using unmanaged_result_mirror_view_type = Kokkos::View<dot_type*, mirror_mem_space, Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
@@ -313,8 +315,8 @@ idotImpl(const ResultView& globalResult,
     if(communicateFromHost)
     {
       result_host_view_type hostLocalResult(Kokkos::ViewAllocateWithoutInitializing("hostLocalResult"), numVecs);
-      //The deep copy fences.
-      Kokkos::deep_copy(hostLocalResult, nonowningLocalResult);
+      Kokkos::deep_copy(dev_exec_space(), hostLocalResult, nonowningLocalResult);
+      Kokkos::fence();
       return iallreduce(hostLocalResult, globalResult, ::Teuchos::REDUCE_SUM, *comm);
     }
     else

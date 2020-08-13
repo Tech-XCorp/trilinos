@@ -156,6 +156,7 @@ pad_crs_arrays(
   const int my_rank,
   const bool verbose)
 {
+  using execution_space = typename RowPtr::execution_space;
   using Kokkos::view_alloc;
   using Kokkos::WithoutInitializing;
   using std::endl;
@@ -216,10 +217,10 @@ pad_crs_arrays(
   {
     auto row_ptr_end_h = create_mirror_view(
       hostSpace, row_ptr_end, verbose, prefix.get());
-    Kokkos::deep_copy(row_ptr_end_h, row_ptr_end);
+    Kokkos::deep_copy(execution_space(), row_ptr_end_h, row_ptr_end);
     auto row_ptr_beg_h = create_mirror_view(
       hostSpace, row_ptr_beg, verbose, prefix.get());
-    Kokkos::deep_copy(row_ptr_beg_h, row_ptr_beg);
+    Kokkos::deep_copy(execution_space(), row_ptr_beg_h, row_ptr_beg);
 
     auto newAllocPerRow_h = create_mirror_view(
       hostSpace, newAllocPerRow, verbose, prefix.get());
