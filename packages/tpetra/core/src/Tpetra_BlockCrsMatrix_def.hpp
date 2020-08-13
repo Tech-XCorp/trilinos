@@ -681,6 +681,8 @@ public:
     localError_ (new bool (false)),
     errs_ (new Teuchos::RCP<std::ostringstream> ()) // ptr to a null ptr
   {
+    using execution_space = typename Node::execution_space;
+
     TEUCHOS_TEST_FOR_EXCEPTION(
       ! graph_.isSorted (), std::invalid_argument, "Tpetra::"
       "BlockCrsMatrix constructor: The input CrsGraph does not have sorted "
@@ -715,7 +717,7 @@ public:
 
       row_map_type ptr_d = graph.getLocalGraph ().row_map;
       nc_host_row_map_type ptr_h_nc = Kokkos::create_mirror_view (ptr_d);
-      Kokkos::deep_copy (ptr_h_nc, ptr_d);
+      Kokkos::deep_copy (execution_space(), ptr_h_nc, ptr_d);
       ptrHost_ = ptr_h_nc;
     }
     {
@@ -724,7 +726,7 @@ public:
 
       entries_type ind_d = graph.getLocalGraph ().entries;
       nc_host_entries_type ind_h_nc = Kokkos::create_mirror_view (ind_d);
-      Kokkos::deep_copy (ind_h_nc, ind_d);
+      Kokkos::deep_copy (execution_space(), ind_h_nc, ind_d);
       indHost_ = ind_h_nc;
     }
 
@@ -751,6 +753,8 @@ public:
     localError_ (new bool (false)),
     errs_ (new Teuchos::RCP<std::ostringstream> ()) // ptr to a null ptr
   {
+    using execution_space = typename Node::execution_space;
+
     TEUCHOS_TEST_FOR_EXCEPTION(
       ! graph_.isSorted (), std::invalid_argument, "Tpetra::"
       "BlockCrsMatrix constructor: The input CrsGraph does not have sorted "
@@ -781,7 +785,7 @@ public:
 
       row_map_type ptr_d = graph.getLocalGraph ().row_map;
       nc_host_row_map_type ptr_h_nc = Kokkos::create_mirror_view (ptr_d);
-      Kokkos::deep_copy (ptr_h_nc, ptr_d);
+      Kokkos::deep_copy (execution_space(), ptr_h_nc, ptr_d);
       ptrHost_ = ptr_h_nc;
     }
     {
@@ -790,7 +794,7 @@ public:
 
       entries_type ind_d = graph.getLocalGraph ().entries;
       nc_host_entries_type ind_h_nc = Kokkos::create_mirror_view (ind_d);
-      Kokkos::deep_copy (ind_h_nc, ind_d);
+      Kokkos::deep_copy (execution_space(), ind_h_nc, ind_d);
       indHost_ = ind_h_nc;
     }
 

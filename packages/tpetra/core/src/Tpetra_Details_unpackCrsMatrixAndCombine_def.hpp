@@ -678,7 +678,7 @@ unpackAndCombineIntoCrsMatrix(
 
   Kokkos::HostSpace host_space;
   auto batches_per_lid_h = Kokkos::create_mirror_view(host_space, batches_per_lid);
-  Kokkos::deep_copy(batches_per_lid_h, batches_per_lid);
+  Kokkos::deep_copy(XS(), batches_per_lid_h, batches_per_lid);
 
   auto batch_info_h = Kokkos::create_mirror_view(host_space, batch_info);
 
@@ -1437,6 +1437,7 @@ unpackAndCombineIntoCrsArrays (
     const Teuchos::ArrayView<const int>& SourcePids,
     Teuchos::Array<int>& TargetPids)
 {
+  using execution_space = typename Node::execution_space;
   using Tpetra::Details::PackTraits;
 
   using Kokkos::View;
@@ -1592,19 +1593,19 @@ unpackAndCombineIntoCrsArrays (
   // Copy outputs back to host
   typename decltype(crs_rowptr_d)::HostMirror crs_rowptr_h(
       CRS_rowptr.getRawPtr(), CRS_rowptr.size());
-  deep_copy(crs_rowptr_h, crs_rowptr_d);
+  deep_copy(execution_space(), crs_rowptr_h, crs_rowptr_d);
 
   typename decltype(crs_colind_d)::HostMirror crs_colind_h(
       CRS_colind.getRawPtr(), CRS_colind.size());
-  deep_copy(crs_colind_h, crs_colind_d);
+  deep_copy(execution_space(), crs_colind_h, crs_colind_d);
 
   typename decltype(crs_vals_d)::HostMirror crs_vals_h(
       CRS_vals.getRawPtr(), CRS_vals.size());
-  deep_copy(crs_vals_h, crs_vals_d);
+  deep_copy(execution_space(), crs_vals_h, crs_vals_d);
 
   typename decltype(tgt_pids_d)::HostMirror tgt_pids_h(
       TargetPids.getRawPtr(), TargetPids.size());
-  deep_copy(tgt_pids_h, tgt_pids_d);
+  deep_copy(execution_space(), tgt_pids_h, tgt_pids_d);
 
 }
 

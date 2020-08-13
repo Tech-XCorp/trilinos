@@ -2380,7 +2380,7 @@ namespace Tpetra {
       // of create_mirror_view might actually be a new allocation.
       // This helps with debugging when there are two memory spaces.
       typename row_map_type::HostMirror ptr_h = create_mirror_view (k_rowPtrs_);
-      Kokkos::deep_copy (ptr_h, k_rowPtrs_);
+      Kokkos::deep_copy (execution_space(), ptr_h, k_rowPtrs_);
       if (debug_) {
         TEUCHOS_TEST_FOR_EXCEPTION
           (ptr_h.extent (0) != k_rowPtrs_.extent (0), std::logic_error,
@@ -7634,8 +7634,8 @@ namespace Tpetra {
     {
       typename local_graph_type::row_map_type::const_type::HostMirror k_rowPtrs_host_this = Kokkos::create_mirror_view(this->k_rowPtrs_);
       typename local_graph_type::row_map_type::const_type::HostMirror k_rowPtrs_host_graph= Kokkos::create_mirror_view(graph.k_rowPtrs_);
-      Kokkos::deep_copy(k_rowPtrs_host_this, this->k_rowPtrs_);
-      Kokkos::deep_copy(k_rowPtrs_host_graph, graph.k_rowPtrs_);
+      Kokkos::deep_copy(execution_space(), k_rowPtrs_host_this, this->k_rowPtrs_);
+      Kokkos::deep_copy(execution_space(), k_rowPtrs_host_graph, graph.k_rowPtrs_);
       for(size_t i=0; output && i<k_rowPtrs_host_this.extent(0); i++)
         output = k_rowPtrs_host_this(i) == k_rowPtrs_host_graph(i) ? output : false;
     }
@@ -7646,8 +7646,8 @@ namespace Tpetra {
     {
       typename local_graph_type::entries_type::non_const_type::HostMirror k_lclInds1D_host_this = Kokkos::create_mirror_view(this->k_lclInds1D_);
       typename local_graph_type::entries_type::non_const_type::HostMirror k_lclInds1D_host_graph= Kokkos::create_mirror_view(graph.k_lclInds1D_);
-      Kokkos::deep_copy(k_lclInds1D_host_this, this->k_lclInds1D_);
-      Kokkos::deep_copy(k_lclInds1D_host_graph, graph.k_lclInds1D_);
+      Kokkos::deep_copy(execution_space(), k_lclInds1D_host_this, this->k_lclInds1D_);
+      Kokkos::deep_copy(execution_space(), k_lclInds1D_host_graph, graph.k_lclInds1D_);
       for(size_t i=0; output && i < k_lclInds1D_host_this.extent(0); i++)
         output = k_lclInds1D_host_this(i) == k_lclInds1D_host_graph(i) ? output : false;
     }
@@ -7676,8 +7676,8 @@ namespace Tpetra {
     {
       typename local_graph_type::row_map_type::HostMirror lclGraph_rowmap_host_this  = Kokkos::create_mirror_view(this->lclGraph_.row_map);
       typename local_graph_type::row_map_type::HostMirror lclGraph_rowmap_host_graph = Kokkos::create_mirror_view(graph.lclGraph_.row_map);
-      Kokkos::deep_copy(lclGraph_rowmap_host_this, this->lclGraph_.row_map);
-      Kokkos::deep_copy(lclGraph_rowmap_host_graph, graph.lclGraph_.row_map);
+      Kokkos::deep_copy(execution_space(), lclGraph_rowmap_host_this, this->lclGraph_.row_map);
+      Kokkos::deep_copy(execution_space(), lclGraph_rowmap_host_graph, graph.lclGraph_.row_map);
       for(size_t i=0; output && i<lclGraph_rowmap_host_this.extent(0); i++)
         output = lclGraph_rowmap_host_this(i) == lclGraph_rowmap_host_graph(i) ? output : false;
     }
@@ -7687,8 +7687,8 @@ namespace Tpetra {
     {
       typename local_graph_type::entries_type::HostMirror lclGraph_entries_host_this = Kokkos::create_mirror_view(this->lclGraph_.entries);
       typename local_graph_type::entries_type::HostMirror lclGraph_entries_host_graph = Kokkos::create_mirror_view(graph.lclGraph_.entries);
-      Kokkos::deep_copy(lclGraph_entries_host_this, this->lclGraph_.entries);
-      Kokkos::deep_copy(lclGraph_entries_host_graph, graph.lclGraph_.entries);
+      Kokkos::deep_copy(execution_space(), lclGraph_entries_host_this, this->lclGraph_.entries);
+      Kokkos::deep_copy(execution_space(), lclGraph_entries_host_graph, graph.lclGraph_.entries);
       for(size_t i=0; output && i<lclGraph_entries_host_this.extent(0); i++)
         output = lclGraph_entries_host_this(i) == lclGraph_entries_host_graph(i) ? output : false;
     }

@@ -4352,7 +4352,7 @@ namespace Tpetra {
           // temporary host copy and print that.
           auto X_dev = getLocalViewDevice ();
           auto X_host_copy = Kokkos::create_mirror_view (X_dev);
-          Kokkos::deep_copy (X_host_copy, X_dev);
+          Kokkos::deep_copy (execution_space(), X_host_copy, X_dev);
           X_host = X_host_copy;
         }
         else {

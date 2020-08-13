@@ -1122,7 +1122,7 @@ init (const keys_type& keys,
     // assume UVM.
     auto countsHost = Kokkos::create_mirror_view (counts);
     // FIXME (mfh 28 Mar 2016) Does create_mirror_view zero-fill?
-    Kokkos::deep_copy (countsHost, static_cast<offset_type> (0));
+    Kokkos::deep_copy (execution_space(), countsHost, static_cast<offset_type> (0));
 
     for (offset_type k = 0; k < theNumKeys; ++k) {
       using key_type = typename keys_type::non_const_value_type;
@@ -1171,7 +1171,7 @@ init (const keys_type& keys,
   if (! buildInParallel || debug) {
     Kokkos::HostSpace hostMemSpace;
     auto counts_h = Kokkos::create_mirror_view (hostMemSpace, counts);
-    Kokkos::deep_copy (counts_h, counts);
+    Kokkos::deep_copy (execution_space(), counts_h, counts);
     auto ptr_h = Kokkos::create_mirror_view (hostMemSpace, ptr);
 
 #ifdef KOKKOS_ENABLE_SERIAL

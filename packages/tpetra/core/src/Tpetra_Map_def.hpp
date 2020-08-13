@@ -1061,7 +1061,7 @@ namespace Tpetra {
       View<GO*, array_layout, Kokkos::HostSpace> entryList_host
         (view_alloc ("entryList_host", WithoutInitializing),
          entryList.extent(0));
-      Kokkos::deep_copy (entryList_host, entryList);
+      Kokkos::deep_copy (execution_space(), entryList_host, entryList);
 
       firstContiguousGID_ = entryList_host[0];
       lastContiguousGID_ = firstContiguousGID_+1;
@@ -1746,7 +1746,7 @@ namespace Tpetra {
 
       auto lgMapHost =
         Kokkos::create_mirror_view (Kokkos::HostSpace (), lgMap);
-      Kokkos::deep_copy (lgMapHost, lgMap);
+      Kokkos::deep_copy (execution_space(), lgMapHost, lgMap);
 
       // "Commit" the local-to-global lookup table we filled in above.
       lgMap_ = lgMap;

@@ -3913,7 +3913,7 @@ namespace Tpetra {
       typedef Kokkos::View<size_t*, Kokkos::HostSpace,
                            Kokkos::MemoryUnmanaged> output_type;
       output_type offsetsOut (offsets.getRawPtr (), lclNumRows);
-      Kokkos::deep_copy (offsetsOut, offsetsTmp);
+      Kokkos::deep_copy (execution_space(), offsetsOut, offsetsTmp);
     }
   }
 

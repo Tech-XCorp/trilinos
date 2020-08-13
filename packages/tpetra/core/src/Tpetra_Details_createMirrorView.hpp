@@ -170,6 +170,7 @@ public:
         const char label[] = "")
   {
     typedef typename OutputDeviceType::memory_space out_mem_space;
+    typedef typename OutputDeviceType::execution_space out_exec_space;
     static_assert (! std::is_const<ValueType>::value, "ValueType must not be "
                    "const in order to use this specialization.  Please report "
                    "this bug to the Tpetra developers.");
@@ -181,7 +182,7 @@ public:
     output_view_type outView =
       Kokkos::create_mirror_view (out_mem_space (), inView);
     if (copy) {
-      Kokkos::deep_copy (outView, inView);
+      Kokkos::deep_copy (out_exec_space(), outView, inView);
     }
     return outView;
   }

@@ -326,9 +326,10 @@ namespace { // (anonymous)
          const InputViewType& src)
     {
       using output_memory_space = typename OutputViewType::memory_space;
+      using output_execution_space = typename OutputViewType::execution_space;
       auto src_outputSpaceCopy =
         Kokkos::create_mirror_view (output_memory_space (), src);
-      Kokkos::deep_copy (src_outputSpaceCopy, src);
+      Kokkos::deep_copy (output_execution_space(), src_outputSpaceCopy, src);
 
       // The output View's execution space can access
       // outputSpaceCopy's data, so we can run the functor now.
