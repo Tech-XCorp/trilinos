@@ -1870,7 +1870,7 @@ inline void deep_copy(
         Kokkos::Impl::SpaceAccessibility<src_execution_space,
                                          dst_memory_space>::accessible
   };
-
+Kokkos::fence();
   if ((void*)dst.data() != (void*)src.data()) {
     // Concern: If overlapping views then a parallel copy will be erroneous.
     // ...
@@ -1948,6 +1948,7 @@ inline void deep_copy(
           "deep_copy given views that would require a temporary allocation");
     }
   }
+Kokkos::fence();
 }
 
 }  // namespace Kokkos
