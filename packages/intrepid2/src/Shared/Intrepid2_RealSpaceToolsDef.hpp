@@ -65,7 +65,7 @@ namespace Intrepid2 {
   inVecValueType
   RealSpaceTools<SpT>::Serial::
   vectorNorm( const Kokkos::DynRankView<inVecValueType,inVecProperties...> inVec,
-              const ENorm normType ) {
+              const ENorm normType, bool bFence ) {
 #ifdef HAVE_INTREPID2_DEBUG
     {
       bool dbgInfo = false;
@@ -85,6 +85,11 @@ namespace Intrepid2 {
     const ordinal_type kend = inVec.extent(2);
     const ordinal_type lend = inVec.extent(3);
     const ordinal_type mend = inVec.extent(4);
+
+    if(bFence) {
+     Kokkos::fence();
+    }
+
     switch(normType) {
     case NORM_TWO:{
       for (ordinal_type i=0;i<iend;++i)
@@ -467,8 +472,7 @@ namespace Intrepid2 {
 
         auto vec = ( _inVecs.rank() == 2 ? Kokkos::subview(_inVecs, i,    Kokkos::ALL()) :
                                            Kokkos::subview(_inVecs, i, j, Kokkos::ALL()) );
-
-        _normArray(i, j) = RealSpaceTools<>::Serial::vectorNorm(vec, _normType);
+        _normArray(i, j) = RealSpaceTools<>::Serial::vectorNorm(vec, _normType, false);
       }
     };
   }

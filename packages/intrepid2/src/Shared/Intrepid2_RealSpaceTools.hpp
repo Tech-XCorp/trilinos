@@ -93,7 +93,7 @@ namespace Intrepid2 {
       KOKKOS_INLINE_FUNCTION
       static inVecValueType
       vectorNorm( const Kokkos::DynRankView<inVecValueType,inVecProperties...> inVec, 
-                  const ENorm normType );
+                  const ENorm normType, bool bFence = true );
       
       /** \brief Computes determinant of a single square matrix stored in
           an array of rank 2.
