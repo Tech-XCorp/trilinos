@@ -964,6 +964,7 @@ namespace Tpetra {
    const Kokkos::DualView<const local_ordinal_type*, buffer_device_type>& permuteToLIDs,
    const Kokkos::DualView<const local_ordinal_type*, buffer_device_type>& permuteFromLIDs)
   {
+    using execution_space = typename device_type::execution_space;
     using ::Tpetra::Details::Behavior;
     using ::Tpetra::Details::getDualViewCopyFromArrayView;
     using ::Tpetra::Details::ProfilingRegion;
@@ -1079,7 +1080,7 @@ namespace Tpetra {
 
           auto tgt_j = Kokkos::subview (tgt_d, rows, tgtCol);
           auto src_j = Kokkos::subview (src_d, rows, srcCol);
-          Kokkos::deep_copy (tgt_j, src_j); // Copy src_j into tgt_j
+          Kokkos::deep_copy (execution_space(), tgt_j, src_j); // Copy src_j into tgt_j
         }
       }
     }
