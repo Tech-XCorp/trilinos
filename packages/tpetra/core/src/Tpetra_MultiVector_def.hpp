@@ -980,6 +980,7 @@ namespace Tpetra {
    const Kokkos::DualView<const local_ordinal_type*, buffer_device_type>& permuteFromLIDs,
    const CombineMode CM)
   {
+    using execution_space = typename device_type::execution_space;
     using ::Tpetra::Details::Behavior;
     using ::Tpetra::Details::getDualViewCopyFromArrayView;
     using ::Tpetra::Details::ProfilingRegion;
@@ -1119,7 +1120,7 @@ namespace Tpetra {
           }
           else { 
             // Copy src_j into tgt_j
-            Kokkos::deep_copy (tgt_j, src_j); 
+            Kokkos::deep_copy (execution_space(), tgt_j, src_j); // Copy src_j into tgt_j
           }
         }
       }
@@ -3557,6 +3558,7 @@ namespace Tpetra {
   MultiVector<Scalar, LocalOrdinal, GlobalOrdinal, Node>::
   get1dCopy (const Teuchos::ArrayView<Scalar>& A, const size_t LDA) const
   {
+    using execution_space = typename device_type::execution_space;
     using dev_view_type = typename dual_view_type::t_dev;
     using host_view_type = typename dual_view_type::t_host;
     using IST = impl_scalar_type;
@@ -3606,7 +3608,7 @@ namespace Tpetra {
         Kokkos::deep_copy (A_view, srcView_host);
       }
       else {
-        Kokkos::deep_copy (A_view, srcView_dev);
+        Kokkos::deep_copy (execution_space(), A_view, srcView_dev);
       }
     }
     else {
