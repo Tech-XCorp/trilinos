@@ -976,7 +976,8 @@ public:
       // device.  Also, prefer modifying on device if neither side is
       // marked as modified.
       this->modify_device ();
-      Kokkos::deep_copy (this->getValuesDevice (), alpha);
+      using execution_space = typename device_type::execution_space;
+      Kokkos::deep_copy (execution_space(), this->getValuesDevice (), alpha);
     }
   }
 

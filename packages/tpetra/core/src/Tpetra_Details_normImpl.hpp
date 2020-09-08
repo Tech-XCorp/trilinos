@@ -147,7 +147,8 @@ lclNormImpl (const RV& normsOut,
 
   if (lclNumRows == 0) {
     const mag_type zeroMag = Kokkos::ArithTraits<mag_type>::zero ();
-    Kokkos::deep_copy (normsOut, zeroMag);
+    using execution_space = typename RV::execution_space;
+    Kokkos::deep_copy (execution_space(), normsOut, zeroMag);
   }
   else { // lclNumRows != 0
     if (constantStride) {

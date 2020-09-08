@@ -260,7 +260,8 @@ struct Fill<ViewType,
       }
     }
     else {
-      Kokkos::deep_copy (X, alpha);
+      using execution_space = typename ViewType::execution_space;
+      Kokkos::deep_copy (execution_space(), X, alpha);
     }
   }
 };

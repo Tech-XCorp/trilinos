@@ -1249,7 +1249,9 @@ namespace Tpetra {
         std::cerr << os.str();
       }
       row_ent_type numRowEnt (ViewAllocateWithoutInitializing (label), numRows);
-      Kokkos::deep_copy (numRowEnt, static_cast<size_t> (0)); // fill w/ 0s
+
+      using execution_space = typename device_type::execution_space;
+      Kokkos::deep_copy (execution_space(), numRowEnt, static_cast<size_t> (0)); // fill w/ 0s
       this->k_numRowEntries_ = numRowEnt; // "commit" our allocation
     }
 
