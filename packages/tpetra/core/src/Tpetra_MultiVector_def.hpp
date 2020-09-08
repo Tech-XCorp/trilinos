@@ -835,7 +835,7 @@ namespace Tpetra {
     if (LDA == outStride) { // strides are the same; deep_copy once
       // This only works because MultiVector uses LayoutLeft.
       // We would need a custom copy functor otherwise.
-      Kokkos::deep_copy (X_out, X_in);
+      Kokkos::deep_copy (execution_space(), X_out, X_in);
     }
     else { // strides differ; copy one column at a time
       typedef decltype (Kokkos::subview (X_out, Kokkos::ALL (), 0))
@@ -845,7 +845,7 @@ namespace Tpetra {
       for (size_t j = 0; j < numVecs; ++j) {
         out_col_view_type X_out_j = Kokkos::subview (X_out, Kokkos::ALL (), j);
         in_col_view_type X_in_j = Kokkos::subview (X_in, Kokkos::ALL (), j);
-        Kokkos::deep_copy (X_out_j, X_in_j);
+        Kokkos::deep_copy (execution_space(), X_out_j, X_in_j);
       }
     }
   }
@@ -896,7 +896,7 @@ namespace Tpetra {
         Teuchos::av_reinterpret_cast<const IST> (ArrayOfPtrs[j]);
       input_col_view_type X_j_in (X_j_av.getRawPtr (), lclNumRows);
       auto X_j_out = Kokkos::subview (X_out, rowRng, j);
-      Kokkos::deep_copy (X_j_out, X_j_in);
+      Kokkos::deep_copy (execution_space(), X_j_out, X_j_in);
     }
     origView_ = view_;
   }
@@ -1722,7 +1722,7 @@ namespace Tpetra {
       }
       else {
         whichVecs.modify_device ();
-        Kokkos::deep_copy (whichVecs.view_device (), whichVecsIn);
+        Kokkos::deep_copy (execution_space(), whichVecs.view_device (), whichVecsIn);
       }
     }
     auto whichVecs_d = whichVecs.view_device ();
@@ -3603,7 +3603,7 @@ namespace Tpetra {
 
     if (this->isConstantStride ()) {
       if (useHostVersion) {
-        Kokkos::deep_copy (A_view, srcView_host);
+        Kokkos::deep_copy (execution_space(), A_view, srcView_host);
       }
       else {
         Kokkos::deep_copy (A_view, srcView_dev);

@@ -919,6 +919,7 @@ namespace Tpetra {
     {
       using Kokkos::MemoryUnmanaged;
       typedef typename DT::memory_space DMS;
+      typedef typename DT::execution_space execution_space;
       typedef Kokkos::HostSpace HMS;
 
       const size_t len = static_cast<size_t> (x_av.size ());
@@ -930,7 +931,8 @@ namespace Tpetra {
       }
       else {
         x_out.template modify<DMS> ();
-        Kokkos::deep_copy (x_out.template view<DMS> (), x_in);
+        using execution_space = typename DT::execution_space;
+        Kokkos::deep_copy (execution_space(), x_out.template view<DMS> (), x_in);
       }
       return x_out;
     }

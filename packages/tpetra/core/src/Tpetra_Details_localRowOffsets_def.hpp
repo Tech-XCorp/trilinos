@@ -84,7 +84,8 @@ localRowCounts (const RowGraph<LO, GO, NT>& G)
     entPerRow_h[i] = offset_type (lclNumEnt);
     maxNumEnt = maxNumEnt < lclNumEnt ? lclNumEnt : maxNumEnt;
   }
-  Kokkos::deep_copy (entPerRow, entPerRow_h);
+  using execution_space = typename NT::execution_space;
+  Kokkos::deep_copy (execution_space(), entPerRow, entPerRow_h);
   return {entPerRow, maxNumEnt};
 }
 

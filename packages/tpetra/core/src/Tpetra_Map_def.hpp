@@ -717,7 +717,7 @@ namespace Tpetra {
         View<GO*, LayoutLeft, device_type>
           nonContigGids (view_alloc ("nonContigGids", WithoutInitializing),
                          nonContigGids_host.size ());
-        Kokkos::deep_copy (nonContigGids, nonContigGids_host);
+        Kokkos::deep_copy (execution_space(), nonContigGids, nonContigGids_host);
 
         // FixedHashTable currently cannot be built on CudaSpace due to UVM
         // dependence so copy back to device_type (CudaUVMSpace).
@@ -756,7 +756,7 @@ namespace Tpetra {
       }
 
       // We filled lgMap on host above; now sync back to device.
-      Kokkos::deep_copy (lgMap, lgMap_host);
+      Kokkos::deep_copy (execution_space(), lgMap, lgMap_host);
 
       // "Commit" the local-to-global lookup table we filled in above.
       lgMap_ = lgMap;
@@ -1150,7 +1150,7 @@ namespace Tpetra {
       }
 
       // We filled lgMap on host above; now sync back to device.
-      Kokkos::deep_copy (lgMap, lgMap_host);
+      Kokkos::deep_copy (execution_space(), lgMap, lgMap_host);
 
       // "Commit" the local-to-global lookup table we filled in above.
       lgMap_ = lgMap;
