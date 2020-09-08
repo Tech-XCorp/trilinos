@@ -1139,7 +1139,7 @@ init (const keys_type& keys,
 
       ++countsHost[hashVal];
     }
-    Kokkos::deep_copy (counts, countsHost);
+    Kokkos::deep_copy (execution_space(), counts, countsHost);
   }
 
   // KJ: This fence is not required for the 2-argument deep_copy which calls
@@ -1181,7 +1181,7 @@ init (const keys_type& keys,
 #endif // KOKKOS_ENABLE_SERIAL
 
     computeOffsetsFromCounts (hostExecSpace, ptr_h, counts_h);
-    Kokkos::deep_copy (ptr, ptr_h);
+    Kokkos::deep_copy (execution_space(), ptr, ptr_h);
 
     if (debug) {
       bool bad = false;

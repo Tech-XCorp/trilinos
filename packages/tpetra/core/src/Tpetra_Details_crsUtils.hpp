@@ -265,7 +265,8 @@ pad_crs_arrays(
     if (increase == 0) {
       return;
     }
-    Kokkos::deep_copy(newAllocPerRow, newAllocPerRow_h);
+    using execution_space = typename RowPtr::execution_space;
+    Kokkos::deep_copy(execution_space(), newAllocPerRow, newAllocPerRow_h);
   }
 
   using inds_value_type = typename Indices::non_const_value_type;

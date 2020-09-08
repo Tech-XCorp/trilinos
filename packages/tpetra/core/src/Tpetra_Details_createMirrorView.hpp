@@ -148,7 +148,8 @@ public:
     else {
       // No need to initialize, if we're going to copy into it anyway.
       outView_nc = nc_output_view_type (view_alloc (std::string (label), WithoutInitializing), inSize);
-      Kokkos::deep_copy (outView_nc, inView);
+      using execution_space = typename nc_output_view_type::execution_space;
+      Kokkos::deep_copy (execution_space(), outView_nc, inView);
     }
     return outView_nc; // this casts back to const
   }

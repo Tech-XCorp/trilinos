@@ -683,7 +683,8 @@ unpackAndCombineIntoCrsMatrix(
   auto batch_info_h = Kokkos::create_mirror_view(host_space, batch_info);
 
   (void) compute_batch_info(batches_per_lid_h, batch_info_h);
-  Kokkos::deep_copy(batch_info, batch_info_h);
+  using execution_space = typename DT::execution_space;
+  Kokkos::deep_copy(execution_space(), batch_info, batch_info_h);
 
   // FIXME (TJF SEP 2017)
   // The scalar type is not necessarily default constructible

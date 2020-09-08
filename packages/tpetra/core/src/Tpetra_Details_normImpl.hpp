@@ -253,7 +253,8 @@ gblNormImpl (const RV& normsOut,
     // MPI doesn't allow aliasing of arguments, so we have to make
     // a copy of the local sum.
     RV lclNorms ("MV::normImpl lcl", numVecs);
-    Kokkos::deep_copy (lclNorms, normsOut);
+    using execution_space = typename RV::execution_space;
+    Kokkos::deep_copy (execution_space(), lclNorms, normsOut);
     const mag_type* const lclSum = lclNorms.data ();
     mag_type* const gblSum = normsOut.data ();
     const int nv = static_cast<int> (numVecs);
