@@ -3779,7 +3779,8 @@ namespace Tpetra {
       // FIXME (mfh 24 Dec 2014) Once CrsMatrix implements DualView
       // semantics, this would be the place to mark memory as
       // modified.
-      Kokkos::deep_copy (k_values1D_, theAlpha);
+      using execution_space = typename device_type::execution_space;
+      Kokkos::deep_copy (execution_space(), k_values1D_, theAlpha);
     }
   }
 
