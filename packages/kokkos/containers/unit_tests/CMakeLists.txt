@@ -41,3 +41,9 @@ foreach(Tag Threads;Serial;OpenMP;HPX;Cuda;HIP)
     KOKKOS_ADD_EXECUTABLE_AND_TEST(UnitTest_${Tag} SOURCES ${UnitTestSources})
   endif()
 endforeach()
+
+
+  KOKKOS_ADD_EXECUTABLE_AND_TEST(
+    FenceTest
+    SOURCES fence.cpp
+  )
