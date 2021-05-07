@@ -169,11 +169,12 @@ namespace Amesos2 {
 
   std::string tolower (const std::string& s)
   {
-    std::locale loc;
+    // std::locale loc;
     std::string rtn = s;
     const size_t len = rtn.length ();
     for (size_t i = 0; i < len; ++i) {
-      rtn[i] = tolower (rtn[i], loc);
+      // rtn[i] = std::tolower (rtn[i], loc);
+      rtn[i] = ::tolower (rtn[i]);
     }
     return rtn;
   }
