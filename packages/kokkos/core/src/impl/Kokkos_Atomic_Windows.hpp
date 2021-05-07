@@ -153,11 +153,6 @@ inline T atomic_compare_exchange(
   return compare_and_result;
 }
 
-template <typename T>
-inline T atomic_compare_exchange_strong(volatile T* const dest,
-                                        const T& compare, const T& val) {
-  return atomic_compare_exchange(dest, compare, val);
-}
 #endif
 
 }  // namespace Kokkos
